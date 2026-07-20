@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_till_movement_form" model="ir.ui.view">
+        <field name="name">avea.till.movement.form</field>
+        <field name="model">avea.till.movement</field>
+        <field name="arch" type="xml">
+            <form string="Till Movement">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="movement_date"/>
+                            <field name="movement_type"/>
+                            <field name="amount"/>
+                        </group>
+
+                        <group>
+                            <field name="session_id"/>
+                            <field name="user_id"/>
+                            <field name="reason"/>
+                        </group>
+
+                        <field name="notes"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+</record>
+        <record id="view_avea_till_movement_list" model="ir.ui.view">
+    <field name="name">avea.till.movement.list</field>
+    <field name="model">avea.till.movement</field>
+    <field name="arch" type="xml">
+        <list>
+            <field name="movement_date"/>
+            <field name="name"/>
+            <field name="movement_type"/>
+            <field name="amount"/>
+            <field name="reason"/>
+            <field name="user_id"/>
+        </list>
+    </field>
+</record>
+<record id="action_avea_till_movements" model="ir.actions.act_window">
+    <field name="name">Till Movements</field>
+    <field name="res_model">avea.till.movement</field>
+    <field name="view_mode">list,form</field>
+</record>
+</odoo>
