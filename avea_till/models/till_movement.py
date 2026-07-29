@@ -1,5 +1,13 @@
+from datetime import timedelta
+
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
+
+OPENING_FLOAT_REASON = "Opening Float"
+CASH_SALE_REASON = "Cash Sale"
+CASH_REFUND_REASON = "Cash Refund"
+POS_CASH_IN_REASON = "POS Cash In"
+POS_CASH_OUT_REASON = "POS Cash Out"
 
 
 class AveaTillMovement(models.Model):
@@ -21,6 +29,13 @@ class AveaTillMovement(models.Model):
     session_id = fields.Many2one(
         "pos.session",
         string="POS Session",
+    )
+
+    pos_order_id = fields.Many2one(
+        "pos.order",
+        string="POS Order",
+        ondelete="set null",
+        index=True,
     )
 
     user_id = fields.Many2one(
@@ -73,10 +88,26 @@ class AveaTillMovement(models.Model):
         readonly=True,
     )
 
-    @api.depends("name", "notes", "reason", "session_id")
+    @api.depends(
+        "pos_order_id",
+        "pos_order_id.pos_reference",
+        "pos_order_id.name",
+        "name",
+        "notes",
+        "reason",
+        "session_id",
+        "amount",
+        "movement_date",
+        "movement_type",
+    )
     def _compute_ledger_reference(self):
-        Order = self.env["pos.order"]
         for movement in self:
+            order = movement.pos_order_id
+            if not order and movement.reason in ("Cash Sale", "Cash Refund"):
+                order = movement._find_pos_order_for_movement()
+            if order:
+                movement.ledger_reference = movement._pos_order_ledger_reference(order)
+                continue
             reference = movement.name
             if reference and reference != "/":
                 movement.ledger_reference = reference
@@ -84,27 +115,143 @@ class AveaTillMovement(models.Model):
             reference = (
                 movement.notes if movement.notes and movement.notes != "/" else False
             )
-            if movement.reason in ("Cash Sale", "Cash Refund") and movement.session_id:
-                domain = [("session_id", "=", movement.session_id.id)]
-                order = Order.browse()
-                if reference:
-                    order = Order.search(
-                        domain
-                        + [
-                            "|",
-                            ("name", "=", reference),
-                            ("pos_reference", "=", reference),
-                        ],
-                        limit=1,
-                        order="id desc",
-                    )
-                movement.ledger_reference = (
-                    (order.pos_reference or order.name)
-                    if order
-                    else (reference or "")
-                )
-            else:
-                movement.ledger_reference = reference or ""
+            movement.ledger_reference = reference or ""
+
+    @api.model
+    def _pos_order_ledger_reference(self, order):
+        if order.pos_reference and order.pos_reference != "/":
+            return order.pos_reference
+        if order.name and order.name != "/":
+            return order.name
+        return ""
+
+    def _find_pos_order_for_movement(self):
+        self.ensure_one()
+        if self.reason not in ("Cash Sale", "Cash Refund") or not self.session_id:
+            return self.env["pos.order"]
+        Order = self.env["pos.order"]
+        identifiers = {
+            value
+            for value in (self.name, self.notes)
+            if value and value != "/"
+        }
+        if identifiers:
+            order = Order.search(
+                [
+                    ("session_id", "=", self.session_id.id),
+                    "|",
+                    ("name", "in", list(identifiers)),
+                    ("pos_reference", "in", list(identifiers)),
+                ],
+                limit=1,
+                order="id desc",
+            )
+            if order:
+                return order
+        orders = Order.search([("session_id", "=", self.session_id.id)])
+        candidates = []
+        for order in orders:
+            cash_payments = order.payment_ids.filtered(
+                lambda payment: payment.payment_method_id.type == "cash"
+            )
+            if not cash_payments:
+                continue
+            net_cash = 0.0
+            for payment in cash_payments:
+                if payment.is_change:
+                    net_cash -= abs(payment.amount)
+                else:
+                    net_cash += payment.amount
+            amount = abs(net_cash)
+            if order.currency_id.compare_amounts(amount, self.amount) != 0:
+                continue
+            is_refund = order.is_refund or net_cash < 0
+            if self.reason == "Cash Refund" and not is_refund:
+                continue
+            if self.reason == "Cash Sale" and is_refund:
+                continue
+            payment_date = max(cash_payments.mapped("payment_date"))
+            candidates.append((order, payment_date))
+        if not candidates:
+            return Order
+        if len(candidates) == 1:
+            return candidates[0][0]
+        movement_dt = self.movement_date
+        return min(
+            candidates,
+            key=lambda item: abs((item[1] - movement_dt).total_seconds()),
+        )[0]
+
+    @api.model
+    def _backfill_session_pos_order_links(self, session):
+        movements = self.search(
+            [
+                ("session_id", "=", session.id),
+                ("reason", "in", ("Cash Sale", "Cash Refund")),
+                ("pos_order_id", "=", False),
+            ]
+        )
+        for movement in movements:
+            order = movement._find_pos_order_for_movement()
+            if not order:
+                continue
+            vals = {"pos_order_id": order.id}
+            if not movement.name or movement.name == "/":
+                vals["name"] = self._pos_order_ledger_reference(order)
+            movement.write(vals)
+
+    @api.model
+    def _recompute_session_running_balances(self, session_id):
+        if not session_id:
+            return
+        movements = self.search(
+            [("session_id", "=", session_id)],
+            order="movement_date asc, id asc",
+        )
+        balance = 0.0
+        for movement in movements:
+            balance += movement._signed_amount()
+            movement.running_balance = balance
+
+    @api.model
+    def _ensure_opening_float(self, sessions):
+        """Create the opening float ledger line for a POS session if missing."""
+        for session in sessions:
+            if self.search(
+                [
+                    ("session_id", "=", session.id),
+                    ("reason", "=", OPENING_FLOAT_REASON),
+                ],
+                limit=1,
+            ):
+                continue
+            amount = session.cash_register_balance_start or 0.0
+            currency = session.currency_id or session.company_id.currency_id
+            if currency.compare_amounts(amount, 0.0) <= 0:
+                continue
+            movement_date = session.start_at or fields.Datetime.now()
+            earliest = self.search(
+                [("session_id", "=", session.id)],
+                order="movement_date asc, id asc",
+                limit=1,
+            )
+            if earliest and earliest.movement_date <= movement_date:
+                movement_date = earliest.movement_date - timedelta(seconds=1)
+            reference = session.name
+            if not reference or reference == "/":
+                reference = f"Session {session.id}"
+            self.create(
+                {
+                    "name": reference,
+                    "movement_date": movement_date,
+                    "session_id": session.id,
+                    "user_id": session.user_id.id or self.env.user.id,
+                    "movement_type": "in",
+                    "amount": amount,
+                    "reason": OPENING_FLOAT_REASON,
+                    "notes": session.opening_notes or "",
+                }
+            )
 
     @api.depends("session_id", "session_id.currency_id")
     def _compute_currency_id(self):
@@ -126,6 +273,54 @@ class AveaTillMovement(models.Model):
         return self.amount
 
     @api.model
+    def prepare_session_ledger(self, session):
+        if not session:
+            return
+        self._ensure_opening_float(session)
+        self._backfill_session_pos_order_links(session)
+
+    @api.model
+    def get_session_ledger_balance(self, session_id):
+        if not session_id:
+            return 0.0
+        last = self.search(
+            [("session_id", "=", session_id)],
+            order="movement_date desc, id desc",
+            limit=1,
+        )
+        return last.running_balance if last else 0.0
+
+    @api.model
+    def get_sessions_ledger_balance(self, session_ids):
+        if not session_ids:
+            return {}
+        balances = {session_id: 0.0 for session_id in session_ids}
+        movements = self.search(
+            [("session_id", "in", session_ids)],
+            order="movement_date desc, id desc",
+        )
+        seen = set()
+        for movement in movements:
+            session_id = movement.session_id.id
+            if session_id in seen:
+                continue
+            balances[session_id] = movement.running_balance
+            seen.add(session_id)
+            if len(seen) == len(session_ids):
+                break
+        return balances
+
+    @api.model
+    def sum_amount_for_domain(self, domain):
+        groups = self._read_group(domain, [], ["amount:sum"])
+        if not groups:
+            return 0.0
+        row = groups[0]
+        if isinstance(row, dict):
+            return row.get("amount:sum") or 0.0
+        return row[0] or 0.0
+
+    @api.model
     def get_session_manual_net(self, session_id):
         return self.get_sessions_manual_net([session_id]).get(session_id, 0.0)
 
@@ -134,7 +329,10 @@ class AveaTillMovement(models.Model):
         if not session_ids:
             return {}
         groups = self._read_group(
-            [("session_id", "in", session_ids)],
+            [
+                ("session_id", "in", session_ids),
+                ("reason", "!=", OPENING_FLOAT_REASON),
+            ],
             ["session_id", "movement_type"],
             ["amount:sum"],
         )
@@ -150,24 +348,16 @@ class AveaTillMovement(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        Movement = self.env["avea.till.movement"]
+        session_ids = {
+            vals["session_id"]
+            for vals in vals_list
+            if vals.get("session_id")
+            and vals.get("reason") != OPENING_FLOAT_REASON
+        }
+        for session_id in session_ids:
+            Movement._ensure_opening_float(self.env["pos.session"].browse(session_id))
         records = super().create(vals_list)
-        records._assign_running_balances()
+        for session_id in records.mapped("session_id").ids:
+            records._recompute_session_running_balances(session_id)
         return records
-
-    def _assign_running_balances(self):
-        for movement in self:
-            prior = self.search(
-                [
-                    ("session_id", "=", movement.session_id.id),
-                    ("id", "!=", movement.id),
-                    "|",
-                    ("movement_date", "<", movement.movement_date),
-                    "&",
-                    ("movement_date", "=", movement.movement_date),
-                    ("id", "<", movement.id),
-                ],
-                order="movement_date desc, id desc",
-                limit=1,
-            )
-            prior_balance = prior.running_balance if prior else 0.0
-            movement.running_balance = prior_balance + movement._signed_amount()

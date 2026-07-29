@@ -1,0 +1,36 @@
+.o_avea_till_ledger_amount {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.o_avea_till_ledger_amount_icon {
+    font-size: 0.62rem;
+    line-height: 1;
+    opacity: 0.95;
+}
+
+.o_avea_till_ledger_amount_value {
+    letter-spacing: 0.01em;
+}
+
+.o_avea_till_ledger_amount_in {
+    color: var(--success, #008818);
+}
+
+.o_avea_till_ledger_amount_out {
+    color: var(--danger, #d44c59);
+}
+
+@media (prefers-color-scheme: dark) {
+    .o_avea_till_ledger_amount_in {
+        color: var(--success, #74b816);
+    }
+
+    .o_avea_till_ledger_amount_out {
+        color: var(--danger, #e66d79);
+    }
+}

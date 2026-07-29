@@ -2,3 +2,75 @@
     font-size: 2rem;
     font-weight: 600;
 }
+
+.o_avea_till_reconciliation {
+    max-width: 32rem;
+    margin-top: 0.25rem;
+}
+
+.o_avea_till_reconciliation_heading {
+    color: var(--o-gray-800, #212529);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.65rem;
+}
+
+.o_avea_till_reconciliation_line {
+    display: grid;
+    grid-template-columns: 1fr auto minmax(7rem, auto);
+    align-items: center;
+    column-gap: 0.75rem;
+    padding: 0.35rem 0;
+}
+
+.o_avea_till_reconciliation_label {
+    font-weight: 500;
+}
+
+.o_avea_till_reconciliation_sign {
+    width: 1.25rem;
+    text-align: center;
+    color: var(--o-gray-600, #6c757d);
+    font-weight: 600;
+}
+
+.o_avea_till_reconciliation_amount {
+    justify-self: end;
+    text-align: right;
+}
+
+.o_avea_till_reconciliation_amount .o_field_monetary,
+.o_avea_till_reconciliation_count {
+    justify-self: end;
+    text-align: right;
+}
+
+.o_avea_till_reconciliation_total {
+    border-top: 2px solid var(--o-gray-300, #dee2e6);
+    margin-top: 0.35rem;
+    padding-top: 0.65rem;
+}
+
+.o_avea_till_reconciliation_total .o_avea_till_reconciliation_label,
+.o_avea_till_reconciliation_total_amount .o_field_monetary {
+    font-weight: 700;
+}
+
+.o_avea_till_reconciliation_meta {
+    margin-top: 0.5rem;
+    padding-top: 0.35rem;
+    border-top: 1px dashed var(--o-gray-300, #dee2e6);
+    color: var(--o-gray-700, #495057);
+}
+
+.o_avea_till_reconciliation_meta .o_avea_till_reconciliation_label {
+    font-weight: 400;
+}
+
+.o_avea_till_subtract .o_avea_till_reconciliation_sign {
+    color: var(--o-danger, #dc3545);
+}
+
+.o_avea_till_add .o_avea_till_reconciliation_sign {
+    color: var(--o-success, #198754);
+}

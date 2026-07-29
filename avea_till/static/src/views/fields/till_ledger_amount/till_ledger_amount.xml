@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.TillLedgerAmountField">
+        <span
+            class="o_avea_till_ledger_amount"
+            t-att-class="cssClass"
+        >
+            <span class="o_avea_till_ledger_amount_icon" t-esc="icon"/>
+            <span class="o_avea_till_ledger_amount_value" t-esc="signedAmount"/>
+        </span>
+    </t>
+
+</templates>

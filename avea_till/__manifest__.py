@@ -30,6 +30,9 @@ Features:
     "assets": {
         "web.assets_backend": [
             "avea_till/static/src/scss/till_dashboard.scss",
+            "avea_till/static/src/scss/till_ledger_amount.scss",
+            "avea_till/static/src/views/fields/till_ledger_amount/till_ledger_amount.xml",
+            "avea_till/static/src/views/fields/till_ledger_amount/till_ledger_amount.js",
         ],
     },
     "installable": True,

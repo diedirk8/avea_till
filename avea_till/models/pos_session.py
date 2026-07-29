@@ -14,18 +14,23 @@ class PosSession(models.Model):
         string="Expected Drawer Cash",
         compute="_compute_avea_till_metrics",
         currency_field="currency_id",
-        help="POS expected cash plus manual till movements.",
+        help="Expected cash in the till from the Avea ledger running balance.",
     )
 
-    @api.depends("cash_register_balance_end")
+    @api.depends("state")
     def _compute_avea_till_metrics(self):
         Movement = self.env["avea.till.movement"]
-        manual_by_session = Movement.get_sessions_manual_net(self.ids)
         for session in self:
-            manual_net = manual_by_session.get(session.id, 0.0)
-            pos_expected = session.cash_register_balance_end or 0.0
-            session.avea_manual_net = manual_net
-            session.avea_live_balance = pos_expected + manual_net
+            Movement.prepare_session_ledger(session)
+        balance_by_session = Movement.get_sessions_ledger_balance(self.ids)
+        for session in self:
+            ledger_balance = balance_by_session.get(session.id, 0.0)
+            session.avea_manual_net = 0.0
+            session.avea_live_balance = ledger_balance
+
+    def set_opening_control(self, cashbox_value, notes):
+        super().set_opening_control(cashbox_value, notes)
+        self.env["avea.till.movement"]._ensure_opening_float(self)
 
     def try_cash_in_out(self, _type, amount, reason, partner_id, extras):
         sign = 1 if _type == "in" else -1
