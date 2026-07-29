@@ -22,11 +22,15 @@ Features:
         "account",
     ],
     "data": [
-	"security/ir.model.access.csv",
-    "views/till_movement_views.xml",
-    "views/menu.xml"
+        "security/ir.model.access.csv",
+        "views/till_movement_views.xml",
+        "views/till_dashboard_views.xml",
+        "views/menu.xml",
     ],
     "assets": {
+        "web.assets_backend": [
+            "avea_till/static/src/scss/till_dashboard.scss",
+        ],
     },
     "installable": True,
     "application": True,

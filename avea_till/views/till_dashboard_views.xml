@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_till_dashboard_form" model="ir.ui.view">
+        <field name="name">avea.till.dashboard.form</field>
+        <field name="model">avea.till.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Till Audit &amp; Reconciliation" create="false" duplicate="false" delete="false">
+                <header>
+                    <button
+                        name="action_refresh"
+                        type="object"
+                        string="Refresh"
+                    />
+                </header>
+                <sheet>
+                    <field name="name" invisible="1"/>
+                    <div class="oe_title">
+                        <h1>
+                            <span>Current Session: </span>
+                            <field
+                                name="session_id"
+                                readonly="1"
+                                nolabel="1"
+                                class="oe_inline"
+                                options="{'no_open': True, 'no_create': True}"
+                            />
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Session">
+                            <field name="session_id" options="{'no_create': True}"/>
+                            <field name="config_id"/>
+                            <field name="session_state" widget="badge"/>
+                        </group>
+                        <group string="Expected cash in drawer">
+                            <field
+                                name="live_balance"
+                                widget="monetary"
+                                class="oe_inline o_avea_till_live_balance"
+                            />
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <field
+                        name="recent_movement_ids"
+                        string="Till Ledger"
+                        nolabel="0"
+                        readonly="1"
+                    >
+                        <list create="false" edit="false" delete="false">
+                            <field name="movement_date"/>
+                            <field name="ledger_reference"/>
+                            <field name="reason" string="Type"/>
+                            <field name="amount" widget="monetary"/>
+                            <field name="running_balance" widget="monetary"/>
+                            <field name="user_id"/>
+                            <field name="currency_id" column_invisible="True"/>
+                            <field name="name" column_invisible="True"/>
+                        </list>
+                    </field>
+
+                    <group string="Today on this till">
+                        <group>
+                            <field name="today_cash_in" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="today_cash_out" widget="monetary"/>
+                        </group>
+                        <group>
+                            <field name="today_movement_count"/>
+                        </group>
+                    </group>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <delete id="action_avea_till_dashboard" model="ir.actions.server"/>
+
+    <record id="action_avea_till_live_dashboard" model="ir.actions.act_window">
+        <field name="name">Till Audit &amp; Reconciliation</field>
+        <field name="res_model">avea.till.dashboard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_avea_till_dashboard_form"/>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

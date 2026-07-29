@@ -11,7 +11,16 @@
         id="menu_avea_till"
         name="Till"
         parent="menu_avea_root"
+        action="action_avea_till_live_dashboard"
         sequence="10"
+    />
+
+    <menuitem
+        id="menu_avea_till_dashboard"
+        name="Dashboard"
+        parent="menu_avea_till"
+        action="action_avea_till_live_dashboard"
+        sequence="5"
     />
 
     <menuitem

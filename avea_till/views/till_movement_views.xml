@@ -13,37 +13,58 @@
                             <field name="movement_date"/>
                             <field name="movement_type"/>
                             <field name="amount"/>
+                            <field name="running_balance"/>
+                            <field name="currency_id" invisible="1"/>
                         </group>
-
                         <group>
                             <field name="session_id"/>
                             <field name="user_id"/>
                             <field name="reason"/>
                         </group>
-
                         <field name="notes"/>
                     </group>
                 </sheet>
             </form>
         </field>
-</record>
-        <record id="view_avea_till_movement_list" model="ir.ui.view">
-    <field name="name">avea.till.movement.list</field>
-    <field name="model">avea.till.movement</field>
-    <field name="arch" type="xml">
-        <list>
-            <field name="movement_date"/>
-            <field name="name"/>
-            <field name="movement_type"/>
-            <field name="amount"/>
-            <field name="reason"/>
-            <field name="user_id"/>
-        </list>
-    </field>
-</record>
-<record id="action_avea_till_movements" model="ir.actions.act_window">
-    <field name="name">Till Movements</field>
-    <field name="res_model">avea.till.movement</field>
-    <field name="view_mode">list,form</field>
-</record>
+    </record>
+
+    <record id="view_avea_till_movement_list" model="ir.ui.view">
+        <field name="name">avea.till.movement.list</field>
+        <field name="model">avea.till.movement</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="movement_date"/>
+                <field name="ledger_reference"/>
+                <field name="reason" string="Type"/>
+                <field name="amount"/>
+                <field name="running_balance"/>
+                <field name="user_id"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="name" column_invisible="True"/>
+                <field name="movement_type" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_till_movement_search" model="ir.ui.view">
+        <field name="name">avea.till.movement.search</field>
+        <field name="model">avea.till.movement</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="session_id"/>
+                <field name="movement_type"/>
+                <field name="user_id"/>
+                <filter string="Cash In" name="cash_in" domain="[('movement_type', '=', 'in')]"/>
+                <filter string="Cash Out" name="cash_out" domain="[('movement_type', '=', 'out')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_avea_till_movements" model="ir.actions.act_window">
+        <field name="name">Till Movements</field>
+        <field name="res_model">avea.till.movement</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
 </odoo>
