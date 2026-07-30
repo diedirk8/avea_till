@@ -5,141 +5,209 @@
         <field name="name">avea.till.dashboard.form</field>
         <field name="model">avea.till.dashboard</field>
         <field name="arch" type="xml">
-            <form string="Till Audit &amp; Reconciliation" create="false" duplicate="false" delete="false" class="o_avea_till_dashboard">
-                <header>
+            <form string="Cash Ledger" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--ledger">
+                <header class="o_avea_workspace_header">
+                    <button
+                        name="action_open_session_dashboard"
+                        type="object"
+                        string="Session Dashboard"
+                        class="btn-secondary o_avea_workspace_nav"
+                    />
+                    <button
+                        name="action_refresh"
+                        type="object"
+                        string="Cash Ledger"
+                        class="btn-primary o_avea_workspace_nav o_avea_workspace_nav--active"
+                    />
                     <button
                         name="action_refresh"
                         type="object"
                         string="Refresh"
-                        class="btn-secondary"
+                        class="btn-secondary o_avea_workspace_refresh"
+                        icon="fa-refresh"
                     />
                 </header>
-                <sheet class="o_avea_till_dashboard_sheet">
+                <sheet class="o_avea_workspace_sheet">
                     <field name="name" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
 
-                    <div class="o_avea_till_session_card">
-                        <h2 class="o_avea_till_section_title">Session</h2>
-                        <div class="o_avea_till_session_fields">
-                            <field name="session_id" options="{'no_create': True}"/>
-                            <field name="config_id"/>
-                            <field name="session_state" widget="badge"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Cash Reconciliation</span>
+                            <h1 class="o_avea_workspace_title">Cash Ledger</h1>
+                        </div>
+                        <div class="o_avea_workspace_hero_stats">
+                            <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary">
+                                <span class="o_avea_workspace_hero_stat_label">Active POS Session</span>
+                                <field name="session_id" nolabel="1" readonly="0" options="{'no_create': True}" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Till</span>
+                                <field name="config_id" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Cashier</span>
+                                <field name="cashier_id" nolabel="1" readonly="1" widget="many2one_avatar_user" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Session Status</span>
+                                <field name="session_state" nolabel="1" readonly="1" widget="badge" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="o_avea_till_dashboard_main">
-                        <div class="o_avea_till_main_column">
-                            <div class="o_avea_till_ledger_section">
-                                <field
-                                    name="recent_movement_ids"
-                                    string="Till Ledger"
-                                    nolabel="0"
-                                    readonly="1"
-                                >
-                                    <list create="false" edit="false" delete="false" class="o_avea_till_ledger_list">
-                                        <field name="movement_date"/>
-                                        <field name="ledger_reference"/>
-                                        <field name="reason" string="Type"/>
-                                        <field name="amount" widget="till_ledger_amount"/>
-                                        <field name="running_balance" widget="monetary"/>
-                                        <field name="user_id"/>
-                                        <field name="currency_id" column_invisible="True"/>
-                                        <field name="movement_type" column_invisible="True"/>
-                                        <field name="name" column_invisible="True"/>
-                                    </list>
-                                </field>
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Session Information</h2>
+                        </div>
+                        <div class="o_avea_workspace_info_card">
+                            <div class="o_avea_workspace_info_grid">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">POS / Till</span>
+                                    <field name="config_id" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Session Number</span>
+                                    <field name="session_id" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Cashier</span>
+                                    <field name="cashier_id" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Opening Time</span>
+                                    <field name="session_opening_time" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Duration</span>
+                                    <field name="session_duration" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Status</span>
+                                    <field name="session_state" nolabel="1" readonly="1" widget="badge"/>
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="o_avea_till_sidebar_column">
-                            <div class="o_avea_till_kpi_card">
-                                <span class="o_avea_till_kpi_label">Expected Cash in Drawer</span>
-                                <field
-                                    name="live_balance"
-                                    nolabel="1"
-                                    widget="monetary"
-                                    readonly="1"
-                                    class="o_avea_till_kpi_value"
-                                />
+                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
+                        <div class="o_avea_workspace_main">
+                            <div class="o_avea_workspace_main_column">
+                                <div class="o_avea_workspace_block_heading">
+                                    <h2 class="o_avea_workspace_section_title">Cash Movement History</h2>
+                                </div>
+                                <div class="o_avea_workspace_ledger_card">
+                                    <field
+                                        name="recent_movement_ids"
+                                        string="Till Ledger"
+                                        nolabel="1"
+                                        readonly="1"
+                                    >
+                                        <list create="false" edit="false" delete="false" class="o_avea_till_ledger_list">
+                                            <field name="movement_date"/>
+                                            <field name="ledger_reference"/>
+                                            <field name="reason" string="Type"/>
+                                            <field name="amount" widget="till_ledger_amount"/>
+                                            <field name="running_balance" widget="monetary"/>
+                                            <field name="user_id"/>
+                                            <field name="currency_id" column_invisible="True"/>
+                                            <field name="movement_type" column_invisible="True"/>
+                                            <field name="name" column_invisible="True"/>
+                                        </list>
+                                    </field>
+                                </div>
                             </div>
 
-                            <div class="o_avea_till_reconciliation_card">
-                                <div class="o_avea_till_reconciliation_heading">Session Summary</div>
-                                <div class="o_avea_till_reconciliation">
-                                    <div class="o_avea_till_reconciliation_line o_avea_till_add">
-                                        <span class="o_avea_till_reconciliation_label">Opening Float</span>
-                                        <span class="o_avea_till_reconciliation_sign">+</span>
+                            <div class="o_avea_workspace_sidebar_column">
+                                <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--highlight">
+                                    <span class="o_avea_workspace_kpi_label">Expected Cash in Drawer</span>
+                                    <field
+                                        name="live_balance"
+                                        nolabel="1"
+                                        widget="monetary"
+                                        readonly="1"
+                                        class="o_avea_workspace_kpi_value"
+                                    />
+                                </div>
+
+                                <div class="o_avea_workspace_block_heading">
+                                    <h2 class="o_avea_workspace_section_title">Cash Summary</h2>
+                                </div>
+                                <div class="o_avea_workspace_reconciliation_card">
+                                    <div class="o_avea_workspace_reconciliation_line o_avea_workspace_reconciliation_add">
+                                        <span class="o_avea_workspace_reconciliation_label">Opening Float</span>
+                                        <span class="o_avea_workspace_reconciliation_sign">+</span>
                                         <field
                                             name="summary_opening_float"
                                             nolabel="1"
                                             widget="monetary"
                                             readonly="1"
-                                            class="o_avea_till_reconciliation_amount"
+                                            class="o_avea_workspace_reconciliation_amount"
                                         />
                                     </div>
-                                    <div class="o_avea_till_reconciliation_line o_avea_till_add">
-                                        <span class="o_avea_till_reconciliation_label">Cash Sales</span>
-                                        <span class="o_avea_till_reconciliation_sign">+</span>
+                                    <div class="o_avea_workspace_reconciliation_line o_avea_workspace_reconciliation_add">
+                                        <span class="o_avea_workspace_reconciliation_label">Cash Sales</span>
+                                        <span class="o_avea_workspace_reconciliation_sign">+</span>
                                         <field
                                             name="summary_cash_sales"
                                             nolabel="1"
                                             widget="monetary"
                                             readonly="1"
-                                            class="o_avea_till_reconciliation_amount"
+                                            class="o_avea_workspace_reconciliation_amount"
                                         />
                                     </div>
-                                    <div class="o_avea_till_reconciliation_line o_avea_till_add">
-                                        <span class="o_avea_till_reconciliation_label">Cash In</span>
-                                        <span class="o_avea_till_reconciliation_sign">+</span>
+                                    <div class="o_avea_workspace_reconciliation_line o_avea_workspace_reconciliation_add">
+                                        <span class="o_avea_workspace_reconciliation_label">Cash In</span>
+                                        <span class="o_avea_workspace_reconciliation_sign">+</span>
                                         <field
                                             name="summary_cash_in"
                                             nolabel="1"
                                             widget="monetary"
                                             readonly="1"
-                                            class="o_avea_till_reconciliation_amount"
+                                            class="o_avea_workspace_reconciliation_amount"
                                         />
                                     </div>
-                                    <div class="o_avea_till_reconciliation_line o_avea_till_subtract">
-                                        <span class="o_avea_till_reconciliation_label">Cash Out</span>
-                                        <span class="o_avea_till_reconciliation_sign">−</span>
+                                    <div class="o_avea_workspace_reconciliation_line o_avea_workspace_reconciliation_subtract">
+                                        <span class="o_avea_workspace_reconciliation_label">Cash Out</span>
+                                        <span class="o_avea_workspace_reconciliation_sign">−</span>
                                         <field
                                             name="summary_cash_out"
                                             nolabel="1"
                                             widget="monetary"
                                             readonly="1"
-                                            class="o_avea_till_reconciliation_amount"
+                                            class="o_avea_workspace_reconciliation_amount"
                                         />
                                     </div>
-                                    <div class="o_avea_till_reconciliation_line o_avea_till_subtract">
-                                        <span class="o_avea_till_reconciliation_label">Cash Refunds</span>
-                                        <span class="o_avea_till_reconciliation_sign">−</span>
+                                    <div class="o_avea_workspace_reconciliation_line o_avea_workspace_reconciliation_subtract">
+                                        <span class="o_avea_workspace_reconciliation_label">Cash Refunds</span>
+                                        <span class="o_avea_workspace_reconciliation_sign">−</span>
                                         <field
                                             name="summary_cash_refunds"
                                             nolabel="1"
                                             widget="monetary"
                                             readonly="1"
-                                            class="o_avea_till_reconciliation_amount"
+                                            class="o_avea_workspace_reconciliation_amount"
                                         />
                                     </div>
-                                    <div class="o_avea_till_reconciliation_line o_avea_till_reconciliation_total">
-                                        <span class="o_avea_till_reconciliation_label">Expected Cash in Drawer</span>
-                                        <span class="o_avea_till_reconciliation_sign">=</span>
+                                    <div class="o_avea_workspace_reconciliation_line o_avea_workspace_reconciliation_total">
+                                        <span class="o_avea_workspace_reconciliation_label">Expected Cash in Drawer</span>
+                                        <span class="o_avea_workspace_reconciliation_sign">=</span>
                                         <field
                                             name="live_balance"
                                             nolabel="1"
                                             widget="monetary"
                                             readonly="1"
-                                            class="o_avea_till_reconciliation_amount o_avea_till_reconciliation_total_amount"
+                                            class="o_avea_workspace_reconciliation_amount o_avea_workspace_reconciliation_total_amount"
                                         />
                                     </div>
-                                    <div class="o_avea_till_reconciliation_line o_avea_till_reconciliation_meta">
-                                        <span class="o_avea_till_reconciliation_label">Movements</span>
-                                        <span class="o_avea_till_reconciliation_sign"/>
+                                    <div class="o_avea_workspace_reconciliation_line o_avea_workspace_reconciliation_meta">
+                                        <span class="o_avea_workspace_reconciliation_label">Movements</span>
+                                        <span class="o_avea_workspace_reconciliation_sign"/>
                                         <field
                                             name="session_movement_count"
                                             nolabel="1"
                                             readonly="1"
-                                            class="o_avea_till_reconciliation_count"
+                                            class="o_avea_workspace_reconciliation_count"
                                         />
                                     </div>
                                 </div>
@@ -155,7 +223,7 @@
     <delete id="action_avea_till_dashboard" model="ir.actions.server"/>
 
     <record id="action_avea_till_live_dashboard" model="ir.actions.act_window">
-        <field name="name">Till Audit &amp; Reconciliation</field>
+        <field name="name">Cash Ledger</field>
         <field name="res_model">avea.till.dashboard</field>
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_avea_till_dashboard_form"/>

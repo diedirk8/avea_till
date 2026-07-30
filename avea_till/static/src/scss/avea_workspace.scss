@@ -1,0 +1,503 @@
+// Shared Avea Till workspace styling for Session Dashboard and Cash Ledger.
+
+.o_avea_workspace {
+    --avea-info: #01666b;
+    --avea-info-soft: rgba(1, 102, 107, 0.08);
+    --avea-info-border: rgba(1, 102, 107, 0.22);
+    --avea-positive: #008818;
+    --avea-positive-soft: rgba(0, 136, 24, 0.08);
+    --avea-positive-border: rgba(0, 136, 24, 0.22);
+    --avea-negative: #c0392b;
+    --avea-negative-soft: rgba(192, 57, 43, 0.08);
+    --avea-negative-border: rgba(192, 57, 43, 0.22);
+
+    background-color: var(--o-webclient-background-color, #f8f9fa);
+
+    .o_form_sheet_bg {
+        background: transparent;
+    }
+
+    .o_avea_workspace_sheet {
+        max-width: 1680px;
+        padding: 0 1.5rem 2.5rem;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+    }
+
+    // -------------------------------------------------------------------------
+    // Workspace navigation header
+    // -------------------------------------------------------------------------
+
+    .o_avea_workspace_header {
+        align-items: center;
+        background: linear-gradient(
+            180deg,
+            var(--o-view-background-color, #fff) 0%,
+            var(--o-gray-100, #f8f9fa) 100%
+        );
+        border-bottom: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        min-height: 3rem;
+        padding: 0.65rem 1.5rem;
+    }
+
+    .o_avea_workspace_nav {
+        font-weight: 600;
+        min-width: 9.5rem;
+    }
+
+    .o_avea_workspace_nav--active {
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+        pointer-events: none;
+    }
+
+    .o_avea_workspace_refresh {
+        font-weight: 600;
+        margin-left: auto;
+        min-width: 7rem;
+    }
+
+    // -------------------------------------------------------------------------
+    // Hero header
+    // -------------------------------------------------------------------------
+
+    .o_avea_workspace_hero {
+        background-color: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        border-radius: var(--border-radius-lg, 0.5rem);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        margin-bottom: 2rem;
+        overflow: hidden;
+        padding: 1.5rem 1.75rem 1.65rem;
+    }
+
+    .o_avea_workspace_hero_intro {
+        margin-bottom: 1.35rem;
+    }
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-info);
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        line-height: 1.2;
+        margin-bottom: 0.35rem;
+        text-transform: uppercase;
+    }
+
+    .o_avea_workspace_title {
+        color: var(--o-gray-900, #212529);
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        margin: 0;
+    }
+
+    .o_avea_workspace_hero_stats {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
+
+    .o_avea_workspace_hero_stat {
+        background-color: var(--o-gray-100, #f8f9fa);
+        border: 1px solid var(--o-gray-200, #e9ecef);
+        border-radius: var(--border-radius, 0.375rem);
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        min-height: 4.75rem;
+        min-width: 0;
+        padding: 0.9rem 1rem;
+    }
+
+    .o_avea_workspace_hero_stat--primary {
+        background-color: var(--avea-info-soft);
+        border-color: var(--avea-info-border);
+    }
+
+    .o_avea_workspace_hero_stat_label {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        line-height: 1.2;
+        text-transform: uppercase;
+    }
+
+    .o_avea_workspace_hero_stat--primary .o_avea_workspace_hero_stat_label {
+        color: var(--avea-info);
+    }
+
+    .o_avea_workspace_hero_stat_value,
+    .o_avea_workspace_hero_stat .o_field_widget {
+        color: var(--o-gray-900, #212529);
+        font-size: 1rem;
+        font-weight: 600;
+        line-height: 1.35;
+        margin-bottom: 0;
+    }
+
+    .o_avea_workspace_hero_stat--primary .o_avea_workspace_hero_stat_value,
+    .o_avea_workspace_hero_stat--primary .o_field_widget {
+        color: #01494d;
+        font-size: 1.0625rem;
+    }
+
+    // -------------------------------------------------------------------------
+    // Section blocks
+    // -------------------------------------------------------------------------
+
+    .o_avea_workspace_block {
+        margin-bottom: 2.25rem;
+    }
+
+    .o_avea_workspace_block--last {
+        margin-bottom: 0;
+    }
+
+    .o_avea_workspace_block_heading {
+        border-bottom: 1px solid var(--o-gray-200, #e9ecef);
+        margin-bottom: 1.1rem;
+        padding-bottom: 0.65rem;
+    }
+
+    .o_avea_workspace_section_title {
+        color: var(--o-gray-800, #343a40);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        line-height: 1.3;
+        margin: 0;
+    }
+
+    // -------------------------------------------------------------------------
+    // Shared card surfaces
+    // -------------------------------------------------------------------------
+
+    .o_avea_workspace_info_card,
+    .o_avea_workspace_kpi_card,
+    .o_avea_workspace_activity_card,
+    .o_avea_workspace_reconciliation_card,
+    .o_avea_workspace_ledger_card {
+        background-color: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        border-radius: var(--border-radius-lg, 0.5rem);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+    }
+
+    .o_avea_workspace_info_card {
+        padding: 1.35rem 1.5rem 1.45rem;
+    }
+
+    .o_avea_workspace_info_grid {
+        display: grid;
+        gap: 1.15rem 1.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
+    }
+
+    .o_avea_workspace_info_item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+        min-width: 0;
+    }
+
+    .o_avea_workspace_info_label {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .o_avea_workspace_info_item .o_field_widget {
+        color: var(--o-gray-900, #212529);
+        font-size: 0.96875rem;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    // -------------------------------------------------------------------------
+    // KPI and activity cards
+    // -------------------------------------------------------------------------
+
+    .o_avea_workspace_kpi_grid,
+    .o_avea_workspace_activity_grid {
+        align-items: stretch;
+        display: grid;
+        gap: 1.1rem;
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
+
+    .o_avea_workspace_kpi_card,
+    .o_avea_workspace_activity_card {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 8rem;
+        padding: 1.25rem 1.35rem 1.3rem;
+    }
+
+    .o_avea_workspace_kpi_label,
+    .o_avea_workspace_activity_label {
+        font-size: 0.875rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        line-height: 1.3;
+        text-transform: uppercase;
+    }
+
+    .o_avea_workspace_kpi_value,
+    .o_avea_workspace_activity_value {
+        margin-top: auto;
+        width: 100%;
+
+        .o_field_monetary,
+        .o_field_integer,
+        .o_field_float {
+            font-size: 2.375rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.05;
+        }
+    }
+
+    .o_avea_workspace_kpi_card--info,
+    .o_avea_workspace_activity_card--info {
+        background-color: var(--avea-info-soft);
+        border-color: var(--avea-info-border);
+
+        .o_avea_workspace_kpi_label,
+        .o_avea_workspace_activity_label {
+            color: var(--avea-info);
+        }
+
+        .o_field_monetary,
+        .o_field_integer,
+        .o_field_float {
+            color: #01494d;
+        }
+    }
+
+    .o_avea_workspace_kpi_card--positive,
+    .o_avea_workspace_activity_card--positive {
+        background-color: var(--avea-positive-soft);
+        border-color: var(--avea-positive-border);
+
+        .o_avea_workspace_kpi_label,
+        .o_avea_workspace_activity_label {
+            color: var(--avea-positive);
+        }
+
+        .o_field_monetary,
+        .o_field_integer,
+        .o_field_float {
+            color: #006312;
+        }
+
+        .o_avea_workspace_activity_subvalue .o_field_monetary {
+            color: #2d7a3a;
+        }
+    }
+
+    .o_avea_workspace_kpi_card--negative,
+    .o_avea_workspace_activity_card--negative {
+        background-color: var(--avea-negative-soft);
+        border-color: var(--avea-negative-border);
+
+        .o_avea_workspace_kpi_label,
+        .o_avea_workspace_activity_label {
+            color: var(--avea-negative);
+        }
+
+        .o_field_monetary,
+        .o_field_integer,
+        .o_field_float {
+            color: #962d22;
+        }
+
+        .o_avea_workspace_activity_subvalue .o_field_monetary {
+            color: #b03a2e;
+        }
+    }
+
+    .o_avea_workspace_activity_card--neutral {
+        .o_avea_workspace_activity_label {
+            color: var(--o-gray-700, #495057);
+        }
+
+        .o_field_monetary,
+        .o_field_integer,
+        .o_field_float {
+            color: var(--o-gray-900, #212529);
+        }
+    }
+
+    .o_avea_workspace_activity_detail {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        margin-top: auto;
+    }
+
+    .o_avea_workspace_activity_subvalue .o_field_monetary {
+        font-size: 0.9375rem;
+        font-variant-numeric: tabular-nums;
+        font-weight: 600;
+    }
+
+    // -------------------------------------------------------------------------
+    // Cash reconciliation summary
+    // -------------------------------------------------------------------------
+
+    .o_avea_workspace_reconciliation_card {
+        padding: 1.35rem 1.5rem 1.55rem;
+    }
+
+    .o_avea_workspace_reconciliation_line {
+        align-items: center;
+        column-gap: 0.85rem;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 1.5rem minmax(7.5rem, auto);
+        padding: 0.55rem 0;
+    }
+
+    .o_avea_workspace_reconciliation_label {
+        color: var(--o-gray-700, #495057);
+        font-size: 0.9375rem;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .o_avea_workspace_reconciliation_sign {
+        color: var(--o-gray-500, #adb5bd);
+        font-size: 0.9375rem;
+        font-weight: 700;
+        text-align: center;
+        width: 1.5rem;
+    }
+
+    .o_avea_workspace_reconciliation_amount,
+    .o_avea_workspace_reconciliation_count {
+        justify-self: end;
+        text-align: right;
+
+        .o_field_monetary,
+        &.o_field_integer {
+            font-size: 0.96875rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 600;
+        }
+    }
+
+    .o_avea_workspace_reconciliation_add {
+        .o_avea_workspace_reconciliation_sign {
+            color: var(--avea-positive);
+        }
+
+        .o_field_monetary {
+            color: #006312;
+        }
+    }
+
+    .o_avea_workspace_reconciliation_subtract {
+        .o_avea_workspace_reconciliation_sign {
+            color: var(--avea-negative);
+        }
+
+        .o_field_monetary {
+            color: #962d22;
+        }
+    }
+
+    .o_avea_workspace_reconciliation_total {
+        background-color: var(--avea-positive-soft);
+        border: 1px solid var(--avea-positive-border);
+        border-radius: var(--border-radius, 0.375rem);
+        margin-top: 0.85rem;
+        padding: 1rem 0.85rem;
+
+        .o_avea_workspace_reconciliation_label {
+            color: #004d10;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .o_avea_workspace_reconciliation_sign {
+            color: var(--avea-positive);
+            font-size: 1rem;
+        }
+    }
+
+    .o_avea_workspace_reconciliation_total_amount .o_field_monetary {
+        color: #004d10;
+        font-size: 1.375rem;
+        font-weight: 800;
+    }
+
+    .o_avea_workspace_reconciliation_meta {
+        border-top: 1px dashed var(--o-gray-300, #dee2e6);
+        margin-top: 0.65rem;
+        padding-top: 0.65rem;
+
+        .o_avea_workspace_reconciliation_label {
+            color: var(--o-gray-600, #6c757d);
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+    }
+
+    @media (min-width: 1200px) {
+        .o_avea_workspace_kpi_value .o_field_monetary,
+        .o_avea_workspace_kpi_value .o_field_integer,
+        .o_avea_workspace_activity_value .o_field_monetary,
+        .o_avea_workspace_activity_value .o_field_integer,
+        .o_avea_workspace_activity_value .o_field_float {
+            font-size: 2.625rem;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .o_avea_workspace_sheet {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .o_avea_workspace_header {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .o_avea_workspace_refresh {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .o_avea_workspace_hero {
+            padding: 1.15rem 1.15rem 1.25rem;
+        }
+
+        .o_avea_workspace_title {
+            font-size: 1.65rem;
+        }
+
+        .o_avea_workspace_kpi_card,
+        .o_avea_workspace_activity_card {
+            min-height: 7rem;
+        }
+
+        .o_avea_workspace_kpi_value .o_field_monetary,
+        .o_avea_workspace_kpi_value .o_field_integer,
+        .o_avea_workspace_activity_value .o_field_monetary,
+        .o_avea_workspace_activity_value .o_field_integer,
+        .o_avea_workspace_activity_value .o_field_float {
+            font-size: 2rem;
+        }
+    }
+}

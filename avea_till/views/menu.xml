@@ -3,7 +3,8 @@
 
     <menuitem
         id="menu_avea_root"
-        name="Avea"
+        name="Avea Dashboard"
+        web_icon="avea_till,static/description/icon.png"
         sequence="100"
     />
 
@@ -11,24 +12,34 @@
         id="menu_avea_till"
         name="Till"
         parent="menu_avea_root"
-        action="action_avea_till_live_dashboard"
         sequence="10"
     />
 
+    <record id="menu_avea_till" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
     <menuitem
-        id="menu_avea_till_dashboard"
-        name="Dashboard"
+        id="menu_avea_session_dashboard"
+        name="Session Dashboard"
         parent="menu_avea_till"
-        action="action_avea_till_live_dashboard"
+        action="action_avea_session_dashboard"
         sequence="5"
     />
 
     <menuitem
-        id="menu_avea_till_movements"
-        name="Till Movements"
+        id="menu_avea_till_dashboard"
+        name="Cash Ledger"
         parent="menu_avea_till"
-        action="action_avea_till_movements"
+        action="action_avea_till_live_dashboard"
         sequence="10"
+    />
+
+    <menuitem
+        id="menu_avea_configuration"
+        name="Configuration"
+        parent="menu_avea_till"
+        sequence="20"
     />
 
 </odoo>

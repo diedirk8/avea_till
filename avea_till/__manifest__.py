@@ -1,5 +1,5 @@
 {
-    "name": "Avea Till",
+    "name": "Avea Dashboard",
     "summary": "Professional till ledger and cash management for Odoo POS.",
     "description": """
 Avea Till
@@ -25,11 +25,14 @@ Features:
         "security/ir.model.access.csv",
         "views/till_movement_views.xml",
         "views/till_dashboard_views.xml",
+        "views/session_dashboard_views.xml",
         "views/menu.xml",
     ],
     "assets": {
         "web.assets_backend": [
+            "avea_till/static/src/scss/avea_workspace.scss",
             "avea_till/static/src/scss/till_dashboard.scss",
+            "avea_till/static/src/scss/session_dashboard.scss",
             "avea_till/static/src/scss/till_ledger_amount.scss",
             "avea_till/static/src/views/fields/till_ledger_amount/till_ledger_amount.xml",
             "avea_till/static/src/views/fields/till_ledger_amount/till_ledger_amount.js",

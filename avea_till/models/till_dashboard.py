@@ -1,22 +1,14 @@
 from odoo import _, api, fields, models
 
-from .till_movement import (
-    CASH_REFUND_REASON,
-    CASH_SALE_REASON,
-    OPENING_FLOAT_REASON,
-    POS_CASH_IN_REASON,
-    POS_CASH_OUT_REASON,
-)
-
 
 class AveaTillDashboard(models.TransientModel):
     _name = "avea.till.dashboard"
-    _description = "Live Till Dashboard"
+    _description = "Cash Ledger"
     _rec_name = "name"
 
     name = fields.Char(
         string="Title",
-        default=lambda self: _("Till Audit & Reconciliation"),
+        default=lambda self: _("Cash Ledger"),
         required=True,
     )
 
@@ -36,6 +28,18 @@ class AveaTillDashboard(models.TransientModel):
     config_id = fields.Many2one(
         related="session_id.config_id",
         string="Point of Sale",
+    )
+    cashier_id = fields.Many2one(
+        related="session_id.user_id",
+        string="Cashier",
+    )
+    session_opening_time = fields.Datetime(
+        related="session_id.start_at",
+        string="Opening Time",
+    )
+    session_duration = fields.Char(
+        string="Duration",
+        compute="_compute_session_duration",
     )
 
     pos_expected_cash = fields.Monetary(
@@ -96,14 +100,14 @@ class AveaTillDashboard(models.TransientModel):
 
     @api.model
     def action_open_dashboard(self, session_id=None):
-        """Open a fresh dashboard record (used from the menu)."""
+        """Open a fresh cash ledger record (used from the menu)."""
         vals = {}
         if session_id:
             vals["session_id"] = session_id
         dashboard = self.create(vals)
         return {
             "type": "ir.actions.act_window",
-            "name": _("Till Audit & Reconciliation"),
+            "name": _("Cash Ledger"),
             "res_model": "avea.till.dashboard",
             "view_mode": "form",
             "res_id": dashboard.id,
@@ -114,7 +118,7 @@ class AveaTillDashboard(models.TransientModel):
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
         if "name" in fields_list and not res.get("name"):
-            res["name"] = _("Till Audit & Reconciliation")
+            res["name"] = _("Cash Ledger")
         if "session_id" in fields_list and not res.get("session_id"):
             session = self._default_session_id()
             if session:
@@ -147,6 +151,14 @@ class AveaTillDashboard(models.TransientModel):
                 dashboard.session_id.currency_id or dashboard.env.company.currency_id
             )
 
+    @api.depends("session_id", "session_id.start_at", "session_id.stop_at", "session_id.state")
+    def _compute_session_duration(self):
+        for dashboard in self:
+            session = dashboard.session_id
+            dashboard.session_duration = (
+                session.get_avea_session_duration_display() if session else ""
+            )
+
     def _get_session_movement_domain(self):
         self.ensure_one()
         if not self.session_id:
@@ -169,28 +181,17 @@ class AveaTillDashboard(models.TransientModel):
                 dashboard.summary_cash_refunds = 0.0
                 dashboard.session_movement_count = 0
                 continue
-            Movement.prepare_session_ledger(session)
-            session_domain = dashboard._get_session_movement_domain()
-            dashboard.summary_opening_float = Movement.sum_amount_for_domain(
-                session_domain + [("reason", "=", OPENING_FLOAT_REASON)]
-            )
-            dashboard.summary_cash_sales = Movement.sum_amount_for_domain(
-                session_domain + [("reason", "=", CASH_SALE_REASON)]
-            )
-            dashboard.summary_cash_in = Movement.sum_amount_for_domain(
-                session_domain + [("reason", "=", POS_CASH_IN_REASON)]
-            )
-            dashboard.summary_cash_out = Movement.sum_amount_for_domain(
-                session_domain + [("reason", "=", POS_CASH_OUT_REASON)]
-            )
-            dashboard.summary_cash_refunds = Movement.sum_amount_for_domain(
-                session_domain + [("reason", "=", CASH_REFUND_REASON)]
-            )
-            ledger_balance = Movement.get_session_ledger_balance(session.id)
-            dashboard.pos_expected_cash = ledger_balance
+
+            cash = session.get_avea_cash_summary()
+            dashboard.summary_opening_float = cash["opening_float"]
+            dashboard.summary_cash_sales = cash["cash_sales"]
+            dashboard.summary_cash_in = cash["cash_in"]
+            dashboard.summary_cash_out = cash["cash_out"]
+            dashboard.summary_cash_refunds = cash["cash_refunds"]
+            dashboard.live_balance = cash["expected_cash"]
+            dashboard.pos_expected_cash = cash["expected_cash"]
             dashboard.manual_net = 0.0
-            dashboard.live_balance = ledger_balance
-            dashboard.session_movement_count = Movement.search_count(session_domain)
+            dashboard.session_movement_count = cash["movement_count"]
 
     @api.depends("session_id")
     def _compute_recent_movements(self):
@@ -205,6 +206,20 @@ class AveaTillDashboard(models.TransientModel):
                 ]
             movements = Movement.search(domain, order="movement_date desc, id desc", limit=15)
             dashboard.recent_movement_ids = movements
+
+    def action_open_session_dashboard(self):
+        self.ensure_one()
+        session_id = self.session_id.id if self.session_id else None
+        return self.env["avea.till.session.dashboard"].action_open_session_dashboard(
+            session_id=session_id
+        )
+
+    def action_open_cash_ledger(self):
+        self.ensure_one()
+        session_id = self.session_id.id if self.session_id else None
+        return self.env["avea.till.dashboard"].action_open_dashboard(
+            session_id=session_id
+        )
 
     def action_refresh(self):
         self.ensure_one()

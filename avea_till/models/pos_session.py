@@ -1,4 +1,12 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+
+from .till_movement import (
+    CASH_REFUND_REASON,
+    CASH_SALE_REASON,
+    OPENING_FLOAT_REASON,
+    POS_CASH_IN_REASON,
+    POS_CASH_OUT_REASON,
+)
 
 
 class PosSession(models.Model):
@@ -27,6 +35,123 @@ class PosSession(models.Model):
             ledger_balance = balance_by_session.get(session.id, 0.0)
             session.avea_manual_net = 0.0
             session.avea_live_balance = ledger_balance
+
+    def _avea_paid_order_domain(self):
+        self.ensure_one()
+        valid_states = {
+            state
+            for state, _label in self.env["pos.order"]._fields["state"].selection
+        }
+        paid_states = [state for state in ("paid", "done", "invoiced") if state in valid_states]
+        if not paid_states:
+            paid_states = ["paid"]
+        return [("session_id", "=", self.id), ("state", "in", paid_states)]
+
+    def get_avea_paid_orders(self):
+        self.ensure_one()
+        return self.env["pos.order"].search(self._avea_paid_order_domain())
+
+    def get_avea_cash_summary(self):
+        """Cash drawer breakdown from the Avea till ledger."""
+        self.ensure_one()
+        Movement = self.env["avea.till.movement"]
+        Movement.prepare_session_ledger(self)
+        domain = [("session_id", "=", self.id)]
+        return {
+            "opening_float": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", OPENING_FLOAT_REASON)]
+            ),
+            "cash_sales": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", CASH_SALE_REASON)]
+            ),
+            "cash_in": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", POS_CASH_IN_REASON)]
+            ),
+            "cash_out": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", POS_CASH_OUT_REASON)]
+            ),
+            "cash_refunds": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", CASH_REFUND_REASON)]
+            ),
+            "expected_cash": Movement.get_session_ledger_balance(self.id),
+            "movement_count": Movement.search_count(domain),
+        }
+
+    def get_avea_sales_summary(self):
+        """Payment and order totals for the full POS session."""
+        self.ensure_one()
+        orders = self.get_avea_paid_orders()
+        order_count = len(orders)
+        total_sales = sum(orders.mapped("amount_total"))
+        average_order_value = total_sales / order_count if order_count else 0.0
+
+        cash_sales = 0.0
+        card_sales = 0.0
+        other_payments = 0.0
+        for payment in orders.payment_ids.filtered(lambda p: not p.is_change):
+            method_type = payment.payment_method_id.type
+            if method_type == "cash":
+                cash_sales += payment.amount
+            elif method_type == "bank":
+                card_sales += payment.amount
+            else:
+                other_payments += payment.amount
+
+        return {
+            "total_sales": total_sales,
+            "cash_sales": cash_sales,
+            "card_sales": card_sales,
+            "other_payments": other_payments,
+            "order_count": order_count,
+            "average_order_value": average_order_value,
+        }
+
+    def get_avea_activity_metrics(self):
+        """Operational counts for the full POS session."""
+        self.ensure_one()
+        Movement = self.env["avea.till.movement"]
+        orders = self.get_avea_paid_orders()
+        lines = orders.lines
+
+        discount_total = 0.0
+        for line in lines:
+            if line.discount:
+                discount_total += (
+                    line.qty * line.price_unit * (line.discount / 100.0)
+                )
+
+        refund_orders = orders.filtered(
+            lambda order: order.is_refund
+            or order.currency_id.compare_amounts(order.amount_total, 0.0) < 0
+        )
+
+        session_domain = [("session_id", "=", self.id)]
+        cash_in_domain = session_domain + [("reason", "=", POS_CASH_IN_REASON)]
+        cash_out_domain = session_domain + [("reason", "=", POS_CASH_OUT_REASON)]
+
+        return {
+            "order_count": len(orders),
+            "items_sold": sum(lines.mapped("qty")),
+            "discount_total": discount_total,
+            "refund_count": len(refund_orders),
+            "cash_movement_count": Movement.search_count(session_domain),
+            "cash_in_count": Movement.search_count(cash_in_domain),
+            "cash_out_count": Movement.search_count(cash_out_domain),
+            "cash_in_total": Movement.sum_amount_for_domain(cash_in_domain),
+            "cash_out_total": Movement.sum_amount_for_domain(cash_out_domain),
+        }
+
+    def get_avea_session_duration_display(self):
+        self.ensure_one()
+        if not self.start_at:
+            return ""
+        end = self.stop_at or fields.Datetime.now()
+        total_seconds = max(int((end - self.start_at).total_seconds()), 0)
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, _seconds = divmod(remainder, 60)
+        if hours:
+            return _("%(hours)sh %(minutes)sm", hours=hours, minutes=minutes)
+        return _("%(minutes)sm", minutes=minutes or 1)
 
     def set_opening_control(self, cashbox_value, notes):
         super().set_opening_control(cashbox_value, notes)
