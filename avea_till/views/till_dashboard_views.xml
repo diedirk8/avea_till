@@ -5,146 +5,147 @@
         <field name="name">avea.till.dashboard.form</field>
         <field name="model">avea.till.dashboard</field>
         <field name="arch" type="xml">
-            <form string="Till Audit &amp; Reconciliation" create="false" duplicate="false" delete="false">
+            <form string="Till Audit &amp; Reconciliation" create="false" duplicate="false" delete="false" class="o_avea_till_dashboard">
                 <header>
                     <button
                         name="action_refresh"
                         type="object"
                         string="Refresh"
+                        class="btn-secondary"
                     />
                 </header>
-                <sheet>
+                <sheet class="o_avea_till_dashboard_sheet">
                     <field name="name" invisible="1"/>
-                    <div class="oe_title">
-                        <h1>
-                            <span>Current Session: </span>
-                            <field
-                                name="session_id"
-                                readonly="1"
-                                nolabel="1"
-                                class="oe_inline"
-                                options="{'no_open': True, 'no_create': True}"
-                            />
-                        </h1>
-                    </div>
+                    <field name="currency_id" invisible="1"/>
 
-                    <group>
-                        <group string="Session">
+                    <div class="o_avea_till_session_card">
+                        <h2 class="o_avea_till_section_title">Session</h2>
+                        <div class="o_avea_till_session_fields">
                             <field name="session_id" options="{'no_create': True}"/>
                             <field name="config_id"/>
                             <field name="session_state" widget="badge"/>
-                        </group>
-                        <group string="Expected cash in drawer">
-                            <field
-                                name="live_balance"
-                                widget="monetary"
-                                class="oe_inline o_avea_till_live_balance"
-                            />
-                            <field name="currency_id" invisible="1"/>
-                        </group>
-                    </group>
+                        </div>
+                    </div>
 
-                    <field
-                        name="recent_movement_ids"
-                        string="Till Ledger"
-                        nolabel="0"
-                        readonly="1"
-                    >
-                        <list create="false" edit="false" delete="false">
-                            <field name="movement_date"/>
-                            <field name="ledger_reference"/>
-                            <field name="reason" string="Type"/>
-                            <field name="amount" widget="till_ledger_amount"/>
-                            <field name="running_balance" widget="monetary"/>
-                            <field name="user_id"/>
-                            <field name="currency_id" column_invisible="True"/>
-                            <field name="movement_type" column_invisible="True"/>
-                            <field name="name" column_invisible="True"/>
-                        </list>
-                    </field>
+                    <div class="o_avea_till_dashboard_main">
+                        <div class="o_avea_till_main_column">
+                            <div class="o_avea_till_ledger_section">
+                                <field
+                                    name="recent_movement_ids"
+                                    string="Till Ledger"
+                                    nolabel="0"
+                                    readonly="1"
+                                >
+                                    <list create="false" edit="false" delete="false" class="o_avea_till_ledger_list">
+                                        <field name="movement_date"/>
+                                        <field name="ledger_reference"/>
+                                        <field name="reason" string="Type"/>
+                                        <field name="amount" widget="till_ledger_amount"/>
+                                        <field name="running_balance" widget="monetary"/>
+                                        <field name="user_id"/>
+                                        <field name="currency_id" column_invisible="True"/>
+                                        <field name="movement_type" column_invisible="True"/>
+                                        <field name="name" column_invisible="True"/>
+                                    </list>
+                                </field>
+                            </div>
+                        </div>
 
-                    <group col="1">
-                        <field name="currency_id" invisible="1"/>
-                        <div class="o_avea_till_reconciliation">
-                            <div class="o_avea_till_reconciliation_heading">Today on this Till</div>
-                            <div class="o_avea_till_reconciliation_line o_avea_till_add">
-                                <span class="o_avea_till_reconciliation_label">Opening Float</span>
-                                <span class="o_avea_till_reconciliation_sign">+</span>
-                                <field
-                                    name="summary_opening_float"
-                                    nolabel="1"
-                                    widget="monetary"
-                                    readonly="1"
-                                    class="o_avea_till_reconciliation_amount"
-                                />
-                            </div>
-                            <div class="o_avea_till_reconciliation_line o_avea_till_add">
-                                <span class="o_avea_till_reconciliation_label">Cash Sales</span>
-                                <span class="o_avea_till_reconciliation_sign">+</span>
-                                <field
-                                    name="summary_cash_sales"
-                                    nolabel="1"
-                                    widget="monetary"
-                                    readonly="1"
-                                    class="o_avea_till_reconciliation_amount"
-                                />
-                            </div>
-                            <div class="o_avea_till_reconciliation_line o_avea_till_add">
-                                <span class="o_avea_till_reconciliation_label">Cash In</span>
-                                <span class="o_avea_till_reconciliation_sign">+</span>
-                                <field
-                                    name="summary_cash_in"
-                                    nolabel="1"
-                                    widget="monetary"
-                                    readonly="1"
-                                    class="o_avea_till_reconciliation_amount"
-                                />
-                            </div>
-                            <div class="o_avea_till_reconciliation_line o_avea_till_subtract">
-                                <span class="o_avea_till_reconciliation_label">Cash Out</span>
-                                <span class="o_avea_till_reconciliation_sign">−</span>
-                                <field
-                                    name="summary_cash_out"
-                                    nolabel="1"
-                                    widget="monetary"
-                                    readonly="1"
-                                    class="o_avea_till_reconciliation_amount"
-                                />
-                            </div>
-                            <div class="o_avea_till_reconciliation_line o_avea_till_subtract">
-                                <span class="o_avea_till_reconciliation_label">Cash Refunds</span>
-                                <span class="o_avea_till_reconciliation_sign">−</span>
-                                <field
-                                    name="summary_cash_refunds"
-                                    nolabel="1"
-                                    widget="monetary"
-                                    readonly="1"
-                                    class="o_avea_till_reconciliation_amount"
-                                />
-                            </div>
-                            <div class="o_avea_till_reconciliation_line o_avea_till_reconciliation_total">
-                                <span class="o_avea_till_reconciliation_label">Expected Cash in Drawer</span>
-                                <span class="o_avea_till_reconciliation_sign">=</span>
+                        <div class="o_avea_till_sidebar_column">
+                            <div class="o_avea_till_kpi_card">
+                                <span class="o_avea_till_kpi_label">Expected Cash in Drawer</span>
                                 <field
                                     name="live_balance"
                                     nolabel="1"
                                     widget="monetary"
                                     readonly="1"
-                                    class="o_avea_till_reconciliation_amount o_avea_till_reconciliation_total_amount"
+                                    class="o_avea_till_kpi_value"
                                 />
                             </div>
-                            <div class="o_avea_till_reconciliation_line o_avea_till_reconciliation_meta">
-                                <span class="o_avea_till_reconciliation_label">Movements Today</span>
-                                <span class="o_avea_till_reconciliation_sign"/>
-                                <field
-                                    name="today_movement_count"
-                                    nolabel="1"
-                                    readonly="1"
-                                    class="o_avea_till_reconciliation_count"
-                                />
+
+                            <div class="o_avea_till_reconciliation_card">
+                                <div class="o_avea_till_reconciliation_heading">Session Summary</div>
+                                <div class="o_avea_till_reconciliation">
+                                    <div class="o_avea_till_reconciliation_line o_avea_till_add">
+                                        <span class="o_avea_till_reconciliation_label">Opening Float</span>
+                                        <span class="o_avea_till_reconciliation_sign">+</span>
+                                        <field
+                                            name="summary_opening_float"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            class="o_avea_till_reconciliation_amount"
+                                        />
+                                    </div>
+                                    <div class="o_avea_till_reconciliation_line o_avea_till_add">
+                                        <span class="o_avea_till_reconciliation_label">Cash Sales</span>
+                                        <span class="o_avea_till_reconciliation_sign">+</span>
+                                        <field
+                                            name="summary_cash_sales"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            class="o_avea_till_reconciliation_amount"
+                                        />
+                                    </div>
+                                    <div class="o_avea_till_reconciliation_line o_avea_till_add">
+                                        <span class="o_avea_till_reconciliation_label">Cash In</span>
+                                        <span class="o_avea_till_reconciliation_sign">+</span>
+                                        <field
+                                            name="summary_cash_in"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            class="o_avea_till_reconciliation_amount"
+                                        />
+                                    </div>
+                                    <div class="o_avea_till_reconciliation_line o_avea_till_subtract">
+                                        <span class="o_avea_till_reconciliation_label">Cash Out</span>
+                                        <span class="o_avea_till_reconciliation_sign">−</span>
+                                        <field
+                                            name="summary_cash_out"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            class="o_avea_till_reconciliation_amount"
+                                        />
+                                    </div>
+                                    <div class="o_avea_till_reconciliation_line o_avea_till_subtract">
+                                        <span class="o_avea_till_reconciliation_label">Cash Refunds</span>
+                                        <span class="o_avea_till_reconciliation_sign">−</span>
+                                        <field
+                                            name="summary_cash_refunds"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            class="o_avea_till_reconciliation_amount"
+                                        />
+                                    </div>
+                                    <div class="o_avea_till_reconciliation_line o_avea_till_reconciliation_total">
+                                        <span class="o_avea_till_reconciliation_label">Expected Cash in Drawer</span>
+                                        <span class="o_avea_till_reconciliation_sign">=</span>
+                                        <field
+                                            name="live_balance"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            class="o_avea_till_reconciliation_amount o_avea_till_reconciliation_total_amount"
+                                        />
+                                    </div>
+                                    <div class="o_avea_till_reconciliation_line o_avea_till_reconciliation_meta">
+                                        <span class="o_avea_till_reconciliation_label">Movements</span>
+                                        <span class="o_avea_till_reconciliation_sign"/>
+                                        <field
+                                            name="session_movement_count"
+                                            nolabel="1"
+                                            readonly="1"
+                                            class="o_avea_till_reconciliation_count"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </group>
+                    </div>
 
                 </sheet>
             </form>

@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from odoo import _, api, fields, models
 
 from .till_movement import (
@@ -85,8 +83,8 @@ class AveaTillDashboard(models.TransientModel):
         compute="_compute_till_summary",
         currency_field="currency_id",
     )
-    today_movement_count = fields.Integer(
-        string="Movements Today",
+    session_movement_count = fields.Integer(
+        string="Movements",
         compute="_compute_till_summary",
     )
 
@@ -155,22 +153,6 @@ class AveaTillDashboard(models.TransientModel):
             return [("id", "=", 0)]
         return [("session_id", "=", self.session_id.id)]
 
-    def _get_today_movement_domain(self):
-        self.ensure_one()
-        domain = self._get_session_movement_domain()
-        if not self.session_id:
-            return domain
-        today = fields.Date.context_today(self)
-        start = fields.Datetime.to_datetime(today)
-        end = start + timedelta(days=1)
-        domain.extend(
-            [
-                ("movement_date", ">=", fields.Datetime.to_string(start)),
-                ("movement_date", "<", fields.Datetime.to_string(end)),
-            ]
-        )
-        return domain
-
     @api.depends("session_id", "session_id.currency_id")
     def _compute_till_summary(self):
         Movement = self.env["avea.till.movement"]
@@ -185,7 +167,7 @@ class AveaTillDashboard(models.TransientModel):
                 dashboard.summary_cash_in = 0.0
                 dashboard.summary_cash_out = 0.0
                 dashboard.summary_cash_refunds = 0.0
-                dashboard.today_movement_count = 0
+                dashboard.session_movement_count = 0
                 continue
             Movement.prepare_session_ledger(session)
             session_domain = dashboard._get_session_movement_domain()
@@ -208,9 +190,7 @@ class AveaTillDashboard(models.TransientModel):
             dashboard.pos_expected_cash = ledger_balance
             dashboard.manual_net = 0.0
             dashboard.live_balance = ledger_balance
-            dashboard.today_movement_count = Movement.search_count(
-                dashboard._get_today_movement_domain()
-            )
+            dashboard.session_movement_count = Movement.search_count(session_domain)
 
     @api.depends("session_id")
     def _compute_recent_movements(self):
