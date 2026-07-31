@@ -1,0 +1,14 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_avea_credit_dashboard,access.avea.credit.dashboard,model_avea_credit_dashboard,,1,1,1,1
+access_avea_credit_dashboard_reason_line,access.avea.credit.dashboard.reason.line,model_avea_credit_dashboard_reason_line,,1,1,1,1
+access_avea_credit_ledger_entry_user,access.avea.credit.ledger.entry.user,model_avea_credit_ledger_entry,base.group_user,1,0,0,0
+access_avea_credit_ledger_entry_manager,access.avea.credit.ledger.entry.manager,model_avea_credit_ledger_entry,group_avea_credit_manager,1,1,1,1
+access_avea_credit_issue_wizard,access.avea.credit.issue.wizard,model_avea_credit_issue_wizard,group_avea_credit_manager,1,1,1,1
+access_avea_credit_transactions,access.avea.credit.transactions,model_avea_credit_transactions,,1,1,1,1
+access_avea_credit_reports,access.avea.credit.reports,model_avea_credit_reports,,1,1,1,1
+access_avea_credit_statement_wizard,access.avea.credit.statement.wizard,model_avea_credit_statement_wizard,,1,1,1,1
+access_avea_credit_outstanding_wizard,access.avea.credit.outstanding.wizard,model_avea_credit_outstanding_wizard,,1,1,1,1
+access_avea_credit_activity_wizard,access.avea.credit.activity.wizard,model_avea_credit_activity_wizard,,1,1,1,1
+access_avea_credit_config,access.avea.credit.config,model_avea_credit_config,,1,1,1,1
+access_avea_credit_reason_user,access.avea.credit.reason.user,model_avea_credit_reason,base.group_user,1,0,0,0
+access_avea_credit_reason_manager,access.avea.credit.reason.manager,model_avea_credit_reason,group_avea_credit_manager,1,1,1,1

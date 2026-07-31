@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_partner_form_avea_credit" model="ir.ui.view">
+        <field name="name">res.partner.form.avea.credit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button
+                    name="action_open_store_credit"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-credit-card"
+                    invisible="not is_company and parent_id"
+                >
+                    <field name="avea_credit_balance" widget="statinfo" string="Store Credit"/>
+                </button>
+                <button
+                    name="action_issue_store_credit"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-plus-circle"
+                    groups="avea_till.group_avea_credit_manager"
+                    invisible="not is_company and parent_id"
+                >
+                    <span class="o_stat_text">Issue Credit</span>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

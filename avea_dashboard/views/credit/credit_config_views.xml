@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Placeholder transient model retained for future general credit settings. -->
+    <delete model="ir.actions.act_window" id="action_avea_credit_config"/>
+    <delete model="ir.ui.view" id="view_avea_credit_config_form"/>
+
+</odoo>

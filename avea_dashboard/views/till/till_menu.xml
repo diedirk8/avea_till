@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_till"
+        name="Sessions"
+        parent="menu_avea_root"
+        sequence="10"
+    />
+
+    <record id="menu_avea_till" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_session_dashboard"
+        name="Session Dashboard"
+        parent="menu_avea_till"
+        action="action_avea_session_dashboard"
+        sequence="5"
+    />
+
+    <menuitem
+        id="menu_avea_till_dashboard"
+        name="Cash Ledger"
+        parent="menu_avea_till"
+        action="action_avea_till_live_dashboard"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_avea_configuration"
+        name="Configuration"
+        parent="menu_avea_till"
+        sequence="20"
+    />
+
+</odoo>

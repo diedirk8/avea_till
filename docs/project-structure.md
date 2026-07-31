@@ -2,28 +2,71 @@
 
 ## Purpose
 
-This document describes the structure of the Avea Till module and explains where new functionality should be added.
+This document describes the structure of the **Avea Dashboard** module and explains where new functionality should be added.
 
-The goal is to keep the project organised, maintainable and easy to understand.
+The module is an umbrella application. Each major feature (Till, Customer Credit, Loyalty, etc.) lives in its own logical area so the project scales cleanly.
 
 ---
 
 # Repository Structure
 
 ```
-avea_till/
+avea_dashboard/                    ← repository root
 │
 ├── docs/
 ├── README.md
 ├── .gitignore
-└── avea_till/
-    ├── models/
-    ├── security/
-    ├── static/
-    ├── views/
+└── avea_dashboard/                ← Odoo addon (technical name: avea_dashboard)
     ├── __init__.py
-    └── __manifest__.py
+    ├── __manifest__.py
+    ├── migrations/
+    ├── models/
+    │   ├── till/                  ← Till / cash ledger feature
+    │   └── credit/                ← Customer Credit feature
+    ├── security/
+    │   ├── till/
+    │   └── credit/
+    ├── static/
+    │   └── src/
+    │       ├── scss/              ← shared + feature stylesheets
+    │       ├── till/
+    │       └── credit/
+    └── views/
+        ├── menu.xml               ← root application menu
+        ├── till/
+        └── credit/
 ```
+
+---
+
+# Feature-Oriented Architecture
+
+Each feature area owns its models, views, security, and static assets.
+
+```
+Feature (e.g. credit/)
+├── models/          Business logic
+├── views/           Menus, forms, lists, actions
+├── security/        Access rights and record rules
+├── wizards/         (future) Transient workflows
+├── reports/         (future) Report templates and logic
+└── services/        (future) Shared non-model helpers
+```
+
+### Current features
+
+| Feature | Model namespace | Description |
+|---------|-----------------|-------------|
+| Till | `avea.till.*` | Session Dashboard, Cash Ledger, till movements |
+| Customer Credit | `avea.credit.*` | Store credit foundation (placeholders) |
+
+### Adding a new feature
+
+1. Create `models/<feature>/`, `views/<feature>/`, and `security/<feature>/`.
+2. Register imports in the feature and root `__init__.py` files.
+3. Add data files to `__manifest__.py` (security before views, views before menus).
+4. Add a menu section under `views/<feature>/<feature>_menu.xml`.
+5. Use a dedicated model namespace: `avea.<feature>.*`.
 
 ---
 
@@ -31,65 +74,46 @@ avea_till/
 
 ## models/
 
-Contains all business logic.
+Business logic only. No UI code.
 
-Examples:
-
-- Till Movements
-- Cash Ledger
-- Reports
-- Dashboard calculations
-
-No user interface should be implemented here.
-
----
+Organised by feature subdirectory. Shared cross-feature code may live in `models/common/` if needed later.
 
 ## views/
 
-Contains XML files.
+Presentation only (XML). Organised by feature subdirectory.
 
-Examples:
-
-- Menus
-- Forms
-- Lists
-- Search Views
-- Actions
-
-Views should contain presentation only.
-
----
+- `views/menu.xml` — root application menu
+- `views/<feature>/<feature>_menu.xml` — feature navigation
 
 ## security/
 
-Contains:
-
-- Access Rights
-- Security Groups
-- Record Rules
-
-Security should never be hardcoded in Python.
-
----
+Access rights and record rules, split by feature. Never hardcode security in Python.
 
 ## static/
 
-Contains static resources.
+Icons, SCSS, and JavaScript. Feature-specific assets live under `static/src/<feature>/`.
 
-Examples:
+## migrations/
 
-- Icons
-- Images
-- JavaScript
-- CSS
-
----
+Database migration scripts for module upgrades (e.g. module renames).
 
 ## docs/
 
-Project documentation.
+Project documentation and architecture decisions.
 
-Every important architectural decision should be documented here.
+---
+
+# Naming Conventions
+
+| Item | Pattern | Example |
+|------|---------|---------|
+| Module | `avea_dashboard` | — |
+| Feature models | `avea.<feature>.<model>` | `avea.till.movement` |
+| XML record IDs | `<feature>_avea_*` or `view_avea_<feature>_*` | `view_avea_credit_ledger_form` |
+| Menu IDs | `menu_avea_<feature>_*` | `menu_avea_credit_ledger` |
+| Shared UI classes | `o_avea_workspace*` | Cash Ledger workspace shell |
+
+Model namespaces describe **what the code does**, not the module name. The Till feature keeps `avea.till.*` even though the application is called Avea Dashboard.
 
 ---
 
@@ -102,3 +126,5 @@ Presentation belongs in XML.
 Configuration belongs in data files.
 
 Documentation belongs in the docs folder.
+
+Extend Odoo rather than replace it. Reuse existing models wherever possible.

@@ -1,0 +1,98 @@
+// Session Dashboard — page-specific extensions.
+
+.o_avea_workspace--session {
+    .o_avea_session_top_products_empty {
+        background-color: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        border-radius: var(--border-radius-lg, 0.5rem);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+        padding: 2rem 2.25rem;
+        text-align: center;
+    }
+
+    .o_avea_session_top_products_empty_text {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.975rem;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .o_avea_workspace_ledger_card {
+        height: auto;
+        overflow: hidden;
+        padding: 0;
+
+        .o_field_widget {
+            margin-bottom: 0;
+        }
+
+        .o_list_renderer,
+        .o_list_view {
+            height: auto !important;
+            max-height: none !important;
+            min-height: 0 !important;
+        }
+
+        .o_list_renderer {
+            border: none;
+            border-radius: 0;
+        }
+
+        .o_list_table {
+            table-layout: auto;
+            width: 100%;
+
+            thead {
+                background-color: var(--o-gray-100, #f8f9fa);
+            }
+
+            th,
+            td {
+                max-width: none;
+                vertical-align: middle;
+                width: auto !important;
+            }
+
+            th {
+                line-height: 1.3;
+                white-space: normal;
+
+                .text-truncate,
+                .min-w-0,
+                span.d-block {
+                    min-width: max-content;
+                    overflow: visible;
+                    text-overflow: clip;
+                    white-space: normal;
+                }
+            }
+
+            tbody td:not(.o_list_number) {
+                overflow: visible;
+                text-overflow: clip;
+                white-space: normal;
+            }
+
+            th.o_list_number_th,
+            td.o_list_number {
+                text-align: right;
+            }
+
+            td.o_list_number .o_field_widget {
+                justify-content: flex-end;
+            }
+
+            th[data-name="quantity_sold"],
+            td[name="quantity_sold"],
+            th[data-name="sales_value"],
+            td[name="sales_value"] {
+                text-align: right;
+            }
+
+            td[name="quantity_sold"] .o_field_widget,
+            td[name="sales_value"] .o_field_widget {
+                justify-content: flex-end;
+            }
+        }
+    }
+}

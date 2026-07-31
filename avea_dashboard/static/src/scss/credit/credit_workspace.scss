@@ -1,0 +1,142 @@
+// Customer Credit — page-specific extensions.
+
+.o_avea_workspace--credit {
+    .o_avea_workspace_kpi_grid {
+        gap: 1.15rem;
+        grid-template-columns: repeat(auto-fit, minmax(13.75rem, 1fr));
+    }
+
+    .o_avea_workspace_kpi_label {
+        hyphens: auto;
+        line-height: 1.35;
+        white-space: normal;
+    }
+
+    .o_avea_workspace_main {
+        align-items: start;
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+
+        @media (max-width: 992px) {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .o_avea_workspace_main_column {
+        align-self: start;
+        min-width: 0;
+    }
+
+    .o_avea_workspace_ledger_card {
+        height: auto;
+        overflow: hidden;
+        padding: 0;
+
+        .o_field_widget {
+            margin-bottom: 0;
+        }
+
+        .o_list_renderer,
+        .o_list_view {
+            height: auto !important;
+            max-height: none !important;
+            min-height: 0 !important;
+        }
+
+        .o_list_renderer {
+            border: none;
+            border-radius: 0;
+        }
+
+        .o_list_table {
+            table-layout: auto;
+            width: 100%;
+
+            thead {
+                background-color: var(--o-gray-100, #f8f9fa);
+            }
+
+            th,
+            td {
+                max-width: none;
+                vertical-align: middle;
+                width: auto !important;
+            }
+
+            th {
+                line-height: 1.3;
+                white-space: normal;
+
+                .text-truncate,
+                .min-w-0,
+                span.d-block {
+                    min-width: max-content;
+                    overflow: visible;
+                    text-overflow: clip;
+                    white-space: normal;
+                }
+            }
+
+            tbody td:not(.o_list_number) {
+                overflow: visible;
+                text-overflow: clip;
+                white-space: normal;
+            }
+
+            th.o_list_number_th,
+            td.o_list_number {
+                text-align: right;
+            }
+
+            td.o_list_number .o_field_widget {
+                justify-content: flex-end;
+            }
+        }
+
+        // Recent Activity reuses ledger list styling — reset fixed column widths here.
+        .o_avea_credit_ledger_list .o_list_table {
+            th[data-name="transaction_date"],
+            td[name="transaction_date"],
+            th[data-name="name"],
+            td[name="name"],
+            th[data-name="partner_id"],
+            td[name="partner_id"],
+            th[data-name="reason_id"],
+            td[name="reason_id"],
+            th[data-name="amount"],
+            td[name="amount"],
+            th[data-name="notes"],
+            td[name="notes"] {
+                max-width: none;
+                min-width: 0;
+                white-space: normal;
+                width: auto !important;
+            }
+
+            th[data-name="transaction_date"],
+            td[name="transaction_date"] {
+                white-space: nowrap;
+            }
+
+            th[data-name="amount"],
+            td[name="amount"] {
+                text-align: right;
+            }
+        }
+    }
+
+    .o_avea_credit_placeholder {
+        padding: 2rem 2.25rem;
+        text-align: center;
+    }
+
+    .o_avea_credit_placeholder_text {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.975rem;
+        line-height: 1.6;
+        margin: 0;
+        max-width: 36rem;
+        margin-inline: auto;
+    }
+}

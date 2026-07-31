@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+
+    <record id="credit_reason_promotion" model="avea.credit.reason">
+        <field name="name">Promotion</field>
+        <field name="sequence">10</field>
+        <field name="manual_issue">True</field>
+        <field name="system_generated">False</field>
+        <field name="protected">False</field>
+        <field name="is_outflow">False</field>
+    </record>
+
+    <record id="credit_reason_donation" model="avea.credit.reason">
+        <field name="name">Donation</field>
+        <field name="sequence">20</field>
+        <field name="manual_issue">True</field>
+        <field name="system_generated">False</field>
+        <field name="protected">False</field>
+        <field name="is_outflow">False</field>
+    </record>
+
+    <record id="credit_reason_goodwill" model="avea.credit.reason">
+        <field name="name">Goodwill</field>
+        <field name="sequence">30</field>
+        <field name="manual_issue">True</field>
+        <field name="system_generated">False</field>
+        <field name="protected">False</field>
+        <field name="is_outflow">False</field>
+    </record>
+
+    <record id="credit_reason_animal_trade" model="avea.credit.reason">
+        <field name="name">Animal Trade</field>
+        <field name="sequence">40</field>
+        <field name="manual_issue">True</field>
+        <field name="system_generated">False</field>
+        <field name="protected">False</field>
+        <field name="is_outflow">False</field>
+    </record>
+
+    <record id="credit_reason_refund" model="avea.credit.reason">
+        <field name="name">Refund</field>
+        <field name="sequence">10</field>
+        <field name="manual_issue">False</field>
+        <field name="system_generated">True</field>
+        <field name="protected">True</field>
+        <field name="is_outflow">False</field>
+    </record>
+
+    <record id="credit_reason_pos_purchase" model="avea.credit.reason">
+        <field name="name">POS Purchase</field>
+        <field name="sequence">20</field>
+        <field name="manual_issue">False</field>
+        <field name="system_generated">True</field>
+        <field name="protected">True</field>
+        <field name="is_outflow">True</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_credit_reports_form" model="ir.ui.view">
+        <field name="name">avea.credit.reports.form</field>
+        <field name="model">avea.credit.reports</field>
+        <field name="arch" type="xml">
+            <form string="Credit Reports" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--credit">
+                <sheet class="o_avea_workspace_sheet">
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Customer Credit</span>
+                            <h1 class="o_avea_workspace_title">Reports</h1>
+                        </div>
+                    </div>
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Reporting</h2>
+                        </div>
+                        <div class="o_avea_workspace_info_card o_avea_credit_placeholder">
+                            <p class="o_avea_credit_placeholder_text">
+                                Credit reports will provide summaries and analysis of store credit across customers and time periods.
+                            </p>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_credit_reports" model="ir.actions.act_window">
+        <field name="name">Reports</field>
+        <field name="res_model">avea.credit.reports</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_avea_credit_reports_form"/>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

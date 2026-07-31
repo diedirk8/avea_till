@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_root"
+        name="Avea Dashboard"
+        web_icon="avea_till,static/description/icon.png"
+        sequence="100"
+    />
+
+</odoo>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="report_avea_credit_statement">
+        <t t-call="web.html_container">
+            <t t-foreach="report_data" t-as="data">
+                <t t-set="avea_report_title">Customer Credit Statement</t>
+                <t t-call="avea_till.avea_report_document">
+                    <t t-call="avea_till.avea_report_metadata">
+                        <div class="col" name="report_customer">
+                            <strong>Customer</strong>
+                            <div t-out="data['partner'].display_name"/>
+                        </div>
+                        <div class="col text-end" name="report_period">
+                            <strong>Period</strong>
+                            <div>
+                                <span t-out="data['date_from']"/> -
+                                <span t-out="data['date_to']"/>
+                            </div>
+                        </div>
+                    </t>
+                    <t t-call="avea_till.avea_report_summary_line">
+                        <t t-set="label">Opening Balance:</t>
+                        <t t-set="value" t-value="data['opening_balance_formatted']"/>
+                    </t>
+                    <table class="table table-sm o_main_table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Reference</th>
+                                <th>Reason</th>
+                                <th class="text-end">Credit Added</th>
+                                <th class="text-end">Credit Used</th>
+                                <th class="text-end">Running Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="data['lines']" t-as="line">
+                                <td>
+                                    <span t-out="line['transaction_date_formatted']"/>
+                                </td>
+                                <td t-out="line['name']"/>
+                                <td t-out="line['reason']"/>
+                                <td class="text-end">
+                                    <span t-if="line['credit_added']"
+                                        t-out="line['credit_added_formatted']"/>
+                                </td>
+                                <td class="text-end">
+                                    <span t-if="line['credit_used']"
+                                        t-out="line['credit_used_formatted']"/>
+                                </td>
+                                <td class="text-end">
+                                    <span t-out="line['running_balance_formatted']"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <t t-call="avea_till.avea_report_summary_line">
+                        <t t-set="label">Closing Balance:</t>
+                        <t t-set="value" t-value="data['closing_balance_formatted']"/>
+                    </t>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_avea_credit_outstanding">
+        <t t-call="web.html_container">
+            <t t-foreach="report_data" t-as="data">
+                <t t-set="avea_report_title">Outstanding Customer Credit</t>
+                <t t-call="avea_till.avea_report_document">
+                    <t t-call="avea_till.avea_report_metadata">
+                        <div class="col" name="report_as_at">
+                            <strong>As at</strong>
+                            <div t-out="data['date']"/>
+                        </div>
+                    </t>
+                    <table class="table table-sm o_main_table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th class="text-end">Current Balance</th>
+                                <th>Last Activity Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="data['lines']" t-as="line">
+                                <td t-out="line['partner'].display_name"/>
+                                <td class="text-end">
+                                    <span t-out="line['balance']"
+                                        t-options="{'widget': 'monetary', 'display_currency': data['currency']}"/>
+                                </td>
+                                <td>
+                                    <span t-if="line['last_activity_date']"
+                                        t-out="line['last_activity_date']"
+                                        t-options="{'widget': 'datetime'}"/>
+                                </td>
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>Total Outstanding</th>
+                                <th class="text-end">
+                                    <span t-out="data['total_outstanding']"
+                                        t-options="{'widget': 'monetary', 'display_currency': data['currency']}"/>
+                                </th>
+                                <th/>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_avea_credit_activity">
+        <t t-call="web.html_container">
+            <t t-foreach="report_data" t-as="data">
+                <t t-set="avea_report_title">Credit Activity Report</t>
+                <t t-call="avea_till.avea_report_document">
+                    <t t-call="avea_till.avea_report_metadata">
+                        <div class="col" name="report_period">
+                            <strong>Period</strong>
+                            <div>
+                                <span t-out="data['date_from']"/> -
+                                <span t-out="data['date_to']"/>
+                            </div>
+                        </div>
+                    </t>
+                    <table class="table table-sm o_main_table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Customer</th>
+                                <th>Reason</th>
+                                <th>Reference</th>
+                                <th class="text-end">Amount</th>
+                                <th>Employee</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="data['lines']" t-as="line">
+                                <td>
+                                    <span t-out="line['transaction_date']"
+                                        t-options="{'widget': 'datetime'}"/>
+                                </td>
+                                <td t-out="line['partner']"/>
+                                <td t-out="line['reason']"/>
+                                <td t-out="line['name']"/>
+                                <td class="text-end">
+                                    <span t-out="line['amount']"
+                                        t-options="{'widget': 'monetary', 'display_currency': data['currency']}"/>
+                                </td>
+                                <td t-out="line['employee']"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_avea_credit_statement" model="ir.actions.report">
+        <field name="name">Customer Credit Statement</field>
+        <field name="model">avea.credit.statement.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_credit_statement</field>
+        <field name="report_file">avea_till.report_avea_credit_statement</field>
+        <field name="print_report_name">'Customer Credit Statement - %s' % (object.partner_id.display_name)</field>
+    </record>
+
+    <record id="action_report_avea_credit_outstanding" model="ir.actions.report">
+        <field name="name">Outstanding Customer Credit</field>
+        <field name="model">avea.credit.outstanding.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_credit_outstanding</field>
+        <field name="report_file">avea_till.report_avea_credit_outstanding</field>
+        <field name="print_report_name">'Outstanding Customer Credit'</field>
+    </record>
+
+    <record id="action_report_avea_credit_activity" model="ir.actions.report">
+        <field name="name">Credit Activity Report</field>
+        <field name="model">avea.credit.activity.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_credit_activity</field>
+        <field name="report_file">avea_till.report_avea_credit_activity</field>
+        <field name="print_report_name">'Credit Activity Report'</field>
+    </record>
+
+</odoo>

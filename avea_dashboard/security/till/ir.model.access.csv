@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_avea_till_movement,access.avea.till.movement,model_avea_till_movement,,1,1,1,1
+access_avea_till_dashboard,access.avea.till.dashboard,model_avea_till_dashboard,,1,1,1,1
+access_avea_till_session_dashboard,access.avea.till.session.dashboard,model_avea_till_session_dashboard,,1,1,1,1
+access_avea_till_session_dashboard_product_line,access.avea.till.session.dashboard.product.line,model_avea_till_session_dashboard_product_line,,1,1,1,1

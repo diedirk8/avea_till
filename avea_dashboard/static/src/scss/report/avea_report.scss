@@ -1,0 +1,51 @@
+.o_avea_report_document {
+    clear: both;
+    padding-top: 3rem;
+
+    .o_avea_report_title {
+        page-break-after: avoid;
+    }
+
+    .o_avea_report_metadata {
+        .col > strong {
+            display: block;
+            font-size: 0.85rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .col > div,
+        .col > span {
+            line-height: 1.4;
+        }
+    }
+
+    .o_avea_report_summary {
+        line-height: 1.4;
+
+        strong {
+            margin-right: 0.35rem;
+        }
+    }
+
+    .o_main_table {
+        margin-bottom: 0.5rem;
+    }
+}
+
+.o_body_html .header {
+    margin-bottom: 0.75rem;
+}
+
+.o_avea_report_footer {
+    border-top: 1px solid #dee2e6;
+    color: #6c757d;
+    font-size: 8pt;
+    line-height: 1.35;
+    margin-top: 0.35rem;
+    padding-top: 0.25rem;
+    width: 100%;
+}
+
+.o_avea_report_footer_line + .o_avea_report_footer_line {
+    margin-top: 0.1rem;
+}

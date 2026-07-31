@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_customer_credit"
+        name="Customer Credit"
+        parent="menu_avea_root"
+        sequence="20"
+    />
+
+    <record id="menu_avea_customer_credit" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_credit_dashboard"
+        name="Dashboard"
+        parent="menu_avea_customer_credit"
+        action="action_avea_credit_dashboard"
+        sequence="5"
+    />
+
+    <record id="menu_avea_credit_dashboard" model="ir.ui.menu">
+        <field name="action" ref="action_avea_credit_dashboard"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_credit_ledger"
+        name="Customer Ledger"
+        parent="menu_avea_customer_credit"
+        action="action_avea_credit_ledger"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_avea_credit_issue"
+        name="Issue Credit"
+        parent="menu_avea_customer_credit"
+        action="action_avea_credit_issue_wizard"
+        sequence="12"
+        groups="avea_till.group_avea_credit_manager"
+    />
+
+    <menuitem
+        id="menu_avea_credit_reports"
+        name="Reports"
+        parent="menu_avea_customer_credit"
+        sequence="20"
+    />
+
+    <record id="menu_avea_credit_reports" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_credit_report_statement"
+        name="Customer Credit Statement"
+        parent="menu_avea_credit_reports"
+        action="action_avea_credit_statement_wizard"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_avea_credit_report_outstanding"
+        name="Outstanding Customer Credit"
+        parent="menu_avea_credit_reports"
+        action="action_avea_credit_outstanding_wizard"
+        sequence="20"
+    />
+
+    <menuitem
+        id="menu_avea_credit_report_activity"
+        name="Credit Activity Report"
+        parent="menu_avea_credit_reports"
+        action="action_avea_credit_activity_wizard"
+        sequence="30"
+    />
+
+    <menuitem
+        id="menu_avea_credit_config"
+        name="Configuration"
+        parent="menu_avea_customer_credit"
+        sequence="30"
+        groups="avea_till.group_avea_credit_manager"
+    />
+
+    <record id="menu_avea_credit_config" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_credit_reason"
+        name="Credit Reasons"
+        parent="menu_avea_credit_config"
+        action="action_avea_credit_reason"
+        sequence="10"
+        groups="avea_till.group_avea_credit_manager"
+    />
+
+</odoo>

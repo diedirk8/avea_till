@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Shared document wrapper for all Avea PDF/HTML reports. -->
+    <template id="avea_report_document">
+        <t t-call="web.external_layout">
+            <div class="page o_avea_report_document">
+                <div class="oe_structure"/>
+                <h2 class="o_avea_report_title mb-3">
+                    <span t-out="avea_report_title"/>
+                </h2>
+                <t t-out="0"/>
+            </div>
+        </t>
+    </template>
+
+    <template id="avea_report_metadata">
+        <div id="informations" class="row o_avea_report_metadata mb-4">
+            <t t-out="0"/>
+        </div>
+    </template>
+
+    <template id="avea_report_summary_line">
+        <div class="o_avea_report_summary mb-4">
+            <strong t-out="label"/>
+            <span t-out="value"/>
+        </div>
+    </template>
+
+    <!-- Hide the empty standard-layout h2 slot for Avea body titles. -->
+    <template id="external_layout_standard_avea_title" inherit_id="web.external_layout_standard">
+        <xpath expr="//div[contains(@t-attf-class, 'article')]/h2" position="replace">
+            <h2 t-if="layout_document_title" t-out="layout_document_title" class="mb-3"/>
+        </xpath>
+    </template>
+
+    <template id="external_layout_boxed_avea_title" inherit_id="web.external_layout_boxed">
+        <xpath expr="//div[contains(@t-attf-class, 'article')]/h2" position="replace">
+            <h2 t-if="layout_document_title" t-out="layout_document_title" class="mb-3"/>
+        </xpath>
+    </template>
+
+    <template id="external_layout_bold_avea_title" inherit_id="web.external_layout_bold">
+        <xpath expr="//div[contains(@t-attf-class, 'article')]/h2" position="replace">
+            <h2 t-if="layout_document_title" t-out="layout_document_title" class="mb-3"/>
+        </xpath>
+    </template>
+
+    <template id="external_layout_striped_avea_title" inherit_id="web.external_layout_striped">
+        <xpath expr="//div[contains(@t-attf-class, 'article')]/h2" position="replace">
+            <h2 t-if="layout_document_title" t-out="layout_document_title" class="mb-3"/>
+        </xpath>
+    </template>
+
+</odoo>

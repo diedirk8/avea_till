@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="avea_report_footer">
+        <div t-if="avea_report_branding" class="o_avea_report_footer text-center">
+            <div class="o_avea_report_footer_line">
+                Powered by <span t-out="avea_module_name or 'Avea Dashboard'"/>
+            </div>
+            <div class="o_avea_report_footer_line" t-out="avea_feature_name or 'Customer Credit'"/>
+            <div class="o_avea_report_footer_line">
+                Version <span t-out="avea_module_version or ''"/>
+            </div>
+        </div>
+    </template>
+
+    <template id="external_layout_standard_avea_report_footer" inherit_id="web.external_layout_standard">
+        <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="inside">
+            <t t-call="avea_till.avea_report_footer"/>
+        </xpath>
+    </template>
+
+    <template id="external_layout_boxed_avea_report_footer" inherit_id="web.external_layout_boxed">
+        <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="inside">
+            <t t-call="avea_till.avea_report_footer"/>
+        </xpath>
+    </template>
+
+    <template id="external_layout_bold_avea_report_footer" inherit_id="web.external_layout_bold">
+        <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="inside">
+            <t t-call="avea_till.avea_report_footer"/>
+        </xpath>
+    </template>
+
+    <template id="external_layout_striped_avea_report_footer" inherit_id="web.external_layout_striped">
+        <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="inside">
+            <t t-call="avea_till.avea_report_footer"/>
+        </xpath>
+    </template>
+
+    <template id="external_layout_folder_avea_report_footer" inherit_id="web.external_layout_folder">
+        <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="inside">
+            <t t-call="avea_till.avea_report_footer"/>
+        </xpath>
+    </template>
+
+    <template id="external_layout_wave_avea_report_footer" inherit_id="web.external_layout_wave">
+        <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="inside">
+            <t t-call="avea_till.avea_report_footer"/>
+        </xpath>
+    </template>
+
+    <template id="external_layout_bubble_avea_report_footer" inherit_id="web.external_layout_bubble">
+        <xpath expr="//div[contains(@t-attf-class, 'footer')]" position="inside">
+            <t t-call="avea_till.avea_report_footer"/>
+        </xpath>
+    </template>
+
+</odoo>

@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <delete model="ir.actions.act_window" id="action_avea_credit_dashboard"/>
+
+    <record id="view_avea_credit_dashboard_reason_line_list" model="ir.ui.view">
+        <field name="name">avea.credit.dashboard.reason.line.list</field>
+        <field name="model">avea.credit.dashboard.reason.line</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" delete="false">
+                <field name="reason_id" string="Reason"/>
+                <field name="transaction_count" string="Number of Transactions"/>
+                <field name="total_amount" string="Total Amount" widget="monetary"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_credit_dashboard_attention_partner_list" model="ir.ui.view">
+        <field name="name">avea.credit.dashboard.attention.partner.list</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list create="false" edit="false" delete="false">
+                <field name="display_name" string="Customer"/>
+                <field name="avea_credit_balance" string="Outstanding Balance" widget="monetary"/>
+                <field name="avea_credit_currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_credit_dashboard_form" model="ir.ui.view">
+        <field name="name">avea.credit.dashboard.form</field>
+        <field name="model">avea.credit.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Dashboard" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--credit">
+                <header class="o_avea_workspace_header">
+                    <button
+                        name="action_refresh"
+                        type="object"
+                        string="Dashboard"
+                        class="btn-primary o_avea_workspace_nav o_avea_workspace_nav--active"
+                    />
+                    <button
+                        name="action_open_ledger"
+                        type="object"
+                        string="Customer Ledger"
+                        class="btn-secondary o_avea_workspace_nav"
+                    />
+                    <button
+                        name="action_refresh"
+                        type="object"
+                        string="Refresh"
+                        class="btn-secondary o_avea_workspace_refresh"
+                        icon="fa-refresh"
+                    />
+                </header>
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="name" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Store Credit Summary</h2>
+                        </div>
+                        <div class="o_avea_workspace_kpi_grid">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
+                                <span class="o_avea_workspace_kpi_label">Outstanding Store Credit</span>
+                                <field name="outstanding_store_credit" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
+                                <span class="o_avea_workspace_kpi_label">Credit Issued Today</span>
+                                <field name="credit_issued_today" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--negative">
+                                <span class="o_avea_workspace_kpi_label">Credit Redeemed Today</span>
+                                <field name="credit_redeemed_today" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
+                                <span class="o_avea_workspace_kpi_label">Outstanding Customers</span>
+                                <field name="outstanding_customers" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
+                                <span class="o_avea_workspace_kpi_label">Transactions Today</span>
+                                <field name="transactions_today" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
+                                <span class="o_avea_workspace_kpi_label">Average Customer Balance</span>
+                                <field name="average_customer_balance" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_main">
+                            <div class="o_avea_workspace_main_column">
+                                <div class="o_avea_workspace_block_heading">
+                                    <h2 class="o_avea_workspace_section_title">Recent Activity</h2>
+                                </div>
+                                <div class="o_avea_workspace_ledger_card">
+                                    <field
+                                        name="recent_entry_ids"
+                                        nolabel="1"
+                                        readonly="1"
+                                    >
+                                        <list create="false" edit="false" delete="false" class="o_avea_credit_ledger_list">
+                                            <field name="transaction_date" string="Date"/>
+                                            <field name="partner_id" string="Customer"/>
+                                            <field name="name" string="Reference"/>
+                                            <field name="reason_id" string="Reason"/>
+                                            <field name="reason_is_outflow" column_invisible="True"/>
+                                            <field name="amount" widget="credit_ledger_amount"/>
+                                            <field name="currency_id" column_invisible="True"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                            <div class="o_avea_workspace_main_column">
+                                <div class="o_avea_workspace_block_heading">
+                                    <h2 class="o_avea_workspace_section_title">Credit by Reason</h2>
+                                </div>
+                                <div class="o_avea_workspace_ledger_card">
+                                    <field
+                                        name="reason_line_ids"
+                                        nolabel="1"
+                                        readonly="1"
+                                    >
+                                        <list create="false" edit="false" delete="false">
+                                            <field name="reason_id" string="Reason"/>
+                                            <field name="transaction_count" string="Number of Transactions"/>
+                                            <field name="total_amount" string="Total Amount" widget="monetary"/>
+                                            <field name="currency_id" column_invisible="True"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Customers Requiring Attention</h2>
+                        </div>
+                        <div class="o_avea_workspace_ledger_card">
+                            <field
+                                name="attention_partner_ids"
+                                nolabel="1"
+                                readonly="1"
+                            >
+                                <list create="false" edit="false" delete="false">
+                                    <field name="display_name" string="Customer"/>
+                                    <field name="avea_credit_balance" string="Outstanding Balance" widget="monetary"/>
+                                    <field name="avea_credit_currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_credit_dashboard" model="ir.actions.server">
+        <field name="name">Dashboard</field>
+        <field name="model_id" ref="model_avea_credit_dashboard"/>
+        <field name="state">code</field>
+        <field name="code">action = env['avea.credit.dashboard'].action_open_credit_dashboard()</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_credit_issue_wizard_form" model="ir.ui.view">
+        <field name="name">avea.credit.issue.wizard.form</field>
+        <field name="model">avea.credit.issue.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Issue Store Credit">
+                <group>
+                    <field
+                        name="partner_id"
+                        options="{'no_create': True, 'no_open': True}"
+                        readonly="context.get('active_model') == 'res.partner'"
+                    />
+                    <field name="amount"/>
+                    <field
+                        name="reason_id"
+                        options="{'no_create': True, 'no_open': True}"
+                    />
+                    <field name="currency_id" invisible="1"/>
+                </group>
+                <group>
+                    <field name="notes" placeholder="Optional notes about this credit"/>
+                </group>
+                <footer>
+                    <button
+                        name="action_issue_credit"
+                        string="Issue Credit"
+                        type="object"
+                        class="btn-primary"
+                        data-hotkey="q"
+                    />
+                    <button string="Cancel" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <delete id="action_avea_credit_issue_wizard" model="ir.actions.act_window"/>
+
+    <record id="action_avea_credit_issue_wizard" model="ir.actions.server">
+        <field name="name">Issue Store Credit</field>
+        <field name="model_id" ref="model_avea_credit_issue_wizard"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_wizard()</field>
+    </record>
+
+</odoo>

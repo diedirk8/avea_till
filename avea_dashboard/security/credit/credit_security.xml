@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="module_category_avea_dashboard" model="ir.module.category">
+        <field name="name">Avea Dashboard</field>
+        <field name="description">Retail dashboard features for Odoo POS.</field>
+        <field name="sequence">50</field>
+    </record>
+
+    <record id="res_groups_privilege_avea_customer_credit" model="res.groups.privilege">
+        <field name="name">Customer Credit</field>
+        <field name="sequence">10</field>
+        <field name="category_id" ref="module_category_avea_dashboard"/>
+    </record>
+
+    <record id="group_avea_credit_manager" model="res.groups">
+        <field name="name">Manager</field>
+        <field name="comment">May issue store credit and manage customer credit transactions.</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_avea_customer_credit"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+</odoo>
