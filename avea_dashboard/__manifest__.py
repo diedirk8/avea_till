@@ -10,8 +10,9 @@ Features:
 - Session Dashboard
 - Cash Ledger and till management
 - Customer Credit (foundation)
+- POS Store Credit payments
 """,
-    "version": "19.0.2.10.15",
+    "version": "19.0.2.25.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -40,6 +41,7 @@ Features:
         "views/credit/credit_report_wizard_views.xml",
         "views/credit/credit_reason_views.xml",
         "views/credit/credit_config_views.xml",
+        "views/credit/pos_config_views.xml",
         "views/res_partner_views.xml",
         "views/menu.xml",
         "views/till/till_menu.xml",
@@ -61,7 +63,26 @@ Features:
             "avea_till/static/src/till/fields/till_ledger_amount/till_ledger_amount.xml",
             "avea_till/static/src/till/fields/till_ledger_amount/till_ledger_amount.js",
         ],
+        "point_of_sale._assets_pos": [
+            "avea_till/static/src/scss/pos/store_credit.scss",
+            "avea_till/static/src/pos/store_credit.js",
+            "avea_till/static/src/pos/pos_store.js",
+            "avea_till/static/src/pos/issue_store_credit_popup.js",
+            "avea_till/static/src/pos/issue_store_credit_popup.xml",
+            "avea_till/static/src/pos/navbar.js",
+            "avea_till/static/src/pos/navbar.xml",
+            "avea_till/static/src/pos/partner_list.js",
+            "avea_till/static/src/pos/partner_line.xml",
+            "avea_till/static/src/pos/payment_screen.js",
+            "avea_till/static/src/pos/payment_screen.xml",
+            "avea_till/static/src/pos/order_payment_validation.js",
+            "avea_till/static/src/pos/order_receipt.js",
+            "avea_till/static/src/pos/order_receipt.xml",
+            "avea_till/static/src/pos/closing_popup.js",
+            "avea_till/static/src/pos/closing_popup.xml",
+        ],
     },
+    "post_init_hook": "post_init_hook",
     "installable": True,
     "application": True,
 }

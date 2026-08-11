@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="avea_till.IssueStoreCreditPopup">
+        <Dialog title.translate="Issue Store Credit" size="'md'">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Customer</label>
+                <div
+                    t-if="state.partner"
+                    class="d-flex justify-content-between align-items-center gap-2"
+                >
+                    <div>
+                        <div class="fw-bold" t-esc="state.partner.name"/>
+                        <div class="text-muted small">
+                            <span>Store Credit: </span>
+                            <span t-esc="formattedBalance"/>
+                        </div>
+                    </div>
+                    <button
+                        class="btn btn-secondary btn-sm flex-shrink-0"
+                        t-on-click="selectCustomer"
+                    >
+                        Change
+                    </button>
+                </div>
+                <button
+                    t-else=""
+                    class="btn btn-primary w-100"
+                    t-on-click="selectCustomer"
+                >
+                    Select Customer
+                </button>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Credit Amount</label>
+                <Input
+                    tModel="[state, 'amount']"
+                    icon="{type: 'string', value: pos.currency.symbol}"
+                    iconOnLeftSide="pos.currency.position === 'before'"
+                    isValid.bind="env.utils.isValidFloat"
+                    autofocus="true"
+                />
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold" for="avea_issue_credit_reason">Reason</label>
+                <select
+                    id="avea_issue_credit_reason"
+                    class="form-select"
+                    t-att-value="state.reasonId"
+                    t-on-change="onReasonChange"
+                >
+                    <t t-foreach="reasonOptions" t-as="reason" t-key="reason.id">
+                        <option t-att-value="reason.id" t-esc="reason.name"/>
+                    </t>
+                </select>
+            </div>
+
+            <div class="form-floating mb-2">
+                <textarea
+                    class="form-control"
+                    id="avea_issue_credit_notes"
+                    placeholder="Notes (optional)"
+                    t-model="state.notes"
+                    style="height: 80px;"
+                />
+                <label for="avea_issue_credit_notes">Notes (optional)</label>
+            </div>
+
+            <t t-set-slot="footer">
+                <div class="d-flex gap-2 w-100">
+                    <button
+                        class="btn btn-primary btn-lg flex-grow-1"
+                        t-on-click="confirm"
+                        t-att-disabled="!canIssue"
+                    >
+                        Issue Store Credit
+                    </button>
+                    <button class="btn btn-secondary btn-lg" t-on-click="props.close">
+                        Cancel
+                    </button>
+                </div>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

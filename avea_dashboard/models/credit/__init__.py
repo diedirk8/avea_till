@@ -5,8 +5,14 @@ from . import credit_dashboard
 from . import credit_issue_wizard
 from . import credit_ledger_entry
 from . import credit_outstanding_wizard
+from . import pos_config
+from . import pos_order
+from . import pos_payment
+from . import pos_payment_method
+from . import pos_session
 from . import credit_reason
 from . import credit_reports
 from . import credit_statement_wizard
 from . import credit_transactions
+from . import res_company
 from . import res_partner

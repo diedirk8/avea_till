@@ -43,6 +43,12 @@ class ResPartner(models.Model):
             partner.avea_credit_balance = balance
             partner.avea_credit_currency_id = currency
 
+    def _avea_credit_ensure_customer(self):
+        partners = self.filtered(lambda partner: not partner.customer_rank)
+        if partners:
+            partners.write({"customer_rank": 1})
+        return self
+
     def action_open_store_credit(self):
         self.ensure_one()
         return self.env["avea.credit.ledger.entry"].action_open_ledger(
@@ -54,3 +60,12 @@ class ResPartner(models.Model):
         return self.env["avea.credit.issue.wizard"].action_open_wizard(
             partner_id=self.id,
         )
+
+    def _load_pos_data_fields(self, config):
+        fields_list = super()._load_pos_data_fields(config)
+        if config.avea_credit_enabled:
+            fields_list = fields_list + [
+                "avea_credit_balance",
+                "avea_credit_currency_id",
+            ]
+        return fields_list

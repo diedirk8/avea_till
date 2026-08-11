@@ -1,9 +1,10 @@
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 
 class AveaCreditReason(models.Model):
     _name = "avea.credit.reason"
+    _inherit = ["pos.load.mixin"]
     _description = "Credit Reason"
     _order = "sequence, name, id"
 
@@ -58,3 +59,13 @@ class AveaCreditReason(models.Model):
         if self.filtered("protected"):
             self._raise_protected_reason_error()
         return super().unlink()
+
+    @api.model
+    def _load_pos_data_domain(self, data, config):
+        if not config.avea_credit_enabled:
+            return False
+        return [("active", "=", True), ("manual_issue", "=", True)]
+
+    @api.model
+    def _load_pos_data_fields(self, config):
+        return ["id", "name", "sequence"]

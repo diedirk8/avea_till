@@ -112,6 +112,7 @@ class PosSession(models.Model):
         """Operational counts for the full POS session."""
         self.ensure_one()
         Movement = self.env["avea.till.movement"]
+        Movement.prepare_session_ledger(self)
         orders = self.get_avea_paid_orders()
         lines = orders.lines
 
@@ -199,25 +200,12 @@ class PosSession(models.Model):
         sign = 1 if _type == "in" else -1
         result = super().try_cash_in_out(_type, amount, reason, partner_id, extras)
         Movement = self.env["avea.till.movement"]
-        label = "POS Cash In" if _type == "in" else "POS Cash Out"
-        movement_type = "in" if _type == "in" else "out"
         for session in self.filtered("cash_journal_id"):
             statement_line = session.statement_line_ids.filtered(
                 lambda line: line.currency_id.compare_amounts(line.amount, sign * amount) == 0
             ).sorted("create_date desc")[:1]
-            if not statement_line:
-                statement_line = session.statement_line_ids.sorted("create_date desc")[:1]
-            reference = statement_line.payment_ref if statement_line else label
-            Movement.create(
-                {
-                    "name": reference,
-                    "movement_date": fields.Datetime.now(),
-                    "session_id": session.id,
-                    "user_id": self.env.user.id,
-                    "movement_type": movement_type,
-                    "amount": amount,
-                    "reason": label,
-                    "notes": reason or "",
-                }
-            )
+            if statement_line:
+                Movement._upsert_manual_cash_movement_from_statement_line(
+                    session, statement_line
+                )
         return result

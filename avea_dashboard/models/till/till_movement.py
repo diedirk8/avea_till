@@ -14,6 +14,13 @@ class AveaTillMovement(models.Model):
     _name = "avea.till.movement"
     _description = "Till Cash Movement"
     _order = "movement_date desc, id desc"
+    _sql_constraints = [
+        (
+            "statement_line_unique",
+            "unique(statement_line_id)",
+            "Each bank statement line can only be linked to one till movement.",
+        ),
+    ]
 
     name = fields.Char(
         string="Reference",
@@ -79,6 +86,14 @@ class AveaTillMovement(models.Model):
 
     notes = fields.Text(
         string="Notes",
+    )
+
+    statement_line_id = fields.Many2one(
+        "account.bank.statement.line",
+        string="Bank Statement Line",
+        ondelete="set null",
+        index=True,
+        copy=False,
     )
 
     ledger_reference = fields.Char(
@@ -183,6 +198,105 @@ class AveaTillMovement(models.Model):
         )[0]
 
     @api.model
+    def _parse_manual_pos_cash_statement_line(self, session, line):
+        """Return (reason, movement_type, notes) for a manual POS cash line, or None."""
+        ref = (line.payment_ref or "").strip()
+        session_name = (session.name or "").strip()
+        if not ref or not session_name or ref == session_name:
+            return None
+        if ref.startswith("Cash difference observed"):
+            return None
+        prefix = f"{session_name}-"
+        if not ref.startswith(prefix):
+            return None
+        suffix = ref[len(prefix) :]
+        currency = session.currency_id or session.company_id.currency_id
+        amount = abs(line.amount)
+        if currency.compare_amounts(amount, 0.0) <= 0:
+            return None
+        if suffix.startswith("in-"):
+            if currency.compare_amounts(line.amount, 0.0) <= 0:
+                return None
+            return (POS_CASH_IN_REASON, "in", suffix[3:])
+        if suffix.startswith("out-"):
+            if currency.compare_amounts(line.amount, 0.0) >= 0:
+                return None
+            return (POS_CASH_OUT_REASON, "out", suffix[4:])
+        return None
+
+    @api.model
+    def _find_movement_for_statement_line(self, session, line, reason, amount):
+        existing = self.search([("statement_line_id", "=", line.id)], limit=1)
+        if existing:
+            return existing
+        ref = line.payment_ref or ""
+        if ref:
+            existing = self.search(
+                [
+                    ("session_id", "=", session.id),
+                    ("name", "=", ref),
+                    ("reason", "in", (POS_CASH_IN_REASON, POS_CASH_OUT_REASON)),
+                    ("amount", "=", amount),
+                ],
+                limit=1,
+            )
+            if existing and (
+                not existing.statement_line_id
+                or existing.statement_line_id.id == line.id
+            ):
+                return existing
+        existing = self.search(
+            [
+                ("session_id", "=", session.id),
+                ("statement_line_id", "=", False),
+                ("reason", "=", reason),
+                ("amount", "=", amount),
+            ],
+            limit=1,
+        )
+        return existing
+
+    @api.model
+    def _upsert_manual_cash_movement_from_statement_line(self, session, line):
+        parsed = self._parse_manual_pos_cash_statement_line(session, line)
+        if not parsed:
+            return self.browse()
+        reason, movement_type, notes = parsed
+        currency = session.currency_id or session.company_id.currency_id
+        amount = abs(line.amount)
+        existing = self._find_movement_for_statement_line(session, line, reason, amount)
+        ref = line.payment_ref or reason
+        if existing:
+            vals = {}
+            if not existing.statement_line_id:
+                vals["statement_line_id"] = line.id
+            if ref and existing.name != ref:
+                vals["name"] = ref
+            if vals:
+                existing.write(vals)
+            return existing
+        return self.create(
+            {
+                "name": ref,
+                "movement_date": line.create_date or fields.Datetime.now(),
+                "session_id": session.id,
+                "user_id": session.user_id.id or self.env.user.id,
+                "movement_type": movement_type,
+                "amount": amount,
+                "reason": reason,
+                "notes": notes or "",
+                "statement_line_id": line.id,
+            }
+        )
+
+    @api.model
+    def _sync_manual_cash_movements_from_statement_lines(self, session):
+        if not session:
+            return
+        for line in session.statement_line_ids.sorted("create_date asc, id asc"):
+            self._upsert_manual_cash_movement_from_statement_line(session, line)
+
+    @api.model
     def _backfill_session_pos_order_links(self, session):
         movements = self.search(
             [
@@ -277,6 +391,7 @@ class AveaTillMovement(models.Model):
         if not session:
             return
         self._ensure_opening_float(session)
+        self._sync_manual_cash_movements_from_statement_lines(session)
         self._backfill_session_pos_order_links(session)
 
     @api.model

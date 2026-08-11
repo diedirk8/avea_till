@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="point_of_sale.Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//DropdownItem[contains(@onSelected, 'cashMove')]" position="after">
+            <DropdownItem
+                t-if="showIssueStoreCreditMenu"
+                onSelected="() => this.issueStoreCredit()"
+            >
+                Issue Store Credit
+            </DropdownItem>
+        </xpath>
+    </t>
+
+</templates>

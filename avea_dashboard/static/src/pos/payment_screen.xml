@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="point_of_sale.PaymentScreenMethods" t-inherit="point_of_sale.PaymentScreenMethods" t-inherit-mode="extension">
+        <xpath expr="//t[@t-foreach='payment_methods_from_config']" position="attributes">
+            <attribute name="t-foreach">availablePaymentMethods</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('button') and hasclass('paymentmethod')]" position="attributes">
+            <attribute name="t-att-class">{
+                'opacity-50': isStoreCreditPaymentDisabled(paymentMethod) or (this.pos.paymentTerminalInProgress and paymentMethod.use_payment_terminal),
+                'd-flex justify-content-between align-items-center': true,
+                'pe-none': isStoreCreditPaymentDisabled(paymentMethod),
+            }</attribute>
+        </xpath>
+        <xpath expr="//div[hasclass('button') and hasclass('paymentmethod')]" position="attributes">
+            <attribute name="t-on-click">() => this.clickPaymentMethod(paymentMethod)</attribute>
+        </xpath>
+    </t>
+
+    <t t-name="point_of_sale.PaymentScreenButtons" t-inherit="point_of_sale.PaymentScreenButtons" t-inherit-mode="extension">
+        <xpath expr="//button[hasclass('partner-button')]" position="after">
+            <div
+                t-if="showPartnerStoreCredit"
+                class="avea-store-credit-balance alert alert-info py-2 px-3 mb-0 w-100 text-center"
+                role="status"
+            >
+                <span class="fw-bold">Store Credit: </span>
+                <span t-esc="this.pos.formatStoreCreditAmount(partnerStoreCreditBalance, currentOrder.getPartner())"/>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

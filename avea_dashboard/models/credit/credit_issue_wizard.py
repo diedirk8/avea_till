@@ -10,7 +10,6 @@ class AveaCreditIssueWizard(models.TransientModel):
         "res.partner",
         string="Customer",
         required=True,
-        domain="[('customer_rank', '>', 0)]",
     )
     amount = fields.Monetary(
         string="Amount",
@@ -52,6 +51,7 @@ class AveaCreditIssueWizard(models.TransientModel):
 
     def action_issue_credit(self):
         self.ensure_one()
+        self.partner_id._avea_credit_ensure_customer()
         self.env["avea.credit.ledger.entry"].create_issued_credit(
             partner=self.partner_id,
             amount=self.amount,

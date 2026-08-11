@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="point_of_sale.PartnerLine" t-inherit="point_of_sale.PartnerLine" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('partner-line-email')][1]" position="after">
+            <div t-if="props.isBalanceDisplayed" class="partner-line-store-credit p-1 text-success">
+                <i class="fa fa-fw fa-credit-card me-2" role="img" title="Store Credit"/>
+                <span>Store Credit: </span>
+                <span t-esc="this.pos.formatStoreCreditAmount(props.partner.avea_credit_balance or 0, props.partner)"/>
+            </div>
+        </xpath>
+        <xpath expr="//td[hasclass('partner-line-balance')]" position="inside">
+            <t t-if="props.isBalanceDisplayed">
+                <span class="text-success">
+                    <i class="fa fa-fw fa-credit-card me-1" role="img" title="Store Credit"/>
+                    <span t-esc="this.pos.formatStoreCreditAmount(props.partner.avea_credit_balance or 0, props.partner)"/>
+                </span>
+            </t>
+        </xpath>
+    </t>
+
+</templates>

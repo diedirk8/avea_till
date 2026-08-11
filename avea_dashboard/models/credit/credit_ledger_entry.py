@@ -1,5 +1,5 @@
-from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo import Command, _, api, fields, models
+from odoo.exceptions import AccessError, ValidationError
 
 
 class AveaCreditLedgerEntry(models.Model):
@@ -77,6 +77,39 @@ class AveaCreditLedgerEntry(models.Model):
         required=True,
         default=lambda self: self.env.company,
     )
+    pos_order_id = fields.Many2one(
+        "pos.order",
+        string="POS Order",
+        ondelete="set null",
+        index=True,
+        copy=False,
+        readonly=True,
+    )
+    pos_payment_id = fields.Many2one(
+        "pos.payment",
+        string="POS Payment",
+        ondelete="set null",
+        index=True,
+        copy=False,
+        readonly=True,
+    )
+    account_move_id = fields.Many2one(
+        "account.move",
+        string="Accounting Entry",
+        ondelete="set null",
+        copy=False,
+        readonly=True,
+        index=True,
+    )
+
+    _pos_payment_uniq = models.Constraint(
+        "unique (pos_payment_id)",
+        "A store credit ledger entry already exists for this POS payment.",
+    )
+    _account_move_uniq = models.Constraint(
+        "unique (account_move_id)",
+        "Each accounting entry can only be linked to one store credit ledger entry.",
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -105,14 +138,231 @@ class AveaCreditLedgerEntry(models.Model):
     @api.model
     def create_issued_credit(self, partner, amount, reason, notes=None):
         """Create a confirmed store credit statement entry."""
+        partner._avea_credit_ensure_customer()
         reason_id = reason.id if hasattr(reason, "id") else reason
-        return self.create(
+        entry = self.create(
             {
                 "partner_id": partner.id,
                 "amount": amount,
                 "reason_id": reason_id,
                 "notes": notes,
                 "state": "posted",
+            }
+        )
+        entry._avea_credit_create_issuance_account_move()
+        return entry
+
+    def _avea_credit_create_issuance_account_move(self):
+        self.ensure_one()
+        if self.account_move_id:
+            return self.account_move_id
+
+        company = self.company_id
+        company._avea_credit_ensure_accounting_setup()
+        expense_account = company.avea_credit_issuance_expense_account_id
+        liability_account = company._avea_credit_ref("liability_account")
+        journal = company.avea_credit_issuance_journal_id
+        if not expense_account or not liability_account or not journal:
+            raise ValidationError(
+                _("Store Credit issuance accounting is not configured for this company.")
+            )
+
+        reference = self.name
+        line_name = reference
+        if self.notes:
+            line_name = f"{reference} - {self.notes}"
+
+        move_vals = {
+            "move_type": "entry",
+            "journal_id": journal.id,
+            "date": fields.Date.to_date(self.transaction_date)
+            or fields.Date.context_today(self),
+            "ref": reference,
+            "company_id": company.id,
+            "line_ids": [
+                Command.create(
+                    {
+                        "name": line_name,
+                        "account_id": expense_account.id,
+                        "debit": self.amount,
+                        "credit": 0.0,
+                    }
+                ),
+                Command.create(
+                    {
+                        "name": line_name,
+                        "account_id": liability_account.id,
+                        "debit": 0.0,
+                        "credit": self.amount,
+                        "partner_id": self.partner_id.id,
+                    }
+                ),
+            ],
+        }
+        move = self.env["account.move"].sudo().with_company(company).create(move_vals)
+        move.action_post()
+        self.sudo().write({"account_move_id": move.id})
+        return move
+
+    @api.model
+    def _get_default_manual_issue_reason(self):
+        return self.env["avea.credit.reason"].search(
+            [("active", "=", True), ("manual_issue", "=", True)],
+            order="sequence, name, id",
+            limit=1,
+        )
+
+    @api.model
+    def pos_issue_store_credit(self, partner_id, amount, reason_id=None, notes=None):
+        """Issue store credit from the POS for the selected customer."""
+        if not self.env.user.has_group("avea_till.group_avea_credit_manager"):
+            raise AccessError(
+                _("You do not have permission to issue store credit.")
+            )
+        partner = self.env["res.partner"].browse(partner_id).exists()
+        if not partner:
+            raise ValidationError(_("Select a customer before issuing store credit."))
+        if reason_id:
+            reason = self.env["avea.credit.reason"].browse(reason_id).exists()
+            if not reason or not reason.active or not reason.manual_issue:
+                raise ValidationError(_("Select a valid store credit reason."))
+        else:
+            reason = self._get_default_manual_issue_reason()
+            if not reason:
+                raise ValidationError(
+                    _("No store credit issue reason is configured.")
+                )
+        currency = partner.avea_credit_currency_id or self.env.company.currency_id
+        if currency.compare_amounts(amount, 0.0) <= 0:
+            raise ValidationError(
+                _("Store credit amount must be greater than zero.")
+            )
+        notes_value = (notes or "").strip() or None
+        self.create_issued_credit(
+            partner=partner,
+            amount=amount,
+            reason=reason,
+            notes=notes_value,
+        )
+        partner.invalidate_recordset(["avea_credit_balance", "avea_credit_currency_id"])
+        return {
+            "balance": partner.avea_credit_balance,
+            "currency_id": partner.avea_credit_currency_id.id,
+            "partner_name": partner.display_name,
+        }
+
+    @api.model
+    def _get_pos_purchase_reason(self):
+        return self.env.ref(
+            "avea_till.credit_reason_pos_purchase",
+            raise_if_not_found=False,
+        )
+
+    @api.model
+    def _get_pos_refund_reason(self):
+        return self.env.ref(
+            "avea_till.credit_reason_refund",
+            raise_if_not_found=False,
+        )
+
+    @api.model
+    def _format_pos_reference(self, pos_order):
+        if not pos_order:
+            return ""
+        if pos_order.pos_reference and pos_order.pos_reference != "/":
+            return pos_order.pos_reference
+        if pos_order.name and pos_order.name != "/":
+            return pos_order.name
+        return str(pos_order.id)
+
+    @api.model
+    def _validate_pos_amount(self, amount, currency):
+        if currency.compare_amounts(amount, 0.0) <= 0:
+            raise ValidationError(
+                _("Store credit amount must be greater than zero.")
+            )
+
+    @api.model
+    def get_partner_available_balance(self, partner, company=None):
+        """Return the current posted store credit balance for POS checks."""
+        company = company or self.env.company
+        domain = self._credit_report_base_domain(company) + [
+            ("partner_id", "=", partner.id),
+        ]
+        return self._sum_signed_amount_domain(domain)
+
+    @api.model
+    def create_pos_redemption(
+        self,
+        partner,
+        amount,
+        pos_order=None,
+        pos_payment=None,
+        notes=None,
+    ):
+        """Record a store credit redemption from a POS sale."""
+        reason = self._get_pos_purchase_reason()
+        if not reason:
+            raise ValidationError(
+                _("The POS Purchase store credit reason is not configured.")
+            )
+        currency = partner.avea_credit_currency_id or self.env.company.currency_id
+        self._validate_pos_amount(amount, currency)
+        company = pos_order.company_id if pos_order else self.env.company
+        available = self.get_partner_available_balance(partner, company)
+        if currency.compare_amounts(amount, available) > 0:
+            raise ValidationError(
+                _(
+                    "Only %(amount)s Store Credit is available for this customer.",
+                    amount=currency.format(available),
+                )
+            )
+        reference = self._format_pos_reference(pos_order)
+        payment_note = reference or _("POS redemption")
+        return self.create(
+            {
+                "partner_id": partner.id,
+                "amount": amount,
+                "reason_id": reason.id,
+                "notes": notes or payment_note,
+                "state": "posted",
+                "currency_id": currency.id,
+                "company_id": pos_order.company_id.id if pos_order else self.env.company.id,
+                "pos_order_id": pos_order.id if pos_order else False,
+                "pos_payment_id": pos_payment.id if pos_payment else False,
+            }
+        )
+
+    @api.model
+    def create_pos_refund_credit(
+        self,
+        partner,
+        amount,
+        pos_order=None,
+        pos_payment=None,
+        notes=None,
+    ):
+        """Return store credit to a customer from a POS refund."""
+        reason = self._get_pos_refund_reason()
+        if not reason:
+            raise ValidationError(
+                _("The Refund store credit reason is not configured.")
+            )
+        currency = partner.avea_credit_currency_id or self.env.company.currency_id
+        self._validate_pos_amount(amount, currency)
+        reference = self._format_pos_reference(pos_order)
+        payment_note = reference or _("POS refund")
+        return self.create(
+            {
+                "partner_id": partner.id,
+                "amount": amount,
+                "reason_id": reason.id,
+                "notes": notes or payment_note,
+                "state": "posted",
+                "currency_id": currency.id,
+                "company_id": pos_order.company_id.id if pos_order else self.env.company.id,
+                "pos_order_id": pos_order.id if pos_order else False,
+                "pos_payment_id": pos_payment.id if pos_payment else False,
             }
         )
 
