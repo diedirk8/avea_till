@@ -13,6 +13,9 @@ def migrate(cr, version):
     )
     columns = {row[0] for row in cr.fetchall()}
 
+    if not columns:
+        return
+
     if "reason_id" not in columns:
         cr.execute(
             """
