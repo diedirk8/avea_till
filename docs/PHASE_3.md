@@ -30,7 +30,7 @@ Do not rename existing technical till identifiers unless specifically required.
 
 | Priority | Status |
 |----------|--------|
-| **P0 — Bugs / UX** | Mostly done in `0a8d782c3cdeb08fcf591fa68f3aa711290753ae`. Remaining Customer Credit Dashboard items below are **open**. |
+| **P0 — Bugs / UX** | Completed. Session Dashboard / Cash Ledger in `0a8d782c3cdeb08fcf591fa68f3aa711290753ae`; Customer Credit Dashboard mobile and Issue Credit in `19.0.2.27.0`. |
 | **P1 — Improvements** | Specified — **not implemented** |
 | **P2 — Major Features** | Specified — **not implemented** |
 | **P3 — Future** | Specified — **not implemented** |
@@ -41,7 +41,7 @@ Do not rename existing technical till identifiers unless specifically required.
 
 P0 is the operational Session Dashboard / Cash Ledger / existing-screen quality pass.
 
-Completed work landed in commit `0a8d782c3cdeb08fcf591fa68f3aa711290753ae` unless marked **open**.
+Completed work landed in commit `0a8d782c3cdeb08fcf591fa68f3aa711290753ae` unless noted otherwise.
 
 ### Products Sold — completed
 
@@ -53,7 +53,7 @@ Completed work landed in commit `0a8d782c3cdeb08fcf591fa68f3aa711290753ae` unles
 - If there are many products, use sensible scrolling / pagination rather than making the Session Dashboard excessively long.
 - Preserve existing sales calculations unless an actual bug is found.
 
-### Full Mobile Responsiveness — completed, with remaining items
+### Full Mobile Responsiveness — completed
 
 Audit all Avea screens, tables, forms, buttons, dialogs, JS/OWL and SCSS.
 
@@ -61,11 +61,11 @@ Fix clipping, overflow, wrapping, touch targets and mobile layouts.
 
 Do not break or degrade desktop.
 
-**Remaining (open):**
+Customer Credit Dashboard at ~390px:
 
-- Customer Credit Dashboard on mobile: the **Dashboard** button is clipped.
-- Customer Credit Dashboard on mobile: **Amount** values are truncated.
-- Reason wrapping on that screen is already working and **must not be changed**.
+- **Dashboard** navigation button is fully readable (not clipped).
+- Recent Activity **Amount** values are fully readable (not truncated as `+R 10...`).
+- Reason wrapping is unchanged.
 
 ### Avea Dashboard Usability — completed
 
@@ -88,7 +88,7 @@ Improve information hierarchy. At a glance:
 
 Do not simply make the dashboard prettier.
 
-### Remaining P0 — Customer Credit Dashboard actions (open)
+### Customer Credit Dashboard actions — completed
 
 Add **Issue Credit** as a prominent Customer Credit Dashboard action.
 

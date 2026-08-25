@@ -245,6 +245,10 @@ class AveaCreditDashboard(models.TransientModel):
     def action_open_ledger(self):
         return self.env["avea.credit.ledger.entry"].action_open_ledger()
 
+    def action_issue_credit(self):
+        self.ensure_one()
+        return self.env["avea.credit.issue.wizard"].action_open_wizard()
+
     def action_refresh(self):
         self.ensure_one()
         return self.env["avea.credit.dashboard"].action_open_credit_dashboard()

@@ -104,8 +104,6 @@
             td[name="partner_id"],
             th[data-name="reason_id"],
             td[name="reason_id"],
-            th[data-name="amount"],
-            td[name="amount"],
             th[data-name="notes"],
             td[name="notes"] {
                 max-width: none;
@@ -121,9 +119,43 @@
 
             th[data-name="amount"],
             td[name="amount"] {
+                max-width: none;
+                min-width: 7.5rem;
+                overflow: visible;
+                overflow-wrap: normal;
                 text-align: right;
+                text-overflow: clip;
+                white-space: nowrap;
+                width: 7.5rem;
+                word-break: normal;
+            }
+
+            th[data-name="amount"] span,
+            th[data-name="amount"] .text-truncate,
+            th[data-name="amount"] .min-w-0 {
+                min-width: max-content;
+                overflow: visible;
+                overflow-wrap: normal;
+                text-overflow: clip;
+                white-space: nowrap;
+                word-break: normal;
+            }
+
+            td[name="amount"] .o_avea_credit_ledger_amount,
+            td[name="amount"] .o_field_widget {
+                flex-shrink: 0;
+                max-width: none;
+                overflow: visible;
+                white-space: nowrap;
             }
         }
+    }
+
+    .o_avea_credit_issue_action {
+        min-height: 2.75rem;
+        min-width: 8.5rem;
+        padding-left: 1.15rem;
+        padding-right: 1.15rem;
     }
 
     .o_avea_credit_placeholder {
@@ -142,6 +174,28 @@
     }
 
     @media (max-width: 767.98px) {
+        .o_form_statusbar,
+        .o_avea_workspace_header {
+            .btn,
+            .o_avea_workspace_nav {
+                flex: 0 0 auto;
+                min-width: max-content;
+                overflow: visible;
+                text-overflow: clip;
+                white-space: nowrap;
+            }
+
+            .btn span {
+                overflow: visible;
+                text-overflow: clip;
+                white-space: nowrap;
+            }
+        }
+
+        .o_avea_workspace_nav {
+            min-width: max-content;
+        }
+
         .o_avea_workspace_kpi_grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -149,9 +203,10 @@
         .o_avea_workspace_ledger_card .o_list_table {
             th[data-name="name"],
             td[name="name"],
+            td[data-name="name"],
             th[data-name="transaction_count"],
             td[name="transaction_count"] {
-                display: none;
+                display: none !important;
             }
 
             th,
@@ -160,14 +215,49 @@
                 white-space: normal;
             }
 
-            th[data-name="amount"],
-            td[name="amount"],
             th[data-name="avea_credit_balance"],
             td[name="avea_credit_balance"],
             th[data-name="total_amount"],
             td[name="total_amount"] {
                 white-space: nowrap;
             }
+
+            th[data-name="amount"],
+            td[name="amount"] {
+                min-width: 7.5rem !important;
+                overflow: visible !important;
+                overflow-wrap: normal;
+                text-overflow: clip;
+                white-space: nowrap !important;
+                width: 7.5rem !important;
+                word-break: normal;
+            }
+
+            th[data-name="amount"] span,
+            th[data-name="amount"] .text-truncate,
+            th[data-name="amount"] .min-w-0 {
+                min-width: max-content;
+                overflow: visible !important;
+                overflow-wrap: normal;
+                text-overflow: clip;
+                white-space: nowrap !important;
+                word-break: normal;
+            }
+
+            td[name="amount"] .o_avea_credit_ledger_amount,
+            td[name="amount"] .o_field_widget,
+            td[name="amount"] .o_avea_credit_ledger_amount_value {
+                flex-shrink: 0;
+                max-width: none;
+                overflow: visible !important;
+                text-overflow: clip;
+                white-space: nowrap !important;
+            }
+        }
+
+        .o_avea_credit_issue_action {
+            min-height: 3rem;
+            width: 100%;
         }
     }
 }

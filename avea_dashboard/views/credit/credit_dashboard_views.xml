@@ -61,6 +61,13 @@
                     <div class="o_avea_workspace_block">
                         <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Store Credit Summary</h2>
+                            <button
+                                name="action_issue_credit"
+                                type="object"
+                                string="Issue Credit"
+                                class="btn-primary o_avea_workspace_section_action o_avea_credit_issue_action"
+                                groups="avea_till.group_avea_credit_manager"
+                            />
                         </div>
                         <div class="o_avea_workspace_kpi_grid">
                             <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
