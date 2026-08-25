@@ -5,10 +5,11 @@
         <field name="name">avea.till.session.dashboard.product.line.list</field>
         <field name="model">avea.till.session.dashboard.product.line</field>
         <field name="arch" type="xml">
-            <list create="false" edit="false" delete="false">
-                <field name="product_id" string="Product"/>
+            <list create="false" edit="false" delete="false" limit="20" class="o_avea_products_sold_list">
+                <field name="product_name" string="Product"/>
                 <field name="quantity_sold" string="Quantity Sold"/>
                 <field name="sales_value" string="Sales Value" widget="monetary"/>
+                <field name="product_id" column_invisible="True"/>
                 <field name="currency_id" column_invisible="True"/>
                 <field name="rank" column_invisible="True"/>
             </list>
@@ -43,27 +44,35 @@
                 </header>
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
+                    <field name="show_products_sold" invisible="1"/>
+                    <field name="show_refund_attention" invisible="1"/>
 
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
-                            <span class="o_avea_workspace_eyebrow">Live Session Overview</span>
+                            <span class="o_avea_workspace_eyebrow">This session</span>
                             <h1 class="o_avea_workspace_title">Session Dashboard</h1>
+                            <div class="o_avea_workspace_hero_meta" invisible="not session_id">
+                                <span>Opened </span>
+                                <field name="session_opening_time" nolabel="1" readonly="1"/>
+                                <span class="o_avea_workspace_hero_meta_sep">·</span>
+                                <field name="session_duration" nolabel="1" readonly="1"/>
+                            </div>
                         </div>
                         <div class="o_avea_workspace_hero_stats">
                             <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary">
-                                <span class="o_avea_workspace_hero_stat_label">Active POS Session</span>
+                                <span class="o_avea_workspace_hero_stat_label">Session</span>
                                 <field name="session_id" nolabel="1" readonly="0" options="{'no_create': True}" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Who is using it</span>
+                                <field name="cashier_id" nolabel="1" readonly="1" widget="many2one_avatar_user" class="o_avea_workspace_hero_stat_value"/>
                             </div>
                             <div class="o_avea_workspace_hero_stat">
                                 <span class="o_avea_workspace_hero_stat_label">Till</span>
                                 <field name="config_id" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
                             </div>
                             <div class="o_avea_workspace_hero_stat">
-                                <span class="o_avea_workspace_hero_stat_label">Cashier</span>
-                                <field name="cashier_id" nolabel="1" readonly="1" widget="many2one_avatar_user" class="o_avea_workspace_hero_stat_value"/>
-                            </div>
-                            <div class="o_avea_workspace_hero_stat">
-                                <span class="o_avea_workspace_hero_stat_label">Session Status</span>
+                                <span class="o_avea_workspace_hero_stat_label">Status</span>
                                 <field name="session_state" nolabel="1" readonly="1" widget="badge" class="o_avea_workspace_hero_stat_value"/>
                             </div>
                         </div>
@@ -71,130 +80,137 @@
 
                     <div class="o_avea_workspace_block">
                         <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Session Information</h2>
+                            <h2 class="o_avea_workspace_section_title">Sales</h2>
+                        </div>
+                        <div class="o_avea_workspace_kpi_grid">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--primary">
+                                <span class="o_avea_workspace_kpi_label">Total Sales</span>
+                                <field name="total_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
+                                <span class="o_avea_workspace_kpi_label">Transactions</span>
+                                <field name="order_count" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
+                                <span class="o_avea_workspace_kpi_label">Average Sale</span>
+                                <field name="average_order_value" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                        </div>
+                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--secondary">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive o_avea_workspace_kpi_card--compact">
+                                <span class="o_avea_workspace_kpi_label">Cash</span>
+                                <field name="cash_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--compact">
+                                <span class="o_avea_workspace_kpi_label">Card</span>
+                                <field name="card_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--compact">
+                                <span class="o_avea_workspace_kpi_label">Other</span>
+                                <field name="other_payments" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Cash</h2>
+                            <button
+                                name="action_open_cash_ledger"
+                                type="object"
+                                string="View Cash Ledger"
+                                class="btn-secondary o_avea_workspace_section_action"
+                            />
+                        </div>
+                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_cash_grid">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive o_avea_workspace_kpi_card--primary">
+                                <span class="o_avea_workspace_kpi_label">Cash in Drawer</span>
+                                <field name="expected_cash" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--positive">
+                                <span class="o_avea_workspace_activity_label">Cash In</span>
+                                <div class="o_avea_workspace_activity_detail">
+                                    <field name="activity_cash_in_total" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_activity_value"/>
+                                    <span class="o_avea_workspace_activity_subvalue">
+                                        <field name="activity_cash_in_count" nolabel="1" readonly="1"/> times
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--negative">
+                                <span class="o_avea_workspace_activity_label">Cash Out</span>
+                                <div class="o_avea_workspace_activity_detail">
+                                    <field name="activity_cash_out_total" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_activity_value"/>
+                                    <span class="o_avea_workspace_activity_subvalue">
+                                        <field name="activity_cash_out_count" nolabel="1" readonly="1"/> times
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_workspace_block--attention" invisible="not show_refund_attention">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Needs attention</h2>
+                        </div>
+                        <div class="o_avea_workspace_activity_grid">
+                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--negative">
+                                <span class="o_avea_workspace_activity_label">Refunds</span>
+                                <field name="activity_refund_count" nolabel="1" readonly="1" class="o_avea_workspace_activity_value"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Products Sold</h2>
+                            <span class="o_avea_workspace_section_meta">
+                                <field name="activity_items_sold" nolabel="1" readonly="1"/> items
+                            </span>
+                        </div>
+                        <div class="o_avea_session_products_empty" invisible="show_products_sold">
+                            <p class="o_avea_session_products_empty_text">No products sold yet.</p>
+                        </div>
+                        <div class="o_avea_workspace_ledger_card o_avea_products_sold_card" invisible="not show_products_sold">
+                            <field
+                                name="product_line_ids"
+                                nolabel="1"
+                                readonly="1"
+                            >
+                                <list create="false" edit="false" delete="false" limit="20" class="o_avea_products_sold_list">
+                                    <field name="product_name" string="Product"/>
+                                    <field name="quantity_sold" string="Quantity Sold"/>
+                                    <field name="sales_value" string="Sales Value" widget="monetary"/>
+                                    <field name="product_id" column_invisible="True"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="rank" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Details</h2>
                         </div>
                         <div class="o_avea_workspace_info_card">
                             <div class="o_avea_workspace_info_grid">
                                 <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">POS / Till</span>
-                                    <field name="config_id" nolabel="1" readonly="1"/>
+                                    <span class="o_avea_workspace_info_label">Items Sold</span>
+                                    <field name="activity_items_sold" nolabel="1" readonly="1"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Session Number</span>
-                                    <field name="session_id" nolabel="1" readonly="1"/>
+                                    <span class="o_avea_workspace_info_label">Discounts</span>
+                                    <field name="activity_discount_total" nolabel="1" widget="monetary" readonly="1"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Cashier</span>
-                                    <field name="cashier_id" nolabel="1" readonly="1"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Opening Time</span>
+                                    <span class="o_avea_workspace_info_label">Opened</span>
                                     <field name="session_opening_time" nolabel="1" readonly="1"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Duration</span>
                                     <field name="session_duration" nolabel="1" readonly="1"/>
                                 </div>
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Status</span>
-                                    <field name="session_state" nolabel="1" readonly="1" widget="badge"/>
-                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="o_avea_workspace_block">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Sales Summary</h2>
-                        </div>
-                        <div class="o_avea_workspace_kpi_grid">
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
-                                <span class="o_avea_workspace_kpi_label">Total Sales</span>
-                                <field name="total_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
-                            </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
-                                <span class="o_avea_workspace_kpi_label">Cash Sales</span>
-                                <field name="cash_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
-                            </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
-                                <span class="o_avea_workspace_kpi_label">Card Sales</span>
-                                <field name="card_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
-                            </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
-                                <span class="o_avea_workspace_kpi_label">Other Payments</span>
-                                <field name="other_payments" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
-                            </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
-                                <span class="o_avea_workspace_kpi_label">Orders</span>
-                                <field name="order_count" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
-                            </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
-                                <span class="o_avea_workspace_kpi_label">Average Order Value</span>
-                                <field name="average_order_value" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="o_avea_workspace_block">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Session Activity</h2>
-                        </div>
-                        <div class="o_avea_workspace_activity_grid">
-                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--info">
-                                <span class="o_avea_workspace_activity_label">Items Sold</span>
-                                <field name="activity_items_sold" nolabel="1" readonly="1" class="o_avea_workspace_activity_value"/>
-                            </div>
-                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--info">
-                                <span class="o_avea_workspace_activity_label">Discounts</span>
-                                <field name="activity_discount_total" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_activity_value"/>
-                            </div>
-                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--negative">
-                                <span class="o_avea_workspace_activity_label">Refunds</span>
-                                <field name="activity_refund_count" nolabel="1" readonly="1" class="o_avea_workspace_activity_value"/>
-                            </div>
-                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--neutral">
-                                <span class="o_avea_workspace_activity_label">Cash Movements</span>
-                                <field name="activity_cash_movement_count" nolabel="1" readonly="1" class="o_avea_workspace_activity_value"/>
-                            </div>
-                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--positive">
-                                <span class="o_avea_workspace_activity_label">Cash In</span>
-                                <div class="o_avea_workspace_activity_detail">
-                                    <field name="activity_cash_in_count" nolabel="1" readonly="1" class="o_avea_workspace_activity_value"/>
-                                    <field name="activity_cash_in_total" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_activity_subvalue"/>
-                                </div>
-                            </div>
-                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--negative">
-                                <span class="o_avea_workspace_activity_label">Cash Out</span>
-                                <div class="o_avea_workspace_activity_detail">
-                                    <field name="activity_cash_out_count" nolabel="1" readonly="1" class="o_avea_workspace_activity_value"/>
-                                    <field name="activity_cash_out_total" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_activity_subvalue"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Top Products This Session</h2>
-                        </div>
-                        <field name="show_top_products_table" invisible="1"/>
-                        <div class="o_avea_session_top_products_empty" invisible="show_top_products_table">
-                            <p class="o_avea_session_top_products_empty_text">No products sold yet.</p>
-                        </div>
-                        <div class="o_avea_workspace_ledger_card" invisible="not show_top_products_table">
-                            <field
-                                name="top_product_line_ids"
-                                nolabel="1"
-                                readonly="1"
-                            >
-                                <list create="false" edit="false" delete="false">
-                                    <field name="product_id" string="Product"/>
-                                    <field name="quantity_sold" string="Quantity Sold"/>
-                                    <field name="sales_value" string="Sales Value" widget="monetary"/>
-                                    <field name="currency_id" column_invisible="True"/>
-                                    <field name="rank" column_invisible="True"/>
-                                </list>
-                            </field>
                         </div>
                     </div>
 

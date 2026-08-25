@@ -60,6 +60,41 @@
             width: 22%;
         }
     }
+
+    @media (max-width: 767.98px) {
+        .o_list_table {
+            th[data-name="notes"],
+            td[name="notes"],
+            th[data-name="user_id"],
+            td[name="user_id"],
+            th[data-name="state"],
+            td[name="state"] {
+                display: none;
+            }
+
+            th[data-name="name"],
+            td[name="name"] {
+                min-width: 0;
+                overflow-wrap: anywhere;
+                white-space: normal;
+            }
+
+            th[data-name="partner_id"],
+            td[name="partner_id"],
+            th[data-name="reason_id"],
+            td[name="reason_id"] {
+                min-width: 0;
+                overflow-wrap: anywhere;
+                white-space: normal;
+            }
+
+            th[data-name="transaction_date"],
+            td[name="transaction_date"] {
+                min-width: 0;
+                white-space: normal;
+            }
+        }
+    }
 }
 
 .o_avea_credit_ledger_amount {

@@ -33,59 +33,31 @@
 
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
-                            <span class="o_avea_workspace_eyebrow">Cash Reconciliation</span>
+                            <span class="o_avea_workspace_eyebrow">Cash this session</span>
                             <h1 class="o_avea_workspace_title">Cash Ledger</h1>
+                            <div class="o_avea_workspace_hero_meta" invisible="not session_id">
+                                <span>Opened </span>
+                                <field name="session_opening_time" nolabel="1" readonly="1"/>
+                                <span class="o_avea_workspace_hero_meta_sep">·</span>
+                                <field name="session_duration" nolabel="1" readonly="1"/>
+                            </div>
                         </div>
                         <div class="o_avea_workspace_hero_stats">
                             <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary">
-                                <span class="o_avea_workspace_hero_stat_label">Active POS Session</span>
+                                <span class="o_avea_workspace_hero_stat_label">Session</span>
                                 <field name="session_id" nolabel="1" readonly="0" options="{'no_create': True}" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Who is using it</span>
+                                <field name="cashier_id" nolabel="1" readonly="1" widget="many2one_avatar_user" class="o_avea_workspace_hero_stat_value"/>
                             </div>
                             <div class="o_avea_workspace_hero_stat">
                                 <span class="o_avea_workspace_hero_stat_label">Till</span>
                                 <field name="config_id" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
                             </div>
                             <div class="o_avea_workspace_hero_stat">
-                                <span class="o_avea_workspace_hero_stat_label">Cashier</span>
-                                <field name="cashier_id" nolabel="1" readonly="1" widget="many2one_avatar_user" class="o_avea_workspace_hero_stat_value"/>
-                            </div>
-                            <div class="o_avea_workspace_hero_stat">
-                                <span class="o_avea_workspace_hero_stat_label">Session Status</span>
+                                <span class="o_avea_workspace_hero_stat_label">Status</span>
                                 <field name="session_state" nolabel="1" readonly="1" widget="badge" class="o_avea_workspace_hero_stat_value"/>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="o_avea_workspace_block">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Session Information</h2>
-                        </div>
-                        <div class="o_avea_workspace_info_card">
-                            <div class="o_avea_workspace_info_grid">
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">POS / Till</span>
-                                    <field name="config_id" nolabel="1" readonly="1"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Session Number</span>
-                                    <field name="session_id" nolabel="1" readonly="1"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Cashier</span>
-                                    <field name="cashier_id" nolabel="1" readonly="1"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Opening Time</span>
-                                    <field name="session_opening_time" nolabel="1" readonly="1"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Duration</span>
-                                    <field name="session_duration" nolabel="1" readonly="1"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Status</span>
-                                    <field name="session_state" nolabel="1" readonly="1" widget="badge"/>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -94,22 +66,22 @@
                         <div class="o_avea_workspace_main">
                             <div class="o_avea_workspace_main_column">
                                 <div class="o_avea_workspace_block_heading">
-                                    <h2 class="o_avea_workspace_section_title">Cash Movement History</h2>
+                                    <h2 class="o_avea_workspace_section_title">What happened</h2>
                                 </div>
                                 <div class="o_avea_workspace_ledger_card">
                                     <field
                                         name="recent_movement_ids"
-                                        string="Till Ledger"
+                                        string="Cash Ledger"
                                         nolabel="1"
                                         readonly="1"
                                     >
                                         <list create="false" edit="false" delete="false" class="o_avea_till_ledger_list">
-                                            <field name="movement_date"/>
-                                            <field name="ledger_reference"/>
+                                            <field name="movement_date" string="When"/>
+                                            <field name="ledger_reference" string="Reference" optional="hide"/>
                                             <field name="reason" string="Type"/>
                                             <field name="amount" widget="till_ledger_amount"/>
-                                            <field name="running_balance" widget="monetary"/>
-                                            <field name="user_id"/>
+                                            <field name="running_balance" string="Balance" widget="monetary"/>
+                                            <field name="user_id" string="By" optional="hide"/>
                                             <field name="currency_id" column_invisible="True"/>
                                             <field name="movement_type" column_invisible="True"/>
                                             <field name="name" column_invisible="True"/>
@@ -120,7 +92,7 @@
 
                             <div class="o_avea_workspace_sidebar_column">
                                 <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--highlight">
-                                    <span class="o_avea_workspace_kpi_label">Expected Cash in Drawer</span>
+                                    <span class="o_avea_workspace_kpi_label">Cash in Drawer</span>
                                     <field
                                         name="live_balance"
                                         nolabel="1"
@@ -131,7 +103,7 @@
                                 </div>
 
                                 <div class="o_avea_workspace_block_heading">
-                                    <h2 class="o_avea_workspace_section_title">Cash Summary</h2>
+                                    <h2 class="o_avea_workspace_section_title">How we got here</h2>
                                 </div>
                                 <div class="o_avea_workspace_reconciliation_card">
                                     <div class="o_avea_workspace_reconciliation_line o_avea_workspace_reconciliation_add">
@@ -190,7 +162,7 @@
                                         />
                                     </div>
                                     <div class="o_avea_workspace_reconciliation_line o_avea_workspace_reconciliation_total">
-                                        <span class="o_avea_workspace_reconciliation_label">Expected Cash in Drawer</span>
+                                        <span class="o_avea_workspace_reconciliation_label">Cash in Drawer</span>
                                         <span class="o_avea_workspace_reconciliation_sign">=</span>
                                         <field
                                             name="live_balance"

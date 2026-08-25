@@ -14,7 +14,7 @@ class AveaTillDashboard(models.TransientModel):
 
     session_id = fields.Many2one(
         "pos.session",
-        string="POS Session",
+        string="Session",
         domain="[('state', 'in', ('opened', 'closing_control', 'closed'))]",
     )
     currency_id = fields.Many2one(
@@ -23,7 +23,7 @@ class AveaTillDashboard(models.TransientModel):
     )
     session_state = fields.Selection(
         related="session_id.state",
-        string="Session Status",
+        string="Status",
     )
     config_id = fields.Many2one(
         related="session_id.config_id",

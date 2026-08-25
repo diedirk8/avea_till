@@ -8,7 +8,7 @@
         <field name="name">avea.credit.statement.wizard.form</field>
         <field name="model">avea.credit.statement.wizard</field>
         <field name="arch" type="xml">
-            <form string="Customer Credit Statement">
+            <form string="Customer Credit Statement" class="o_avea_wizard">
                 <group>
                     <field name="partner_id" options="{'no_create': True}"/>
                     <field name="date_from"/>
@@ -36,7 +36,7 @@
         <field name="name">avea.credit.outstanding.wizard.form</field>
         <field name="model">avea.credit.outstanding.wizard</field>
         <field name="arch" type="xml">
-            <form string="Outstanding Customer Credit">
+            <form string="Outstanding Customer Credit" class="o_avea_wizard">
                 <group>
                     <field name="minimum_balance"/>
                     <field name="date"/>
@@ -63,7 +63,7 @@
         <field name="name">avea.credit.activity.wizard.form</field>
         <field name="model">avea.credit.activity.wizard</field>
         <field name="arch" type="xml">
-            <form string="Credit Activity Report">
+            <form string="Credit Activity Report" class="o_avea_wizard">
                 <group>
                     <field name="date_from"/>
                     <field name="date_to"/>

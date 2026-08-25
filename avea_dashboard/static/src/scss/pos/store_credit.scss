@@ -1,13 +1,26 @@
 .avea-store-credit-balance {
     font-size: 0.95rem;
+    overflow-wrap: anywhere;
 }
 
 .partner-line-store-credit {
     font-size: 0.9rem;
+    overflow-wrap: anywhere;
 }
 
 .pos-receipt-store-credit {
     border-top: 1px dashed #bbb;
     margin-top: 0.5rem;
     padding-top: 0.5rem;
+}
+
+.modal-dialog .avea-store-credit-balance,
+.o-overlay-item .avea-store-credit-balance {
+    max-width: 100%;
+}
+
+@media (max-width: 767.98px) {
+    .partner-line-store-credit {
+        white-space: normal;
+    }
 }

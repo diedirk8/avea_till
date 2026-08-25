@@ -3,7 +3,7 @@ from odoo import Command, _, api, fields, models
 
 class AveaTillSessionDashboardProductLine(models.TransientModel):
     _name = "avea.till.session.dashboard.product.line"
-    _description = "Session Dashboard Top Product Line"
+    _description = "Session Dashboard Product Sold Line"
     _order = "rank, id"
 
     dashboard_id = fields.Many2one(
@@ -21,6 +21,10 @@ class AveaTillSessionDashboardProductLine(models.TransientModel):
     )
     product_id = fields.Many2one(
         "product.product",
+        string="Product Record",
+        readonly=True,
+    )
+    product_name = fields.Char(
         string="Product",
         readonly=True,
     )
@@ -43,7 +47,7 @@ class AveaTillSessionDashboard(models.TransientModel):
 
     session_id = fields.Many2one(
         "pos.session",
-        string="POS Session",
+        string="Session",
         domain="[('state', 'in', ('opened', 'closing_control', 'closed'))]",
     )
     currency_id = fields.Many2one(
@@ -60,7 +64,7 @@ class AveaTillSessionDashboard(models.TransientModel):
     )
     session_state = fields.Selection(
         related="session_id.state",
-        string="Session Status",
+        string="Status",
     )
     session_opening_time = fields.Datetime(
         related="session_id.start_at",
@@ -92,11 +96,16 @@ class AveaTillSessionDashboard(models.TransientModel):
         currency_field="currency_id",
     )
     order_count = fields.Integer(
-        string="Orders",
+        string="Transactions",
         compute="_compute_session_metrics",
     )
     average_order_value = fields.Monetary(
-        string="Average Order Value",
+        string="Average Sale",
+        compute="_compute_session_metrics",
+        currency_field="currency_id",
+    )
+    expected_cash = fields.Monetary(
+        string="Cash in Drawer",
         compute="_compute_session_metrics",
         currency_field="currency_id",
     )
@@ -136,52 +145,56 @@ class AveaTillSessionDashboard(models.TransientModel):
         compute="_compute_session_metrics",
         currency_field="currency_id",
     )
-    top_product_line_ids = fields.One2many(
+    product_line_ids = fields.One2many(
         "avea.till.session.dashboard.product.line",
         "dashboard_id",
-        string="Top Products This Session",
+        string="Products Sold",
         readonly=True,
     )
-    show_top_products_table = fields.Boolean(
-        compute="_compute_show_top_products_table",
+    show_products_sold = fields.Boolean(
+        compute="_compute_show_products_sold",
+    )
+    show_refund_attention = fields.Boolean(
+        compute="_compute_session_metrics",
     )
 
     @api.model_create_multi
     def create(self, vals_list):
         dashboards = super().create(vals_list)
-        dashboards._populate_top_product_lines()
+        dashboards._populate_product_lines()
         return dashboards
 
     def write(self, vals):
         res = super().write(vals)
         if "session_id" in vals:
-            self._populate_top_product_lines()
+            self._populate_product_lines()
         return res
 
     @api.onchange("session_id")
-    def _onchange_session_id_top_products(self):
-        self.top_product_line_ids = self._prepare_top_product_line_commands()
+    def _onchange_session_id_products(self):
+        self.product_line_ids = self._prepare_product_line_commands()
 
-    @api.depends("top_product_line_ids")
-    def _compute_show_top_products_table(self):
+    @api.depends("product_line_ids")
+    def _compute_show_products_sold(self):
         for dashboard in self:
-            dashboard.show_top_products_table = bool(dashboard.top_product_line_ids)
+            dashboard.show_products_sold = bool(dashboard.product_line_ids)
 
-    def _get_top_product_rows(self):
+    def _get_product_rows(self):
         self.ensure_one()
         if not self.session_id:
             return []
-        return self.session_id.get_avea_top_products()
+        return self.session_id.get_avea_products_sold()
 
-    def _prepare_top_product_line_commands(self):
+    def _prepare_product_line_commands(self):
         self.ensure_one()
         commands = [Command.clear()]
-        for index, row in enumerate(self._get_top_product_rows(), start=1):
+        for index, row in enumerate(self._get_product_rows(), start=1):
             commands.append(
                 Command.create(
                     {
                         "rank": index,
                         "product_id": row["product_id"],
+                        "product_name": row["product_name"],
                         "quantity_sold": row["quantity_sold"],
                         "sales_value": row["sales_value"],
                     }
@@ -189,13 +202,13 @@ class AveaTillSessionDashboard(models.TransientModel):
             )
         return commands
 
-    def _populate_top_product_lines(self):
+    def _populate_product_lines(self):
         ProductLine = self.env["avea.till.session.dashboard.product.line"]
         for dashboard in self:
             if not dashboard.id:
                 continue
             ProductLine.search([("dashboard_id", "=", dashboard.id)]).unlink()
-            rows = dashboard._get_top_product_rows()
+            rows = dashboard._get_product_rows()
             if not rows:
                 continue
             ProductLine.create(
@@ -204,6 +217,7 @@ class AveaTillSessionDashboard(models.TransientModel):
                         "dashboard_id": dashboard.id,
                         "rank": index,
                         "product_id": row["product_id"],
+                        "product_name": row["product_name"],
                         "quantity_sold": row["quantity_sold"],
                         "sales_value": row["sales_value"],
                     }
@@ -278,6 +292,7 @@ class AveaTillSessionDashboard(models.TransientModel):
             "other_payments": 0.0,
             "order_count": 0,
             "average_order_value": 0.0,
+            "expected_cash": 0.0,
             "activity_items_sold": 0.0,
             "activity_discount_total": 0.0,
             "activity_refund_count": 0,
@@ -286,6 +301,7 @@ class AveaTillSessionDashboard(models.TransientModel):
             "activity_cash_out_count": 0,
             "activity_cash_in_total": 0.0,
             "activity_cash_out_total": 0.0,
+            "show_refund_attention": False,
         }
         for dashboard in self:
             session = dashboard.session_id
@@ -295,6 +311,7 @@ class AveaTillSessionDashboard(models.TransientModel):
 
             sales = session.get_avea_sales_summary()
             activity = session.get_avea_activity_metrics()
+            cash = session.get_avea_cash_summary()
 
             dashboard.update(
                 {
@@ -304,6 +321,7 @@ class AveaTillSessionDashboard(models.TransientModel):
                     "other_payments": sales["other_payments"],
                     "order_count": sales["order_count"],
                     "average_order_value": sales["average_order_value"],
+                    "expected_cash": cash["expected_cash"],
                     "activity_items_sold": activity["items_sold"],
                     "activity_discount_total": activity["discount_total"],
                     "activity_refund_count": activity["refund_count"],
@@ -312,6 +330,7 @@ class AveaTillSessionDashboard(models.TransientModel):
                     "activity_cash_out_count": activity["cash_out_count"],
                     "activity_cash_in_total": activity["cash_in_total"],
                     "activity_cash_out_total": activity["cash_out_total"],
+                    "show_refund_attention": bool(activity["refund_count"]),
                 }
             )
 

@@ -5,7 +5,7 @@
         <field name="name">avea.credit.issue.wizard.form</field>
         <field name="model">avea.credit.issue.wizard</field>
         <field name="arch" type="xml">
-            <form string="Issue Store Credit">
+            <form string="Issue Store Credit" class="o_avea_wizard">
                 <group>
                     <field
                         name="partner_id"

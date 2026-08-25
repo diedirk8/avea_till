@@ -35,7 +35,7 @@
         <field name="name">avea.credit.ledger.entry.form</field>
         <field name="model">avea.credit.ledger.entry</field>
         <field name="arch" type="xml">
-            <form string="Store Credit Entry" create="false" edit="false" delete="false">
+            <form string="Store Credit Entry" create="false" edit="false" delete="false" class="o_avea_wizard">
                 <header>
                     <field
                         name="state"

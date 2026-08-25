@@ -10,7 +10,7 @@
                     class="d-flex justify-content-between align-items-center gap-2"
                 >
                     <div>
-                        <div class="fw-bold" t-esc="state.partner.name"/>
+                        <div class="fw-bold text-break" t-esc="state.partner.name"/>
                         <div class="text-muted small">
                             <span>Store Credit: </span>
                             <span t-esc="formattedBalance"/>

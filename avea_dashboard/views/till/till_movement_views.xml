@@ -5,7 +5,7 @@
         <field name="name">avea.till.movement.form</field>
         <field name="model">avea.till.movement</field>
         <field name="arch" type="xml">
-            <form string="Till Movement">
+            <form string="Cash Movement" class="o_avea_wizard">
                 <sheet>
                     <group>
                         <group>
@@ -33,13 +33,13 @@
         <field name="name">avea.till.movement.list</field>
         <field name="model">avea.till.movement</field>
         <field name="arch" type="xml">
-            <list>
-                <field name="movement_date"/>
-                <field name="ledger_reference"/>
+            <list class="o_avea_till_ledger_list">
+                <field name="movement_date" string="When"/>
+                <field name="ledger_reference" string="Reference" optional="hide"/>
                 <field name="reason" string="Type"/>
                 <field name="amount" widget="till_ledger_amount"/>
-                <field name="running_balance" widget="monetary"/>
-                <field name="user_id"/>
+                <field name="running_balance" string="Balance" widget="monetary"/>
+                <field name="user_id" string="By" optional="hide"/>
                 <field name="currency_id" column_invisible="True"/>
                 <field name="name" column_invisible="True"/>
                 <field name="movement_type" column_invisible="True"/>
@@ -63,7 +63,7 @@
     </record>
 
     <record id="action_avea_till_movements" model="ir.actions.act_window">
-        <field name="name">Till Movements</field>
+        <field name="name">Cash Movements</field>
         <field name="res_model">avea.till.movement</field>
         <field name="view_mode">list,form</field>
     </record>

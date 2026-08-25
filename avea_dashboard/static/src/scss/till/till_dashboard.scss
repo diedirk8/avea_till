@@ -27,6 +27,10 @@
 
         @media (max-width: 992px) {
             grid-template-columns: 1fr;
+
+            .o_avea_workspace_sidebar_column {
+                order: -1;
+            }
         }
     }
 
@@ -57,11 +61,13 @@
 
         .o_avea_workspace_kpi_value .o_field_monetary {
             color: #004d10;
-            font-size: 2.375rem;
+            font-size: clamp(1.35rem, 3.4vw, 2.375rem);
             font-variant-numeric: tabular-nums;
             font-weight: 700;
             letter-spacing: -0.03em;
-            line-height: 1.05;
+            line-height: 1.1;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
     }
 
@@ -74,6 +80,7 @@
     .o_avea_workspace_ledger_card {
         padding: 0;
         overflow: hidden;
+        min-width: 0;
 
         .o_field_widget[name="recent_movement_ids"] {
             margin-bottom: 0;
@@ -82,6 +89,9 @@
         .o_list_renderer {
             border: none;
             border-radius: 0;
+            max-height: 28rem;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .o_list_table {
@@ -156,6 +166,45 @@
             td[name="reason"] {
                 min-width: 7rem;
                 width: 12%;
+            }
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .o_avea_workspace_kpi_card--highlight .o_avea_workspace_kpi_value .o_field_monetary {
+            font-size: clamp(1.25rem, 7vw, 1.85rem);
+        }
+
+        .o_avea_workspace_ledger_card .o_list_table {
+            th[data-name="ledger_reference"],
+            td[name="ledger_reference"],
+            th[data-name="user_id"],
+            td[name="user_id"] {
+                display: none;
+            }
+
+            th[data-name="movement_date"],
+            td[name="movement_date"] {
+                min-width: 0;
+                white-space: normal;
+                width: 28%;
+            }
+
+            th[data-name="reason"],
+            td[name="reason"] {
+                min-width: 0;
+                overflow-wrap: anywhere;
+                white-space: normal;
+                width: auto;
+            }
+
+            th[data-name="amount"],
+            td[name="amount"],
+            th[data-name="running_balance"],
+            td[name="running_balance"] {
+                min-width: 0;
+                white-space: nowrap;
+                width: 22%;
             }
         }
     }

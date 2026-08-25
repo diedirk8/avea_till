@@ -21,7 +21,7 @@
         <field name="name">avea.credit.reason.form</field>
         <field name="model">avea.credit.reason</field>
         <field name="arch" type="xml">
-            <form string="Credit Reason">
+            <form string="Credit Reason" class="o_avea_wizard">
                 <sheet>
                     <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
                     <div class="oe_title">

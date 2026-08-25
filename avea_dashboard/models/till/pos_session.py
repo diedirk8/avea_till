@@ -8,9 +8,6 @@ from .till_movement import (
     POS_CASH_OUT_REASON,
 )
 
-TOP_PRODUCTS_LIMIT = 10
-
-
 class PosSession(models.Model):
     _inherit = "pos.session"
 
@@ -144,8 +141,16 @@ class PosSession(models.Model):
             "cash_out_total": Movement.sum_amount_for_domain(cash_out_domain),
         }
 
-    def get_avea_top_products(self, limit=TOP_PRODUCTS_LIMIT):
-        """Top-selling products for the session ranked by net quantity sold."""
+    def get_avea_products_sold(self):
+        """All products sold during the session, ranked by net quantity sold."""
+        return self.get_avea_top_products(limit=None)
+
+    def get_avea_top_products(self, limit=None):
+        """Products sold in the session ranked by net quantity sold.
+
+        Pass limit to cap the result set. Session Dashboard uses the uncapped
+        list via get_avea_products_sold().
+        """
         self.ensure_one()
         Line = self.env["pos.order.line"]
         order_ids = self.env["pos.order"].search(self._avea_paid_order_domain()).ids
@@ -170,14 +175,17 @@ class PosSession(models.Model):
             ),
             key=lambda row: (-row[1], -row[2], row[0].id),
         )
+        if limit:
+            ranked = ranked[:limit]
 
         return [
             {
                 "product_id": product.id,
+                "product_name": product.display_name,
                 "quantity_sold": quantity_sold,
                 "sales_value": sales_value,
             }
-            for product, quantity_sold, sales_value in ranked[:limit]
+            for product, quantity_sold, sales_value in ranked
         ]
 
     def get_avea_session_duration_display(self):
