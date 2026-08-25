@@ -3,6 +3,7 @@ from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from odoo import Command, _, api, fields, models
+from odoo.tools.misc import format_date
 
 from .till_movement import POS_CASH_IN_REASON, POS_CASH_OUT_REASON
 
@@ -67,8 +68,16 @@ class AveaBusinessOverview(models.TransientModel):
         string="Period Label",
         compute="_compute_metrics",
     )
+    period_range_display = fields.Char(
+        string="Period Dates",
+        compute="_compute_metrics",
+    )
     comparison_label = fields.Char(
         string="Compared With",
+        compute="_compute_metrics",
+    )
+    comparison_range_display = fields.Char(
+        string="Comparison Dates",
         compute="_compute_metrics",
     )
     currency_id = fields.Many2one(
@@ -270,6 +279,21 @@ class AveaBusinessOverview(models.TransientModel):
             labels = (_("Today"), _("Yesterday"))
         return current, previous, labels
 
+    def _format_day_range(self, day_from, day_to):
+        """Readable date range in the user's language, e.g. 18–25 August 2026."""
+        if day_from == day_to:
+            return format_date(self.env, day_from, date_format="d MMMM y")
+        end = format_date(self.env, day_to, date_format="d MMMM y")
+        same_month = day_from.month == day_to.month and day_from.year == day_to.year
+        if same_month:
+            start_day = format_date(self.env, day_from, date_format="d")
+            return f"{start_day}–{end}"
+        if day_from.year == day_to.year:
+            start = format_date(self.env, day_from, date_format="d MMMM")
+            return f"{start}–{end}"
+        start = format_date(self.env, day_from, date_format="d MMMM y")
+        return f"{start}–{end}"
+
     def _paid_orders_between(self, day_from, day_to):
         start, end = self._utc_bounds(day_from, day_to)
         Session = self.env["pos.session"]
@@ -340,10 +364,17 @@ class AveaBusinessOverview(models.TransientModel):
                 previous_sales["total_sales"],
             )
             refund_count = activity["refund_count"]
+            period_range = overview._format_day_range(*current)
+            comparison_range = overview._format_day_range(*previous)
             overview.update(
                 {
                     "period_label": labels[0],
+                    "period_range_display": period_range,
                     "comparison_label": labels[1],
+                    "comparison_range_display": _(
+                        "Compared with %s"
+                    )
+                    % comparison_range,
                     "total_sales": sales["total_sales"],
                     "order_count": sales["order_count"],
                     "average_order_value": sales["average_order_value"],

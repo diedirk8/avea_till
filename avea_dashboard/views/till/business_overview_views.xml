@@ -21,33 +21,6 @@
         <field name="model">avea.business.overview</field>
         <field name="arch" type="xml">
             <form string="Business Overview" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview">
-                <header class="o_avea_workspace_header">
-                    <button
-                        name="action_refresh"
-                        type="object"
-                        string="Overview"
-                        class="btn-primary o_avea_workspace_nav o_avea_workspace_nav--active"
-                    />
-                    <button
-                        name="action_open_sessions"
-                        type="object"
-                        string="Sessions"
-                        class="btn-secondary o_avea_workspace_nav"
-                    />
-                    <button
-                        name="action_open_cash"
-                        type="object"
-                        string="Cash"
-                        class="btn-secondary o_avea_workspace_nav"
-                    />
-                    <button
-                        name="action_refresh"
-                        type="object"
-                        string="Refresh"
-                        class="btn-secondary o_avea_workspace_refresh"
-                        icon="fa-refresh"
-                    />
-                </header>
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
                     <field name="period" invisible="1"/>
@@ -61,6 +34,12 @@
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">How is my business doing?</span>
                             <h1 class="o_avea_workspace_title">Business Overview</h1>
+                            <div class="o_avea_period_range">
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_comparison_range">
+                                <field name="comparison_range_display" nolabel="1" readonly="1"/>
+                            </div>
                             <div class="o_avea_workspace_hero_meta" invisible="not show_open_sessions">
                                 <field name="open_session_count" nolabel="1" readonly="1"/>
                                 <span> tills open</span>
@@ -116,7 +95,7 @@
                         <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Sales</h2>
                             <span class="o_avea_workspace_section_meta">
-                                <field name="period_label" nolabel="1" readonly="1"/>
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
                             </span>
                         </div>
                         <div class="o_avea_workspace_kpi_grid">
