@@ -61,6 +61,27 @@
         }
     }
 
+    .o_avea_through_today {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.4;
+        margin: 0.2rem 0 0;
+        min-width: 0;
+        overflow-wrap: anywhere;
+
+        .o_field_widget {
+            color: inherit;
+            display: block;
+            font-size: inherit;
+            font-weight: inherit;
+            line-height: inherit;
+            margin: 0;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+    }
+
     .o_avea_workspace_kpi_subvalue {
         color: var(--o-gray-600, #6c757d);
         font-size: 0.8125rem;
@@ -107,6 +128,10 @@
         .o_avea_period_range,
         .o_avea_period_range .o_field_widget {
             font-size: 1.05rem;
+        }
+
+        .o_avea_workspace_kpi_value {
+            overflow-wrap: anywhere;
         }
 
         .o_avea_products_sold_card {

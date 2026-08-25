@@ -29,6 +29,10 @@
                     <field name="show_attention" invisible="1"/>
                     <field name="show_refund_attention" invisible="1"/>
                     <field name="show_open_sessions" invisible="1"/>
+                    <field name="show_through_today" invisible="1"/>
+                    <field name="show_busy_times" invisible="1"/>
+                    <field name="show_busiest_day" invisible="1"/>
+                    <field name="show_busiest_time" invisible="1"/>
 
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
@@ -39,6 +43,9 @@
                             </div>
                             <div class="o_avea_comparison_range">
                                 <field name="comparison_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_through_today" invisible="not show_through_today">
+                                <field name="through_today_display" nolabel="1" readonly="1"/>
                             </div>
                             <div class="o_avea_workspace_hero_meta" invisible="not show_open_sessions">
                                 <field name="open_session_count" nolabel="1" readonly="1"/>
@@ -142,6 +149,28 @@
                                 <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
                                     <field name="sales_change_amount" nolabel="1" widget="monetary" readonly="1"/>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--secondary" invisible="not show_busy_times">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--compact" invisible="not show_busiest_day">
+                                <span class="o_avea_workspace_kpi_label">Busiest Day</span>
+                                <field name="busiest_day_name" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span class="o_avea_workspace_kpi_subvalue">
+                                    <field name="busiest_day_sales" nolabel="1" widget="monetary" readonly="1"/>
+                                    <span> / </span>
+                                    <field name="busiest_day_count" nolabel="1" readonly="1"/>
+                                    <span> transactions</span>
+                                </span>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--compact" invisible="not show_busiest_time">
+                                <span class="o_avea_workspace_kpi_label">Busiest Time</span>
+                                <field name="busiest_time_display" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span class="o_avea_workspace_kpi_subvalue">
+                                    <field name="busiest_time_sales" nolabel="1" widget="monetary" readonly="1"/>
+                                    <span> / </span>
+                                    <field name="busiest_time_count" nolabel="1" readonly="1"/>
+                                    <span> transactions</span>
                                 </span>
                             </div>
                         </div>

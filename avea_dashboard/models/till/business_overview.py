@@ -80,6 +80,13 @@ class AveaBusinessOverview(models.TransientModel):
         string="Comparison Dates",
         compute="_compute_metrics",
     )
+    through_today_display = fields.Char(
+        string="Through Today",
+        compute="_compute_metrics",
+    )
+    show_through_today = fields.Boolean(
+        compute="_compute_metrics",
+    )
     currency_id = fields.Many2one(
         "res.currency",
         default=lambda self: self.env.company.currency_id,
@@ -181,6 +188,38 @@ class AveaBusinessOverview(models.TransientModel):
         compute="_compute_metrics",
     )
 
+    busiest_day_name = fields.Char(
+        string="Busiest Day",
+        compute="_compute_metrics",
+    )
+    busiest_day_sales = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    busiest_day_count = fields.Integer(
+        compute="_compute_metrics",
+    )
+    show_busiest_day = fields.Boolean(
+        compute="_compute_metrics",
+    )
+    busiest_time_display = fields.Char(
+        string="Busiest Time",
+        compute="_compute_metrics",
+    )
+    busiest_time_sales = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    busiest_time_count = fields.Integer(
+        compute="_compute_metrics",
+    )
+    show_busiest_time = fields.Boolean(
+        compute="_compute_metrics",
+    )
+    show_busy_times = fields.Boolean(
+        compute="_compute_metrics",
+    )
+
     @api.model_create_multi
     def create(self, vals_list):
         overviews = super().create(vals_list)
@@ -258,10 +297,19 @@ class AveaBusinessOverview(models.TransientModel):
         today = fields.Date.context_today(self)
         if period == "week":
             week_start = today - timedelta(days=today.weekday())
-            current = (week_start, today)
-            previous = (week_start - timedelta(days=7), today - timedelta(days=7))
-            labels = (_("This Week"), _("Previous week"))
-        elif period == "month":
+            week_end = week_start + timedelta(days=6)
+            prev_start = week_start - timedelta(days=7)
+            prev_end = week_end - timedelta(days=7)
+            return {
+                "display_current": (week_start, week_end),
+                "data_current": (week_start, today),
+                "display_previous": (prev_start, prev_end),
+                "data_previous": (prev_start, prev_end),
+                "labels": (_("This Week"), _("Previous week")),
+                "show_through_today": today < week_end,
+                "today": today,
+            }
+        if period == "month":
             month_start = today.replace(day=1)
             if month_start.month == 1:
                 prev_start = month_start.replace(year=month_start.year - 1, month=12)
@@ -271,13 +319,27 @@ class AveaBusinessOverview(models.TransientModel):
             prev_end = prev_start.replace(day=min(today.day, prev_last_day))
             current = (month_start, today)
             previous = (prev_start, prev_end)
-            labels = (_("This Month"), _("Previous month"))
-        else:
-            yesterday = today - timedelta(days=1)
-            current = (today, today)
-            previous = (yesterday, yesterday)
-            labels = (_("Today"), _("Yesterday"))
-        return current, previous, labels
+            return {
+                "display_current": current,
+                "data_current": current,
+                "display_previous": previous,
+                "data_previous": previous,
+                "labels": (_("This Month"), _("Previous month")),
+                "show_through_today": False,
+                "today": today,
+            }
+        yesterday = today - timedelta(days=1)
+        current = (today, today)
+        previous = (yesterday, yesterday)
+        return {
+            "display_current": current,
+            "data_current": current,
+            "display_previous": previous,
+            "data_previous": previous,
+            "labels": (_("Today"), _("Yesterday")),
+            "show_through_today": False,
+            "today": today,
+        }
 
     def _format_day_range(self, day_from, day_to):
         """Readable date range in the user's language, e.g. 18–25 August 2026."""
@@ -341,6 +403,73 @@ class AveaBusinessOverview(models.TransientModel):
             tone = "down"
         return display, tone, delta
 
+    def _local_order_datetime(self, order):
+        if not order.date_order:
+            return False
+        return order.date_order.replace(tzinfo=ZoneInfo("UTC")).astimezone(
+            self._timezone()
+        )
+
+    def _format_hour_range(self, hour):
+        start = f"{hour:02d}:00"
+        end = f"{(hour + 1) % 24:02d}:00"
+        return f"{start} – {end}"
+
+    def _pick_busiest_bucket(self, buckets):
+        if not buckets:
+            return False
+        return max(
+            buckets.items(),
+            key=lambda item: (item[1][0], item[1][1], -item[1][2]),
+        )
+
+    def _busy_stats_from_orders(self, orders):
+        day_buckets = {}
+        hour_buckets = {}
+        for order in orders:
+            local_dt = self._local_order_datetime(order)
+            if not local_dt:
+                continue
+            amount = order.amount_total
+            day = local_dt.date()
+            hour = local_dt.hour
+            day_entry = day_buckets.setdefault(day, [0.0, 0, day.toordinal()])
+            day_entry[0] += amount
+            day_entry[1] += 1
+            hour_entry = hour_buckets.setdefault(hour, [0.0, 0, hour])
+            hour_entry[0] += amount
+            hour_entry[1] += 1
+
+        busiest_day = self._pick_busiest_bucket(day_buckets)
+        busiest_hour = self._pick_busiest_bucket(hour_buckets)
+        result = {
+            "day_name": False,
+            "day_sales": 0.0,
+            "day_count": 0,
+            "time_display": False,
+            "time_sales": 0.0,
+            "time_count": 0,
+        }
+        if busiest_day:
+            day, (sales, count, _sort) = busiest_day
+            result.update(
+                {
+                    "day_name": format_date(self.env, day, date_format="EEEE"),
+                    "day_sales": sales,
+                    "day_count": count,
+                }
+            )
+        if busiest_hour:
+            hour, (sales, count, _sort) = busiest_hour
+            result.update(
+                {
+                    "time_display": self._format_hour_range(hour),
+                    "time_sales": sales,
+                    "time_count": count,
+                }
+            )
+        return result
+
     @api.depends("period")
     def _compute_metrics(self):
         Session = self.env["pos.session"]
@@ -352,29 +481,41 @@ class AveaBusinessOverview(models.TransientModel):
         )
         for overview in self:
             period = overview.period or "today"
-            current, previous, labels = overview._period_windows(period)
-            current_orders = overview._paid_orders_between(*current)
-            previous_orders = overview._paid_orders_between(*previous)
+            windows = overview._period_windows(period)
+            current_orders = overview._paid_orders_between(*windows["data_current"])
+            previous_orders = overview._paid_orders_between(*windows["data_previous"])
             sales = Session._avea_sales_summary_from_orders(current_orders)
             previous_sales = Session._avea_sales_summary_from_orders(previous_orders)
             activity = Session._avea_activity_from_orders(current_orders)
-            cash = overview._cash_activity_between(*current)
+            cash = overview._cash_activity_between(*windows["data_current"])
             change_display, tone, delta = overview._change_display(
                 sales["total_sales"],
                 previous_sales["total_sales"],
             )
+            busy = overview._busy_stats_from_orders(current_orders)
             refund_count = activity["refund_count"]
-            period_range = overview._format_day_range(*current)
-            comparison_range = overview._format_day_range(*previous)
+            period_range = overview._format_day_range(*windows["display_current"])
+            comparison_range = overview._format_day_range(*windows["display_previous"])
+            show_busiest_day = period != "today" and bool(busy["day_name"])
+            show_busiest_time = bool(busy["time_display"])
             overview.update(
                 {
-                    "period_label": labels[0],
+                    "period_label": windows["labels"][0],
                     "period_range_display": period_range,
-                    "comparison_label": labels[1],
+                    "comparison_label": windows["labels"][1],
                     "comparison_range_display": _(
                         "Compared with %s"
                     )
                     % comparison_range,
+                    "through_today_display": _(
+                        "Figures through %s"
+                    )
+                    % format_date(
+                        overview.env,
+                        windows["today"],
+                        date_format="d MMMM y",
+                    ),
+                    "show_through_today": windows["show_through_today"],
                     "total_sales": sales["total_sales"],
                     "order_count": sales["order_count"],
                     "average_order_value": sales["average_order_value"],
@@ -395,13 +536,22 @@ class AveaBusinessOverview(models.TransientModel):
                     "show_refund_attention": bool(refund_count),
                     "show_open_sessions": bool(open_session_count),
                     "show_attention": bool(refund_count),
+                    "busiest_day_name": busy["day_name"] or "",
+                    "busiest_day_sales": busy["day_sales"],
+                    "busiest_day_count": busy["day_count"],
+                    "show_busiest_day": show_busiest_day,
+                    "busiest_time_display": busy["time_display"] or "",
+                    "busiest_time_sales": busy["time_sales"],
+                    "busiest_time_count": busy["time_count"],
+                    "show_busiest_time": show_busiest_time,
+                    "show_busy_times": show_busiest_day or show_busiest_time,
                 }
             )
 
     def _get_product_rows(self):
         self.ensure_one()
-        current, _previous, _labels = self._period_windows(self.period or "today")
-        orders = self._paid_orders_between(*current)
+        windows = self._period_windows(self.period or "today")
+        orders = self._paid_orders_between(*windows["data_current"])
         return self.env["pos.session"]._avea_products_from_orders(
             orders,
             limit=OVERVIEW_PRODUCT_LIMIT,
