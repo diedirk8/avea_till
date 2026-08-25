@@ -92,6 +92,162 @@
         }
     }
 
+    .o_avea_session_products_empty {
+        background-color: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        border-radius: var(--border-radius-lg, 0.5rem);
+        padding: 1.5rem 1.15rem;
+        text-align: center;
+    }
+
+    .o_avea_session_products_empty_text {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.975rem;
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .o_avea_visual_card {
+        background-color: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        border-radius: var(--border-radius-lg, 0.5rem);
+        min-width: 0;
+        overflow: hidden;
+        padding: 1rem 1.1rem 1.1rem;
+
+        .o_field_widget,
+        .o_field_html,
+        .o_readonly {
+            display: block;
+            margin: 0;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .odoo-editor-editable,
+        .note-editable,
+        .o_readonly {
+            min-height: 0 !important;
+            padding: 0 !important;
+        }
+    }
+
+    .o_avea_trend {
+        display: flex;
+        flex-direction: column;
+        gap: 0.55rem;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .o_avea_trend_row {
+        align-items: center;
+        display: grid;
+        gap: 0.6rem;
+        grid-template-columns: 4.75rem minmax(0, 1fr) minmax(4.5rem, auto);
+        min-width: 0;
+    }
+
+    .o_avea_trend_label,
+    .o_avea_trend_amount {
+        color: var(--o-gray-700, #495057);
+        font-size: 0.8125rem;
+        font-weight: 700;
+        line-height: 1.3;
+        min-width: 0;
+        overflow-wrap: anywhere;
+    }
+
+    .o_avea_trend_amount {
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+    }
+
+    .o_avea_trend_track {
+        background: var(--o-gray-200, #e9ecef);
+        border-radius: 999px;
+        display: block;
+        height: 0.7rem;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .o_avea_trend_bar {
+        background: var(--avea-info, #0f766e);
+        border-radius: 999px;
+        display: block;
+        height: 100%;
+        max-width: 100%;
+        min-height: 0.7rem;
+    }
+
+    .o_avea_pattern {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .o_avea_pattern_row {
+        align-items: flex-start;
+        display: grid;
+        gap: 0.55rem 0.7rem;
+        grid-template-columns: 2.5rem minmax(0, 1fr);
+        min-width: 0;
+    }
+
+    .o_avea_pattern_day {
+        color: var(--o-gray-700, #495057);
+        font-size: 0.8125rem;
+        font-weight: 700;
+        line-height: 1.75rem;
+        padding-top: 0.05rem;
+    }
+
+    .o_avea_pattern_hours {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.3rem;
+        min-width: 0;
+    }
+
+    .o_avea_pattern_cell {
+        align-items: center;
+        border-radius: 0.4rem;
+        color: #01494d;
+        display: inline-flex;
+        font-size: 0.7rem;
+        font-weight: 700;
+        height: 1.75rem;
+        justify-content: center;
+        min-width: 1.75rem;
+        padding: 0 0.2rem;
+    }
+
+    .o_avea_pattern_cell--empty {
+        background: var(--o-gray-100, #f8f9fa);
+        color: var(--o-gray-400, #ced4da);
+    }
+
+    .o_avea_pattern_cell--low {
+        background: #d7f0ef;
+    }
+
+    .o_avea_pattern_cell--mild {
+        background: #9ed9d4;
+    }
+
+    .o_avea_pattern_cell--warm {
+        background: #4ea8a3;
+        color: #fff;
+    }
+
+    .o_avea_pattern_cell--hot {
+        background: #0f766e;
+        color: #fff;
+    }
+
     .o_avea_workspace_kpi_subvalue {
         color: var(--o-gray-600, #6c757d);
         font-size: 0.8125rem;
@@ -138,6 +294,20 @@
         .o_avea_period_range,
         .o_avea_period_range .o_field_widget {
             font-size: 1.05rem;
+        }
+
+        .o_avea_trend_row {
+            gap: 0.4rem;
+            grid-template-columns: 3.5rem minmax(0, 1fr) minmax(3.75rem, auto);
+        }
+
+        .o_avea_trend_label,
+        .o_avea_trend_amount {
+            font-size: 0.75rem;
+        }
+
+        .o_avea_pattern_row {
+            grid-template-columns: 2.25rem minmax(0, 1fr);
         }
 
         .o_avea_products_sold_card {

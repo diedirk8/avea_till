@@ -103,6 +103,7 @@ class PosSession(models.Model):
             "items_sold": sum(lines.mapped("qty")),
             "discount_total": discount_total,
             "refund_count": len(refund_orders),
+            "refund_amount": abs(sum(refund_orders.mapped("amount_total"))),
         }
 
     @api.model

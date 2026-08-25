@@ -12,7 +12,7 @@ Features:
 - Customer Credit (foundation)
 - POS Store Credit payments
 """,
-    "version": "19.0.2.31.0",
+    "version": "19.0.2.32.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",

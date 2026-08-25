@@ -1,7 +1,9 @@
 from calendar import monthrange
 from datetime import datetime, time, timedelta
+from html import escape
 from zoneinfo import ZoneInfo
 
+from markupsafe import Markup
 from odoo import Command, _, api, fields, models
 from odoo.tools.misc import format_date
 
@@ -217,6 +219,50 @@ class AveaBusinessOverview(models.TransientModel):
         compute="_compute_metrics",
     )
     show_busy_times = fields.Boolean(
+        compute="_compute_metrics",
+    )
+
+    items_sold_display = fields.Char(
+        string="Items Sold",
+        compute="_compute_metrics",
+    )
+    average_items_display = fields.Char(
+        string="Average Items per Sale",
+        compute="_compute_metrics",
+    )
+    slowest_day_name = fields.Char(
+        string="Slowest Day",
+        compute="_compute_metrics",
+    )
+    slowest_day_sales = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    slowest_day_count = fields.Integer(
+        compute="_compute_metrics",
+    )
+    show_slowest_day = fields.Boolean(
+        compute="_compute_metrics",
+    )
+    refund_total = fields.Monetary(
+        string="Refunds",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    sales_trend_html = fields.Html(
+        string="Sales Trend",
+        compute="_compute_metrics",
+        sanitize=False,
+    )
+    show_sales_trend = fields.Boolean(
+        compute="_compute_metrics",
+    )
+    trading_pattern_html = fields.Html(
+        string="Busy Times",
+        compute="_compute_metrics",
+        sanitize=False,
+    )
+    show_trading_pattern = fields.Boolean(
         compute="_compute_metrics",
     )
 
@@ -488,6 +534,121 @@ class AveaBusinessOverview(models.TransientModel):
             )
         return result
 
+    def _format_money(self, amount):
+        return self.env.company.currency_id.format(amount)
+
+    def _format_qty_display(self, qty):
+        rounded = round(float(qty or 0.0), 2)
+        if abs(rounded - round(rounded)) < 0.005:
+            return str(int(round(rounded)))
+        return f"{rounded:.1f}"
+
+    def _day_rows_from_orders(self, orders, day_from, day_to):
+        buckets = {}
+        for order in orders:
+            local_dt = self._local_order_datetime(order)
+            if not local_dt:
+                continue
+            day = local_dt.date()
+            entry = buckets.setdefault(day, [0.0, 0])
+            entry[0] += order.amount_total
+            entry[1] += 1
+        rows = []
+        current = day_from
+        while current <= day_to:
+            sales, count = buckets.get(current, [0.0, 0])
+            rows.append((current, sales, count))
+            current += timedelta(days=1)
+        return rows
+
+    def _weekday_hour_from_orders(self, orders):
+        buckets = {}
+        for order in orders:
+            local_dt = self._local_order_datetime(order)
+            if not local_dt:
+                continue
+            key = (local_dt.weekday(), local_dt.hour)
+            entry = buckets.setdefault(key, [0.0, 0])
+            entry[0] += order.amount_total
+            entry[1] += 1
+        return buckets
+
+    def _pattern_cell_class(self, sales, max_sales):
+        if max_sales <= 0 or sales <= 0:
+            return "o_avea_pattern_cell o_avea_pattern_cell--empty"
+        ratio = sales / max_sales
+        if ratio >= 0.75:
+            tone = "hot"
+        elif ratio >= 0.4:
+            tone = "warm"
+        elif ratio >= 0.15:
+            tone = "mild"
+        else:
+            tone = "low"
+        return f"o_avea_pattern_cell o_avea_pattern_cell--{tone}"
+
+    def _build_sales_trend_html(self, day_rows):
+        if not day_rows:
+            return False
+        max_sales = max((sales for _day, sales, _count in day_rows), default=0.0)
+        parts = ['<div class="o_avea_trend">']
+        for day, sales, count in day_rows:
+            label = escape(format_date(self.env, day, date_format="EEE d"))
+            amount = escape(self._format_money(sales))
+            width = 0
+            if max_sales > 0 and sales > 0:
+                width = max(6, int(round((sales / max_sales) * 100)))
+            parts.append(
+                '<div class="o_avea_trend_row">'
+                f'<span class="o_avea_trend_label">{label}</span>'
+                '<span class="o_avea_trend_track">'
+                f'<span class="o_avea_trend_bar" style="width: {width}%"></span>'
+                "</span>"
+                f'<span class="o_avea_trend_amount">{amount}</span>'
+                "</div>"
+            )
+        parts.append("</div>")
+        return Markup("".join(parts))
+
+    def _build_trading_pattern_html(self, weekday_hours):
+        if not weekday_hours:
+            return False
+        hours = sorted({hour for _weekday, hour in weekday_hours})
+        weekdays = sorted({weekday for weekday, _hour in weekday_hours})
+        max_sales = max(sales for sales, _count in weekday_hours.values())
+        monday = fields.Date.context_today(self) - timedelta(
+            days=fields.Date.context_today(self).weekday()
+        )
+        parts = ['<div class="o_avea_pattern">']
+        for weekday in weekdays:
+            day_label = escape(
+                format_date(
+                    self.env,
+                    monday + timedelta(days=weekday),
+                    date_format="EEE",
+                )
+            )
+            parts.append('<div class="o_avea_pattern_row">')
+            parts.append(f'<span class="o_avea_pattern_day">{day_label}</span>')
+            parts.append('<div class="o_avea_pattern_hours">')
+            for hour in hours:
+                sales, count = weekday_hours.get((weekday, hour), (0.0, 0))
+                cell_class = self._pattern_cell_class(sales, max_sales)
+                title = escape(
+                    _("%(time)s · %(amount)s · %(count)s")
+                    % {
+                        "time": self._format_hour_range(hour),
+                        "amount": self._format_money(sales),
+                        "count": _("%s transactions") % count,
+                    }
+                )
+                parts.append(
+                    f'<span class="{cell_class}" title="{title}">{hour:02d}</span>'
+                )
+            parts.append("</div></div>")
+        parts.append("</div>")
+        return Markup("".join(parts))
+
     @api.depends("period")
     def _compute_metrics(self):
         Session = self.env["pos.session"]
@@ -512,6 +673,26 @@ class AveaBusinessOverview(models.TransientModel):
             )
             busy = overview._busy_stats_from_orders(current_orders)
             refund_count = activity["refund_count"]
+            refund_total = activity.get("refund_amount", 0.0)
+            items_sold = activity["items_sold"]
+            average_items = (
+                items_sold / sales["order_count"] if sales["order_count"] else 0.0
+            )
+            day_from, day_to = windows["data_current"]
+            day_rows = overview._day_rows_from_orders(
+                current_orders, day_from, day_to
+            )
+            days_with_sales = [
+                (day, sales_amt, count)
+                for day, sales_amt, count in day_rows
+                if count > 0
+            ]
+            slowest = (
+                min(days_with_sales, key=lambda row: (row[1], row[2], row[0].toordinal()))
+                if len(days_with_sales) >= 2
+                else False
+            )
+            weekday_hours = overview._weekday_hour_from_orders(current_orders)
             period_range = overview._format_day_range(*windows["display_current"])
             comparison_range = overview._format_day_range(*windows["display_previous"])
             show_busiest_day = period != "today" and bool(busy["day_name"])
@@ -563,6 +744,23 @@ class AveaBusinessOverview(models.TransientModel):
                     "busiest_time_count": busy["time_count"],
                     "show_busiest_time": show_busiest_time,
                     "show_busy_times": show_busiest_day or show_busiest_time,
+                    "items_sold_display": overview._format_qty_display(items_sold),
+                    "average_items_display": overview._format_qty_display(
+                        average_items
+                    ),
+                    "slowest_day_name": (
+                        overview._format_busy_date(slowest[0]) if slowest else ""
+                    ),
+                    "slowest_day_sales": slowest[1] if slowest else 0.0,
+                    "slowest_day_count": slowest[2] if slowest else 0,
+                    "show_slowest_day": bool(slowest) and period != "today",
+                    "refund_total": refund_total,
+                    "sales_trend_html": overview._build_sales_trend_html(day_rows),
+                    "show_sales_trend": bool(days_with_sales),
+                    "trading_pattern_html": overview._build_trading_pattern_html(
+                        weekday_hours
+                    ),
+                    "show_trading_pattern": bool(weekday_hours),
                 }
             )
 
