@@ -186,21 +186,21 @@
                                 class="btn-secondary o_avea_workspace_section_action"
                             />
                         </div>
-                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--secondary">
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive o_avea_workspace_kpi_card--compact">
+                        <div class="o_avea_workspace_kpi_grid">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive o_avea_workspace_kpi_card--primary">
                                 <span class="o_avea_workspace_kpi_label">Cash</span>
                                 <field name="cash_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                             </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--compact">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
                                 <span class="o_avea_workspace_kpi_label">Card</span>
                                 <field name="card_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                             </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--compact">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
                                 <span class="o_avea_workspace_kpi_label">Other</span>
                                 <field name="other_payments" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                             </div>
                         </div>
-                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_cash_grid">
+                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--secondary o_avea_workspace_cash_grid">
                             <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--positive">
                                 <span class="o_avea_workspace_activity_label">Cash In</span>
                                 <div class="o_avea_workspace_activity_detail">

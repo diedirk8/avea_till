@@ -82,6 +82,16 @@
         }
     }
 
+    .o_avea_workspace_kpi_value {
+        overflow-wrap: anywhere;
+        white-space: normal;
+
+        .o_field_widget {
+            overflow-wrap: anywhere;
+            white-space: normal;
+        }
+    }
+
     .o_avea_workspace_kpi_subvalue {
         color: var(--o-gray-600, #6c757d);
         font-size: 0.8125rem;
@@ -128,10 +138,6 @@
         .o_avea_period_range,
         .o_avea_period_range .o_field_widget {
             font-size: 1.05rem;
-        }
-
-        .o_avea_workspace_kpi_value {
-            overflow-wrap: anywhere;
         }
 
         .o_avea_products_sold_card {
