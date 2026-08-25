@@ -194,6 +194,13 @@
 
     <delete id="action_avea_till_dashboard" model="ir.actions.server"/>
 
+    <record id="action_avea_open_cash_ledger" model="ir.actions.server">
+        <field name="name">Cash</field>
+        <field name="model_id" ref="model_avea_till_dashboard"/>
+        <field name="state">code</field>
+        <field name="code">action = env['avea.till.dashboard'].action_open_dashboard()</field>
+    </record>
+
     <record id="action_avea_till_live_dashboard" model="ir.actions.act_window">
         <field name="name">Cash Ledger</field>
         <field name="res_model">avea.till.dashboard</field>

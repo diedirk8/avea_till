@@ -4,6 +4,7 @@
     <menuitem
         id="menu_avea_root"
         name="Avea Dashboard"
+        action="action_avea_business_overview"
         web_icon="avea_till,static/description/icon.png"
         sequence="100"
     />

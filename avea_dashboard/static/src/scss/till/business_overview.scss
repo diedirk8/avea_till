@@ -1,0 +1,91 @@
+// Business Overview — page-specific extensions.
+
+.o_avea_workspace--overview {
+    .o_avea_period_selector {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        min-width: 0;
+    }
+
+    .o_avea_period_btn {
+        flex: 1 1 calc(33.333% - 0.5rem);
+        font-weight: 700;
+        min-height: 2.75rem;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .o_avea_workspace_kpi_subvalue {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.8125rem;
+        font-weight: 600;
+        line-height: 1.35;
+        margin-top: 0.35rem;
+        min-width: 0;
+        overflow-wrap: anywhere;
+
+        .o_field_widget {
+            display: inline;
+            font-weight: 700;
+            margin-bottom: 0;
+        }
+    }
+
+    .o_avea_change_card--up {
+        border-color: var(--avea-positive-border);
+        color: var(--avea-positive);
+
+        .o_avea_workspace_kpi_value,
+        .o_avea_workspace_kpi_value .o_field_widget {
+            color: var(--avea-positive);
+        }
+    }
+
+    .o_avea_change_card--down {
+        border-color: var(--avea-negative-border);
+        color: var(--avea-negative);
+
+        .o_avea_workspace_kpi_value,
+        .o_avea_workspace_kpi_value .o_field_widget {
+            color: var(--avea-negative);
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .o_form_statusbar,
+        .o_avea_workspace_header {
+            .btn,
+            .o_avea_workspace_nav {
+                flex: 0 0 auto;
+                min-width: max-content;
+                overflow: visible;
+                text-overflow: clip;
+                white-space: nowrap;
+            }
+        }
+
+        .o_avea_period_btn {
+            flex: 1 1 calc(33.333% - 0.35rem);
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+
+        .o_avea_products_sold_card {
+            .o_list_table td[name="product_name"],
+            .o_list_table th[data-name="product_name"] {
+                overflow: visible;
+                overflow-wrap: anywhere;
+                white-space: normal;
+            }
+        }
+    }
+}
+
+.o_avea_sessions_list {
+    .o_data_row {
+        cursor: pointer;
+    }
+}

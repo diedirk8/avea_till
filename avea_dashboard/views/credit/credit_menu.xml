@@ -5,11 +5,12 @@
         id="menu_avea_customer_credit"
         name="Customer Credit"
         parent="menu_avea_root"
+        action="action_avea_credit_dashboard"
         sequence="20"
     />
 
     <record id="menu_avea_customer_credit" model="ir.ui.menu">
-        <field name="action" eval="False"/>
+        <field name="action" ref="action_avea_credit_dashboard"/>
     </record>
 
     <menuitem

@@ -12,7 +12,7 @@ Features:
 - Customer Credit (foundation)
 - POS Store Credit payments
 """,
-    "version": "19.0.2.27.0",
+    "version": "19.0.2.28.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -31,6 +31,8 @@ Features:
         "views/till/till_movement_views.xml",
         "views/till/till_dashboard_views.xml",
         "views/till/session_dashboard_views.xml",
+        "views/till/sessions_views.xml",
+        "views/till/business_overview_views.xml",
         "views/credit/credit_dashboard_views.xml",
         "views/credit/credit_ledger_views.xml",
         "views/credit/credit_issue_wizard_views.xml",
@@ -55,6 +57,7 @@ Features:
             "avea_till/static/src/scss/avea_workspace.scss",
             "avea_till/static/src/scss/till/till_dashboard.scss",
             "avea_till/static/src/scss/till/session_dashboard.scss",
+            "avea_till/static/src/scss/till/business_overview.scss",
             "avea_till/static/src/scss/till/till_ledger_amount.scss",
             "avea_till/static/src/scss/credit/credit_workspace.scss",
             "avea_till/static/src/scss/credit/credit_ledger.scss",

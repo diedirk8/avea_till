@@ -31,7 +31,7 @@ Do not rename existing technical till identifiers unless specifically required.
 | Priority | Status |
 |----------|--------|
 | **P0 — Bugs / UX** | Completed. Session Dashboard / Cash Ledger in `0a8d782c3cdeb08fcf591fa68f3aa711290753ae`; Customer Credit Dashboard mobile and Issue Credit in `19.0.2.27.0`. |
-| **P1 — Improvements** | Specified — **not implemented** |
+| **P1 — Improvements** | Completed on `develop` (`19.0.2.28.0`) — Business Overview landing page and Avea navigation. **Not in production.** |
 | **P2 — Major Features** | Specified — **not implemented** |
 | **P3 — Future** | Specified — **not implemented** |
 
@@ -98,7 +98,7 @@ Use the **existing** Issue Credit workflow. Do not rebuild Store Credit or creat
 
 ## P1 — Improvements
 
-**Status: specified only. Do not implement yet.**
+**Status: completed on development (`develop` / `petsempire_dev`, `19.0.2.28.0`). Do not deploy until requested.**
 
 ### Main Avea Dashboard — Business Overview
 

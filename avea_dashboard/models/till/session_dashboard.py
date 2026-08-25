@@ -334,6 +334,11 @@ class AveaTillSessionDashboard(models.TransientModel):
                 }
             )
 
+    def action_open_sessions(self):
+        return self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_sessions"
+        )
+
     def action_open_cash_ledger(self):
         self.ensure_one()
         session_id = self.session_id.id if self.session_id else None

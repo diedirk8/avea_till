@@ -35,51 +35,31 @@ class PosSession(models.Model):
             session.avea_manual_net = 0.0
             session.avea_live_balance = ledger_balance
 
-    def _avea_paid_order_domain(self):
-        self.ensure_one()
+    @api.model
+    def _avea_paid_order_states(self):
         valid_states = {
             state
             for state, _label in self.env["pos.order"]._fields["state"].selection
         }
-        paid_states = [state for state in ("paid", "done", "invoiced") if state in valid_states]
-        if not paid_states:
-            paid_states = ["paid"]
-        return [("session_id", "=", self.id), ("state", "in", paid_states)]
+        paid_states = [
+            state for state in ("paid", "done", "invoiced") if state in valid_states
+        ]
+        return paid_states or ["paid"]
+
+    def _avea_paid_order_domain(self):
+        self.ensure_one()
+        return [
+            ("session_id", "=", self.id),
+            ("state", "in", self._avea_paid_order_states()),
+        ]
 
     def get_avea_paid_orders(self):
         self.ensure_one()
         return self.env["pos.order"].search(self._avea_paid_order_domain())
 
-    def get_avea_cash_summary(self):
-        """Cash drawer breakdown from the Avea till ledger."""
-        self.ensure_one()
-        Movement = self.env["avea.till.movement"]
-        Movement.prepare_session_ledger(self)
-        domain = [("session_id", "=", self.id)]
-        return {
-            "opening_float": Movement.sum_amount_for_domain(
-                domain + [("reason", "=", OPENING_FLOAT_REASON)]
-            ),
-            "cash_sales": Movement.sum_amount_for_domain(
-                domain + [("reason", "=", CASH_SALE_REASON)]
-            ),
-            "cash_in": Movement.sum_amount_for_domain(
-                domain + [("reason", "=", POS_CASH_IN_REASON)]
-            ),
-            "cash_out": Movement.sum_amount_for_domain(
-                domain + [("reason", "=", POS_CASH_OUT_REASON)]
-            ),
-            "cash_refunds": Movement.sum_amount_for_domain(
-                domain + [("reason", "=", CASH_REFUND_REASON)]
-            ),
-            "expected_cash": Movement.get_session_ledger_balance(self.id),
-            "movement_count": Movement.search_count(domain),
-        }
-
-    def get_avea_sales_summary(self):
-        """Payment and order totals for the full POS session."""
-        self.ensure_one()
-        orders = self.get_avea_paid_orders()
+    @api.model
+    def _avea_sales_summary_from_orders(self, orders):
+        """Payment and order totals for a paid POS order recordset."""
         order_count = len(orders)
         total_sales = sum(orders.mapped("amount_total"))
         average_order_value = total_sales / order_count if order_count else 0.0
@@ -105,55 +85,31 @@ class PosSession(models.Model):
             "average_order_value": average_order_value,
         }
 
-    def get_avea_activity_metrics(self):
-        """Operational counts for the full POS session."""
-        self.ensure_one()
-        Movement = self.env["avea.till.movement"]
-        Movement.prepare_session_ledger(self)
-        orders = self.get_avea_paid_orders()
+    @api.model
+    def _avea_activity_from_orders(self, orders):
+        """Operational counts for a paid POS order recordset."""
         lines = orders.lines
-
         discount_total = 0.0
         for line in lines:
             if line.discount:
-                discount_total += (
-                    line.qty * line.price_unit * (line.discount / 100.0)
-                )
+                discount_total += line.qty * line.price_unit * (line.discount / 100.0)
 
         refund_orders = orders.filtered(
             lambda order: order.is_refund
             or order.currency_id.compare_amounts(order.amount_total, 0.0) < 0
         )
-
-        session_domain = [("session_id", "=", self.id)]
-        cash_in_domain = session_domain + [("reason", "=", POS_CASH_IN_REASON)]
-        cash_out_domain = session_domain + [("reason", "=", POS_CASH_OUT_REASON)]
-
         return {
             "order_count": len(orders),
             "items_sold": sum(lines.mapped("qty")),
             "discount_total": discount_total,
             "refund_count": len(refund_orders),
-            "cash_movement_count": Movement.search_count(session_domain),
-            "cash_in_count": Movement.search_count(cash_in_domain),
-            "cash_out_count": Movement.search_count(cash_out_domain),
-            "cash_in_total": Movement.sum_amount_for_domain(cash_in_domain),
-            "cash_out_total": Movement.sum_amount_for_domain(cash_out_domain),
         }
 
-    def get_avea_products_sold(self):
-        """All products sold during the session, ranked by net quantity sold."""
-        return self.get_avea_top_products(limit=None)
-
-    def get_avea_top_products(self, limit=None):
-        """Products sold in the session ranked by net quantity sold.
-
-        Pass limit to cap the result set. Session Dashboard uses the uncapped
-        list via get_avea_products_sold().
-        """
-        self.ensure_one()
+    @api.model
+    def _avea_products_from_orders(self, orders, limit=None):
+        """Products sold on the given orders, ranked by net quantity sold."""
         Line = self.env["pos.order.line"]
-        order_ids = self.env["pos.order"].search(self._avea_paid_order_domain()).ids
+        order_ids = orders.ids
         if not order_ids:
             return []
 
@@ -187,6 +143,87 @@ class PosSession(models.Model):
             }
             for product, quantity_sold, sales_value in ranked
         ]
+
+    def get_avea_cash_summary(self):
+        """Cash drawer breakdown from the Avea till ledger."""
+        self.ensure_one()
+        Movement = self.env["avea.till.movement"]
+        Movement.prepare_session_ledger(self)
+        domain = [("session_id", "=", self.id)]
+        return {
+            "opening_float": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", OPENING_FLOAT_REASON)]
+            ),
+            "cash_sales": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", CASH_SALE_REASON)]
+            ),
+            "cash_in": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", POS_CASH_IN_REASON)]
+            ),
+            "cash_out": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", POS_CASH_OUT_REASON)]
+            ),
+            "cash_refunds": Movement.sum_amount_for_domain(
+                domain + [("reason", "=", CASH_REFUND_REASON)]
+            ),
+            "expected_cash": Movement.get_session_ledger_balance(self.id),
+            "movement_count": Movement.search_count(domain),
+        }
+
+    def get_avea_sales_summary(self):
+        """Payment and order totals for the full POS session."""
+        self.ensure_one()
+        return self._avea_sales_summary_from_orders(self.get_avea_paid_orders())
+
+    def get_avea_activity_metrics(self):
+        """Operational counts for the full POS session."""
+        self.ensure_one()
+        Movement = self.env["avea.till.movement"]
+        Movement.prepare_session_ledger(self)
+        activity = self._avea_activity_from_orders(self.get_avea_paid_orders())
+
+        session_domain = [("session_id", "=", self.id)]
+        cash_in_domain = session_domain + [("reason", "=", POS_CASH_IN_REASON)]
+        cash_out_domain = session_domain + [("reason", "=", POS_CASH_OUT_REASON)]
+
+        activity.update(
+            {
+                "cash_movement_count": Movement.search_count(session_domain),
+                "cash_in_count": Movement.search_count(cash_in_domain),
+                "cash_out_count": Movement.search_count(cash_out_domain),
+                "cash_in_total": Movement.sum_amount_for_domain(cash_in_domain),
+                "cash_out_total": Movement.sum_amount_for_domain(cash_out_domain),
+            }
+        )
+        return activity
+
+    def get_avea_products_sold(self):
+        """All products sold during the session, ranked by net quantity sold."""
+        return self.get_avea_top_products(limit=None)
+
+    def get_avea_top_products(self, limit=None):
+        """Products sold in the session ranked by net quantity sold.
+
+        Pass limit to cap the result set. Session Dashboard uses the uncapped
+        list via get_avea_products_sold().
+        """
+        self.ensure_one()
+        return self._avea_products_from_orders(
+            self.get_avea_paid_orders(),
+            limit=limit,
+        )
+
+    def action_avea_open_session_dashboard(self):
+        self.ensure_one()
+        return self.env["avea.till.session.dashboard"].action_open_session_dashboard(
+            session_id=self.id
+        )
+
+    def get_formview_action(self, access_uid=None):
+        if self.env.context.get("avea_open_session_dashboard"):
+            self.ensure_one()
+            return self.action_avea_open_session_dashboard()
+        return super().get_formview_action(access_uid=access_uid)
 
     def get_avea_session_duration_display(self):
         self.ensure_one()

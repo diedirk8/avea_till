@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_sessions_list" model="ir.ui.view">
+        <field name="name">pos.session.avea.list</field>
+        <field name="model">pos.session</field>
+        <field name="arch" type="xml">
+            <list
+                string="Sessions"
+                create="false"
+                delete="false"
+                default_order="start_at desc"
+                action="action_avea_open_session_dashboard"
+                type="object"
+                class="o_avea_sessions_list"
+            >
+                <field name="name" string="Session"/>
+                <field name="config_id" string="Till"/>
+                <field name="user_id" string="Who is using it" widget="many2one_avatar_user"/>
+                <field name="state" string="Status" widget="badge"/>
+                <field name="start_at" string="Opened"/>
+                <field name="stop_at" string="Closed" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_sessions_search" model="ir.ui.view">
+        <field name="name">pos.session.avea.search</field>
+        <field name="model">pos.session</field>
+        <field name="arch" type="xml">
+            <search string="Sessions">
+                <field name="name"/>
+                <field name="config_id" string="Till"/>
+                <field name="user_id" string="Who is using it"/>
+                <filter
+                    string="Open"
+                    name="avea_open"
+                    domain="[('state', 'in', ('opened', 'opening_control', 'closing_control'))]"
+                />
+                <filter
+                    string="Closed"
+                    name="avea_closed"
+                    domain="[('state', '=', 'closed')]"
+                />
+                <separator/>
+                <filter string="Till" name="group_till" context="{'group_by': 'config_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_avea_sessions" model="ir.actions.act_window">
+        <field name="name">Sessions</field>
+        <field name="res_model">pos.session</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_avea_sessions_list"/>
+        <field name="search_view_id" ref="view_avea_sessions_search"/>
+        <field name="context">{
+            'avea_open_session_dashboard': True,
+            'search_default_avea_open': 1,
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">No POS sessions yet</p>
+            <p>Open a till in Point of Sale. Sessions will appear here, and opening one shows the Session Dashboard.</p>
+        </field>
+    </record>
+
+</odoo>

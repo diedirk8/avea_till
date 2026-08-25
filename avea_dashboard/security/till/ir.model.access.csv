@@ -3,3 +3,5 @@ access_avea_till_movement,access.avea.till.movement,model_avea_till_movement,,1,
 access_avea_till_dashboard,access.avea.till.dashboard,model_avea_till_dashboard,,1,1,1,1
 access_avea_till_session_dashboard,access.avea.till.session.dashboard,model_avea_till_session_dashboard,,1,1,1,1
 access_avea_till_session_dashboard_product_line,access.avea.till.session.dashboard.product.line,model_avea_till_session_dashboard_product_line,,1,1,1,1
+access_avea_business_overview,access.avea.business.overview,model_avea_business_overview,,1,1,1,1
+access_avea_business_overview_product_line,access.avea.business.overview.product.line,model_avea_business_overview_product_line,,1,1,1,1

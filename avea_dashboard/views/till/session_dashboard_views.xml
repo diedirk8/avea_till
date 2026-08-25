@@ -23,15 +23,21 @@
             <form string="Session Dashboard" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--session">
                 <header class="o_avea_workspace_header">
                     <button
+                        name="action_open_sessions"
+                        type="object"
+                        string="Sessions"
+                        class="btn-secondary o_avea_workspace_nav"
+                    />
+                    <button
                         name="action_refresh"
                         type="object"
-                        string="Session Dashboard"
+                        string="Session"
                         class="btn-primary o_avea_workspace_nav o_avea_workspace_nav--active"
                     />
                     <button
                         name="action_open_cash_ledger"
                         type="object"
-                        string="Cash Ledger"
+                        string="Cash"
                         class="btn-secondary o_avea_workspace_nav"
                     />
                     <button
