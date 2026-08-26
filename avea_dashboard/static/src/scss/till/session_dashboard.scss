@@ -10,10 +10,15 @@
         text-align: center;
     }
 
-    .o_avea_session_products_empty_text {
+    .o_avea_session_products_empty_text,
+    .o_avea_session_empty_text {
         color: var(--o-gray-600, #6c757d);
         font-size: 0.975rem;
         line-height: 1.6;
+        margin: 0.55rem 0 0;
+    }
+
+    .o_avea_session_products_empty_text {
         margin: 0;
     }
 

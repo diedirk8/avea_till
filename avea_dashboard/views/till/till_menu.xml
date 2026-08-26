@@ -13,12 +13,12 @@
         id="menu_avea_till"
         name="Sessions"
         parent="menu_avea_root"
-        action="action_avea_sessions"
+        action="action_avea_session_dashboard"
         sequence="10"
     />
 
     <record id="menu_avea_till" model="ir.ui.menu">
-        <field name="action" ref="action_avea_sessions"/>
+        <field name="action" ref="action_avea_session_dashboard"/>
     </record>
 
     <menuitem

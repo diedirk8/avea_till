@@ -21,39 +21,20 @@
         <field name="model">avea.till.session.dashboard</field>
         <field name="arch" type="xml">
             <form string="Session Dashboard" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--session">
-                <header class="o_avea_workspace_header">
-                    <button
-                        name="action_open_sessions"
-                        type="object"
-                        string="Sessions"
-                        class="btn-secondary o_avea_workspace_nav"
-                    />
-                    <button
-                        name="action_refresh"
-                        type="object"
-                        string="Session"
-                        class="btn-primary o_avea_workspace_nav o_avea_workspace_nav--active"
-                    />
-                    <button
-                        name="action_open_cash_ledger"
-                        type="object"
-                        string="Cash"
-                        class="btn-secondary o_avea_workspace_nav"
-                    />
-                    <button
-                        name="action_refresh"
-                        type="object"
-                        string="Refresh"
-                        class="btn-secondary o_avea_workspace_refresh"
-                        icon="fa-refresh"
-                    />
-                </header>
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
                     <field name="show_products_sold" invisible="1"/>
                     <field name="show_refund_attention" invisible="1"/>
 
-                    <div class="o_avea_workspace_hero">
+                    <div class="o_avea_workspace_hero" invisible="session_id">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Sessions</span>
+                            <h1 class="o_avea_workspace_title">No sessions yet</h1>
+                            <p class="o_avea_session_empty_text">Open a till in Point of Sale to start a session.</p>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_hero" invisible="not session_id">
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">This session</span>
                             <h1 class="o_avea_workspace_title">Session Dashboard</h1>
@@ -84,7 +65,7 @@
                         </div>
                     </div>
 
-                    <div class="o_avea_workspace_block">
+                    <div class="o_avea_workspace_block" invisible="not session_id">
                         <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Sales</h2>
                         </div>
@@ -118,7 +99,7 @@
                         </div>
                     </div>
 
-                    <div class="o_avea_workspace_block">
+                    <div class="o_avea_workspace_block" invisible="not session_id">
                         <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Cash</h2>
                             <button
@@ -154,7 +135,7 @@
                         </div>
                     </div>
 
-                    <div class="o_avea_workspace_block o_avea_workspace_block--attention" invisible="not show_refund_attention">
+                    <div class="o_avea_workspace_block o_avea_workspace_block--attention" invisible="not session_id or not show_refund_attention">
                         <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Needs attention</h2>
                         </div>
@@ -166,7 +147,7 @@
                         </div>
                     </div>
 
-                    <div class="o_avea_workspace_block">
+                    <div class="o_avea_workspace_block" invisible="not session_id">
                         <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Products Sold</h2>
                             <span class="o_avea_workspace_section_meta">
@@ -194,7 +175,7 @@
                         </div>
                     </div>
 
-                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
+                    <div class="o_avea_workspace_block o_avea_workspace_block--last" invisible="not session_id">
                         <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Details</h2>
                         </div>

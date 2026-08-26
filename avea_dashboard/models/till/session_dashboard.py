@@ -225,11 +225,23 @@ class AveaTillSessionDashboard(models.TransientModel):
                 ]
             )
 
+    @api.depends("session_id")
+    def _compute_display_name(self):
+        for dashboard in self:
+            dashboard.display_name = (
+                dashboard.session_id.display_name
+                if dashboard.session_id
+                else _("No sessions yet")
+            )
+
     @api.model
     def action_open_session_dashboard(self, session_id=None):
+        session = self.env["pos.session"].browse(session_id) if session_id else self.env["pos.session"]
+        if not session:
+            session = self._default_session_id()
         vals = {}
-        if session_id:
-            vals["session_id"] = session_id
+        if session:
+            vals["session_id"] = session.id
         dashboard = self.create(vals)
         return {
             "type": "ir.actions.act_window",
@@ -238,6 +250,7 @@ class AveaTillSessionDashboard(models.TransientModel):
             "view_mode": "form",
             "res_id": dashboard.id,
             "target": "current",
+            "context": {"clear_breadcrumbs": True},
         }
 
     @api.model
@@ -262,9 +275,16 @@ class AveaTillSessionDashboard(models.TransientModel):
         )
         if open_session:
             return open_session
-        return Session.search(
+        any_open = Session.search(
             [("state", "in", ("opened", "closing_control"))],
             order="id desc",
+            limit=1,
+        )
+        if any_open:
+            return any_open
+        return Session.search(
+            [("state", "=", "closed")],
+            order="stop_at desc, id desc",
             limit=1,
         )
 

@@ -26,8 +26,6 @@
                     <field name="period" invisible="1"/>
                     <field name="sales_change_tone" invisible="1"/>
                     <field name="show_products" invisible="1"/>
-                    <field name="show_attention" invisible="1"/>
-                    <field name="show_refund_attention" invisible="1"/>
                     <field name="show_open_sessions" invisible="1"/>
                     <field name="show_through_today" invisible="1"/>
                     <field name="show_busy_times" invisible="1"/>
@@ -35,6 +33,7 @@
                     <field name="show_busiest_time" invisible="1"/>
                     <field name="show_slowest_day" invisible="1"/>
                     <field name="show_sales_trend" invisible="1"/>
+                    <field name="show_sales_sparkline" invisible="1"/>
                     <field name="show_trading_pattern" invisible="1"/>
 
                     <div class="o_avea_workspace_hero">
@@ -98,6 +97,36 @@
                                 class="btn-secondary o_avea_period_btn"
                                 invisible="period == 'month'"
                             />
+                            <button
+                                name="action_period_custom"
+                                type="object"
+                                string="Custom Period"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'custom'"
+                            />
+                            <button
+                                name="action_period_custom"
+                                type="object"
+                                string="Custom Period"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'custom'"
+                            />
+                        </div>
+                        <div class="o_avea_custom_period" invisible="period != 'custom'">
+                            <div class="o_avea_custom_period_field">
+                                <span class="o_avea_custom_period_label">From</span>
+                                <field name="date_from" nolabel="1" readonly="0"/>
+                            </div>
+                            <div class="o_avea_custom_period_field">
+                                <span class="o_avea_custom_period_label">To</span>
+                                <field name="date_to" nolabel="1" readonly="0"/>
+                            </div>
+                            <button
+                                name="action_apply_custom_period"
+                                type="object"
+                                string="Apply"
+                                class="btn-primary o_avea_custom_period_apply"
+                            />
                         </div>
                     </div>
 
@@ -108,70 +137,73 @@
                                 <field name="period_range_display" nolabel="1" readonly="1"/>
                             </span>
                         </div>
-                        <div class="o_avea_workspace_kpi_grid">
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--primary">
-                                <span class="o_avea_workspace_kpi_label">Sales</span>
-                                <field name="total_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                        <div class="o_avea_pulse">
+                            <div class="o_avea_pulse_main">
+                                <span class="o_avea_pulse_label">Sales</span>
+                                <div class="o_avea_pulse_figure">
+                                    <field name="total_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_pulse_value"/>
+                                    <div class="o_avea_pulse_spark" invisible="not show_sales_sparkline">
+                                        <field name="sales_sparkline_html" nolabel="1" readonly="1" widget="html"/>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
-                                <span class="o_avea_workspace_kpi_label">Transactions</span>
-                                <field name="order_count" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            <div class="o_avea_pulse_change o_avea_pulse_change--up" invisible="sales_change_tone != 'up'">
+                                <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_pulse_change_pct"/>
+                                <span class="o_avea_pulse_change_label">vs previous period</span>
+                                <field name="sales_vs_previous_display" nolabel="1" readonly="1" class="o_avea_pulse_change_vs"/>
                             </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info">
-                                <span class="o_avea_workspace_kpi_label">Average Sale</span>
-                                <field name="average_order_value" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            <div class="o_avea_pulse_change o_avea_pulse_change--down" invisible="sales_change_tone != 'down'">
+                                <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_pulse_change_pct"/>
+                                <span class="o_avea_pulse_change_label">vs previous period</span>
+                                <field name="sales_vs_previous_display" nolabel="1" readonly="1" class="o_avea_pulse_change_vs"/>
                             </div>
-                        </div>
-                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--secondary">
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact">
-                                <span class="o_avea_workspace_kpi_label">
-                                    <field name="comparison_label" nolabel="1" readonly="1"/>
-                                </span>
-                                <field name="previous_sales" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
-                                <span class="o_avea_workspace_kpi_subvalue">
-                                    <field name="previous_order_count" nolabel="1" readonly="1"/>
-                                    <span> transactions</span>
-                                </span>
-                            </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact o_avea_change_card o_avea_change_card--up" invisible="sales_change_tone != 'up'">
-                                <span class="o_avea_workspace_kpi_label">Change</span>
-                                <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
-                                <span class="o_avea_workspace_kpi_subvalue">
-                                    <field name="sales_change_amount" nolabel="1" widget="monetary" readonly="1"/>
-                                </span>
-                            </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact o_avea_change_card o_avea_change_card--down" invisible="sales_change_tone != 'down'">
-                                <span class="o_avea_workspace_kpi_label">Change</span>
-                                <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
-                                <span class="o_avea_workspace_kpi_subvalue">
-                                    <field name="sales_change_amount" nolabel="1" widget="monetary" readonly="1"/>
-                                </span>
-                            </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact o_avea_change_card" invisible="sales_change_tone != 'flat'">
-                                <span class="o_avea_workspace_kpi_label">Change</span>
-                                <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
-                                <span class="o_avea_workspace_kpi_subvalue">
-                                    <field name="sales_change_amount" nolabel="1" widget="monetary" readonly="1"/>
-                                </span>
+                            <div class="o_avea_pulse_change o_avea_pulse_change--flat" invisible="sales_change_tone != 'flat'">
+                                <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_pulse_change_pct"/>
+                                <span class="o_avea_pulse_change_label">vs previous period</span>
+                                <field name="sales_vs_previous_display" nolabel="1" readonly="1" class="o_avea_pulse_change_vs"/>
                             </div>
                         </div>
-                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--secondary" invisible="not show_busy_times">
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--compact" invisible="not show_busiest_day">
-                                <span class="o_avea_workspace_kpi_label">Busiest Day</span>
-                                <field name="busiest_day_name" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
-                                <span class="o_avea_workspace_kpi_subvalue">
+                        <div class="o_avea_pulse_metrics">
+                            <div class="o_avea_pulse_metric">
+                                <span class="o_avea_pulse_metric_label">Transactions</span>
+                                <field name="order_count" nolabel="1" readonly="1" class="o_avea_pulse_metric_value"/>
+                            </div>
+                            <div class="o_avea_pulse_metric">
+                                <span class="o_avea_pulse_metric_label">Average Sale</span>
+                                <field name="average_order_value" nolabel="1" widget="monetary" readonly="1" class="o_avea_pulse_metric_value"/>
+                            </div>
+                            <div class="o_avea_pulse_metric">
+                                <span class="o_avea_pulse_metric_label">Items Sold</span>
+                                <field name="items_sold_display" nolabel="1" readonly="1" class="o_avea_pulse_metric_value"/>
+                            </div>
+                        </div>
+                        <div class="o_avea_insights" invisible="not show_busy_times and not show_slowest_day">
+                            <div class="o_avea_insight" invisible="not show_busiest_day">
+                                <span class="o_avea_insight_label">Busiest Day</span>
+                                <field name="busiest_day_name" nolabel="1" readonly="1" class="o_avea_insight_title"/>
+                                <span class="o_avea_insight_meta">
                                     <field name="busiest_day_sales" nolabel="1" widget="monetary" readonly="1"/>
-                                    <span> / </span>
+                                    <span> · </span>
                                     <field name="busiest_day_count" nolabel="1" readonly="1"/>
                                     <span> transactions</span>
                                 </span>
                             </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--info o_avea_workspace_kpi_card--compact" invisible="not show_busiest_time">
-                                <span class="o_avea_workspace_kpi_label">Busiest Time</span>
-                                <field name="busiest_time_display" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
-                                <span class="o_avea_workspace_kpi_subvalue">
+                            <div class="o_avea_insight" invisible="not show_slowest_day">
+                                <span class="o_avea_insight_label">Slowest Day</span>
+                                <field name="slowest_day_name" nolabel="1" readonly="1" class="o_avea_insight_title"/>
+                                <span class="o_avea_insight_meta">
+                                    <field name="slowest_day_sales" nolabel="1" widget="monetary" readonly="1"/>
+                                    <span> · </span>
+                                    <field name="slowest_day_count" nolabel="1" readonly="1"/>
+                                    <span> transactions</span>
+                                </span>
+                            </div>
+                            <div class="o_avea_insight" invisible="not show_busiest_time">
+                                <span class="o_avea_insight_label">Busiest Time</span>
+                                <field name="busiest_time_display" nolabel="1" readonly="1" class="o_avea_insight_title"/>
+                                <span class="o_avea_insight_meta">
                                     <field name="busiest_time_sales" nolabel="1" widget="monetary" readonly="1"/>
-                                    <span> / </span>
+                                    <span> · </span>
                                     <field name="busiest_time_count" nolabel="1" readonly="1"/>
                                     <span> transactions</span>
                                 </span>
@@ -192,16 +224,6 @@
                                 <span class="o_avea_workspace_kpi_label">Average Items per Sale</span>
                                 <field name="average_items_display" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
                             </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact" invisible="not show_slowest_day">
-                                <span class="o_avea_workspace_kpi_label">Slowest Day</span>
-                                <field name="slowest_day_name" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
-                                <span class="o_avea_workspace_kpi_subvalue">
-                                    <field name="slowest_day_sales" nolabel="1" widget="monetary" readonly="1"/>
-                                    <span> / </span>
-                                    <field name="slowest_day_count" nolabel="1" readonly="1"/>
-                                    <span> transactions</span>
-                                </span>
-                            </div>
                             <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact">
                                 <span class="o_avea_workspace_kpi_label">Refunds</span>
                                 <field name="activity_refund_count" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
@@ -212,30 +234,37 @@
                         </div>
                     </div>
 
-                    <div class="o_avea_workspace_block">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Sales trend</h2>
-                            <span class="o_avea_workspace_section_meta">
-                                <field name="period_range_display" nolabel="1" readonly="1"/>
-                            </span>
+                    <div class="o_avea_workspace_block o_avea_overview_visuals">
+                        <div class="o_avea_overview_visual_panel o_avea_overview_visual_panel--trend">
+                            <div class="o_avea_workspace_block_heading">
+                                <div class="o_avea_overview_visual_heading">
+                                    <h2 class="o_avea_workspace_section_title">Sales trend</h2>
+                                    <p class="o_avea_workspace_section_subtitle">How much you are selling</p>
+                                </div>
+                                <span class="o_avea_workspace_section_meta">
+                                    <field name="period_range_display" nolabel="1" readonly="1"/>
+                                </span>
+                            </div>
+                            <div class="o_avea_visual_card" invisible="not show_sales_trend">
+                                <field name="sales_trend_html" nolabel="1" readonly="1" widget="html"/>
+                            </div>
+                            <div class="o_avea_session_products_empty" invisible="show_sales_trend">
+                                <p class="o_avea_session_products_empty_text">No sales in this period.</p>
+                            </div>
                         </div>
-                        <div class="o_avea_visual_card" invisible="not show_sales_trend">
-                            <field name="sales_trend_html" nolabel="1" readonly="1" widget="html"/>
-                        </div>
-                        <div class="o_avea_session_products_empty" invisible="show_sales_trend">
-                            <p class="o_avea_session_products_empty_text">No sales in this period.</p>
-                        </div>
-                    </div>
-
-                    <div class="o_avea_workspace_block">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Busy times</h2>
-                        </div>
-                        <div class="o_avea_visual_card" invisible="not show_trading_pattern">
-                            <field name="trading_pattern_html" nolabel="1" readonly="1" widget="html"/>
-                        </div>
-                        <div class="o_avea_session_products_empty" invisible="show_trading_pattern">
-                            <p class="o_avea_session_products_empty_text">No paid sales to show busy times yet.</p>
+                        <div class="o_avea_overview_visual_panel">
+                            <div class="o_avea_workspace_block_heading">
+                                <div class="o_avea_overview_visual_heading">
+                                    <h2 class="o_avea_workspace_section_title">Trading Pattern</h2>
+                                    <p class="o_avea_workspace_section_subtitle">When you trade (by day and time)</p>
+                                </div>
+                            </div>
+                            <div class="o_avea_visual_card o_avea_visual_card--pattern" invisible="not show_trading_pattern">
+                                <field name="trading_pattern_html" nolabel="1" readonly="1" widget="html"/>
+                            </div>
+                            <div class="o_avea_session_products_empty" invisible="show_trading_pattern">
+                                <p class="o_avea_session_products_empty_text">No paid sales to show a trading pattern yet.</p>
+                            </div>
                         </div>
                     </div>
 
@@ -281,18 +310,6 @@
                                         <field name="cash_out_count" nolabel="1" readonly="1"/> times
                                     </span>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="o_avea_workspace_block o_avea_workspace_block--attention" invisible="not show_attention">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Needs attention</h2>
-                        </div>
-                        <div class="o_avea_workspace_activity_grid" invisible="not show_refund_attention">
-                            <div class="o_avea_workspace_activity_card o_avea_workspace_activity_card--negative">
-                                <span class="o_avea_workspace_activity_label">Refunds</span>
-                                <field name="activity_refund_count" nolabel="1" readonly="1" class="o_avea_workspace_activity_value"/>
                             </div>
                         </div>
                     </div>

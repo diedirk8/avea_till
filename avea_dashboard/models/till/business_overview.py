@@ -61,11 +61,14 @@ class AveaBusinessOverview(models.TransientModel):
             ("today", "Today"),
             ("week", "This Week"),
             ("month", "This Month"),
+            ("custom", "Custom Period"),
         ],
         string="Period",
         default="today",
         required=True,
     )
+    date_from = fields.Date(string="From")
+    date_to = fields.Date(string="To")
     period_label = fields.Char(
         string="Period Label",
         compute="_compute_metrics",
@@ -130,6 +133,9 @@ class AveaBusinessOverview(models.TransientModel):
         [("up", "Up"), ("down", "Down"), ("flat", "Flat")],
         compute="_compute_metrics",
     )
+    sales_vs_previous_display = fields.Char(
+        compute="_compute_metrics",
+    )
 
     cash_sales = fields.Monetary(
         string="Cash",
@@ -180,13 +186,7 @@ class AveaBusinessOverview(models.TransientModel):
         string="Open Tills",
         compute="_compute_metrics",
     )
-    show_refund_attention = fields.Boolean(
-        compute="_compute_metrics",
-    )
     show_open_sessions = fields.Boolean(
-        compute="_compute_metrics",
-    )
-    show_attention = fields.Boolean(
         compute="_compute_metrics",
     )
 
@@ -257,6 +257,14 @@ class AveaBusinessOverview(models.TransientModel):
     show_sales_trend = fields.Boolean(
         compute="_compute_metrics",
     )
+    sales_sparkline_html = fields.Html(
+        string="Sales Sparkline",
+        compute="_compute_metrics",
+        sanitize=False,
+    )
+    show_sales_sparkline = fields.Boolean(
+        compute="_compute_metrics",
+    )
     trading_pattern_html = fields.Html(
         string="Busy Times",
         compute="_compute_metrics",
@@ -274,7 +282,7 @@ class AveaBusinessOverview(models.TransientModel):
 
     def write(self, vals):
         res = super().write(vals)
-        if "period" in vals:
+        if any(key in vals for key in ("period", "date_from", "date_to")):
             self._populate_product_lines()
         return res
 
@@ -284,10 +292,17 @@ class AveaBusinessOverview(models.TransientModel):
             overview.show_products = bool(overview.product_line_ids)
 
     @api.model
-    def action_open_business_overview(self, period="today"):
-        if period not in ("today", "week", "month"):
+    def action_open_business_overview(
+        self, period="today", date_from=None, date_to=None
+    ):
+        if period not in ("today", "week", "month", "custom"):
             period = "today"
-        overview = self.create({"period": period})
+        vals = {"period": period}
+        if period == "custom":
+            start, end = self._normalize_custom_dates(date_from, date_to)
+            vals["date_from"] = start
+            vals["date_to"] = end
+        overview = self.create(vals)
         return {
             "type": "ir.actions.act_window",
             "name": _("Business Overview"),
@@ -307,17 +322,35 @@ class AveaBusinessOverview(models.TransientModel):
     def action_period_month(self):
         return self.action_open_business_overview(period="month")
 
-    def action_open_sessions(self):
-        return self.env["ir.actions.act_window"]._for_xml_id(
-            "avea_till.action_avea_sessions"
+    def action_period_custom(self):
+        today = fields.Date.context_today(self)
+        return self.action_open_business_overview(
+            period="custom",
+            date_from=today.replace(day=1),
+            date_to=today,
         )
+
+    def action_apply_custom_period(self):
+        self.ensure_one()
+        return self.action_open_business_overview(
+            period="custom",
+            date_from=self.date_from,
+            date_to=self.date_to,
+        )
+
+    def action_open_sessions(self):
+        return self.env["avea.till.session.dashboard"].action_open_session_dashboard()
 
     def action_open_cash(self):
         return self.env["avea.till.dashboard"].action_open_dashboard()
 
     def action_refresh(self):
         self.ensure_one()
-        return self.action_open_business_overview(period=self.period)
+        return self.action_open_business_overview(
+            period=self.period,
+            date_from=self.date_from,
+            date_to=self.date_to,
+        )
 
     def _timezone(self):
         tzname = self.env.user.tz or self.env.context.get("tz") or "UTC"
@@ -339,8 +372,33 @@ class AveaBusinessOverview(models.TransientModel):
             end_local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None),
         )
 
+    @api.model
+    def _normalize_custom_dates(self, date_from=None, date_to=None):
+        today = fields.Date.context_today(self)
+        start = date_from or today.replace(day=1)
+        end = date_to or today
+        if start > end:
+            start, end = end, start
+        return start, end
+
     def _period_windows(self, period):
         today = fields.Date.context_today(self)
+        if period == "custom":
+            date_from, date_to = self._normalize_custom_dates(
+                self.date_from, self.date_to
+            )
+            duration = (date_to - date_from).days + 1
+            prev_end = date_from - timedelta(days=1)
+            prev_start = prev_end - timedelta(days=duration - 1)
+            return {
+                "display_current": (date_from, date_to),
+                "data_current": (date_from, date_to),
+                "display_previous": (prev_start, prev_end),
+                "data_previous": (prev_start, prev_end),
+                "labels": (_("Custom Period"), _("Previous period")),
+                "show_through_today": False,
+                "today": today,
+            }
         if period == "week":
             week_start = today - timedelta(days=today.weekday())
             week_end = week_start + timedelta(days=6)
@@ -386,6 +444,27 @@ class AveaBusinessOverview(models.TransientModel):
             "show_through_today": False,
             "today": today,
         }
+
+    def _chart_period_days(self, period, windows):
+        """Calendar span for Trading Pattern. KPI totals keep ``data_current``."""
+        today = windows["today"]
+        if period == "week":
+            return windows["display_current"]
+        if period == "month":
+            month_start = today.replace(day=1)
+            last_day = monthrange(month_start.year, month_start.month)[1]
+            return (month_start, month_start.replace(day=last_day))
+        if period == "custom":
+            return windows["display_current"]
+        return (today, today)
+
+    def _is_single_day_period(self, period, windows):
+        if period == "today":
+            return True
+        if period == "custom":
+            day_from, day_to = windows["display_current"]
+            return day_from == day_to
+        return False
 
     def _format_day_range(self, day_from, day_to):
         """Readable date range in the user's language, e.g. 18–25 August 2026."""
@@ -561,31 +640,45 @@ class AveaBusinessOverview(models.TransientModel):
             current += timedelta(days=1)
         return rows
 
-    def _weekday_hour_from_orders(self, orders):
+    def _hours_from_orders(self, orders):
         buckets = {}
         for order in orders:
             local_dt = self._local_order_datetime(order)
             if not local_dt:
                 continue
-            key = (local_dt.weekday(), local_dt.hour)
-            entry = buckets.setdefault(key, [0.0, 0])
+            entry = buckets.setdefault(local_dt.hour, [0.0, 0])
             entry[0] += order.amount_total
             entry[1] += 1
         return buckets
 
-    def _pattern_cell_class(self, sales, max_sales):
+    def _days_from_orders(self, orders):
+        buckets = {}
+        for order in orders:
+            local_dt = self._local_order_datetime(order)
+            if not local_dt:
+                continue
+            entry = buckets.setdefault(local_dt.date(), [0.0, 0])
+            entry[0] += order.amount_total
+            entry[1] += 1
+        return buckets
+
+    def _pattern_cell_class(self, sales, max_sales, extra=""):
         if max_sales <= 0 or sales <= 0:
-            return "o_avea_pattern_cell o_avea_pattern_cell--empty"
-        ratio = sales / max_sales
-        if ratio >= 0.75:
-            tone = "hot"
-        elif ratio >= 0.4:
-            tone = "warm"
-        elif ratio >= 0.15:
-            tone = "mild"
+            classes = "o_avea_pattern_cell o_avea_pattern_cell--empty"
         else:
-            tone = "low"
-        return f"o_avea_pattern_cell o_avea_pattern_cell--{tone}"
+            ratio = sales / max_sales
+            if ratio >= 0.75:
+                tone = "hot"
+            elif ratio >= 0.4:
+                tone = "warm"
+            elif ratio >= 0.15:
+                tone = "mild"
+            else:
+                tone = "low"
+            classes = f"o_avea_pattern_cell o_avea_pattern_cell--{tone}"
+        if extra:
+            classes = f"{classes} {extra}"
+        return classes
 
     def _build_sales_trend_html(self, day_rows):
         if not day_rows:
@@ -610,46 +703,224 @@ class AveaBusinessOverview(models.TransientModel):
         parts.append("</div>")
         return Markup("".join(parts))
 
-    def _build_trading_pattern_html(self, weekday_hours):
-        if not weekday_hours:
+    def _sparkline_values(self, day_rows, orders=None):
+        """Same sales totals as Sales Trend; hours only when the trend is one day."""
+        values = [float(sales) for _day, sales, _count in (day_rows or [])]
+        if len(values) > 1:
+            return values
+        hours = self._hours_from_orders(orders) if orders else {}
+        if hours:
+            columns = self._pattern_hour_columns(hours)
+            return [float(hours.get(hour, (0.0, 0))[0]) for hour in columns]
+        if values:
+            return [0.0, values[0]]
+        return []
+
+    def _build_sales_sparkline_html(self, day_rows, orders=None):
+        values = self._sparkline_values(day_rows, orders)
+        if not values or all(value <= 0 for value in values):
             return False
-        hours = sorted({hour for _weekday, hour in weekday_hours})
-        weekdays = sorted({weekday for weekday, _hour in weekday_hours})
-        max_sales = max(sales for sales, _count in weekday_hours.values())
-        monday = fields.Date.context_today(self) - timedelta(
-            days=fields.Date.context_today(self).weekday()
+        width, height, pad = 160.0, 40.0, 2.0
+        max_value = max(values)
+        min_value = min(values)
+        span = max_value - min_value
+        count = len(values)
+
+        def point_x(index):
+            if count == 1:
+                return width / 2.0
+            return pad + (width - 2.0 * pad) * index / (count - 1)
+
+        def point_y(value):
+            if span <= 0:
+                return height / 2.0
+            return pad + (height - 2.0 * pad) * (1.0 - (value - min_value) / span)
+
+        points = [(point_x(index), point_y(value)) for index, value in enumerate(values)]
+        line = " ".join(
+            f"{'M' if index == 0 else 'L'}{pos_x:.2f} {pos_y:.2f}"
+            for index, (pos_x, pos_y) in enumerate(points)
         )
-        parts = ['<div class="o_avea_pattern">']
-        for weekday in weekdays:
-            day_label = escape(
+        first_x, last_x = points[0][0], points[-1][0]
+        area = (
+            f"{line} L{last_x:.2f} {height - pad:.2f} "
+            f"L{first_x:.2f} {height - pad:.2f} Z"
+        )
+        return Markup(
+            '<div class="o_avea_sparkline" aria-hidden="true">'
+            f'<svg viewBox="0 0 {int(width)} {int(height)}" preserveAspectRatio="none">'
+            f'<path class="o_avea_sparkline_area" d="{area}"/>'
+            f'<path class="o_avea_sparkline_line" d="{line}" fill="none"/>'
+            "</svg></div>"
+        )
+
+    def _pattern_hour_columns(self, hours):
+        """Display columns for the today heatmap. Does not change totals."""
+        start = min(hours)
+        end = max(hours)
+        while end - start + 1 < 8:
+            expanded = False
+            if start > 0:
+                start -= 1
+                expanded = True
+            if end - start + 1 >= 8:
+                break
+            if end < 23:
+                end += 1
+                expanded = True
+            if not expanded:
+                break
+        return list(range(start, end + 1))
+
+    def _pattern_cell_title(self, label, sales, count):
+        return escape(
+            _("%(label)s · %(amount)s · %(count)s")
+            % {
+                "label": label,
+                "amount": self._format_money(sales),
+                "count": _("%s transactions") % count,
+            }
+        )
+
+    def _pattern_legend_html(self):
+        return (
+            '<div class="o_avea_pattern_legend">'
+            f'<span class="o_avea_pattern_legend_label">{escape(_("Least activity →"))}</span>'
+            '<span class="o_avea_pattern_legend_scale" aria-hidden="true">'
+            '<span class="o_avea_pattern_swatch o_avea_pattern_cell--empty"></span>'
+            '<span class="o_avea_pattern_swatch o_avea_pattern_cell--low"></span>'
+            '<span class="o_avea_pattern_swatch o_avea_pattern_cell--mild"></span>'
+            '<span class="o_avea_pattern_swatch o_avea_pattern_cell--warm"></span>'
+            '<span class="o_avea_pattern_swatch o_avea_pattern_cell--hot"></span>'
+            "</span>"
+            f'<span class="o_avea_pattern_legend_label">{escape(_("Most activity"))}</span>'
+            "</div>"
+        )
+
+    def _pattern_weekday_heads(self, monday):
+        parts = []
+        for weekday in range(7):
+            label = escape(
                 format_date(
                     self.env,
                     monday + timedelta(days=weekday),
                     date_format="EEE",
                 )
             )
-            parts.append('<div class="o_avea_pattern_row">')
-            parts.append(f'<span class="o_avea_pattern_day">{day_label}</span>')
-            parts.append('<div class="o_avea_pattern_hours">')
-            for hour in hours:
-                sales, count = weekday_hours.get((weekday, hour), (0.0, 0))
-                cell_class = self._pattern_cell_class(sales, max_sales)
-                title = escape(
-                    _("%(time)s · %(amount)s · %(count)s")
-                    % {
-                        "time": self._format_hour_range(hour),
-                        "amount": self._format_money(sales),
-                        "count": _("%s transactions") % count,
-                    }
-                )
-                parts.append(
-                    f'<span class="{cell_class}" title="{title}">{hour:02d}</span>'
-                )
-            parts.append("</div></div>")
+            parts.append(f'<span class="o_avea_pattern_head">{label}</span>')
+        return parts
+
+    def _pattern_day_cell(self, day, sales, count, max_sales):
+        cell_class = self._pattern_cell_class(sales, max_sales)
+        title = self._pattern_cell_title(
+            self._format_busy_date(day), sales, count
+        )
+        number = escape(format_date(self.env, day, date_format="d"))
+        return (
+            f'<span class="{cell_class}" title="{title}">'
+            f'<span class="o_avea_pattern_date">{number}</span>'
+            "</span>"
+        )
+
+    def _build_pattern_hours_html(self, hour_buckets):
+        hours = self._pattern_hour_columns(hour_buckets)
+        max_sales = max(sales for sales, _count in hour_buckets.values())
+        col_count = len(hours)
+        parts = [
+            '<div class="o_avea_pattern o_avea_pattern--hours">'
+            f'<div class="o_avea_pattern_grid o_avea_pattern_grid--hours o_avea_pattern_grid--cols-{col_count}">'
+        ]
+        for hour in hours:
+            parts.append(f'<span class="o_avea_pattern_head o_avea_pattern_hour">{hour:02d}</span>')
+        for hour in hours:
+            sales, count = hour_buckets.get(hour, (0.0, 0))
+            cell_class = self._pattern_cell_class(sales, max_sales)
+            title = self._pattern_cell_title(
+                self._format_hour_range(hour), sales, count
+            )
+            parts.append(f'<span class="{cell_class}" title="{title}"></span>')
+        parts.append("</div>")
+        parts.append(self._pattern_legend_html())
         parts.append("</div>")
         return Markup("".join(parts))
 
-    @api.depends("period")
+    def _build_pattern_week_html(self, day_buckets, week_start):
+        days = [week_start + timedelta(days=offset) for offset in range(7)]
+        max_sales = max(
+            (day_buckets.get(day, (0.0, 0))[0] for day in days),
+            default=0.0,
+        )
+        parts = [
+            '<div class="o_avea_pattern o_avea_pattern--week">'
+            '<div class="o_avea_pattern_grid o_avea_pattern_grid--week">'
+        ]
+        parts.extend(self._pattern_weekday_heads(week_start))
+        for day in days:
+            sales, count = day_buckets.get(day, (0.0, 0))
+            parts.append(self._pattern_day_cell(day, sales, count, max_sales))
+        parts.append("</div>")
+        parts.append(self._pattern_legend_html())
+        parts.append("</div>")
+        return Markup("".join(parts))
+
+    def _build_pattern_month_html(self, day_buckets, month_start, month_end):
+        max_sales = max(
+            (sales for sales, _count in day_buckets.values()),
+            default=0.0,
+        )
+        grid_start = month_start - timedelta(days=month_start.weekday())
+        grid_end = month_end + timedelta(days=(6 - month_end.weekday()))
+        parts = [
+            '<div class="o_avea_pattern o_avea_pattern--month">'
+            '<div class="o_avea_pattern_grid o_avea_pattern_grid--month">'
+        ]
+        parts.extend(self._pattern_weekday_heads(grid_start))
+        current = grid_start
+        while current <= grid_end:
+            if current < month_start or current > month_end:
+                parts.append(
+                    '<span class="o_avea_pattern_cell o_avea_pattern_cell--out"></span>'
+                )
+            else:
+                sales, count = day_buckets.get(current, (0.0, 0))
+                parts.append(
+                    self._pattern_day_cell(current, sales, count, max_sales)
+                )
+            current += timedelta(days=1)
+        parts.append("</div>")
+        parts.append(self._pattern_legend_html())
+        parts.append("</div>")
+        return Markup("".join(parts))
+
+    def _build_trading_pattern_html(self, period, orders, windows):
+        if not orders:
+            return False
+        if period == "today":
+            hour_buckets = self._hours_from_orders(orders)
+            if not hour_buckets:
+                return False
+            return self._build_pattern_hours_html(hour_buckets)
+        if period == "custom":
+            day_from, day_to = windows["display_current"]
+            if day_from == day_to:
+                hour_buckets = self._hours_from_orders(orders)
+                if not hour_buckets:
+                    return False
+                return self._build_pattern_hours_html(hour_buckets)
+            day_buckets = self._days_from_orders(orders)
+            if not day_buckets:
+                return False
+            return self._build_pattern_month_html(day_buckets, day_from, day_to)
+        day_buckets = self._days_from_orders(orders)
+        if not day_buckets:
+            return False
+        if period == "week":
+            week_start, _week_end = windows["display_current"]
+            return self._build_pattern_week_html(day_buckets, week_start)
+        month_start, month_end = self._chart_period_days(period, windows)
+        return self._build_pattern_month_html(day_buckets, month_start, month_end)
+
+    @api.depends("period", "date_from", "date_to")
     def _compute_metrics(self):
         Session = self.env["pos.session"]
         open_session_count = Session.search_count(
@@ -692,10 +963,12 @@ class AveaBusinessOverview(models.TransientModel):
                 if len(days_with_sales) >= 2
                 else False
             )
-            weekday_hours = overview._weekday_hour_from_orders(current_orders)
+            chart_from, chart_to = overview._chart_period_days(period, windows)
+            chart_orders = overview._paid_orders_between(chart_from, chart_to)
             period_range = overview._format_day_range(*windows["display_current"])
             comparison_range = overview._format_day_range(*windows["display_previous"])
-            show_busiest_day = period != "today" and bool(busy["day_name"])
+            single_day = overview._is_single_day_period(period, windows)
+            show_busiest_day = (not single_day) and bool(busy["day_name"])
             show_busiest_time = bool(busy["time_display"])
             overview.update(
                 {
@@ -723,6 +996,11 @@ class AveaBusinessOverview(models.TransientModel):
                     "sales_change_amount": delta,
                     "sales_change_display": change_display,
                     "sales_change_tone": tone,
+                    "sales_vs_previous_display": _("%s vs %s")
+                    % (
+                        overview._format_money(sales["total_sales"]),
+                        overview._format_money(previous_sales["total_sales"]),
+                    ),
                     "cash_sales": sales["cash_sales"],
                     "card_sales": sales["card_sales"],
                     "other_payments": sales["other_payments"],
@@ -732,9 +1010,7 @@ class AveaBusinessOverview(models.TransientModel):
                     "cash_out_count": cash["cash_out_count"],
                     "activity_refund_count": refund_count,
                     "open_session_count": open_session_count,
-                    "show_refund_attention": bool(refund_count),
                     "show_open_sessions": bool(open_session_count),
-                    "show_attention": bool(refund_count),
                     "busiest_day_name": busy["day_name"] or "",
                     "busiest_day_sales": busy["day_sales"],
                     "busiest_day_count": busy["day_count"],
@@ -753,14 +1029,18 @@ class AveaBusinessOverview(models.TransientModel):
                     ),
                     "slowest_day_sales": slowest[1] if slowest else 0.0,
                     "slowest_day_count": slowest[2] if slowest else 0,
-                    "show_slowest_day": bool(slowest) and period != "today",
+                    "show_slowest_day": bool(slowest) and not single_day,
                     "refund_total": refund_total,
                     "sales_trend_html": overview._build_sales_trend_html(day_rows),
                     "show_sales_trend": bool(days_with_sales),
-                    "trading_pattern_html": overview._build_trading_pattern_html(
-                        weekday_hours
+                    "sales_sparkline_html": overview._build_sales_sparkline_html(
+                        day_rows, current_orders
                     ),
-                    "show_trading_pattern": bool(weekday_hours),
+                    "show_sales_sparkline": bool(days_with_sales),
+                    "trading_pattern_html": overview._build_trading_pattern_html(
+                        period, chart_orders, windows
+                    ),
+                    "show_trading_pattern": bool(chart_orders),
                 }
             )
 

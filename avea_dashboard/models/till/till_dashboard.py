@@ -112,6 +112,7 @@ class AveaTillDashboard(models.TransientModel):
             "view_mode": "form",
             "res_id": dashboard.id,
             "target": "current",
+            "context": {"clear_breadcrumbs": True},
         }
 
     @api.model

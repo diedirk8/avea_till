@@ -6,27 +6,6 @@
         <field name="model">avea.till.dashboard</field>
         <field name="arch" type="xml">
             <form string="Cash Ledger" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--ledger">
-                <header class="o_avea_workspace_header">
-                    <button
-                        name="action_open_session_dashboard"
-                        type="object"
-                        string="Session Dashboard"
-                        class="btn-secondary o_avea_workspace_nav"
-                    />
-                    <button
-                        name="action_refresh"
-                        type="object"
-                        string="Cash Ledger"
-                        class="btn-primary o_avea_workspace_nav o_avea_workspace_nav--active"
-                    />
-                    <button
-                        name="action_refresh"
-                        type="object"
-                        string="Refresh"
-                        class="btn-secondary o_avea_workspace_refresh"
-                        icon="fa-refresh"
-                    />
-                </header>
                 <sheet class="o_avea_workspace_sheet">
                     <field name="name" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
