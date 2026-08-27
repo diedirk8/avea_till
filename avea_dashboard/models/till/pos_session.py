@@ -58,6 +58,19 @@ class PosSession(models.Model):
         return self.env["pos.order"].search(self._avea_paid_order_domain())
 
     @api.model
+    def _avea_net_cash_from_payments(self, payments):
+        """Cash applied to the sale: tender minus change given back."""
+        net_cash = 0.0
+        for payment in payments.filtered(
+            lambda line: line.payment_method_id.type == "cash"
+        ):
+            if payment.is_change:
+                net_cash -= abs(payment.amount)
+            else:
+                net_cash += payment.amount
+        return net_cash
+
+    @api.model
     def _avea_sales_summary_from_orders(self, orders):
         """Payment and order totals for a paid POS order recordset."""
         order_count = len(orders)
@@ -67,13 +80,14 @@ class PosSession(models.Model):
         sales_tax = sum(orders.mapped("amount_tax"))
         average_order_value = total_sales / order_count if order_count else 0.0
 
-        cash_sales = 0.0
+        # Cash is the sale amount paid in cash, not cash tendered.
+        cash_sales = self._avea_net_cash_from_payments(orders.payment_ids)
         card_sales = 0.0
         other_payments = 0.0
         for payment in orders.payment_ids.filtered(lambda p: not p.is_change):
             method_type = payment.payment_method_id.type
             if method_type == "cash":
-                cash_sales += payment.amount
+                continue
             elif method_type == "bank":
                 card_sales += payment.amount
             else:
