@@ -49,6 +49,7 @@
                             <div class="o_avea_through_today" invisible="not show_through_today">
                                 <field name="through_today_display" nolabel="1" readonly="1"/>
                             </div>
+                            <p class="o_avea_tax_note">Including tax</p>
                             <div class="o_avea_workspace_hero_meta" invisible="not show_open_sessions">
                                 <field name="open_session_count" nolabel="1" readonly="1"/>
                                 <span> tills open</span>
@@ -314,7 +315,7 @@
                         </div>
                     </div>
 
-                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
+                    <div class="o_avea_workspace_block">
                         <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Top products</h2>
                             <button
@@ -338,6 +339,26 @@
                                     <field name="rank" column_invisible="True"/>
                                 </list>
                             </field>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_workspace_block--last o_avea_tax_summary">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Tax summary</h2>
+                        </div>
+                        <div class="o_avea_tax_summary_card">
+                            <div class="o_avea_tax_summary_row">
+                                <span class="o_avea_tax_summary_label">Sales before tax</span>
+                                <field name="sales_before_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
+                            </div>
+                            <div class="o_avea_tax_summary_row">
+                                <span class="o_avea_tax_summary_label">Tax</span>
+                                <field name="sales_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
+                            </div>
+                            <div class="o_avea_tax_summary_row o_avea_tax_summary_row--total">
+                                <span class="o_avea_tax_summary_label">Sales after tax</span>
+                                <field name="sales_after_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
+                            </div>
                         </div>
                     </div>
                 </sheet>

@@ -58,6 +58,8 @@
                     <field name="name" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
 
+                    <p class="o_avea_tax_note o_avea_tax_note--sheet">Including tax</p>
+
                     <div class="o_avea_workspace_block">
                         <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Store Credit Summary</h2>

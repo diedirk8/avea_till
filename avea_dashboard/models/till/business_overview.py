@@ -152,6 +152,21 @@ class AveaBusinessOverview(models.TransientModel):
         compute="_compute_metrics",
         currency_field="currency_id",
     )
+    sales_before_tax = fields.Monetary(
+        string="Sales before tax",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    sales_tax = fields.Monetary(
+        string="Tax",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    sales_after_tax = fields.Monetary(
+        string="Sales after tax",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
     cash_in_total = fields.Monetary(
         string="Cash In",
         compute="_compute_metrics",
@@ -1004,6 +1019,9 @@ class AveaBusinessOverview(models.TransientModel):
                     "cash_sales": sales["cash_sales"],
                     "card_sales": sales["card_sales"],
                     "other_payments": sales["other_payments"],
+                    "sales_before_tax": sales["sales_before_tax"],
+                    "sales_tax": sales["sales_tax"],
+                    "sales_after_tax": sales["sales_after_tax"],
                     "cash_in_total": cash["cash_in_total"],
                     "cash_out_total": cash["cash_out_total"],
                     "cash_in_count": cash["cash_in_count"],

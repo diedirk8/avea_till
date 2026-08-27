@@ -61,7 +61,10 @@ class PosSession(models.Model):
     def _avea_sales_summary_from_orders(self, orders):
         """Payment and order totals for a paid POS order recordset."""
         order_count = len(orders)
+        # amount_total is the POS gross (tax-inclusive). amount_tax is Odoo's
+        # computed tax on the order (VAT, GST, sales tax, mixed, or zero).
         total_sales = sum(orders.mapped("amount_total"))
+        sales_tax = sum(orders.mapped("amount_tax"))
         average_order_value = total_sales / order_count if order_count else 0.0
 
         cash_sales = 0.0
@@ -83,6 +86,9 @@ class PosSession(models.Model):
             "other_payments": other_payments,
             "order_count": order_count,
             "average_order_value": average_order_value,
+            "sales_after_tax": total_sales,
+            "sales_tax": sales_tax,
+            "sales_before_tax": total_sales - sales_tax,
         }
 
     @api.model

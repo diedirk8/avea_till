@@ -136,6 +136,19 @@
         color: var(--o-gray-400, #ced4da);
     }
 
+    .o_avea_tax_note {
+        color: var(--o-gray-500, #6c757d);
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.01em;
+        line-height: 1.35;
+        margin: 0.45rem 0 0;
+    }
+
+    .o_avea_tax_note--sheet {
+        margin: 0 0 0.85rem;
+    }
+
     .o_avea_workspace_hero_stats {
         display: grid;
         gap: 0.85rem;

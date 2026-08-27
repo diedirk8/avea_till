@@ -44,6 +44,7 @@
                                 <span class="o_avea_workspace_hero_meta_sep">·</span>
                                 <field name="session_duration" nolabel="1" readonly="1"/>
                             </div>
+                            <p class="o_avea_tax_note">Including tax</p>
                         </div>
                         <div class="o_avea_workspace_hero_stats">
                             <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary">
