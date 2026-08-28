@@ -1,2 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_avea_operational_expense_wizard,access.avea.operational.expense.wizard,model_avea_operational_expense_wizard,,1,1,1,1
+access_avea_money_transfer_wizard,access.avea.money.transfer.wizard,model_avea_money_transfer_wizard,,1,1,1,1

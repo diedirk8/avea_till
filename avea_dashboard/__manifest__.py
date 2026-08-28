@@ -12,8 +12,9 @@ Features:
 - Customer Credit (foundation)
 - POS Store Credit payments
 - Operational expenses
+- Money transfers between company accounts
 """,
-    "version": "19.0.2.46.0",
+    "version": "19.0.2.47.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -51,6 +52,7 @@ Features:
         "views/till/till_menu.xml",
         "views/credit/credit_menu.xml",
         "views/operations/operational_expense_wizard_views.xml",
+        "views/operations/money_transfer_wizard_views.xml",
         "views/operations/operations_menu.xml",
     ],
     "assets": {

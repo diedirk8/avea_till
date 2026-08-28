@@ -20,4 +20,12 @@
         sequence="10"
     />
 
+    <menuitem
+        id="menu_avea_operations_transfer"
+        name="Transfer Money"
+        parent="menu_avea_operations"
+        action="action_avea_money_transfer_wizard"
+        sequence="20"
+    />
+
 </odoo>
