@@ -6,6 +6,7 @@ from .models.till import till_dashboard  # register avea.till.dashboard
 def post_init_hook(env):
     env["pos.config"]._avea_credit_enable_all_pos_configs()
     env["res.company"]._avea_credit_setup_all_companies()
+    env["res.company"].search([])._avea_ensure_owner_wizard_journal_defaults()
     _avea_credit_assign_default_groups(env)
     _avea_cash_up_assign_default_groups(env)
 

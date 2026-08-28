@@ -7,6 +7,8 @@
         <field name="arch" type="xml">
             <form string="Transfer Money" class="o_avea_wizard">
                 <field name="state" invisible="1"/>
+                <field name="company_id" invisible="1"/>
+                <field name="available_journal_ids" invisible="1"/>
                 <div class="alert alert-info" role="status" invisible="state == 'confirm'">
                     Move money between company accounts. This is not an expense.
                 </div>

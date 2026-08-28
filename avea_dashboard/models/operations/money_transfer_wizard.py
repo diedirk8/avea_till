@@ -11,25 +11,19 @@ class AveaMoneyTransferWizard(models.TransientModel):
         "account.journal",
         string="From",
         required=True,
-        domain=(
-            "[('type', 'in', ('cash', 'bank')), "
-            "('company_id', '=', company_id), "
-            "('name', 'not ilike', 'store credit'), "
-            "('id', '!=', to_journal_id)]"
-        ),
+        domain="[('id', 'in', available_journal_ids), ('id', '!=', to_journal_id)]",
         help="The company money account to take the money from.",
     )
     to_journal_id = fields.Many2one(
         "account.journal",
         string="To",
         required=True,
-        domain=(
-            "[('type', 'in', ('cash', 'bank')), "
-            "('company_id', '=', company_id), "
-            "('name', 'not ilike', 'store credit'), "
-            "('id', '!=', from_journal_id)]"
-        ),
+        domain="[('id', 'in', available_journal_ids), ('id', '!=', from_journal_id)]",
         help="The company money account to put the money into.",
+    )
+    available_journal_ids = fields.Many2many(
+        "account.journal",
+        compute="_compute_available_journal_ids",
     )
     amount = fields.Monetary(
         string="Amount",
@@ -70,6 +64,22 @@ class AveaMoneyTransferWizard(models.TransientModel):
         required=True,
         default=lambda self: self.env.company,
     )
+
+    @api.depends("company_id")
+    def _compute_available_journal_ids(self):
+        for wizard in self:
+            company = wizard.company_id
+            wizard.available_journal_ids = (
+                company._avea_transfer_journals() if company else False
+            )
+
+    @api.onchange("company_id", "available_journal_ids")
+    def _onchange_available_journals(self):
+        allowed = self.available_journal_ids
+        if self.from_journal_id and self.from_journal_id not in allowed:
+            self.from_journal_id = False
+        if self.to_journal_id and self.to_journal_id not in allowed:
+            self.to_journal_id = False
 
     @api.depends("from_journal_id", "to_journal_id", "amount", "currency_id")
     def _compute_confirmation_message(self):
@@ -163,11 +173,20 @@ class AveaMoneyTransferWizard(models.TransientModel):
         if self.currency_id.compare_amounts(self.amount, 0.0) <= 0:
             raise UserError(_("Amount must be greater than zero."))
         allowed = self._avea_money_journals(self.company_id)
+        if not allowed:
+            raise UserError(
+                _(
+                    "No company money accounts are available for Transfer Money. "
+                    "Ask an administrator to select them under "
+                    "Settings → Avea Dashboard."
+                )
+            )
         if self.from_journal_id not in allowed or self.to_journal_id not in allowed:
             raise UserError(
                 _(
-                    "Choose company cash or bank accounts. "
-                    "Ask your accountant to configure them if none are available."
+                    "Choose a company cash or bank account that is available "
+                    "for Transfer Money. Ask an administrator to update "
+                    "Settings → Avea Dashboard if the account you need is missing."
                 )
             )
         self._avea_liquidity_account(self.from_journal_id)
@@ -176,14 +195,7 @@ class AveaMoneyTransferWizard(models.TransientModel):
     @api.model
     def _avea_money_journals(self, company):
         company = company or self.env.company
-        return self.env["account.journal"].search(
-            [
-                ("type", "in", ("cash", "bank")),
-                ("company_id", "=", company.id),
-                ("name", "not ilike", "store credit"),
-            ],
-            order="sequence, id",
-        )
+        return company._avea_transfer_journals()
 
     def _avea_liquidity_account(self, journal):
         account = journal.default_account_id

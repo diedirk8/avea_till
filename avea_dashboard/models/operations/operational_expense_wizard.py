@@ -45,12 +45,12 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         "account.journal",
         string="Paid From",
         required=True,
-        domain=(
-            "[('type', 'in', ('cash', 'bank')), "
-            "('company_id', '=', company_id), "
-            "('name', 'not ilike', 'store credit')]"
-        ),
+        domain="[('id', 'in', available_journal_ids)]",
         help="The company money account this expense was paid from.",
+    )
+    available_journal_ids = fields.Many2many(
+        "account.journal",
+        compute="_compute_available_journal_ids",
     )
     currency_id = fields.Many2one(
         "res.currency",
@@ -64,6 +64,14 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         required=True,
         default=lambda self: self.env.company,
     )
+
+    @api.depends("company_id")
+    def _compute_available_journal_ids(self):
+        for wizard in self:
+            company = wizard.company_id
+            wizard.available_journal_ids = (
+                company._avea_expense_journals() if company else False
+            )
 
     @api.model
     def default_get(self, fields_list):
@@ -222,14 +230,7 @@ class AveaOperationalExpenseWizard(models.TransientModel):
     @api.model
     def _avea_paid_from_journals(self, company):
         company = company or self.env.company
-        return self.env["account.journal"].search(
-            [
-                ("type", "in", ("cash", "bank")),
-                ("company_id", "=", company.id),
-                ("name", "not ilike", "store credit"),
-            ],
-            order="sequence, id",
-        )
+        return company._avea_expense_journals()
 
     @api.model
     def _avea_default_paid_from_journal(self, company):
@@ -239,11 +240,20 @@ class AveaOperationalExpenseWizard(models.TransientModel):
     def _avea_payment_journal(self):
         journal = self.paid_from_journal_id
         allowed = self._avea_paid_from_journals(self.company_id)
+        if not allowed:
+            raise UserError(
+                _(
+                    "No company money accounts are available for Operational "
+                    "Expenses. Ask an administrator to select them under "
+                    "Settings → Avea Dashboard."
+                )
+            )
         if not journal or journal not in allowed:
             raise UserError(
                 _(
-                    "No company money account is selected. "
-                    "Ask your accountant to configure a cash or bank account."
+                    "Choose a company cash or bank account that is available "
+                    "for Operational Expenses. Ask an administrator to update "
+                    "Settings → Avea Dashboard if the account you need is missing."
                 )
             )
         return journal

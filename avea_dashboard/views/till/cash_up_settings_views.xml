@@ -12,7 +12,7 @@
                     name="avea_till"
                     groups="base.group_system,point_of_sale.group_pos_manager"
                 >
-                    <block title="Cash Management" id="avea_cash_management_section">
+                    <block title="Accounting / Cash Management" id="avea_cash_management_section">
                         <setting
                             id="avea_cash_safe_journal"
                             string="Cash Safe / Company Cash Journal"
@@ -24,6 +24,32 @@
                                 options="{'no_create': True, 'no_open': True}"
                                 placeholder="Select a cash journal"
                                 domain="[('type', '=', 'cash'), ('company_id', '=', company_id), ('name', 'not ilike', 'store credit')]"
+                            />
+                        </setting>
+                        <setting
+                            id="avea_transfer_journals"
+                            string="Accounts available for Transfer Money"
+                            company_dependent="1"
+                            help="Choose which existing cash and bank accounts appear as From/To in Transfer Money. This does not create or change Odoo accounts. Unselected accounts stay in the books and can be hidden from Avea, including POS till cash such as Cash My Company."
+                        >
+                            <field
+                                name="avea_transfer_journal_ids"
+                                widget="many2many_tags"
+                                options="{'no_create': True, 'no_open': True}"
+                                domain="[('type', 'in', ('cash', 'bank')), ('company_id', '=', company_id), ('name', 'not ilike', 'store credit')]"
+                            />
+                        </setting>
+                        <setting
+                            id="avea_expense_journals"
+                            string="Accounts available for Operational Expenses"
+                            company_dependent="1"
+                            help="Choose which existing cash and bank accounts appear as Paid From in Add Operational Expense. This does not create or change Odoo accounts. Unselected accounts stay in the books and can be hidden from Avea, including POS till cash such as Cash My Company."
+                        >
+                            <field
+                                name="avea_expense_journal_ids"
+                                widget="many2many_tags"
+                                options="{'no_create': True, 'no_open': True}"
+                                domain="[('type', 'in', ('cash', 'bank')), ('company_id', '=', company_id), ('name', 'not ilike', 'store credit')]"
                             />
                         </setting>
                     </block>

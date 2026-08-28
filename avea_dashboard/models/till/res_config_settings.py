@@ -14,6 +14,26 @@ class ResConfigSettings(models.TransientModel):
             "('name', 'not ilike', 'store credit')]"
         ),
     )
+    avea_transfer_journal_ids = fields.Many2many(
+        related="company_id.avea_transfer_journal_ids",
+        readonly=False,
+        string="Accounts available for Transfer Money",
+        domain=(
+            "[('type', 'in', ('cash', 'bank')), "
+            "('company_id', '=', company_id), "
+            "('name', 'not ilike', 'store credit')]"
+        ),
+    )
+    avea_expense_journal_ids = fields.Many2many(
+        related="company_id.avea_expense_journal_ids",
+        readonly=False,
+        string="Accounts available for Operational Expenses",
+        domain=(
+            "[('type', 'in', ('cash', 'bank')), "
+            "('company_id', '=', company_id), "
+            "('name', 'not ilike', 'store credit')]"
+        ),
+    )
     pos_avea_needs_dedicated_cash_journal = fields.Boolean(
         related="pos_config_id.avea_needs_dedicated_cash_journal",
     )
