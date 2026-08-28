@@ -21,7 +21,7 @@ Use these terms consistently:
 | **POS Session** | Odoo's underlying POS session |
 | **Opening Cash** | The cash amount intended to remain in the till for the next operating period |
 | **Cash Up** | The cashier's end-of-shift/end-of-day till count and close workflow |
-| **Cash to Bag** | The cash above Opening Cash that is physically removed from the till and placed in the cash bag |
+| **Cash to Safe** | The cash above Opening Cash that is physically removed from the till and transferred to Company Safe |
 | **Company Safe / Company Cash** | Cash held outside POS tills by the business |
 | **Petty Cash** | A separate company cash fund used for small operational expenses |
 
@@ -77,7 +77,7 @@ Customer Credit Dashboard at ~390px:
 - Clear current business / session context.
 - Clear cash position and cash activity.
 - Clear next actions.
-- Remove unnecessary clicks and confusing technical terminology where appropriate.
+- Remove unnecessary technical terminology where appropriate.
 - Keep existing functionality intact.
 
 ### Session Dashboard Usability — completed
@@ -246,16 +246,16 @@ Cash Up should:
 - Show **Expected Cash**
 - Allow the cashier to record **Counted Cash**
 - Calculate the **Difference**
-- Calculate **Cash to Bag** as the cash above Opening Cash that should physically be removed from the till
-- Clearly tell the cashier the amount that remains as Opening Cash and the amount that goes into the cash bag
-- Produce a clean, A4-friendly printed **Cash-Up Summary** to accompany the cash bag
+- Calculate **Cash to Safe** as the cash above Opening Cash that should physically be removed from the till
+- Clearly tell the cashier the amount that remains as Opening Cash and the amount that goes into the Safe
+- Produce a clean, thermal-printer-friendly printed **Cash-Up Summary** to accompany the cash transfer
 - Preserve Odoo's native POS session closing and cash-difference accounting integrity
 - Support multiple tills without mixing till accountability
 - Remain country- and currency-agnostic
 
 The intended physical workflow is:
 
-**Cashier → Cash Up → Cash to Bag + Cash-Up Summary → Cash Office → Company Safe**
+**Cashier → Cash Up → Cash to Safe + Cash-Up Summary → Company Safe**
 
 The Company Safe is separate from POS Till Cash and Petty Cash.
 
@@ -322,6 +322,43 @@ Simplify / wrap Odoo promotions, coupons, rewards and barcode functionality so a
 - **Future Cash Office** — receive/verify cash bags, record bag custody, reconcile physical deposits into Company Safe, and provide an audit trail. This is deliberately separate from the cashier Cash Up feature in P2.
 - **Future Cash Reconciliation** — broader reconciliation workflows for tills, company cash/safe and bank deposits.
 - **POS Receipt Email** — allow a completed POS transaction receipt to be emailed to the customer, reusing the existing Odoo POS receipt/order data without creating a duplicate accounting transaction. Handle missing or invalid email addresses cleanly, allow an appropriate re-send flow where practical, and keep the existing 80mm thermal receipt printing unchanged. Use a simple Avea cashier-facing workflow rather than exposing unnecessary Odoo accounting terminology.
+
+### POS Payment Mistake Prevention & Correction
+
+Busy cashiers can occasionally select the wrong tender, for example recording a card payment as cash or cash as card. Avea should reduce these mistakes without requiring extra training.
+
+#### Payment Selection Safety
+
+Improve the cashier-facing payment workflow so Cash, Card, EFT and other configured payment methods are clearly differentiated and difficult to mis-select under pressure.
+
+- Make the selected payment method unmistakable.
+- Give Cash and Card appropriately distinct confirmation/workflows rather than treating them as visually interchangeable buttons.
+- Require a clear final confirmation before an irreversible payment is recorded where appropriate.
+- Keep the workflow fast for normal transactions.
+- Do not introduce unnecessary accounting terminology.
+- Preserve Odoo's native payment and session accounting behaviour.
+
+#### Correct Payment Method
+
+Provide an authorised Avea workflow for correcting an honest payment-method mistake on a completed POS transaction without refunding and re-selling the entire transaction.
+
+Example:
+
+> R2,050 sale recorded as **Cash**, actually paid by **Card** → correct the payment to **Card**.
+
+The correction must:
+
+- Leave the sale, products, quantities, taxes and total unchanged.
+- Correct the POS payment method/tender itself, not merely create an unrelated manual accounting entry.
+- Correct the open POS session's expected cash and payment-method totals so Cash Up remains accurate.
+- Correct the underlying accounting/payment journal entries using Odoo's normal mechanisms.
+- Never create duplicate cash movements.
+- Preserve a clear audit trail showing the original payment method, corrected method, user, date/time and reason.
+- Initially require an appropriate manager/authorised permission rather than allowing unrestricted cashier corrections.
+- Work safely with open sessions first; handling corrections after session close requires a separate deliberate workflow.
+- Be fully tested against Cash Up, session closing, cash/card totals and accounting before deployment.
+
+The preferred outcome is that a normal cashier mistake can be corrected in a few seconds instead of requiring a refund, re-sale, camera review and merchant-terminal investigation.
 
 ---
 
