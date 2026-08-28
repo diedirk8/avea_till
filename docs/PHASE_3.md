@@ -19,6 +19,11 @@ Use these terms consistently:
 | **Session Dashboard** | Dashboard for one POS session |
 | **Cash Ledger** | Cash / till ledger functionality |
 | **POS Session** | Odoo's underlying POS session |
+| **Opening Cash** | The cash amount intended to remain in the till for the next operating period |
+| **Cash Up** | The cashier's end-of-shift/end-of-day till count and close workflow |
+| **Cash to Bag** | The cash above Opening Cash that is physically removed from the till and placed in the cash bag |
+| **Company Safe / Company Cash** | Cash held outside POS tills by the business |
+| **Petty Cash** | A separate company cash fund used for small operational expenses |
 
 Do not call the Avea Dashboard a "Till Dashboard".
 
@@ -174,6 +179,109 @@ Do not implement the P2/P3 report-like features (promotions analysis, customer a
 
 **Status: specified only. Do not implement yet.**
 
+### Business Reporting
+
+Deeper reporting for owners/accountants and other authorised financial users. Reports answer:
+
+> Let me investigate it.
+
+Do not duplicate Business Overview.
+
+Include:
+
+- Sales reports
+- Sales by period
+- Sales by product
+- Sales by category
+- Sales by payment method
+- Product performance
+- Refund analysis
+- Cash analysis
+- Comparisons
+- Custom date-range analysis
+- PDF / print output where useful
+- Clean A4-friendly layouts for printed reports
+
+Reports should use the company's configured tax terminology and currency. Do not hard-code VAT, South Africa, Rand, or other country-specific assumptions.
+
+### Operations
+
+Owner-facing operational shortcuts that simplify common business tasks without exposing unnecessary Odoo accounting complexity.
+
+#### Add Operational Expense
+
+Simple workflow for entering an operational expense:
+
+- Supplier
+- Date
+- Document reference
+- Expense account
+- Description / label
+- Amount
+- Paid From
+
+Paid From should use configured company cash/bank journals such as Company Safe, Petty Cash or Bank. It must not be coupled to a POS till/session for ordinary operational expenses.
+
+Use Odoo's normal accounting mechanisms underneath. Do not create a parallel accounting system.
+
+#### Simple Cash Transfer
+
+- FROM account → TO account
+- Amount, date, reason, notes
+- Automatic accounting entries
+- Intended for movements between company cash/bank accounts, such as Company Safe → Bank or Company Safe → Petty Cash
+- Separate from POS Cash In / Cash Out
+- Must not be used for the daily POS till cash drop, because doing so could duplicate the till-side accounting movement
+
+#### Cash Up
+
+Provide a simple cashier-facing end-of-shift/end-of-day workflow for counting and closing the current POS till.
+
+The cashier should have a dedicated Avea permission such as **Can Cash Up Own Till**. This permission must allow the cashier to cash up their own/current POS session without granting unrestricted accounting or general Cash In/Out access.
+
+Cash Up should:
+
+- Identify the current till and POS session
+- Show **Opening Cash**
+- Show **Expected Cash**
+- Allow the cashier to record **Counted Cash**
+- Calculate the **Difference**
+- Calculate **Cash to Bag** as the cash above Opening Cash that should physically be removed from the till
+- Clearly tell the cashier the amount that remains as Opening Cash and the amount that goes into the cash bag
+- Produce a clean, A4-friendly printed **Cash-Up Summary** to accompany the cash bag
+- Preserve Odoo's native POS session closing and cash-difference accounting integrity
+- Support multiple tills without mixing till accountability
+- Remain country- and currency-agnostic
+
+The intended physical workflow is:
+
+**Cashier → Cash Up → Cash to Bag + Cash-Up Summary → Cash Office → Company Safe**
+
+The Company Safe is separate from POS Till Cash and Petty Cash.
+
+Cash Up must be designed as a controlled cashier workflow, not as unrestricted access to Odoo Cash In / Cash Out. The exact relationship between the Avea Cash Up action and Odoo's native POS session closing must be determined from the actual Odoo 19 implementation before coding.
+
+### POS Till Cash → Company Safe Architecture
+
+The target future cash model is:
+
+- **POS Till Cash** — only physical cash belonging to a specific till
+- **Company Safe / Company Cash** — physical company cash held outside tills
+- **Petty Cash** — separate small cash fund
+- **Bank** — actual bank money
+
+Each POS/till must remain independently accountable where multiple tills exist.
+
+The target physical/accounting movement for the daily cash removal is:
+
+**POS Till Cash ↓ → Company Safe / Company Cash ↑**
+
+Do not create duplicate accounting movements. Do not use the general Transfer Money workflow for the same physical till cash movement already recorded by POS Cash Out/Cash Up.
+
+Before implementation, inspect Odoo 19's actual POS Cash In/Out and session-closing accounting behavior and choose the safest implementation. If Odoo's native Cash Out requires a suspense/reclassification step, Avea may simplify that underneath the workflow, but must not expose unnecessary accounting mechanics to cashiers.
+
+Historical POS cash/suspense balances must **not** be automatically rewritten or cleaned up as part of this feature. Historical reconciliation is a separate accounting task requiring approval.
+
 ### Simple Receive Stock
 
 One simple Avea workflow:
@@ -204,15 +312,6 @@ Simplify / wrap Odoo promotions, coupons, rewards and barcode functionality so a
 
 **Store Credit is COMPLETE and working. Do not rebuild it.** Customer Accounts must build alongside it, not replace it.
 
-### Simple Cash Transfer
-
-- FROM account → TO account
-- Amount, date, reason, notes
-- Automatic accounting entries
-- Appears appropriately in the Cash Ledger
-- Separate from POS Cash In / Cash Out
-- Designed for cash safe → bank deposits
-
 ---
 
 ## P3 — Future
@@ -220,8 +319,8 @@ Simplify / wrap Odoo promotions, coupons, rewards and barcode functionality so a
 **Status: specified only. Do not implement yet.**
 
 - **Business Owner Workspace** — later owner-facing workspace beyond the P1 Business Overview.
-- **Simple Bills / Expenses**
-- **Future Cash Reconciliation**
+- **Future Cash Office** — receive/verify cash bags, record bag custody, reconcile physical deposits into Company Safe, and provide an audit trail. This is deliberately separate from the cashier Cash Up feature in P2.
+- **Future Cash Reconciliation** — broader reconciliation workflows for tills, company cash/safe and bank deposits.
 
 ---
 
