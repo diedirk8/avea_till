@@ -5,3 +5,5 @@ access_avea_till_session_dashboard,access.avea.till.session.dashboard,model_avea
 access_avea_till_session_dashboard_product_line,access.avea.till.session.dashboard.product.line,model_avea_till_session_dashboard_product_line,,1,1,1,1
 access_avea_business_overview,access.avea.business.overview,model_avea_business_overview,,1,1,1,1
 access_avea_business_overview_product_line,access.avea.business.overview.product.line,model_avea_business_overview_product_line,,1,1,1,1
+access_avea_cash_up_user,access.avea.cash.up.user,model_avea_cash_up,avea_till.group_avea_cash_up_user,1,0,1,0
+access_avea_cash_up_manager,access.avea.cash.up.manager,model_avea_cash_up,avea_till.group_avea_cash_up_manager,1,1,1,1

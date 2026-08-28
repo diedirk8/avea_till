@@ -13,8 +13,9 @@ Features:
 - POS Store Credit payments
 - Operational expenses
 - Money transfers between company accounts
+- POS Cash Up
 """,
-    "version": "19.0.2.47.0",
+    "version": "19.0.2.53.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -25,13 +26,17 @@ Features:
         "contacts",
     ],
     "data": [
-        "security/till/ir.model.access.csv",
         "security/credit/credit_security.xml",
+        "security/till/cash_up_security.xml",
+        "security/till/ir.model.access.csv",
         "security/credit/ir.model.access.csv",
         "security/operations/ir.model.access.csv",
         "data/credit/sequence.xml",
         "data/credit/credit_reason_data.xml",
         "views/till/till_movement_views.xml",
+        "views/till/cash_up_views.xml",
+        "views/till/cash_up_settings_views.xml",
+        "views/till/pos_config_views.xml",
         "views/till/till_dashboard_views.xml",
         "views/till/session_dashboard_views.xml",
         "views/till/sessions_views.xml",
@@ -89,6 +94,10 @@ Features:
             "avea_till/static/src/pos/order_receipt.xml",
             "avea_till/static/src/pos/closing_popup.js",
             "avea_till/static/src/pos/closing_popup.xml",
+            "avea_till/static/src/pos/cash_up_popup.js",
+            "avea_till/static/src/pos/cash_up_popup.xml",
+            "avea_till/static/src/pos/cash_up_receipt.js",
+            "avea_till/static/src/pos/cash_up_receipt.xml",
         ],
     },
     "post_init_hook": "post_init_hook",

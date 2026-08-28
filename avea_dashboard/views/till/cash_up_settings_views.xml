@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_avea" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.avea.dashboard</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//form" position="inside">
+                <app
+                    data-string="Avea Dashboard"
+                    string="Avea Dashboard"
+                    name="avea_till"
+                    groups="base.group_system,point_of_sale.group_pos_manager"
+                >
+                    <block title="Cash Management" id="avea_cash_management_section">
+                        <setting
+                            id="avea_cash_safe_journal"
+                            string="Cash Safe / Company Cash Journal"
+                            company_dependent="1"
+                            help="Select the existing cash journal that holds physical company cash outside the POS tills. Cash Up posts till cash to this Safe destination. Each POS that accepts cash must have its own till cash journal; do not select a till cash journal as this destination."
+                        >
+                            <field
+                                name="avea_cash_safe_journal_id"
+                                options="{'no_create': True, 'no_open': True}"
+                                placeholder="Select a cash journal"
+                                domain="[('type', '=', 'cash'), ('company_id', '=', company_id), ('name', 'not ilike', 'store credit')]"
+                            />
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+        </field>
+    </record>
+</odoo>

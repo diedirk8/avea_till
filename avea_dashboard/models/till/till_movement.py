@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from odoo import api, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 
 OPENING_FLOAT_REASON = "Opening Float"
@@ -8,19 +8,18 @@ CASH_SALE_REASON = "Cash Sale"
 CASH_REFUND_REASON = "Cash Refund"
 POS_CASH_IN_REASON = "POS Cash In"
 POS_CASH_OUT_REASON = "POS Cash Out"
+CASH_UP_SAFE_DROP_REASON = "Cash Up / Safe Drop"
+CASH_DIFFERENCE_REASON = "Cash Difference"
 
 
 class AveaTillMovement(models.Model):
     _name = "avea.till.movement"
     _description = "Till Cash Movement"
     _order = "movement_date desc, id desc"
-    _sql_constraints = [
-        (
-            "statement_line_unique",
-            "unique(statement_line_id)",
-            "Each bank statement line can only be linked to one till movement.",
-        ),
-    ]
+    _statement_line_unique = models.Constraint(
+        "unique(statement_line_id)",
+        "Each bank statement line can only be linked to one till movement.",
+    )
 
     name = fields.Char(
         string="Reference",
@@ -393,6 +392,66 @@ class AveaTillMovement(models.Model):
         self._ensure_opening_float(session)
         self._sync_manual_cash_movements_from_statement_lines(session)
         self._backfill_session_pos_order_links(session)
+
+    @api.model
+    def _create_cash_up_safe_drop(self, session, statement_line, amount, destination_journal=None):
+        if not session or not statement_line:
+            return self.browse()
+        currency = session.currency_id or session.company_id.currency_id
+        if currency.compare_amounts(amount, 0.0) <= 0:
+            return self.browse()
+        existing = self.search(
+            [("statement_line_id", "=", statement_line.id)], limit=1
+        )
+        if existing:
+            return existing
+        destination_name = (
+            destination_journal.display_name
+            if destination_journal
+            else False
+        )
+        return self.create(
+            {
+                "name": statement_line.payment_ref or CASH_UP_SAFE_DROP_REASON,
+                "movement_date": statement_line.create_date or fields.Datetime.now(),
+                "session_id": session.id,
+                "user_id": self.env.user.id or session.user_id.id,
+                "movement_type": "out",
+                "amount": amount,
+                "reason": CASH_UP_SAFE_DROP_REASON,
+                "notes": destination_name or "",
+                "statement_line_id": statement_line.id,
+            }
+        )
+
+    @api.model
+    def _sync_cash_difference_from_statement_lines(self, session):
+        if not session:
+            return
+        currency = session.currency_id or session.company_id.currency_id
+        for line in session.statement_line_ids:
+            ref = (line.payment_ref or "").strip()
+            if not ref.startswith("Cash difference observed"):
+                continue
+            amount = abs(line.amount)
+            if currency.compare_amounts(amount, 0.0) <= 0:
+                continue
+            existing = self.search([("statement_line_id", "=", line.id)], limit=1)
+            if existing:
+                continue
+            movement_type = "in" if currency.compare_amounts(line.amount, 0.0) > 0 else "out"
+            self.create(
+                {
+                    "name": ref,
+                    "movement_date": line.create_date or fields.Datetime.now(),
+                    "session_id": session.id,
+                    "user_id": session.user_id.id or self.env.user.id,
+                    "movement_type": movement_type,
+                    "amount": amount,
+                    "reason": CASH_DIFFERENCE_REASON,
+                    "statement_line_id": line.id,
+                }
+            )
 
     @api.model
     def get_session_ledger_balance(self, session_id):

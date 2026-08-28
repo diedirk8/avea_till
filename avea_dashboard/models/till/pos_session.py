@@ -11,6 +11,15 @@ from .till_movement import (
 class PosSession(models.Model):
     _inherit = "pos.session"
 
+    @api.depends("config_id", "payment_method_ids")
+    def _compute_cash_journal(self):
+        closed = self.filtered(lambda session: session.state == "closed")
+        active = self - closed
+        if active:
+            super(PosSession, active)._compute_cash_journal()
+        for session in closed:
+            session.cash_journal_id = session.cash_journal_id
+
     avea_manual_net = fields.Monetary(
         string="Manual Cash Adjustments",
         compute="_compute_avea_till_metrics",
@@ -261,6 +270,30 @@ class PosSession(models.Model):
     def set_opening_control(self, cashbox_value, notes):
         super().set_opening_control(cashbox_value, notes)
         self.env["avea.till.movement"]._ensure_opening_float(self)
+
+    def load_data(self, models_to_load):
+        response = super().load_data(models_to_load)
+        cash_up_xmlid = "avea_till.group_avea_cash_up_user"
+        manager_xmlid = "avea_till.group_avea_cash_up_manager"
+        for user_data in response.get("res.users", []):
+            user = self.env["res.users"].browse(user_data["id"])
+            can_cash_up = user.has_group(cash_up_xmlid)
+            user_data["can_cash_up_own_till"] = can_cash_up
+            user_data["_can_cash_up_own_till"] = can_cash_up
+            user_data["can_cash_up_manager"] = user.has_group(manager_xmlid)
+            user_data["_can_cash_up_manager"] = user.has_group(manager_xmlid)
+        for employee_data in response.get("hr.employee", []):
+            user = self.env["hr.employee"].browse(employee_data["id"]).user_id
+            can_cash_up = bool(user) and user.has_group(cash_up_xmlid)
+            employee_data["can_cash_up_own_till"] = can_cash_up
+            employee_data["_can_cash_up_own_till"] = can_cash_up
+            employee_data["can_cash_up_manager"] = bool(user) and user.has_group(
+                manager_xmlid
+            )
+            employee_data["_can_cash_up_manager"] = bool(user) and user.has_group(
+                manager_xmlid
+            )
+        return response
 
     def try_cash_in_out(self, _type, amount, reason, partner_id, extras):
         sign = 1 if _type == "in" else -1

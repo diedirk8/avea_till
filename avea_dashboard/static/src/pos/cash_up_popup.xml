@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="avea_till.CashUpPopup">
+        <Dialog title="dialogTitle" size="'md'">
+            <t t-if="state.phase === 'complete' and state.result">
+                <div class="text-center mb-3">
+                    <div class="fw-bolder fs-3">Cash Up Complete</div>
+                    <div class="mt-2">Till closed successfully.</div>
+                </div>
+                <div class="d-flex justify-content-between fw-bolder fs-4 pt-2">
+                    <span>Cash to Safe</span>
+                    <span t-esc="state.result.receipt.cash_to_bag"/>
+                </div>
+                <div class="d-flex justify-content-between pt-2">
+                    <span>Opening Cash Remaining</span>
+                    <span t-esc="state.result.receipt.remaining_cash"/>
+                </div>
+                <t t-if="state.printError">
+                    <div class="alert alert-warning mt-3 mb-0" role="alert">
+                        <t t-esc="state.printError"/>
+                    </div>
+                </t>
+            </t>
+            <t t-elif="state.preview">
+                <div class="mb-2">
+                    <div class="d-flex justify-content-between">
+                        <span>Till</span>
+                        <span class="fw-bold" t-esc="state.preview.till"/>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Session</span>
+                        <span t-esc="state.preview.session"/>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Cashier</span>
+                        <span t-esc="cashierName"/>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Date</span>
+                        <span t-esc="state.preview.date"/>
+                    </div>
+                </div>
+                <div class="mb-2 pt-2 border-top">
+                    <div class="d-flex justify-content-between">
+                        <span>Opening Cash</span>
+                        <span t-esc="state.preview.opening_cash"/>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Expected Cash</span>
+                        <span t-esc="state.preview.expected_cash"/>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Counted Cash</label>
+                    <Input
+                        tModel="[state, 'counted']"
+                        icon="{type: 'string', value: pos.currency.symbol}"
+                        iconOnLeftSide="pos.currency.position === 'before'"
+                        isValid.bind="env.utils.isValidFloat"
+                        autofocus="true"
+                    />
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Difference</span>
+                    <span t-esc="formatAmount(difference)"/>
+                </div>
+                <div class="d-flex justify-content-between fw-bolder fs-4 pt-2">
+                    <span>Cash to Safe</span>
+                    <span t-esc="formatAmount(cashToSafe)"/>
+                </div>
+            </t>
+            <t t-set-slot="footer">
+                <div class="d-flex gap-2 w-100" t-if="state.phase === 'complete'">
+                    <button
+                        class="btn btn-secondary btn-lg"
+                        t-on-click="reprint"
+                        t-att-disabled="state.busy"
+                    >
+                        Reprint
+                    </button>
+                    <button
+                        class="btn btn-primary btn-lg flex-grow-1"
+                        t-on-click="done"
+                        t-att-disabled="state.busy"
+                    >
+                        Done
+                    </button>
+                </div>
+                <div class="d-flex gap-2 w-100" t-else="">
+                    <button
+                        class="btn btn-primary btn-lg flex-grow-1"
+                        t-on-click="confirm"
+                        t-att-disabled="state.loading or state.busy or !state.preview"
+                    >
+                        <t t-if="state.busy">Closing till…</t>
+                        <t t-else="">Confirm Cash Up</t>
+                    </button>
+                    <button
+                        class="btn btn-secondary btn-lg"
+                        t-on-click="props.close"
+                        t-att-disabled="state.busy"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

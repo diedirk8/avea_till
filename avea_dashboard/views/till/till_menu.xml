@@ -34,11 +34,12 @@
     </record>
 
     <menuitem
-        id="menu_avea_till_dashboard"
-        name="Cash"
+        id="menu_avea_cash_up"
+        name="Cash Ups"
         parent="menu_avea_root"
-        action="action_avea_open_cash_ledger"
-        sequence="15"
+        action="action_avea_cash_up"
+        groups="avea_till.group_avea_cash_up_manager"
+        sequence="16"
     />
 
     <menuitem

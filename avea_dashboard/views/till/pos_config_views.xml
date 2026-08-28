@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="res_config_settings_view_form_avea_till_cash" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.avea.till.cash</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@id='payment_methods_new']" position="after">
+                <setting
+                    id="avea_dedicated_till_cash"
+                    string="Till Cash Journal"
+                    help="Each point of sale that accepts cash needs its own cash payment method, journal, and cash account so drawer balances stay independent. Card and other non-cash methods can stay shared."
+                    invisible="not pos_avea_needs_dedicated_cash_journal"
+                >
+                    <div class="text-warning mb-2">
+                        This till shares its cash payment method or cash account with another point of sale.
+                    </div>
+                    <button
+                        name="action_avea_ensure_dedicated_cash_journal"
+                        type="object"
+                        string="Create dedicated cash journal"
+                        class="btn-primary"
+                        invisible="pos_has_active_session"
+                    />
+                    <div class="text-muted" invisible="not pos_has_active_session">
+                        Close the session on this till before creating its cash journal.
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

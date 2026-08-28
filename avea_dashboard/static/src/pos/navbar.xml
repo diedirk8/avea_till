@@ -9,6 +9,12 @@
             >
                 Issue Store Credit
             </DropdownItem>
+            <DropdownItem
+                t-if="showCashUpMenu"
+                onSelected="() => this.openCashUp()"
+            >
+                Cash Up
+            </DropdownItem>
         </xpath>
     </t>
 

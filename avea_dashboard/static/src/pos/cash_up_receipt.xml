@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="avea_till.CashUpReceipt">
+        <div class="pos-receipt avea-cash-up-receipt">
+            <ReceiptHeader order="props.order"/>
+            <div class="pos-receipt-center-align fw-bolder pt-2">
+                CASH UP
+            </div>
+            <div class="pos-receipt-order-data text-center">
+                <div t-esc="props.receipt.date"/>
+            </div>
+            <div class="pt-2">
+                <div>
+                    Company
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.company"/>
+                </div>
+                <div>
+                    Till
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.till"/>
+                </div>
+                <div>
+                    Session
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.session"/>
+                </div>
+                <div>
+                    Cashier
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.cashier"/>
+                </div>
+            </div>
+            <div class="pt-3">
+                <div>
+                    Opening Cash
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.opening_cash"/>
+                </div>
+                <div>
+                    Expected Cash
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.expected_cash"/>
+                </div>
+                <div>
+                    Counted Cash
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.counted_cash"/>
+                </div>
+                <div>
+                    Difference
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.difference"/>
+                </div>
+            </div>
+            <br/>
+            <div class="pos-receipt-center-align">----------------</div>
+            <div class="pos-receipt-center-align fw-bolder">
+                CASH TO SAFE
+            </div>
+            <div class="pos-receipt-center-align fw-bolder">
+                <t t-esc="props.receipt.cash_to_bag"/>
+            </div>
+            <div class="pos-receipt-center-align">----------------</div>
+            <div class="pt-2">
+                Opening Cash Remaining
+                <span class="pos-receipt-right-align" t-esc="props.receipt.remaining_cash"/>
+            </div>
+            <br/>
+            <div>Cashier Signature: _______________</div>
+            <br/>
+            <div>Manager Signature: _______________</div>
+        </div>
+    </t>
+
+</templates>

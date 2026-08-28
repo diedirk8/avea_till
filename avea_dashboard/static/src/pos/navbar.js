@@ -7,8 +7,13 @@ patch(Navbar.prototype, {
     get showIssueStoreCreditMenu() {
         return this.pos.canIssueStoreCredit();
     },
-
+    get showCashUpMenu() {
+        return this.pos.canCashUpOwnTill();
+    },
     issueStoreCredit() {
         this.pos.issueStoreCredit();
+    },
+    openCashUp() {
+        this.pos.openCashUp();
     },
 });

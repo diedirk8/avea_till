@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_cash_up_form" model="ir.ui.view">
+        <field name="name">avea.cash.up.form</field>
+        <field name="model">avea.cash.up</field>
+        <field name="arch" type="xml">
+            <form string="Cash Up" create="false" edit="false" delete="false">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="config_id"/>
+                            <field name="session_id"/>
+                            <field name="cashier_name"/>
+                            <field name="cash_up_date"/>
+                        </group>
+                        <group>
+                            <field name="opening_cash"/>
+                            <field name="expected_cash"/>
+                            <field name="counted_cash"/>
+                            <field name="difference"/>
+                            <field name="cash_to_bag" string="Cash to Safe"/>
+                            <field name="remaining_cash"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="till_journal_id"/>
+                        <field name="safe_journal_id"/>
+                        <field name="user_id"/>
+                        <field name="state"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_cash_up_list" model="ir.ui.view">
+        <field name="name">avea.cash.up.list</field>
+        <field name="model">avea.cash.up</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false">
+                <field name="cash_up_date"/>
+                <field name="config_id"/>
+                <field name="session_id"/>
+                <field name="cashier_name"/>
+                <field name="counted_cash"/>
+                <field name="cash_to_bag" string="Cash to Safe"/>
+                <field name="difference"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_avea_cash_up" model="ir.actions.act_window">
+        <field name="name">Cash Ups</field>
+        <field name="res_model">avea.cash.up</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>
