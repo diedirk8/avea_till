@@ -321,6 +321,7 @@ Simplify / wrap Odoo promotions, coupons, rewards and barcode functionality so a
 - **Business Owner Workspace** — later owner-facing workspace beyond the P1 Business Overview.
 - **Future Cash Office** — receive/verify cash bags, record bag custody, reconcile physical deposits into Company Safe, and provide an audit trail. This is deliberately separate from the cashier Cash Up feature in P2.
 - **Future Cash Reconciliation** — broader reconciliation workflows for tills, company cash/safe and bank deposits.
+- **POS Receipt Email** — allow a completed POS transaction receipt to be emailed to the customer, reusing the existing Odoo POS receipt/order data without creating a duplicate accounting transaction. Handle missing or invalid email addresses cleanly, allow an appropriate re-send flow where practical, and keep the existing 80mm thermal receipt printing unchanged. Use a simple Avea cashier-facing workflow rather than exposing unnecessary Odoo accounting terminology.
 
 ---
 
