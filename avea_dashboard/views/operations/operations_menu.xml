@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_operations"
+        name="Operations"
+        parent="menu_avea_root"
+        sequence="18"
+    />
+
+    <record id="menu_avea_operations" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_operations_expense"
+        name="Add Operational Expense"
+        parent="menu_avea_operations"
+        action="action_avea_operational_expense_wizard"
+        sequence="10"
+    />
+
+</odoo>

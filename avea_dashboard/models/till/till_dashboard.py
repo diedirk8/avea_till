@@ -110,6 +110,7 @@ class AveaTillDashboard(models.TransientModel):
             "name": _("Cash Ledger"),
             "res_model": "avea.till.dashboard",
             "view_mode": "form",
+            "views": [(False, "form")],
             "res_id": dashboard.id,
             "target": "current",
             "context": {"clear_breadcrumbs": True},

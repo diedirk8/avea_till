@@ -11,8 +11,9 @@ Features:
 - Cash Ledger and till management
 - Customer Credit (foundation)
 - POS Store Credit payments
+- Operational expenses
 """,
-    "version": "19.0.2.44.0",
+    "version": "19.0.2.46.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -26,6 +27,7 @@ Features:
         "security/till/ir.model.access.csv",
         "security/credit/credit_security.xml",
         "security/credit/ir.model.access.csv",
+        "security/operations/ir.model.access.csv",
         "data/credit/sequence.xml",
         "data/credit/credit_reason_data.xml",
         "views/till/till_movement_views.xml",
@@ -48,6 +50,8 @@ Features:
         "views/menu.xml",
         "views/till/till_menu.xml",
         "views/credit/credit_menu.xml",
+        "views/operations/operational_expense_wizard_views.xml",
+        "views/operations/operations_menu.xml",
     ],
     "assets": {
         "web.report_assets_common": [
