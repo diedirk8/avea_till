@@ -12,7 +12,14 @@ patch(PaymentScreen.prototype, {
     },
 
     get availablePaymentMethods() {
-        return this.payment_methods_from_config;
+        const methods = [...this.pos.config.payment_method_ids].sort(
+            (a, b) => (a.sequence || 0) - (b.sequence || 0)
+        );
+        const storeCredit = this.pos.getStoreCreditPaymentMethod();
+        if (storeCredit && !methods.some((method) => method.id === storeCredit.id)) {
+            methods.push(storeCredit);
+        }
+        return methods;
     },
 
     get showPartnerStoreCredit() {
@@ -35,6 +42,9 @@ patch(PaymentScreen.prototype, {
     },
 
     async clickPaymentMethod(paymentMethod) {
+        if (this.pos.isStoreCreditPaymentMethod(paymentMethod)) {
+            await this._aveaRefreshCurrentPartnerStoreCredit();
+        }
         if (this.isStoreCreditPaymentDisabled(paymentMethod)) {
             const partner = this.currentOrder.getPartner();
             this.dialog.add(AlertDialog, {
@@ -48,9 +58,18 @@ patch(PaymentScreen.prototype, {
         return this.addNewPaymentLine(paymentMethod);
     },
 
-    onMounted() {
+    async onMounted() {
         super.onMounted(...arguments);
+        await this._aveaRefreshCurrentPartnerStoreCredit();
         this._aveaSetupRefundStoreCredit();
+    },
+
+    async _aveaRefreshCurrentPartnerStoreCredit() {
+        const partner = this.currentOrder?.getPartner();
+        if (!partner || !this.pos.isAveaCreditEnabled()) {
+            return;
+        }
+        await this.pos.refreshPartnerStoreCreditBalance(partner.id);
     },
 
     _aveaSetupRefundStoreCredit() {

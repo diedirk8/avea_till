@@ -50,9 +50,18 @@ export function getStoreCreditPaymentMethod(pos) {
     if (!isAveaCreditEnabled(pos)) {
         return null;
     }
-    return (
-        pos.config.payment_method_ids.find((pm) => isStoreCreditPaymentMethod(pm)) ?? null
+    const fromConfig = pos.config.payment_method_ids.find((pm) =>
+        isStoreCreditPaymentMethod(pm)
     );
+    if (fromConfig) {
+        return fromConfig;
+    }
+    // POS IndexedDB can keep a stale config.payment_method_ids from before
+    // Store Credit was attached to the till. Payment methods themselves are
+    // still loaded, so cashiers would see the customer balance but not the
+    // Store Credit button until a manager login reloaded the POS.
+    const loaded = pos.models["pos.payment.method"]?.getAll?.() ?? [];
+    return loaded.find((pm) => isStoreCreditPaymentMethod(pm)) ?? null;
 }
 
 export function getPartnerStoreCreditBalance(partner) {

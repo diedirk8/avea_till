@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
 
 
 class ResPartner(models.Model):
@@ -69,3 +70,26 @@ class ResPartner(models.Model):
                 "avea_credit_currency_id",
             ]
         return fields_list
+
+    @api.model
+    def pos_get_store_credit_balance(self, partner_id):
+        """Return the live posted Store Credit balance for the POS payment screen.
+
+        POS IndexedDB can keep a stale 0 after another cashier refunds or issues
+        credit, which greys out Store Credit for this cashier.
+        """
+        if not self.env.su and not self.env.user.has_group(
+            "point_of_sale.group_pos_user"
+        ):
+            raise AccessError(
+                _("You do not have permission to read store credit balances in POS.")
+            )
+        partner = self.browse(partner_id).exists()
+        if not partner:
+            return {"balance": 0.0, "currency_id": False}
+        partner.invalidate_recordset(["avea_credit_balance", "avea_credit_currency_id"])
+        currency = partner.avea_credit_currency_id
+        return {
+            "balance": partner.avea_credit_balance,
+            "currency_id": currency.id if currency else False,
+        }

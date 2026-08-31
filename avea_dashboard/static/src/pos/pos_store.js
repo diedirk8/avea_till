@@ -98,4 +98,28 @@ patch(PosStore.prototype, {
             }
         }
     },
+    async refreshPartnerStoreCreditBalance(partnerId) {
+        if (!partnerId || !this.isAveaCreditEnabled()) {
+            return 0;
+        }
+        try {
+            const result = await this.data.call(
+                "res.partner",
+                "pos_get_store_credit_balance",
+                [partnerId]
+            );
+            const balance = result?.balance ?? 0;
+            this.updatePartnerStoreCreditBalance(partnerId, balance);
+            return balance;
+        } catch (_error) {
+            const partner = this.models["res.partner"].get(partnerId);
+            return this.getPartnerStoreCreditBalance(partner);
+        }
+    },
+    setPartnerToCurrentOrder(partner) {
+        super.setPartnerToCurrentOrder(...arguments);
+        if (partner?.id) {
+            this.refreshPartnerStoreCreditBalance(partner.id);
+        }
+    },
 });

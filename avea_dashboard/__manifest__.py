@@ -15,7 +15,7 @@ Features:
 - Money transfers between company accounts
 - POS Cash Up
 """,
-    "version": "19.0.2.56.0",
+    "version": "19.0.2.57.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",

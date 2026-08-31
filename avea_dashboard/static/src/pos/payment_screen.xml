@@ -9,7 +9,6 @@
             <attribute name="t-att-class">{
                 'opacity-50': isStoreCreditPaymentDisabled(paymentMethod) or (this.pos.paymentTerminalInProgress and paymentMethod.use_payment_terminal),
                 'd-flex justify-content-between align-items-center': true,
-                'pe-none': isStoreCreditPaymentDisabled(paymentMethod),
             }</attribute>
         </xpath>
         <xpath expr="//div[hasclass('button') and hasclass('paymentmethod')]" position="attributes">
