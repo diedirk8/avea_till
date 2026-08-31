@@ -79,8 +79,10 @@ patch(PaymentScreen.prototype, {
         }
         const result = order.addPaymentline(storeCreditMethod);
         if (result.status) {
-            result.data.setAmount(storeCreditAmount);
-            this.numberBuffer.set(storeCreditAmount.toString());
+            // Refund payment lines are negative; a positive amount leaves the
+            // refund unpaid and blocks Validate.
+            result.data.setAmount(-storeCreditAmount);
+            this.numberBuffer.set((-storeCreditAmount).toString());
         }
     },
 

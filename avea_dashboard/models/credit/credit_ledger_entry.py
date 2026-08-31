@@ -292,6 +292,26 @@ class AveaCreditLedgerEntry(models.Model):
         return self._sum_signed_amount_domain(domain)
 
     @api.model
+    def _avea_credit_check_pos_user(self):
+        if self.env.su or self.env.user.has_group("point_of_sale.group_pos_user"):
+            return
+        raise AccessError(
+            _("You do not have permission to record store credit POS payments.")
+        )
+
+    @api.model
+    def _avea_credit_create_pos_entry(self, values):
+        """Cashiers may complete POS store-credit payments but cannot issue credit.
+
+        Ledger create/write is manager-only so the Issue wizard stays protected.
+        POS redemptions and refunds are written as sudo and keep the cashier as
+        Recorded By.
+        """
+        self._avea_credit_check_pos_user()
+        values = dict(values, user_id=self.env.user.id)
+        return self.sudo().create(values)
+
+    @api.model
     def create_pos_redemption(
         self,
         partner,
@@ -319,7 +339,7 @@ class AveaCreditLedgerEntry(models.Model):
             )
         reference = self._format_pos_reference(pos_order)
         payment_note = reference or _("POS redemption")
-        return self.create(
+        return self._avea_credit_create_pos_entry(
             {
                 "partner_id": partner.id,
                 "amount": amount,
@@ -352,7 +372,7 @@ class AveaCreditLedgerEntry(models.Model):
         self._validate_pos_amount(amount, currency)
         reference = self._format_pos_reference(pos_order)
         payment_note = reference or _("POS refund")
-        return self.create(
+        return self._avea_credit_create_pos_entry(
             {
                 "partner_id": partner.id,
                 "amount": amount,
