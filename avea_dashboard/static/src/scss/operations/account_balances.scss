@@ -1,0 +1,39 @@
+.o_avea_account_balances {
+    .o_avea_account_balances_total {
+        align-items: baseline;
+        border-top: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        display: flex;
+        font-weight: 700;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-top: 0.5rem;
+        padding: 0.75rem 0.25rem 0.25rem;
+    }
+
+    .o_avea_account_balances_total_label {
+        font-size: 1rem;
+    }
+
+    .o_avea_account_balances_total .o_field_widget,
+    .o_avea_account_balances_total .o_field_monetary {
+        font-size: 1.125rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        text-align: right;
+    }
+
+    .o_list_renderer .o_data_row {
+        cursor: pointer;
+    }
+}
+
+.modal-dialog:has(.o_avea_account_balances) {
+    max-width: 36rem;
+}
+
+@media (max-width: 575.98px) {
+    .o_avea_account_balances .o_list_renderer .o_list_table {
+        min-width: 0;
+    }
+}
+

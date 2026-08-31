@@ -13,9 +13,10 @@ Features:
 - POS Store Credit payments
 - Operational expenses
 - Money transfers between company accounts
+- Account balances for Avea cash and bank accounts
 - POS Cash Up
 """,
-    "version": "19.0.2.57.0",
+    "version": "19.0.2.58.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -58,6 +59,7 @@ Features:
         "views/credit/credit_menu.xml",
         "views/operations/operational_expense_wizard_views.xml",
         "views/operations/money_transfer_wizard_views.xml",
+        "views/operations/account_balance_wizard_views.xml",
         "views/operations/operations_menu.xml",
     ],
     "assets": {
@@ -72,6 +74,7 @@ Features:
             "avea_till/static/src/scss/till/till_ledger_amount.scss",
             "avea_till/static/src/scss/credit/credit_workspace.scss",
             "avea_till/static/src/scss/credit/credit_ledger.scss",
+            "avea_till/static/src/scss/operations/account_balances.scss",
             "avea_till/static/src/credit/fields/credit_ledger_amount/credit_ledger_amount.xml",
             "avea_till/static/src/credit/fields/credit_ledger_amount/credit_ledger_amount.js",
             "avea_till/static/src/till/fields/till_ledger_amount/till_ledger_amount.xml",

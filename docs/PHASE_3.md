@@ -37,7 +37,7 @@ Do not rename existing technical till identifiers unless specifically required.
 |----------|--------|
 | **P0 — Bugs / UX** | Completed. Session Dashboard / Cash Ledger in `0a8d782c3cdeb08fcf591fa68f3aa711290753ae`; Customer Credit Dashboard mobile and Issue Credit in `19.0.2.27.0`. |
 | **P1 — Improvements** | Completed on `develop` (`19.0.2.28.0`) — Business Overview landing page and Avea navigation. **Not in production.** |
-| **P2 — Major Features** | Specified — **not implemented** |
+| **P2 — Major Features** | Partially implemented. Account Balances (`19.0.2.58.0`), Cash Up, Transfer Money, and Operational Expense are on `develop`. Remaining P2 items are specified only. |
 | **P3 — Future** | Specified — **not implemented** |
 
 ---
@@ -177,7 +177,7 @@ Do not implement the P2/P3 report-like features (promotions analysis, customer a
 
 ## P2 — Major Features
 
-**Status: specified only. Do not implement yet.**
+**Status: partially implemented.** Cash Up, Transfer Money, Add Operational Expense, and Account Balances (`19.0.2.58.0`) are on `develop`. Deeper Business Reporting, Receive Stock, Promotions, and Customer Accounts remain specified only.
 
 ### Business Reporting
 
@@ -232,6 +232,22 @@ Use Odoo's normal accounting mechanisms underneath. Do not create a parallel acc
 - Intended for movements between company cash/bank accounts, such as Company Safe → Bank or Company Safe → Petty Cash
 - Separate from POS Cash In / Cash Out
 - Must not be used for the daily POS till cash drop, because doing so could duplicate the till-side accounting movement
+
+#### Account Balances
+
+**Status: implemented (`19.0.2.58.0`).**
+
+Owner-facing shortcut that answers:
+
+> Where is my money right now?
+
+Menu: **Avea Dashboard → Operations → Account Balances**
+
+Show a simple Avea popup of the current Odoo accounting balances for money accounts already configured in Avea Settings (Transfer Money, Operational Expenses, Cash Safe) plus each POS till's cash journal. Do not list the full Chart of Accounts. Do not create or change accounts, journals, or balances.
+
+Each row shows the account name and current balance, with a total of the displayed accounts. **View** opens posted journal items on that money account (the same account as the number shown). Users without Accounting access still see the balances and get a short message instead of an Access Error.
+
+Keep the language suitable for a small-business owner with no accounting training.
 
 #### Cash Up
 

@@ -138,6 +138,68 @@ class ResCompany(models.Model):
         self.ensure_one()
         return self._avea_filter_owner_journals(self.avea_expense_journal_ids)
 
+    def _avea_account_balance_journals(self):
+        """Cash and bank journals the owner already selected for Avea.
+
+        Union of Transfer Money, Operational Expense, Cash Safe, and POS till
+        cash journals. Store credit stays out. The full chart of accounts is
+        never listed.
+        """
+        self.ensure_one()
+        journals = (
+            self._avea_transfer_journals() | self._avea_expense_journals()
+        )
+        if self.avea_cash_safe_journal_id:
+            journals |= self._avea_filter_owner_journals(
+                self.avea_cash_safe_journal_id
+            )
+        till_journals = self.env["account.journal"].browse(
+            self._avea_pos_till_cash_journal_ids()
+        ).exists()
+        journals |= self._avea_filter_owner_journals(till_journals)
+        till_ids = set(self._avea_pos_till_cash_journal_ids())
+        safe_id = self.avea_cash_safe_journal_id.id
+        till_order = {}
+        for config in self.env["pos.config"].search(
+            [("company_id", "=", self.id)],
+            order="id",
+        ):
+            till_journal = config._avea_cash_payment_methods().journal_id[:1]
+            if till_journal and till_journal.id not in till_order:
+                till_order[till_journal.id] = config.id
+
+        def sort_key(journal):
+            if journal.type == "bank":
+                group = 0
+            elif journal.id == safe_id:
+                group = 1
+            elif journal.id in till_ids:
+                group = 3
+            else:
+                group = 2
+            extra = (
+                till_order.get(journal.id, journal.id)
+                if group == 3
+                else journal.sequence
+            )
+            return (group, extra, journal.name or "", journal.id)
+
+        return journals.sorted(key=sort_key)
+
+    def _avea_account_balance_label(self, journal):
+        """Show the till name when this journal is that till's cash."""
+        self.ensure_one()
+        configs = self.env["pos.config"].search(
+            [
+                ("company_id", "=", self.id),
+                ("payment_method_ids.journal_id", "=", journal.id),
+            ],
+            order="id",
+        )
+        if len(configs) == 1:
+            return configs.name
+        return journal.name
+
     def _avea_default_owner_liquidity_journals(self):
         """Owner-wizard defaults: company cash/bank, not POS till cash.
 

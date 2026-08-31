@@ -13,6 +13,14 @@
     </record>
 
     <menuitem
+        id="menu_avea_operations_balances"
+        name="Account Balances"
+        parent="menu_avea_operations"
+        action="action_avea_account_balance_wizard"
+        sequence="5"
+    />
+
+    <menuitem
         id="menu_avea_operations_expense"
         name="Add Operational Expense"
         parent="menu_avea_operations"

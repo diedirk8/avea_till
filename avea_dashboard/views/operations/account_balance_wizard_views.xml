@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_account_balance_line_list" model="ir.ui.view">
+        <field name="name">avea.account.balance.line.list</field>
+        <field name="model">avea.account.balance.line</field>
+        <field name="arch" type="xml">
+            <list
+                create="false"
+                edit="false"
+                delete="false"
+                default_order="sequence, id"
+            >
+                <field name="sequence" column_invisible="1"/>
+                <field name="account_name" string="Account"/>
+                <field name="balance" string="Balance" widget="monetary"/>
+                <field name="currency_id" column_invisible="1"/>
+                <button
+                    name="action_open_transactions"
+                    type="object"
+                    string="View"
+                    class="btn-link"
+                    icon="fa-external-link"
+                    title="View transactions"
+                />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_account_balance_wizard_form" model="ir.ui.view">
+        <field name="name">avea.account.balance.wizard.form</field>
+        <field name="model">avea.account.balance.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Money &amp; Account Balances" class="o_avea_wizard o_avea_account_balances">
+                <field name="company_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                <field name="has_lines" invisible="1"/>
+                <div class="alert alert-info" role="status">
+                    Where the business's money is right now.
+                </div>
+                <div class="alert alert-warning" role="status" invisible="has_lines">
+                    No money accounts are set up in Avea yet. Ask an administrator
+                    to select cash and bank accounts under Settings → Avea Dashboard.
+                </div>
+                <field
+                    name="line_ids"
+                    nolabel="1"
+                    invisible="not has_lines"
+                    readonly="1"
+                />
+                <div
+                    class="o_avea_account_balances_total"
+                    invisible="not has_lines"
+                >
+                    <span class="o_avea_account_balances_total_label">Total</span>
+                    <field
+                        name="total_balance"
+                        nolabel="1"
+                        widget="monetary"
+                        readonly="1"
+                    />
+                </div>
+                <footer>
+                    <button string="Close" special="cancel" data-hotkey="x" class="btn-primary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_account_balance_wizard" model="ir.actions.server">
+        <field name="name">Account Balances</field>
+        <field name="model_id" ref="model_avea_account_balance_wizard"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_wizard()</field>
+    </record>
+
+</odoo>
