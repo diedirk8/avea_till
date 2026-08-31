@@ -23,6 +23,26 @@ patch(OrderPaymentValidation.prototype, {
         return true;
     },
 
+    async afterOrderValidation() {
+        this._aveaApplyStoreCreditBalanceAfterPayment();
+        return await super.afterOrderValidation(...arguments);
+    },
+
+    _aveaApplyStoreCreditBalanceAfterPayment() {
+        const order = this.order;
+        const partner = order?.getPartner();
+        if (!partner || !this.pos.isAveaCreditEnabled()) {
+            return;
+        }
+        if (!this.pos.getStoreCreditUsedOnOrder(order)) {
+            return;
+        }
+        this.pos.updatePartnerStoreCreditBalance(
+            partner.id,
+            this.pos.getStoreCreditRemainingBalance(order)
+        );
+    },
+
     async _askForCustomerIfRequired() {
         const needsCustomer = this.order.payment_ids.some(
             (payment) =>
