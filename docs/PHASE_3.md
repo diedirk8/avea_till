@@ -37,7 +37,7 @@ Do not rename existing technical till identifiers unless specifically required.
 |----------|--------|
 | **P0 — Bugs / UX** | Completed. Session Dashboard / Cash Ledger in `0a8d782c3cdeb08fcf591fa68f3aa711290753ae`; Customer Credit Dashboard mobile and Issue Credit in `19.0.2.27.0`. |
 | **P1 — Improvements** | Completed on `develop` (`19.0.2.28.0`) — Business Overview landing page and Avea navigation. **Not in production.** |
-| **P2 — Major Features** | Partially implemented. Account Balances (`19.0.2.58.0`), Cash Up, Transfer Money, and Operational Expense are on `develop`. Remaining P2 items are specified only. |
+| **P2 — Major Features** | Partially implemented. Account Balances (`19.0.2.59.0`), Cash Up, Transfer Money, and Operational Expense are on `develop`. Remaining P2 items are specified only. |
 | **P3 — Future** | Specified — **not implemented** |
 
 ---
@@ -177,7 +177,7 @@ Do not implement the P2/P3 report-like features (promotions analysis, customer a
 
 ## P2 — Major Features
 
-**Status: partially implemented.** Cash Up, Transfer Money, Add Operational Expense, and Account Balances (`19.0.2.58.0`) are on `develop`. Deeper Business Reporting, Receive Stock, Promotions, and Customer Accounts remain specified only.
+**Status: partially implemented.** Cash Up, Transfer Money, Add Operational Expense, and Account Balances (`19.0.2.59.0`) are on `develop`. Deeper Business Reporting, Receive Stock, Promotions, and Customer Accounts remain specified only.
 
 ### Business Reporting
 
@@ -235,7 +235,7 @@ Use Odoo's normal accounting mechanisms underneath. Do not create a parallel acc
 
 #### Account Balances
 
-**Status: implemented (`19.0.2.58.0`).**
+**Status: implemented (`19.0.2.59.0`).**
 
 Owner-facing shortcut that answers:
 

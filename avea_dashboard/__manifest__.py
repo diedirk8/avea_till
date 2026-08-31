@@ -16,7 +16,7 @@ Features:
 - Account balances for Avea cash and bank accounts
 - POS Cash Up
 """,
-    "version": "19.0.2.58.0",
+    "version": "19.0.2.59.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",

@@ -187,17 +187,23 @@ class ResCompany(models.Model):
         return journals.sorted(key=sort_key)
 
     def _avea_account_balance_label(self, journal):
-        """Show the till name when this journal is that till's cash."""
+        """Show the till name only for that till's cash journal.
+
+        Other POS payment journals (bank/card) stay as the journal name, even
+        when they are attached to a single till.
+        """
         self.ensure_one()
+        if journal.id not in self._avea_pos_till_cash_journal_ids():
+            return journal.name
         configs = self.env["pos.config"].search(
-            [
-                ("company_id", "=", self.id),
-                ("payment_method_ids.journal_id", "=", journal.id),
-            ],
+            [("company_id", "=", self.id)],
             order="id",
         )
-        if len(configs) == 1:
-            return configs.name
+        matching = configs.filtered(
+            lambda cfg: journal in cfg._avea_cash_payment_methods().journal_id
+        )
+        if len(matching) == 1:
+            return matching.name
         return journal.name
 
     def _avea_default_owner_liquidity_journals(self):
