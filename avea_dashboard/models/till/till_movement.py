@@ -535,3 +535,10 @@ class AveaTillMovement(models.Model):
         for session_id in records.mapped("session_id").ids:
             records._recompute_session_running_balances(session_id)
         return records
+
+    def unlink(self):
+        session_ids = self.mapped("session_id").ids
+        result = super().unlink()
+        for session_id in session_ids:
+            self._recompute_session_running_balances(session_id)
+        return result

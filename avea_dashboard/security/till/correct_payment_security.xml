@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="res_groups_privilege_avea_correct_payment" model="res.groups.privilege">
+        <field name="name">Correct Payment Method</field>
+        <field name="sequence">30</field>
+        <field name="category_id" ref="module_category_avea_dashboard"/>
+    </record>
+
+    <record id="group_avea_correct_payment" model="res.groups">
+        <field name="name">Correct Payment Method</field>
+        <field name="comment">May correct Cash, Card or EFT on a completed POS order while the till session is still open.</field>
+        <field name="sequence">10</field>
+        <field name="privilege_id" ref="res_groups_privilege_avea_correct_payment"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+</odoo>

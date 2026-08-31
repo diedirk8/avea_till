@@ -74,6 +74,23 @@ patch(PosStore.prototype, {
         }
         return Boolean(operator.can_cash_up_own_till);
     },
+    canCorrectPaymentMethod() {
+        const operator = this.cashier || this.getCashier?.() || this.user;
+        if (!operator || this.session?.state !== "opened") {
+            return false;
+        }
+        if (operator._can_correct_payment_method !== undefined) {
+            return Boolean(operator._can_correct_payment_method);
+        }
+        const raw = operator.raw;
+        if (raw?.can_correct_payment_method !== undefined) {
+            return Boolean(raw.can_correct_payment_method);
+        }
+        if (raw?._can_correct_payment_method !== undefined) {
+            return Boolean(raw._can_correct_payment_method);
+        }
+        return Boolean(operator.can_correct_payment_method);
+    },
     openCashUp() {
         if (this.session?.state === "closed") {
             return;

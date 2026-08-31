@@ -4,11 +4,56 @@ import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 import { patch } from "@web/core/utils/patch";
+import {
+    getPaymentMethodVisualKind,
+    paymentMethodButtonClass,
+    paymentMethodIconClass,
+} from "./payment_method_visual";
 
 patch(PaymentScreen.prototype, {
     setup() {
         super.setup(...arguments);
         this._aveaStoreCreditLastAmount = null;
+    },
+
+    getPaymentMethodVisualKind(paymentMethod) {
+        return getPaymentMethodVisualKind(paymentMethod);
+    },
+
+    paymentMethodIconClass(paymentMethod) {
+        return paymentMethodIconClass(paymentMethod);
+    },
+
+    paymentMethodButtonClass(paymentMethod) {
+        return paymentMethodButtonClass(paymentMethod, {
+            "opacity-50":
+                this.isStoreCreditPaymentDisabled(paymentMethod) ||
+                (this.pos.paymentTerminalInProgress &&
+                    paymentMethod.use_payment_terminal),
+            "d-flex justify-content-between align-items-center": true,
+            "avea-pm-selected": this.isPaymentMethodOnOrder(paymentMethod),
+        });
+    },
+
+    isPaymentMethodOnOrder(paymentMethod) {
+        return this.paymentLines.some(
+            (line) => line.payment_method_id?.id === paymentMethod?.id
+        );
+    },
+
+    paymentMethodImage(id) {
+        const method =
+            this.pos.models["pos.payment.method"].get(id) || this.paymentMethod;
+        if (method?.image) {
+            return `/web/image/pos.payment.method/${id}/image`;
+        }
+        if (method?.type === "cash") {
+            return "/point_of_sale/static/src/img/money.png";
+        }
+        if (method?.type === "pay_later") {
+            return "/point_of_sale/static/src/img/pay-later.png";
+        }
+        return "/point_of_sale/static/src/img/card-bank.png";
     },
 
     get availablePaymentMethods() {

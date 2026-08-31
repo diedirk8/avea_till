@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="avea_till.CorrectPaymentPopup">
+        <Dialog title.translate="Correct Payment Method" size="'md'">
+            <div t-if="state.loading" class="text-muted">Loading…</div>
+            <div t-elif="state.blocked" class="alert alert-warning mb-0" t-esc="state.blockReason"/>
+            <t t-else="">
+                <p class="mb-3">
+                    Change only the payment method. The sale, products, tax and total stay the same.
+                </p>
+                <div class="mb-3">
+                    <div class="fw-bold" t-esc="state.orderName"/>
+                    <div class="text-muted">
+                        <span t-esc="state.currentMethodName"/>
+                        <span t-if="state.amountDisplay"> · </span>
+                        <span t-esc="state.amountDisplay"/>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold" for="avea_correct_payment_method">Correct To</label>
+                    <select
+                        id="avea_correct_payment_method"
+                        class="form-select"
+                        t-att-value="state.newMethodId"
+                        t-on-change="onMethodChange"
+                    >
+                        <t t-foreach="state.methods" t-as="method" t-key="method.id">
+                            <option t-att-value="method.id" t-esc="method.name"/>
+                        </t>
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label fw-bold" for="avea_correct_payment_reason">Reason</label>
+                    <textarea
+                        class="form-control"
+                        id="avea_correct_payment_reason"
+                        placeholder="Why is this payment method being corrected?"
+                        t-model="state.reason"
+                        style="height: 80px;"
+                    />
+                </div>
+            </t>
+
+            <t t-set-slot="footer">
+                <div class="d-flex gap-2 w-100">
+                    <button
+                        t-if="!state.blocked and !state.loading"
+                        class="btn btn-primary btn-lg flex-grow-1"
+                        t-on-click="confirm"
+                        t-att-disabled="!canConfirm"
+                    >
+                        Correct Payment Method
+                    </button>
+                    <button class="btn btn-secondary btn-lg" t-on-click="props.close">
+                        Cancel
+                    </button>
+                </div>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

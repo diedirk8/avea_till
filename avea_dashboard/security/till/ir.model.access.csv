@@ -7,3 +7,4 @@ access_avea_business_overview,access.avea.business.overview,model_avea_business_
 access_avea_business_overview_product_line,access.avea.business.overview.product.line,model_avea_business_overview_product_line,,1,1,1,1
 access_avea_cash_up_user,access.avea.cash.up.user,model_avea_cash_up,avea_till.group_avea_cash_up_user,1,0,1,0
 access_avea_cash_up_manager,access.avea.cash.up.manager,model_avea_cash_up,avea_till.group_avea_cash_up_manager,1,1,1,1
+access_avea_payment_correction_wizard,access.avea.payment.correction.wizard,model_avea_payment_correction_wizard,avea_till.group_avea_correct_payment,1,1,1,1

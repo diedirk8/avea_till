@@ -275,16 +275,21 @@ class PosSession(models.Model):
         response = super().load_data(models_to_load)
         cash_up_xmlid = "avea_till.group_avea_cash_up_user"
         manager_xmlid = "avea_till.group_avea_cash_up_manager"
+        correct_xmlid = "avea_till.group_avea_correct_payment"
         for user_data in response.get("res.users", []):
             user = self.env["res.users"].browse(user_data["id"])
             can_cash_up = user.has_group(cash_up_xmlid)
+            can_correct = user.has_group(correct_xmlid)
             user_data["can_cash_up_own_till"] = can_cash_up
             user_data["_can_cash_up_own_till"] = can_cash_up
             user_data["can_cash_up_manager"] = user.has_group(manager_xmlid)
             user_data["_can_cash_up_manager"] = user.has_group(manager_xmlid)
+            user_data["can_correct_payment_method"] = can_correct
+            user_data["_can_correct_payment_method"] = can_correct
         for employee_data in response.get("hr.employee", []):
             user = self.env["hr.employee"].browse(employee_data["id"]).user_id
             can_cash_up = bool(user) and user.has_group(cash_up_xmlid)
+            can_correct = bool(user) and user.has_group(correct_xmlid)
             employee_data["can_cash_up_own_till"] = can_cash_up
             employee_data["_can_cash_up_own_till"] = can_cash_up
             employee_data["can_cash_up_manager"] = bool(user) and user.has_group(
@@ -293,6 +298,8 @@ class PosSession(models.Model):
             employee_data["_can_cash_up_manager"] = bool(user) and user.has_group(
                 manager_xmlid
             )
+            employee_data["can_correct_payment_method"] = can_correct
+            employee_data["_can_correct_payment_method"] = can_correct
         return response
 
     def try_cash_in_out(self, _type, amount, reason, partner_id, extras):

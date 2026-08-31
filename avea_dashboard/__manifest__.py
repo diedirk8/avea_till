@@ -15,8 +15,9 @@ Features:
 - Money transfers between company accounts
 - Account balances for Avea cash and bank accounts
 - POS Cash Up
+- Correct payment method on open POS sessions
 """,
-    "version": "19.0.2.59.0",
+    "version": "19.0.2.60.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -29,6 +30,7 @@ Features:
     "data": [
         "security/credit/credit_security.xml",
         "security/till/cash_up_security.xml",
+        "security/till/correct_payment_security.xml",
         "security/till/ir.model.access.csv",
         "security/credit/ir.model.access.csv",
         "security/operations/ir.model.access.csv",
@@ -38,6 +40,7 @@ Features:
         "views/till/cash_up_views.xml",
         "views/till/cash_up_settings_views.xml",
         "views/till/pos_config_views.xml",
+        "views/till/payment_correction_wizard_views.xml",
         "views/till/till_dashboard_views.xml",
         "views/till/session_dashboard_views.xml",
         "views/till/sessions_views.xml",
@@ -82,16 +85,23 @@ Features:
         ],
         "point_of_sale._assets_pos": [
             "avea_till/static/src/scss/pos/store_credit.scss",
+            "avea_till/static/src/scss/pos/payment_methods.scss",
             "avea_till/static/src/pos/store_credit.js",
+            "avea_till/static/src/pos/payment_method_visual.js",
             "avea_till/static/src/pos/pos_store.js",
             "avea_till/static/src/pos/issue_store_credit_popup.js",
             "avea_till/static/src/pos/issue_store_credit_popup.xml",
+            "avea_till/static/src/pos/correct_payment_popup.js",
+            "avea_till/static/src/pos/correct_payment_popup.xml",
             "avea_till/static/src/pos/navbar.js",
             "avea_till/static/src/pos/navbar.xml",
             "avea_till/static/src/pos/partner_list.js",
             "avea_till/static/src/pos/partner_line.xml",
             "avea_till/static/src/pos/payment_screen.js",
             "avea_till/static/src/pos/payment_screen.xml",
+            "avea_till/static/src/pos/payment_lines.js",
+            "avea_till/static/src/pos/ticket_screen.js",
+            "avea_till/static/src/pos/ticket_screen.xml",
             "avea_till/static/src/pos/order_payment_validation.js",
             "avea_till/static/src/pos/order_receipt.js",
             "avea_till/static/src/pos/order_receipt.xml",

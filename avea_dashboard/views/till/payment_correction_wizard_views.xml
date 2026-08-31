@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_payment_correction_wizard_form" model="ir.ui.view">
+        <field name="name">avea.payment.correction.wizard.form</field>
+        <field name="model">avea.payment.correction.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Correct Payment Method">
+                <group>
+                    <field name="order_id" readonly="1"/>
+                    <field name="current_method_id"/>
+                    <field name="amount"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="available_method_ids" invisible="1"/>
+                    <field name="new_method_id" options="{'no_create': True, 'no_open': True}"/>
+                    <field name="reason" placeholder="Why is this payment method being corrected?"/>
+                </group>
+                <footer>
+                    <button
+                        name="action_confirm"
+                        type="object"
+                        string="Correct Payment Method"
+                        class="btn-primary"
+                    />
+                    <button string="Cancel" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_pos_order_form_avea_correct_payment" model="ir.ui.view">
+        <field name="name">pos.order.form.avea.correct.payment</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <field name="avea_can_correct_payment" invisible="1"/>
+                <button
+                    name="action_avea_correct_payment_method"
+                    type="object"
+                    string="Correct Payment Method"
+                    class="btn-secondary"
+                    groups="avea_till.group_avea_correct_payment"
+                    invisible="not avea_can_correct_payment"
+                />
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

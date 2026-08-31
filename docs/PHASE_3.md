@@ -38,7 +38,7 @@ Do not rename existing technical till identifiers unless specifically required.
 | **P0 — Bugs / UX** | Completed. Session Dashboard / Cash Ledger in `0a8d782c3cdeb08fcf591fa68f3aa711290753ae`; Customer Credit Dashboard mobile and Issue Credit in `19.0.2.27.0`. |
 | **P1 — Improvements** | Completed on `develop` (`19.0.2.28.0`) — Business Overview landing page and Avea navigation. **Not in production.** |
 | **P2 — Major Features** | Partially implemented. Account Balances (`19.0.2.59.0`), Cash Up, Transfer Money, and Operational Expense are on `develop`. Remaining P2 items are specified only. |
-| **P3 — Future** | Specified — **not implemented** |
+| **P3 — Future** | Open-session **Correct Payment Method** and POS payment-button visual distinction are implemented in `19.0.2.60.0`. Remaining P3 items stay specified only. Do not start Phase 4. |
 
 ---
 
@@ -332,7 +332,7 @@ Simplify / wrap Odoo promotions, coupons, rewards and barcode functionality so a
 
 ## P3 — Future
 
-**Status: specified only. Do not implement yet.**
+**Status: partially implemented.** Correct Payment Method (open sessions) and payment-button visual distinction landed in `19.0.2.60.0`. Remaining items below stay specified only. Do not start Phase 4.
 
 - **Business Owner Workspace** — later owner-facing workspace beyond the P1 Business Overview.
 - **Future Cash Office** — receive/verify cash bags, record bag custody, reconcile physical deposits into Company Safe, and provide an audit trail. This is deliberately separate from the cashier Cash Up feature in P2.
@@ -345,6 +345,8 @@ Busy cashiers can occasionally select the wrong tender, for example recording a 
 
 #### Payment Selection Safety
 
+**Status: visual distinction implemented in `19.0.2.60.0`.** Cash, Card, EFT and Store Credit POS buttons use distinct icons and colours. Extra confirmation workflows remain specified only.
+
 Improve the cashier-facing payment workflow so Cash, Card, EFT and other configured payment methods are clearly differentiated and difficult to mis-select under pressure.
 
 - Make the selected payment method unmistakable.
@@ -355,6 +357,8 @@ Improve the cashier-facing payment workflow so Cash, Card, EFT and other configu
 - Preserve Odoo's native payment and session accounting behaviour.
 
 #### Correct Payment Method
+
+**Status: implemented for open sessions in `19.0.2.60.0`.** Manager-only. Cash ↔ Card/EFT. No Store Credit, split tenders, invoiced orders, or closed sessions. Closed-session correction remains a separate future workflow.
 
 Provide an authorised Avea workflow for correcting an honest payment-method mistake on a completed POS transaction without refunding and re-selling the entire transaction.
 

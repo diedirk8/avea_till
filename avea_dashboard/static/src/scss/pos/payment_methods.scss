@@ -1,0 +1,97 @@
+/* Distinct POS payment methods — professional, high-contrast, not decorative. */
+
+.paymentmethod.avea-pm-btn {
+    border-width: 1px;
+    border-style: solid;
+    font-weight: 600;
+    min-height: 3.25rem;
+    transition: box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.paymentmethod.avea-pm-btn .payment-name {
+    font-size: 1.05rem;
+    letter-spacing: 0.01em;
+}
+
+.avea-pm-icon {
+    align-items: center;
+    border-radius: 0.35rem;
+    display: inline-flex;
+    flex-shrink: 0;
+    font-size: 1.35rem;
+    height: 2.25rem;
+    justify-content: center;
+    width: 2.25rem;
+}
+
+.paymentmethod.avea-pm-cash,
+.paymentline.avea-pm-cash {
+    background: #eef6f2;
+    border-color: #1f6b4a;
+    color: #143d2c;
+}
+
+.paymentmethod.avea-pm-cash .avea-pm-icon,
+.paymentline.avea-pm-cash .avea-pm-icon {
+    background: #1f6b4a;
+    color: #fff;
+}
+
+.paymentmethod.avea-pm-card,
+.paymentline.avea-pm-card {
+    background: #eef2f8;
+    border-color: #1e4b8c;
+    color: #16325c;
+}
+
+.paymentmethod.avea-pm-card .avea-pm-icon,
+.paymentline.avea-pm-card .avea-pm-icon {
+    background: #1e4b8c;
+    color: #fff;
+}
+
+.paymentmethod.avea-pm-eft,
+.paymentline.avea-pm-eft {
+    background: #f1eef6;
+    border-color: #4a3f72;
+    color: #2c2644;
+}
+
+.paymentmethod.avea-pm-eft .avea-pm-icon,
+.paymentline.avea-pm-eft .avea-pm-icon {
+    background: #4a3f72;
+    color: #fff;
+}
+
+.paymentmethod.avea-pm-store-credit,
+.paymentline.avea-pm-store-credit {
+    background: #e6f3f4;
+    border-color: #01666b;
+    color: #01474b;
+}
+
+.paymentmethod.avea-pm-store-credit .avea-pm-icon,
+.paymentline.avea-pm-store-credit .avea-pm-icon {
+    background: #01666b;
+    color: #fff;
+}
+
+.paymentmethod.avea-pm-selected {
+    box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.paymentmethod.avea-pm-btn.opacity-50 {
+    opacity: 0.55;
+}
+
+@media (max-width: 767.98px) {
+    .avea-pm-icon {
+        font-size: 1.15rem;
+        height: 1.85rem;
+        width: 1.85rem;
+    }
+
+    .paymentmethod.avea-pm-btn .payment-name {
+        font-size: 0.98rem;
+    }
+}
