@@ -71,32 +71,74 @@
                                 invisible="period == 'today'"
                             />
                             <button
-                                name="action_period_week"
+                                name="action_period_wtd"
                                 type="object"
-                                string="This Week"
+                                string="Week to Date"
                                 class="btn-primary o_avea_period_btn"
-                                invisible="period != 'week'"
+                                invisible="period != 'wtd'"
                             />
                             <button
-                                name="action_period_week"
+                                name="action_period_wtd"
                                 type="object"
-                                string="This Week"
+                                string="Week to Date"
                                 class="btn-secondary o_avea_period_btn"
-                                invisible="period == 'week'"
+                                invisible="period == 'wtd'"
                             />
                             <button
-                                name="action_period_month"
+                                name="action_period_mtd"
                                 type="object"
-                                string="This Month"
+                                string="Month to Date"
                                 class="btn-primary o_avea_period_btn"
-                                invisible="period != 'month'"
+                                invisible="period != 'mtd'"
                             />
                             <button
-                                name="action_period_month"
+                                name="action_period_mtd"
                                 type="object"
-                                string="This Month"
+                                string="Month to Date"
                                 class="btn-secondary o_avea_period_btn"
-                                invisible="period == 'month'"
+                                invisible="period == 'mtd'"
+                            />
+                            <button
+                                name="action_period_last_7"
+                                type="object"
+                                string="Last 7 Days"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'last_7'"
+                            />
+                            <button
+                                name="action_period_last_7"
+                                type="object"
+                                string="Last 7 Days"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'last_7'"
+                            />
+                            <button
+                                name="action_period_last_30"
+                                type="object"
+                                string="Last 30 Days"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'last_30'"
+                            />
+                            <button
+                                name="action_period_last_30"
+                                type="object"
+                                string="Last 30 Days"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'last_30'"
+                            />
+                            <button
+                                name="action_period_ytd"
+                                type="object"
+                                string="Year to Date"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'ytd'"
+                            />
+                            <button
+                                name="action_period_ytd"
+                                type="object"
+                                string="Year to Date"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'ytd'"
                             />
                             <button
                                 name="action_period_custom"

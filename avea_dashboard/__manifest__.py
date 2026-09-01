@@ -17,7 +17,7 @@ Features:
 - POS Cash Up
 - Correct payment method on open POS sessions
 """,
-    "version": "19.0.2.70.0",
+    "version": "19.0.2.72.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",

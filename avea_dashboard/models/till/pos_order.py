@@ -156,6 +156,23 @@ class PosOrder(models.Model):
             )
 
     @api.model
+    def _load_pos_data_fields(self, config):
+        fields_list = super()._load_pos_data_fields(config)
+        if fields_list and "avea_can_correct_payment" not in fields_list:
+            fields_list = list(fields_list) + ["avea_can_correct_payment"]
+        return fields_list
+
+    @api.model
+    def _load_pos_data_read(self, records, config):
+        data = super()._load_pos_data_read(records, config)
+        orders = {order.id: order for order in records}
+        for row in data:
+            order = orders.get(row.get("id"))
+            if order is not None:
+                row["avea_can_correct_payment"] = bool(order.avea_can_correct_payment)
+        return data
+
+    @api.model
     def _avea_user_can_correct_payment(self):
         return self.env.user.has_group("avea_till.group_avea_correct_payment")
 

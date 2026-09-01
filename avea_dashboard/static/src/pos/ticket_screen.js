@@ -7,15 +7,37 @@ import { CorrectPaymentPopup } from "./correct_payment_popup";
 import { isStoreCreditPaymentMethod } from "./store_credit";
 
 patch(TicketScreen.prototype, {
+    _isOrderSessionOpen(order) {
+        const currentSession = this.pos.session;
+        if (!currentSession || currentSession.state !== "opened") {
+            return false;
+        }
+        // Closed-session orders become "done" when the till is closed. The
+        // Paid tab can attach those orders to the current session_id in the
+        // frontend, so "paid" vs "done" is the reliable open-session signal.
+        if (["done", "invoiced", "cancel"].includes(order.state)) {
+            return false;
+        }
+        const orderSession = order.session_id;
+        if (orderSession?.id && orderSession.id !== currentSession.id) {
+            return false;
+        }
+        return !orderSession?.state || orderSession.state === "opened";
+    },
+
     get showCorrectPaymentMethod() {
         if (!this.pos.canCorrectPaymentMethod()) {
             return false;
         }
-        if (this.pos.session?.state !== "opened") {
+        const order = this.getSelectedOrder();
+        if (!order || !this._isOrderSessionOpen(order)) {
             return false;
         }
-        const order = this.getSelectedOrder();
-        if (!order || !this.isOrderSynced) {
+        if (order.avea_can_correct_payment === false) {
+            return false;
+        }
+        const completed = order.finalized || order.state === "paid";
+        if (!completed) {
             return false;
         }
         if (order.account_move || order.state === "invoiced") {

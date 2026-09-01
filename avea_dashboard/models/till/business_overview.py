@@ -1,4 +1,3 @@
-from calendar import monthrange
 from datetime import datetime, time, timedelta
 from html import escape
 from zoneinfo import ZoneInfo
@@ -7,6 +6,17 @@ from markupsafe import Markup
 from odoo import Command, _, api, fields, models
 from odoo.tools.misc import format_date
 
+from .reporting_period import (
+    PERIOD_CUSTOM,
+    PERIOD_LAST_7,
+    PERIOD_LAST_30,
+    PERIOD_MTD,
+    PERIOD_TODAY,
+    PERIOD_WTD,
+    PERIOD_YTD,
+    normalize_period_key,
+    resolve_reporting_period,
+)
 from .till_movement import POS_CASH_IN_REASON, POS_CASH_OUT_REASON
 
 OVERVIEW_PRODUCT_LIMIT = 8
@@ -59,8 +69,11 @@ class AveaBusinessOverview(models.TransientModel):
     period = fields.Selection(
         [
             ("today", "Today"),
-            ("week", "This Week"),
-            ("month", "This Month"),
+            ("wtd", "Week to Date"),
+            ("mtd", "Month to Date"),
+            ("last_7", "Last 7 Days"),
+            ("last_30", "Last 30 Days"),
+            ("ytd", "Year to Date"),
             ("custom", "Custom Period"),
         ],
         string="Period",
@@ -310,10 +323,9 @@ class AveaBusinessOverview(models.TransientModel):
     def action_open_business_overview(
         self, period="today", date_from=None, date_to=None
     ):
-        if period not in ("today", "week", "month", "custom"):
-            period = "today"
+        period = normalize_period_key(period)
         vals = {"period": period}
-        if period == "custom":
+        if period == PERIOD_CUSTOM:
             start, end = self._normalize_custom_dates(date_from, date_to)
             vals["date_from"] = start
             vals["date_to"] = end
@@ -329,18 +341,27 @@ class AveaBusinessOverview(models.TransientModel):
         }
 
     def action_period_today(self):
-        return self.action_open_business_overview(period="today")
+        return self.action_open_business_overview(period=PERIOD_TODAY)
 
-    def action_period_week(self):
-        return self.action_open_business_overview(period="week")
+    def action_period_wtd(self):
+        return self.action_open_business_overview(period=PERIOD_WTD)
 
-    def action_period_month(self):
-        return self.action_open_business_overview(period="month")
+    def action_period_mtd(self):
+        return self.action_open_business_overview(period=PERIOD_MTD)
+
+    def action_period_last_7(self):
+        return self.action_open_business_overview(period=PERIOD_LAST_7)
+
+    def action_period_last_30(self):
+        return self.action_open_business_overview(period=PERIOD_LAST_30)
+
+    def action_period_ytd(self):
+        return self.action_open_business_overview(period=PERIOD_YTD)
 
     def action_period_custom(self):
         today = fields.Date.context_today(self)
         return self.action_open_business_overview(
-            period="custom",
+            period=PERIOD_CUSTOM,
             date_from=today.replace(day=1),
             date_to=today,
         )
@@ -348,7 +369,7 @@ class AveaBusinessOverview(models.TransientModel):
     def action_apply_custom_period(self):
         self.ensure_one()
         return self.action_open_business_overview(
-            period="custom",
+            period=PERIOD_CUSTOM,
             date_from=self.date_from,
             date_to=self.date_to,
         )
@@ -396,90 +417,45 @@ class AveaBusinessOverview(models.TransientModel):
             start, end = end, start
         return start, end
 
-    def _period_windows(self, period):
+    def _reporting_period(self, period=None):
+        self.ensure_one()
         today = fields.Date.context_today(self)
-        if period == "custom":
-            date_from, date_to = self._normalize_custom_dates(
-                self.date_from, self.date_to
-            )
-            duration = (date_to - date_from).days + 1
-            prev_end = date_from - timedelta(days=1)
-            prev_start = prev_end - timedelta(days=duration - 1)
-            return {
-                "display_current": (date_from, date_to),
-                "data_current": (date_from, date_to),
-                "display_previous": (prev_start, prev_end),
-                "data_previous": (prev_start, prev_end),
-                "labels": (_("Custom Period"), _("Previous period")),
-                "show_through_today": False,
-                "today": today,
-            }
-        if period == "week":
-            week_start = today - timedelta(days=today.weekday())
-            week_end = week_start + timedelta(days=6)
-            prev_start = week_start - timedelta(days=7)
-            prev_end = week_end - timedelta(days=7)
-            return {
-                "display_current": (week_start, week_end),
-                "data_current": (week_start, today),
-                "display_previous": (prev_start, prev_end),
-                "data_previous": (prev_start, prev_end),
-                "labels": (_("This Week"), _("Previous week")),
-                "show_through_today": today < week_end,
-                "today": today,
-            }
-        if period == "month":
-            month_start = today.replace(day=1)
-            if month_start.month == 1:
-                prev_start = month_start.replace(year=month_start.year - 1, month=12)
-            else:
-                prev_start = month_start.replace(month=month_start.month - 1)
-            prev_last_day = monthrange(prev_start.year, prev_start.month)[1]
-            prev_end = prev_start.replace(day=min(today.day, prev_last_day))
-            current = (month_start, today)
-            previous = (prev_start, prev_end)
-            return {
-                "display_current": current,
-                "data_current": current,
-                "display_previous": previous,
-                "data_previous": previous,
-                "labels": (_("This Month"), _("Previous month")),
-                "show_through_today": False,
-                "today": today,
-            }
-        yesterday = today - timedelta(days=1)
-        current = (today, today)
-        previous = (yesterday, yesterday)
+        return resolve_reporting_period(
+            period=period or self.period or PERIOD_TODAY,
+            today=today,
+            custom_from=self.date_from,
+            custom_to=self.date_to,
+        )
+
+    def _period_windows(self, period):
+        """Adapter around the reporting-period source of truth."""
+        reporting = resolve_reporting_period(
+            period=period,
+            today=fields.Date.context_today(self),
+            custom_from=self.date_from,
+            custom_to=self.date_to,
+        )
+        current = reporting.current
+        previous = reporting.comparison
         return {
             "display_current": current,
             "data_current": current,
             "display_previous": previous,
             "data_previous": previous,
-            "labels": (_("Today"), _("Yesterday")),
+            "labels": (_(reporting.label), _(reporting.comparison_label)),
             "show_through_today": False,
-            "today": today,
+            "today": reporting.today,
+            "elapsed_days": reporting.elapsed_days,
+            "key": reporting.key,
         }
 
     def _chart_period_days(self, period, windows):
-        """Calendar span for Trading Pattern. KPI totals keep ``data_current``."""
-        today = windows["today"]
-        if period == "week":
-            return windows["display_current"]
-        if period == "month":
-            month_start = today.replace(day=1)
-            last_day = monthrange(month_start.year, month_start.month)[1]
-            return (month_start, month_start.replace(day=last_day))
-        if period == "custom":
-            return windows["display_current"]
-        return (today, today)
+        """Charts use the same inclusive dates as the selected reporting period."""
+        return windows["data_current"]
 
     def _is_single_day_period(self, period, windows):
-        if period == "today":
-            return True
-        if period == "custom":
-            day_from, day_to = windows["display_current"]
-            return day_from == day_to
-        return False
+        day_from, day_to = windows["display_current"]
+        return day_from == day_to
 
     def _format_day_range(self, day_from, day_to):
         """Readable date range in the user's language, e.g. 18–25 August 2026."""
@@ -859,10 +835,15 @@ class AveaBusinessOverview(models.TransientModel):
         parts.append("</div>")
         return Markup("".join(parts))
 
-    def _build_pattern_week_html(self, day_buckets, week_start):
+    def _build_pattern_week_html(self, day_buckets, week_start, period_end=None):
         days = [week_start + timedelta(days=offset) for offset in range(7)]
+        in_period = [
+            day
+            for day in days
+            if period_end is None or day <= period_end
+        ]
         max_sales = max(
-            (day_buckets.get(day, (0.0, 0))[0] for day in days),
+            (day_buckets.get(day, (0.0, 0))[0] for day in in_period),
             default=0.0,
         )
         parts = [
@@ -871,6 +852,11 @@ class AveaBusinessOverview(models.TransientModel):
         ]
         parts.extend(self._pattern_weekday_heads(week_start))
         for day in days:
+            if period_end is not None and day > period_end:
+                parts.append(
+                    '<span class="o_avea_pattern_cell o_avea_pattern_cell--out"></span>'
+                )
+                continue
             sales, count = day_buckets.get(day, (0.0, 0))
             parts.append(self._pattern_day_cell(day, sales, count, max_sales))
         parts.append("</div>")
@@ -910,30 +896,19 @@ class AveaBusinessOverview(models.TransientModel):
     def _build_trading_pattern_html(self, period, orders, windows):
         if not orders:
             return False
-        if period == "today":
+        key = windows.get("key") or normalize_period_key(period)
+        day_from, day_to = windows["data_current"]
+        if day_from == day_to:
             hour_buckets = self._hours_from_orders(orders)
             if not hour_buckets:
                 return False
             return self._build_pattern_hours_html(hour_buckets)
-        if period == "custom":
-            day_from, day_to = windows["display_current"]
-            if day_from == day_to:
-                hour_buckets = self._hours_from_orders(orders)
-                if not hour_buckets:
-                    return False
-                return self._build_pattern_hours_html(hour_buckets)
-            day_buckets = self._days_from_orders(orders)
-            if not day_buckets:
-                return False
-            return self._build_pattern_month_html(day_buckets, day_from, day_to)
         day_buckets = self._days_from_orders(orders)
         if not day_buckets:
             return False
-        if period == "week":
-            week_start, _week_end = windows["display_current"]
-            return self._build_pattern_week_html(day_buckets, week_start)
-        month_start, month_end = self._chart_period_days(period, windows)
-        return self._build_pattern_month_html(day_buckets, month_start, month_end)
+        if key == PERIOD_WTD:
+            return self._build_pattern_week_html(day_buckets, day_from, day_to)
+        return self._build_pattern_month_html(day_buckets, day_from, day_to)
 
     @api.depends("period", "date_from", "date_to")
     def _compute_metrics(self):
@@ -979,7 +954,11 @@ class AveaBusinessOverview(models.TransientModel):
                 else False
             )
             chart_from, chart_to = overview._chart_period_days(period, windows)
-            chart_orders = overview._paid_orders_between(chart_from, chart_to)
+            chart_orders = (
+                current_orders
+                if (chart_from, chart_to) == windows["data_current"]
+                else overview._paid_orders_between(chart_from, chart_to)
+            )
             period_range = overview._format_day_range(*windows["display_current"])
             comparison_range = overview._format_day_range(*windows["display_previous"])
             single_day = overview._is_single_day_period(period, windows)
