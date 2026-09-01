@@ -1,7 +1,7 @@
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
-from .stock_mixin import AVEA_RECEIVE_ORIGIN
+from .stock_mixin import AVEA_RECEIVE_ORIGIN, AVEA_SUPPLIER_COST_PRECISION
 
 
 class AveaStockReceiveLine(models.Model):
@@ -32,7 +32,7 @@ class AveaStockReceiveLine(models.Model):
     )
     price_unit = fields.Float(
         string="EX-VAT Cost",
-        digits="Product Price",
+        digits=AVEA_SUPPLIER_COST_PRECISION,
         default=0.0,
         help="Original EX-VAT unit cost from the supplier invoice, before discount.",
     )
@@ -44,7 +44,7 @@ class AveaStockReceiveLine(models.Model):
     )
     price_unit_discounted = fields.Float(
         string="Discounted Cost",
-        digits="Product Price",
+        digits=AVEA_SUPPLIER_COST_PRECISION,
         compute="_compute_price_unit_discounted",
         help="EX-VAT unit cost after the line discount.",
     )

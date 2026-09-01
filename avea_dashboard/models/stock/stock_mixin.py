@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 
 
 AVEA_RECEIVE_ORIGIN = "Avea Receive Stock"
+AVEA_SUPPLIER_COST_PRECISION = "Avea Supplier Cost"
 
 
 class AveaStockMixin(models.AbstractModel):
