@@ -79,6 +79,11 @@ class AveaStockReturn(models.TransientModel):
         related="picking_id.date_done",
         string="Received on",
     )
+
+    @api.depends("picking_id")
+    def _compute_display_name(self):
+        for wizard in self:
+            wizard.display_name = _("Return Stock")
     invoice_number = fields.Char(
         compute="_compute_invoice_number",
     )
@@ -149,7 +154,7 @@ class AveaStockReturn(models.TransientModel):
             "views": [(view_id, "form")],
             "view_id": view_id,
             "res_id": wizard.id,
-            "target": "current",
+            "target": "main",
             "context": {"clear_breadcrumbs": True},
         }
 
@@ -223,6 +228,7 @@ class AveaStockReturn(models.TransientModel):
                         "name": line.product_id.display_name,
                         "quantity": line.quantity,
                         "price_unit": po_line.price_unit,
+                        "discount": po_line.discount,
                         "tax_ids": [Command.set(po_line.tax_ids.ids)],
                         "purchase_line_id": po_line.id,
                         "display_type": "product",

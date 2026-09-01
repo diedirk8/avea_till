@@ -6,27 +6,18 @@
         <field name="model">avea.stock.receive</field>
         <field name="arch" type="xml">
             <form string="Receive Stock" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock">
-                <header class="o_avea_workspace_header">
-                    <button
-                        name="action_open_receive"
-                        type="object"
-                        string="Receive Stock"
-                        class="btn-primary o_avea_workspace_nav o_avea_workspace_nav--active"
-                    />
-                    <button
-                        name="action_open_return"
-                        type="object"
-                        string="Return Stock"
-                        class="btn-secondary o_avea_workspace_nav"
-                    />
-                </header>
                 <sheet class="o_avea_workspace_sheet">
                     <field name="company_id" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
                     <field name="available_journal_ids" invisible="1"/>
                     <field name="effective_partner_id" invisible="1"/>
                     <field name="totals_mismatch" invisible="1"/>
+                    <field name="state" invisible="1"/>
+                    <field name="bill_id" invisible="1"/>
+                    <field name="show_confirmation" invisible="1"/>
+                    <field name="user_id" invisible="1"/>
 
+                    <div class="o_avea_stock_capture" invisible="show_confirmation">
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">Stock</span>
@@ -37,139 +28,297 @@
                         </div>
                     </div>
 
-                    <div class="o_avea_workspace_block">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Supplier invoice</h2>
-                        </div>
-                        <div class="o_avea_workspace_ledger_card o_avea_stock_card">
-                            <group>
-                                <group>
-                                    <field
-                                        name="add_new_supplier"
-                                        widget="boolean_toggle"
-                                    />
+                    <div class="o_avea_stock_layout">
+                        <div class="o_avea_stock_panel o_avea_stock_panel--supplier">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-file-text-o" title="Supplier invoice" aria-hidden="true"/>
+                                Supplier invoice
+                            </h2>
+                            <div class="o_avea_workspace_info_grid o_avea_stock_side_grid">
+                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span o_avea_stock_check_row">
+                                    <field name="add_new_supplier" nolabel="1"/>
+                                    <span class="o_avea_workspace_info_label">Add a new supplier</span>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="add_new_supplier">
+                                    <span class="o_avea_workspace_info_label">Supplier</span>
                                     <field
                                         name="partner_id"
+                                        nolabel="1"
                                         options="{'no_create': True, 'no_open': True}"
                                         context="{'res_partner_search_mode': 'supplier'}"
-                                        invisible="add_new_supplier"
-                                        required="not add_new_supplier"
                                     />
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="not add_new_supplier">
+                                    <span class="o_avea_workspace_info_label">Supplier name</span>
                                     <field
                                         name="new_supplier_name"
-                                        invisible="not add_new_supplier"
-                                        required="add_new_supplier"
+                                        nolabel="1"
                                         placeholder="Supplier name"
                                     />
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="not add_new_supplier">
+                                    <span class="o_avea_workspace_info_label">VAT number</span>
                                     <field
                                         name="new_supplier_vat"
-                                        invisible="not add_new_supplier"
+                                        nolabel="1"
                                         placeholder="Optional"
                                     />
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span">
+                                    <span class="o_avea_workspace_info_label">Invoice number</span>
                                     <field
                                         name="invoice_number"
+                                        nolabel="1"
                                         placeholder="Supplier invoice number"
-                                        required="1"
                                     />
-                                </group>
-                                <group>
-                                    <field name="invoice_date"/>
-                                    <field name="received_date"/>
-                                    <field
-                                        name="invoice_document"
-                                        filename="invoice_document_filename"
-                                    />
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Invoice date</span>
+                                    <field name="invoice_date" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Date received</span>
+                                    <field name="received_date" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span o_avea_stock_upload">
+                                    <span class="o_avea_workspace_info_label">Invoice document (optional)</span>
+                                    <div class="o_avea_stock_upload_drop">
+                                        <i class="fa fa-cloud-upload" title="Upload invoice" aria-hidden="true"/>
+                                        <field
+                                            name="invoice_document"
+                                            nolabel="1"
+                                            filename="invoice_document_filename"
+                                        />
+                                    </div>
                                     <field name="invoice_document_filename" invisible="1"/>
-                                    <field name="company_id" groups="base.group_multi_company"/>
-                                </group>
-                            </group>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" groups="base.group_multi_company">
+                                    <span class="o_avea_workspace_info_label">Company</span>
+                                    <field name="company_id" nolabel="1"/>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="o_avea_workspace_block">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Products received</h2>
+                        <div class="o_avea_stock_panel o_avea_stock_panel--products">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-cube" title="Products received" aria-hidden="true"/>
+                                Products received
+                            </h2>
+                            <div class="o_avea_stock_list_surface">
+                                <div class="o_avea_stock_empty">
+                                    <span class="o_avea_stock_empty_icon" aria-hidden="true">
+                                        <i class="fa fa-cube" title="No products added yet"/>
+                                    </span>
+                                    <p class="o_avea_stock_empty_title">No products added yet</p>
+                                    <p class="o_avea_stock_empty_hint">Add products to receive stock.</p>
+                                </div>
+                                <field name="line_ids" nolabel="1">
+                                    <list editable="bottom" class="o_avea_stock_receive_list">
+                                        <field name="company_id" column_invisible="True"/>
+                                        <field name="currency_id" column_invisible="True"/>
+                                        <field name="partner_id" column_invisible="True"/>
+                                        <field
+                                            name="product_id"
+                                            options="{'no_create': True, 'no_open': True}"
+                                            context="{'display_default_code': True}"
+                                        />
+                                        <field name="quantity"/>
+                                        <field name="price_unit" string="EX-VAT cost"/>
+                                        <field name="discount" string="Discount %"/>
+                                        <field name="price_unit_discounted" string="Discounted cost"/>
+                                        <field name="price_subtotal" string="Line total"/>
+                                    </list>
+                                </field>
+                            </div>
+                            <div class="o_avea_stock_products_footer">
+                                <div class="o_avea_stock_products_meta">
+                                    <span><field name="product_count" nolabel="1"/> products</span>
+                                    <span class="o_avea_stock_products_meta_sep">|</span>
+                                    <span>Total quantity: <field name="quantity_total" nolabel="1"/></span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="o_avea_workspace_ledger_card o_avea_stock_card">
-                            <field name="line_ids" nolabel="1">
-                                <list editable="bottom" class="o_avea_stock_receive_list">
-                                    <field name="company_id" column_invisible="True"/>
-                                    <field name="currency_id" column_invisible="True"/>
-                                    <field name="partner_id" column_invisible="True"/>
+
+                        <div class="o_avea_stock_panel o_avea_stock_panel--totals">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-calculator" title="Totals" aria-hidden="true"/>
+                                Totals
+                            </h2>
+                            <div class="o_avea_stock_totals">
+                                <div class="o_avea_tax_summary_card">
+                                    <div class="o_avea_tax_summary_row">
+                                        <span class="o_avea_tax_summary_label">Ex-VAT total</span>
+                                        <field name="amount_untaxed" nolabel="1" widget="monetary" class="o_avea_tax_summary_value"/>
+                                    </div>
+                                    <div class="o_avea_tax_summary_row">
+                                        <span class="o_avea_tax_summary_label">VAT</span>
+                                        <field name="amount_tax" nolabel="1" widget="monetary" class="o_avea_tax_summary_value"/>
+                                    </div>
+                                    <div class="o_avea_tax_summary_row o_avea_tax_summary_row--total">
+                                        <span class="o_avea_tax_summary_label">Total including VAT</span>
+                                        <field name="amount_total" nolabel="1" widget="monetary" class="o_avea_tax_summary_value"/>
+                                    </div>
+                                </div>
+                                <div class="o_avea_stock_invoice_check">
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Invoice total</span>
+                                        <field
+                                            name="invoice_total"
+                                            nolabel="1"
+                                            placeholder="Optional — total on the paper invoice"
+                                        />
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not invoice_total">
+                                        <span class="o_avea_workspace_info_label">Difference</span>
+                                        <field name="invoice_difference" nolabel="1"/>
+                                    </div>
+                                    <div class="alert alert-warning o_avea_stock_mismatch" role="status" invisible="not totals_mismatch">
+                                        The captured total does not match the invoice total. Check quantities and costs before receiving.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="o_avea_stock_panel o_avea_stock_panel--payment">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-credit-card" title="Payment" aria-hidden="true"/>
+                                Payment
+                            </h2>
+                            <div class="o_avea_stock_payment">
+                                <div class="o_avea_workspace_info_item o_avea_stock_check_row">
+                                    <field name="mark_as_paid" nolabel="1"/>
+                                    <span class="o_avea_workspace_info_label">Mark as Paid</span>
+                                </div>
+                                <div class="o_avea_workspace_info_item" invisible="not mark_as_paid">
+                                    <span class="o_avea_workspace_info_label">Paid From</span>
                                     <field
-                                        name="product_id"
+                                        name="paid_from_journal_id"
+                                        nolabel="1"
                                         options="{'no_create': True, 'no_open': True}"
-                                        context="{'display_default_code': True}"
+                                        required="mark_as_paid"
                                     />
-                                    <field name="quantity"/>
-                                    <field name="price_unit" string="EX-VAT cost"/>
-                                    <field name="price_subtotal" string="Line total"/>
-                                </list>
-                            </field>
+                                </div>
+                                <div class="o_avea_stock_payment_hint">
+                                    <i class="fa fa-info-circle" title="Payment information" aria-hidden="true"/>
+                                    <span>If paid, a payment will be recorded against the vendor bill after receiving stock.</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="o_avea_workspace_block">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Totals</h2>
+                    <div class="o_avea_stock_footer o_avea_stock_footer--bar">
+                        <button
+                            name="action_cancel_receive"
+                            type="object"
+                            string="Cancel"
+                            class="btn-secondary"
+                        />
+                        <button
+                            name="action_receive_stock"
+                            type="object"
+                            string="Receive Stock"
+                            class="btn-primary"
+                            icon="fa-truck"
+                            data-hotkey="q"
+                        />
+                    </div>
+                    </div>
+
+                    <div class="o_avea_stock_confirmation" invisible="not show_confirmation">
+                        <div class="o_avea_workspace_hero">
+                            <div class="o_avea_workspace_hero_intro">
+                                <span class="o_avea_workspace_eyebrow">Stock</span>
+                                <h1 class="o_avea_workspace_title">Stock Received ✓</h1>
+                                <p class="o_avea_workspace_section_subtitle">
+                                    The stock was received and the vendor bill was created.
+                                </p>
+                                <p class="o_avea_workspace_section_subtitle" invisible="not mark_as_paid">
+                                    The vendor bill has been paid.
+                                </p>
+                            </div>
                         </div>
-                        <div class="o_avea_stock_totals">
-                            <div class="o_avea_tax_summary_card">
+
+                        <div class="o_avea_stock_panel">
+                            <div class="o_avea_workspace_info_grid">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Supplier</span>
+                                    <field name="partner_id" nolabel="1" readonly="1" options="{'no_open': True}"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Invoice number</span>
+                                    <field name="invoice_number" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Invoice date</span>
+                                    <field name="invoice_date" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Date received</span>
+                                    <field name="received_date" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Products</span>
+                                    <field name="product_count" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Total quantity</span>
+                                    <field name="quantity_total" nolabel="1" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="o_avea_stock_panel o_avea_stock_card--compact">
+                            <div class="o_avea_tax_summary_card o_avea_stock_confirmation_totals">
                                 <div class="o_avea_tax_summary_row">
                                     <span class="o_avea_tax_summary_label">Ex-VAT total</span>
-                                    <field name="amount_untaxed" nolabel="1" widget="monetary" class="o_avea_tax_summary_value"/>
+                                    <field name="amount_untaxed" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
                                 </div>
                                 <div class="o_avea_tax_summary_row">
                                     <span class="o_avea_tax_summary_label">VAT</span>
-                                    <field name="amount_tax" nolabel="1" widget="monetary" class="o_avea_tax_summary_value"/>
+                                    <field name="amount_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
                                 </div>
                                 <div class="o_avea_tax_summary_row o_avea_tax_summary_row--total">
-                                    <span class="o_avea_tax_summary_label">Total including VAT</span>
-                                    <field name="amount_total" nolabel="1" widget="monetary" class="o_avea_tax_summary_value"/>
-                                </div>
-                            </div>
-                            <div class="o_avea_stock_invoice_check">
-                                <group>
-                                    <field
-                                        name="invoice_total"
-                                        placeholder="Optional — total on the paper invoice"
-                                    />
-                                    <field
-                                        name="invoice_difference"
-                                        invisible="not invoice_total"
-                                    />
-                                </group>
-                                <div class="alert alert-warning o_avea_stock_mismatch" role="status" invisible="not totals_mismatch">
-                                    The captured total does not match the invoice total. Check quantities and costs before receiving.
+                                    <span class="o_avea_tax_summary_label">Total</span>
+                                    <field name="amount_total" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
-                        <div class="o_avea_workspace_block_heading">
-                            <h2 class="o_avea_workspace_section_title">Payment</h2>
+                        <div class="o_avea_stock_panel o_avea_stock_card--compact o_avea_stock_status o_avea_stock_status--paid" invisible="not mark_as_paid">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Payment</span>
+                                <div class="o_avea_stock_status_value">
+                                    <span>Paid from</span>
+                                    <field name="paid_from_journal_id" nolabel="1" readonly="1" options="{'no_open': True}"/>
+                                </div>
+                            </div>
                         </div>
-                        <div class="o_avea_workspace_ledger_card o_avea_stock_card">
-                            <group>
-                                <group>
-                                    <field name="mark_as_paid" widget="boolean_toggle"/>
-                                    <field
-                                        name="paid_from_journal_id"
-                                        options="{'no_create': True, 'no_open': True}"
-                                        invisible="not mark_as_paid"
-                                        required="mark_as_paid"
-                                    />
-                                </group>
-                            </group>
+                        <div class="o_avea_stock_panel o_avea_stock_card--compact o_avea_stock_status o_avea_stock_status--unpaid" invisible="mark_as_paid">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Payment</span>
+                                <span class="o_avea_stock_status_value">Unpaid</span>
+                            </div>
                         </div>
-                        <div class="o_avea_stock_actions">
+
+                        <div class="o_avea_stock_footer o_avea_stock_actions--confirmation">
                             <button
-                                name="action_receive_stock"
+                                name="action_done"
                                 type="object"
-                                string="Receive Stock"
+                                string="Done"
                                 class="btn-primary"
-                                data-hotkey="q"
+                            />
+                            <button
+                                name="action_receive_another"
+                                type="object"
+                                string="Receive Another"
+                                class="btn-secondary"
+                            />
+                            <button
+                                name="action_view_bill"
+                                type="object"
+                                string="View Bill"
+                                class="btn-link o_avea_stock_view_bill"
+                                invisible="not bill_id"
                             />
                         </div>
                     </div>

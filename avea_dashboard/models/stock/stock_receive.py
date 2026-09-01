@@ -4,7 +4,7 @@ from odoo.exceptions import UserError, ValidationError
 from .stock_mixin import AVEA_RECEIVE_ORIGIN
 
 
-class AveaStockReceiveLine(models.TransientModel):
+class AveaStockReceiveLine(models.Model):
     _name = "avea.stock.receive.line"
     _description = "Receive Stock Line"
     _order = "id"
@@ -34,6 +34,19 @@ class AveaStockReceiveLine(models.TransientModel):
         string="EX-VAT Cost",
         digits="Product Price",
         default=0.0,
+        help="Original EX-VAT unit cost from the supplier invoice, before discount.",
+    )
+    discount = fields.Float(
+        string="Discount (%)",
+        digits="Discount",
+        default=0.0,
+        help="Percentage discount on this line. Odoo applies it to the EX-VAT cost before VAT.",
+    )
+    price_unit_discounted = fields.Float(
+        string="Discounted Cost",
+        digits="Product Price",
+        compute="_compute_price_unit_discounted",
+        help="EX-VAT unit cost after the line discount.",
     )
     price_subtotal = fields.Monetary(
         string="Line Total",
@@ -56,20 +69,25 @@ class AveaStockReceiveLine(models.TransientModel):
         for line in self:
             if not line.product_id:
                 continue
-            line.price_unit = line._avea_default_price_unit()
+            seller = line._avea_seller()
+            line.price_unit = seller.price if seller else line.product_id.standard_price
+            line.discount = seller.discount if seller else 0.0
 
-    def _avea_default_price_unit(self):
+    def _avea_seller(self):
         self.ensure_one()
         product = self.product_id
         partner = self.receive_id.partner_id
         if product and partner:
-            seller = product._select_seller(
+            return product._select_seller(
                 partner_id=partner,
                 quantity=self.quantity or 1.0,
             )
-            if seller:
-                return seller.price
-        return product.standard_price if product else 0.0
+        return self.env["product.supplierinfo"]
+
+    @api.depends("price_unit", "discount")
+    def _compute_price_unit_discounted(self):
+        for line in self:
+            line.price_unit_discounted = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
 
     def _avea_line_taxes(self):
         self.ensure_one()
@@ -90,34 +108,51 @@ class AveaStockReceiveLine(models.TransientModel):
         "product_id",
         "quantity",
         "price_unit",
+        "discount",
         "receive_id.partner_id",
         "receive_id.add_new_supplier",
         "currency_id",
     )
     def _compute_line_totals(self):
+        AccountTax = self.env["account.tax"]
         for line in self:
             if not line.product_id or not line.currency_id:
                 line.price_subtotal = 0.0
                 line.price_tax = 0.0
                 line.price_total = 0.0
                 continue
+            company = line.company_id or self.env.company
             taxes = line._avea_line_taxes()
-            result = taxes.compute_all(
-                line.price_unit,
-                currency=line.currency_id,
+            base_line = AccountTax._prepare_base_line_for_taxes_computation(
+                line,
+                tax_ids=taxes,
                 quantity=line.quantity,
-                product=line.product_id,
-                partner=line.receive_id.effective_partner_id,
+                partner_id=line.receive_id.effective_partner_id,
+                currency_id=line.currency_id,
+                price_unit=line.price_unit,
+                discount=line.discount or 0.0,
+                product_id=line.product_id,
             )
-            line.price_subtotal = result.get("total_excluded", 0.0)
-            line.price_total = result.get("total_included", 0.0)
+            AccountTax._add_tax_details_in_base_line(base_line, company)
+            AccountTax._round_base_lines_tax_details([base_line], company)
+            line.price_subtotal = base_line["tax_details"]["total_excluded_currency"]
+            line.price_total = base_line["tax_details"]["total_included_currency"]
             line.price_tax = line.price_total - line.price_subtotal
 
 
-class AveaStockReceive(models.TransientModel):
+class AveaStockReceive(models.Model):
     _name = "avea.stock.receive"
     _description = "Receive Stock"
     _inherit = ["avea.stock.mixin"]
+    _order = "write_date desc, id desc"
+
+    user_id = fields.Many2one(
+        "res.users",
+        string="User",
+        required=True,
+        default=lambda self: self.env.user,
+        index=True,
+    )
 
     company_id = fields.Many2one(
         "res.company",
@@ -214,6 +249,57 @@ class AveaStockReceive(models.TransientModel):
         "account.journal",
         compute="_compute_available_journal_ids",
     )
+    state = fields.Selection(
+        [
+            ("draft", "Draft"),
+            ("done", "Done"),
+        ],
+        default="draft",
+        required=True,
+    )
+    bill_id = fields.Many2one(
+        "account.move",
+        string="Vendor Bill",
+        readonly=True,
+    )
+    product_count = fields.Integer(
+        string="Products",
+        compute="_compute_confirmation_stats",
+    )
+    quantity_total = fields.Float(
+        string="Total quantity",
+        digits="Product Unit",
+        compute="_compute_confirmation_stats",
+    )
+    payment_status = fields.Char(
+        string="Payment status",
+        compute="_compute_payment_status",
+    )
+    show_confirmation = fields.Boolean(
+        compute="_compute_show_confirmation",
+    )
+
+    @api.depends("state", "bill_id")
+    def _compute_show_confirmation(self):
+        for receive in self:
+            receive.show_confirmation = (
+                receive.state == "done" and bool(receive.bill_id)
+            )
+
+    @api.depends("state", "partner_id", "invoice_number")
+    def _compute_display_name(self):
+        for receive in self:
+            if receive.state == "done":
+                if receive.partner_id and receive.invoice_number:
+                    receive.display_name = _(
+                        "Stock Received — %(supplier)s %(invoice)s",
+                        supplier=receive.partner_id.display_name,
+                        invoice=receive.invoice_number,
+                    )
+                else:
+                    receive.display_name = _("Stock Received")
+            else:
+                receive.display_name = _("Receive Stock")
 
     @api.depends("partner_id", "add_new_supplier")
     def _compute_effective_partner_id(self):
@@ -237,6 +323,24 @@ class AveaStockReceive(models.TransientModel):
             receive.amount_tax = sum(receive.line_ids.mapped("price_tax"))
             receive.amount_total = sum(receive.line_ids.mapped("price_total"))
 
+    @api.depends("line_ids.product_id", "line_ids.quantity")
+    def _compute_confirmation_stats(self):
+        for receive in self:
+            lines = receive.line_ids.filtered("product_id")
+            receive.product_count = len(lines)
+            receive.quantity_total = sum(lines.mapped("quantity"))
+
+    @api.depends("mark_as_paid", "paid_from_journal_id")
+    def _compute_payment_status(self):
+        for receive in self:
+            if receive.mark_as_paid:
+                journal = receive.paid_from_journal_id
+                receive.payment_status = (
+                    _("Paid from %s") % journal.display_name if journal else _("Paid")
+                )
+            else:
+                receive.payment_status = _("Unpaid")
+
     @api.depends("amount_total", "invoice_total", "currency_id")
     def _compute_totals_mismatch(self):
         for receive in self:
@@ -252,6 +356,8 @@ class AveaStockReceive(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         values = super().default_get(fields_list)
+        if "user_id" in fields_list and not values.get("user_id"):
+            values["user_id"] = self.env.user.id
         if "paid_from_journal_id" in fields_list and not values.get(
             "paid_from_journal_id"
         ):
@@ -259,6 +365,56 @@ class AveaStockReceive(models.TransientModel):
             if journal:
                 values["paid_from_journal_id"] = journal.id
         return values
+
+    @api.model
+    def _avea_draft_domain(self):
+        return [
+            ("state", "=", "draft"),
+            ("user_id", "=", self.env.user.id),
+            ("company_id", "=", self.env.company.id),
+        ]
+
+    @api.model
+    def _avea_find_draft_receive(self):
+        """Resume the user's most useful in-progress receive."""
+        Receive = self.sudo()
+        domain = self._avea_draft_domain()
+        with_lines = Receive.search(
+            domain + [("line_ids", "!=", False)],
+            order="write_date desc, id desc",
+            limit=1,
+        )
+        if with_lines:
+            return with_lines.with_env(self.env)
+        with_header = Receive.search(
+            domain
+            + [
+                "|",
+                ("partner_id", "!=", False),
+                ("invoice_number", "!=", False),
+            ],
+            order="write_date desc, id desc",
+            limit=1,
+        )
+        if with_header:
+            return with_header.with_env(self.env)
+        draft = Receive.search(domain, order="write_date desc, id desc", limit=1)
+        return draft.with_env(self.env) if draft else self.env["avea.stock.receive"]
+
+    @api.model
+    def _avea_create_draft_receive(self):
+        return self.create(
+            {
+                "user_id": self.env.user.id,
+                "company_id": self.env.company.id,
+            }
+        )
+
+    def _avea_repair_false_done(self):
+        broken = self.filtered(lambda receive: receive.state == "done" and not receive.bill_id)
+        if broken:
+            broken.write({"state": "draft"})
+        return self - broken
 
     @api.model
     def _avea_default_paid_from_journal(self, company):
@@ -276,27 +432,72 @@ class AveaStockReceive(models.TransientModel):
         if self.add_new_supplier:
             self.partner_id = False
 
-    @api.model
-    def action_open_receive(self):
-        receive = self.create({})
-        view_id = self.env.ref("avea_till.view_avea_stock_receive_form").id
+    def _avea_receive_action(self, record, name=None, view_xmlid=None):
+        view_id = self.env.ref(
+            view_xmlid or "avea_till.view_avea_stock_receive_form"
+        ).id
         return {
             "type": "ir.actions.act_window",
-            "name": _("Receive Stock"),
+            "name": name or _("Receive Stock"),
             "res_model": self._name,
             "view_mode": "form",
             "views": [(view_id, "form")],
             "view_id": view_id,
-            "res_id": receive.id,
-            "target": "current",
+            "res_id": record.id,
+            "target": "main",
             "context": {"clear_breadcrumbs": True},
         }
+
+    @api.model
+    def action_open_receive(self):
+        receive = self._avea_find_draft_receive()
+        if not receive:
+            receive = self._avea_create_draft_receive()
+        else:
+            receive._avea_repair_false_done()
+        return receive._avea_receive_action(receive)
 
     def action_open_return(self):
         return self.env["avea.stock.return"].action_open_return()
 
+    def action_done(self):
+        self._avea_archive_completed()
+        return self.env["avea.stock.receive"].action_open_receive()
+
+    def action_receive_another(self):
+        self._avea_archive_completed()
+        receive = self.env["avea.stock.receive"]._avea_create_draft_receive()
+        return receive._avea_receive_action(receive)
+
+    def action_cancel_receive(self):
+        self.ensure_one()
+        self._avea_repair_false_done()
+        if self.state == "draft":
+            self.unlink()
+        return self.env["avea.stock.receive"].action_open_receive()
+
+    def _avea_archive_completed(self):
+        self.filtered(lambda receive: receive.show_confirmation).unlink()
+
+    def action_view_bill(self):
+        self.ensure_one()
+        if not self.bill_id:
+            raise UserError(_("There is no vendor bill to open."))
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Vendor Bill"),
+            "res_model": "account.move",
+            "res_id": self.bill_id.id,
+            "view_mode": "form",
+            "views": [(False, "form")],
+            "target": "new",
+        }
+
     def action_receive_stock(self):
         self.ensure_one()
+        self._avea_repair_false_done()
+        if self.show_confirmation:
+            return self._avea_confirmation_action()
         partner = self._avea_ensure_supplier()
         self._avea_check_receive(partner)
         order = self._avea_create_purchase_order(partner)
@@ -330,6 +531,11 @@ class AveaStockReceive(models.TransientModel):
             if line.quantity <= 0:
                 raise ValidationError(
                     _("Quantity for %(product)s must be greater than zero.",
+                      product=line.product_id.display_name)
+                )
+            if line.discount < 0 or line.discount > 100:
+                raise ValidationError(
+                    _("Discount for %(product)s must be between 0 and 100%.",
                       product=line.product_id.display_name)
                 )
             if not line.product_id.is_storable:
@@ -389,6 +595,7 @@ class AveaStockReceive(models.TransientModel):
                         "product_qty": line.quantity,
                         "product_uom_id": line.product_id.uom_id.id,
                         "price_unit": line.price_unit,
+                        "discount": line.discount or 0.0,
                         "technical_price_unit": 0.0,
                         "tax_ids": [Command.set(taxes.ids)],
                         "date_planned": self._avea_datetime_at_noon(self.received_date),
@@ -417,7 +624,7 @@ class AveaStockReceive(models.TransientModel):
         return order
 
     def _avea_force_line_prices(self, order):
-        """Keep the captured EX-VAT costs; do not let seller pricelists overwrite them."""
+        """Keep the captured EX-VAT costs and discounts; do not let seller pricelists overwrite them."""
         sources = self.line_ids.filtered("product_id")
         po_lines = order.order_line.filtered(lambda line: not line.display_type)
         for po_line, source in zip(po_lines, sources):
@@ -426,6 +633,7 @@ class AveaStockReceive(models.TransientModel):
             po_line.write(
                 {
                     "price_unit": source.price_unit,
+                    "discount": source.discount or 0.0,
                     "technical_price_unit": 0.0,
                 }
             )
@@ -434,6 +642,7 @@ class AveaStockReceive(models.TransientModel):
         order.sudo().button_confirm()
         if order.state == "to approve":
             order.sudo().button_approve()
+        self._avea_force_line_prices(order)
         if order.state not in ("purchase", "done"):
             raise UserError(
                 _("The supplier order could not be confirmed. Ask your administrator to check Purchase.")
@@ -499,26 +708,19 @@ class AveaStockReceive(models.TransientModel):
         return journal
 
     def _avea_success(self, partner, order, bill):
-        message = _(
-            "%(products)s from %(supplier)s have been received. Bill %(bill)s.",
-            products=len(self.line_ids.filtered("product_id")),
-            supplier=partner.display_name,
-            bill=bill.name,
+        self.write(
+            {
+                "state": "done",
+                "bill_id": bill.id,
+                "partner_id": partner.id,
+                "add_new_supplier": False,
+            }
         )
-        if self.mark_as_paid:
-            message = _(
-                "%(products)s from %(supplier)s have been received and marked as paid. Bill %(bill)s.",
-                products=len(self.line_ids.filtered("product_id")),
-                supplier=partner.display_name,
-                bill=bill.name,
-            )
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": _("Stock received"),
-                "message": message,
-                "type": "success",
-                "next": self.action_open_receive(),
-            },
-        }
+        return self._avea_confirmation_action()
+
+    def _avea_confirmation_action(self):
+        self.ensure_one()
+        return self._avea_receive_action(
+            self,
+            name=_("Stock Received"),
+        )
