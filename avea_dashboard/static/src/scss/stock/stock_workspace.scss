@@ -124,24 +124,22 @@
         min-width: 0;
         padding: 0.95rem 1.05rem 1.05rem;
 
-        .o_input,
+        // Target input elements only — Odoo 19 monetary fields use span.o_input as a
+        // position-absolute overlay; styling that span hides the typed amount.
         .o_field_widget input:not([type="checkbox"]),
         .o_field_widget textarea,
-        .o_datepicker .o_input,
-        .o_field_many2one .o_input,
-        .o_field_monetary input {
+        .o_field_monetary input.o_input {
             background: #fff;
             border: 1px solid var(--o-gray-300, #dee2e6);
             border-radius: var(--avea-stock-input-radius);
             box-shadow: none;
+            color: var(--o-gray-900, #212529);
             min-height: 2.35rem;
             padding: 0.35rem 0.7rem;
         }
 
-        .o_input:focus,
         .o_field_widget input:not([type="checkbox"]):focus,
-        .o_datepicker .o_input:focus,
-        .o_field_many2one .o_input:focus {
+        .o_field_monetary input.o_input:focus {
             border-color: var(--avea-info, #01666b);
             box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
             outline: none;
