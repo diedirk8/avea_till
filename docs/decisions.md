@@ -97,3 +97,28 @@ Rationale
 Structure
 
 Organise code by feature (`models/till/`, `models/credit/`, etc.) within the single `avea_dashboard` application module.
+
+---
+
+# ADR-005
+
+## Receive Stock wraps Odoo Purchase / Stock / Accounting
+
+Status
+
+Accepted
+
+Reason
+
+Pets Empire already receives stock with purchase orders, one-step receipts into WH/Stock, vendor bills on received quantities, periodic AVCO, and 15% tax-excluded purchase VAT.
+
+Decision
+
+Avea Stock (`avea.stock.*`) is a simple workspace over that existing flow:
+
+- Confirm a purchase order for the quantities physically received now
+- Validate the incoming receipt
+- Create and post the vendor bill from the PO
+- Optionally pay with the Operational Expense statement-line pattern
+
+Do not create a parallel stock or accounting ledger. Do not change periodic valuation, AVCO, or Anglo-Saxon settings. Landed costs stay out of Receive Stock so they can be a later Stock feature.

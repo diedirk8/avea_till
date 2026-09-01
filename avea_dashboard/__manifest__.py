@@ -16,8 +16,9 @@ Features:
 - Account balances for Avea cash and bank accounts
 - POS Cash Up
 - Correct payment method on open POS sessions
+- Receive Stock and Return Stock
 """,
-    "version": "19.0.2.72.0",
+    "version": "19.0.3.0.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -26,6 +27,7 @@ Features:
         "point_of_sale",
         "account",
         "contacts",
+        "purchase_stock",
     ],
     "data": [
         "security/credit/credit_security.xml",
@@ -34,6 +36,7 @@ Features:
         "security/till/ir.model.access.csv",
         "security/credit/ir.model.access.csv",
         "security/operations/ir.model.access.csv",
+        "security/stock/ir.model.access.csv",
         "data/credit/sequence.xml",
         "data/credit/credit_reason_data.xml",
         "views/till/till_movement_views.xml",
@@ -64,6 +67,9 @@ Features:
         "views/operations/money_transfer_wizard_views.xml",
         "views/operations/account_balance_wizard_views.xml",
         "views/operations/operations_menu.xml",
+        "views/stock/stock_receive_views.xml",
+        "views/stock/stock_return_views.xml",
+        "views/stock/stock_menu.xml",
     ],
     "assets": {
         "web.report_assets_common": [
@@ -78,6 +84,7 @@ Features:
             "avea_till/static/src/scss/credit/credit_workspace.scss",
             "avea_till/static/src/scss/credit/credit_ledger.scss",
             "avea_till/static/src/scss/operations/account_balances.scss",
+            "avea_till/static/src/scss/stock/stock_workspace.scss",
             "avea_till/static/src/credit/fields/credit_ledger_amount/credit_ledger_amount.xml",
             "avea_till/static/src/credit/fields/credit_ledger_amount/credit_ledger_amount.js",
             "avea_till/static/src/till/fields/till_ledger_amount/till_ledger_amount.xml",

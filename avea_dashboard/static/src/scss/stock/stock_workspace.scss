@@ -1,0 +1,57 @@
+.o_avea_workspace--stock {
+    .o_avea_stock_card {
+        padding: 1rem 1.15rem 0.35rem;
+    }
+
+    .o_avea_stock_totals {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1.5rem 2.5rem;
+    }
+
+    .o_avea_stock_invoice_check {
+        flex: 1 1 16rem;
+        max-width: 28rem;
+        min-width: 0;
+    }
+
+    .o_avea_stock_mismatch {
+        margin-top: 0.5rem;
+    }
+
+    .o_avea_stock_actions {
+        margin-top: 1.25rem;
+
+        .btn-primary {
+            min-height: 2.75rem;
+            min-width: 10rem;
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
+        }
+    }
+
+    .o_avea_workspace_section_subtitle {
+        color: var(--o-gray-600, #6c757d);
+        margin: 0.35rem 0 0;
+        max-width: 40rem;
+    }
+
+    .o_list_renderer .o_field_monetary,
+    .o_list_renderer .o_field_float {
+        text-align: right;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .o_avea_workspace--stock {
+        .o_avea_stock_actions .btn-primary {
+            width: 100%;
+        }
+
+        .o_avea_tax_summary_card {
+            max-width: none;
+            width: 100%;
+        }
+    }
+}

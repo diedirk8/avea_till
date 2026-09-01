@@ -22,10 +22,14 @@ avea_dashboard/                    ← repository root
     ├── migrations/
     ├── models/
     │   ├── till/                  ← Till / cash ledger feature
-    │   └── credit/                ← Customer Credit feature
+    │   ├── credit/                ← Customer Credit feature
+    │   ├── operations/            ← Account balances, expenses, transfers
+    │   └── stock/                 ← Receive Stock and Return Stock
     ├── security/
     │   ├── till/
-    │   └── credit/
+    │   ├── credit/
+    │   ├── operations/
+    │   └── stock/
     ├── static/
     │   └── src/
     │       ├── scss/              ← shared + feature stylesheets
@@ -59,6 +63,8 @@ Feature (e.g. credit/)
 |---------|-----------------|-------------|
 | Till | `avea.till.*` | Session Dashboard, Cash Ledger, till movements |
 | Customer Credit | `avea.credit.*` | Store credit foundation (placeholders) |
+| Operations | `avea.operational.*` / `avea.money.*` | Account balances, operational expense, money transfer |
+| Stock | `avea.stock.*` | Receive Stock and Return Stock |
 
 ### Adding a new feature
 

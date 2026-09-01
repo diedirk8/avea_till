@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_stock"
+        name="Stock"
+        parent="menu_avea_root"
+        action="action_avea_stock_receive"
+        sequence="14"
+    />
+
+    <record id="menu_avea_stock" model="ir.ui.menu">
+        <field name="action" ref="action_avea_stock_receive"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_stock_receive"
+        name="Receive Stock"
+        parent="menu_avea_stock"
+        action="action_avea_stock_receive"
+        sequence="5"
+    />
+
+    <menuitem
+        id="menu_avea_stock_return"
+        name="Return Stock"
+        parent="menu_avea_stock"
+        action="action_avea_stock_return"
+        sequence="10"
+    />
+
+</odoo>

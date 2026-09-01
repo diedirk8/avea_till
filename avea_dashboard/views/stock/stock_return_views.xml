@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_stock_return_form" model="ir.ui.view">
+        <field name="name">avea.stock.return.form</field>
+        <field name="model">avea.stock.return</field>
+        <field name="arch" type="xml">
+            <form string="Return Stock" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock">
+                <header class="o_avea_workspace_header">
+                    <button
+                        name="action_open_receive"
+                        type="object"
+                        string="Receive Stock"
+                        class="btn-secondary o_avea_workspace_nav"
+                    />
+                    <button
+                        name="action_open_return"
+                        type="object"
+                        string="Return Stock"
+                        class="btn-primary o_avea_workspace_nav o_avea_workspace_nav--active"
+                    />
+                </header>
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock</span>
+                            <h1 class="o_avea_workspace_title">Return Stock</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Choose a previous receipt and return products to the supplier.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Receipt</h2>
+                        </div>
+                        <div class="o_avea_workspace_ledger_card o_avea_stock_card">
+                            <group>
+                                <group>
+                                    <field
+                                        name="picking_id"
+                                        options="{'no_create': True, 'no_open': True}"
+                                    />
+                                    <field name="partner_id" readonly="1"/>
+                                    <field name="invoice_number" readonly="1" string="Invoice number"/>
+                                </group>
+                                <group>
+                                    <field name="receipt_date" readonly="1"/>
+                                    <field name="return_date"/>
+                                    <field name="company_id" groups="base.group_multi_company"/>
+                                </group>
+                            </group>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Products to return</h2>
+                        </div>
+                        <div class="o_avea_workspace_ledger_card o_avea_stock_card">
+                            <field name="line_ids" nolabel="1">
+                                <list editable="bottom" create="false" delete="false" class="o_avea_stock_return_list">
+                                    <field name="move_id" column_invisible="True"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="product_id"/>
+                                    <field name="qty_received"/>
+                                    <field name="qty_available"/>
+                                    <field name="quantity"/>
+                                </list>
+                            </field>
+                        </div>
+                        <div class="o_avea_stock_actions">
+                            <button
+                                name="action_return_stock"
+                                type="object"
+                                string="Return Stock"
+                                class="btn-primary"
+                                data-hotkey="q"
+                            />
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_stock_return" model="ir.actions.server">
+        <field name="name">Return Stock</field>
+        <field name="model_id" ref="model_avea_stock_return"/>
+        <field name="state">code</field>
+        <field name="code">action = env['avea.stock.return'].action_open_return()</field>
+    </record>
+
+</odoo>

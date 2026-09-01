@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_avea_stock_receive,access.avea.stock.receive,model_avea_stock_receive,,1,1,1,1
+access_avea_stock_receive_line,access.avea.stock.receive.line,model_avea_stock_receive_line,,1,1,1,1
+access_avea_stock_return,access.avea.stock.return,model_avea_stock_return,,1,1,1,1
+access_avea_stock_return_line,access.avea.stock.return.line,model_avea_stock_return_line,,1,1,1,1
