@@ -1,36 +1,256 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
 
-    <t t-name="point_of_sale.PaymentScreenMethods" t-inherit="point_of_sale.PaymentScreenMethods" t-inherit-mode="extension">
-        <xpath expr="//t[@t-foreach='payment_methods_from_config']" position="attributes">
-            <attribute name="t-foreach">availablePaymentMethods</attribute>
-        </xpath>
-        <xpath expr="//div[hasclass('button') and hasclass('paymentmethod')]" position="attributes">
-            <attribute name="t-att-class">paymentMethodButtonClass(paymentMethod)</attribute>
-        </xpath>
-        <xpath expr="//div[hasclass('button') and hasclass('paymentmethod')]" position="attributes">
-            <attribute name="t-on-click">() => this.clickPaymentMethod(paymentMethod)</attribute>
-        </xpath>
-        <xpath expr="//img[hasclass('payment-method-icon')]" position="replace">
-            <span
-                t-att-class="paymentMethodIconClass(paymentMethod)"
-                t-att-title="paymentMethod.name"
-                t-att-aria-label="paymentMethod.name"
-                role="img"
-            />
-        </xpath>
+    <t t-name="avea_till.PaymentScreenBody">
+        <div class="payment-screen screen avea-payment-screen d-flex flex-column h-100 overflow-hidden">
+            <div class="avea-payment-body">
+                <aside class="avea-payment-left">
+                    <button
+                        class="avea-info-card avea-customer-card"
+                        type="button"
+                        t-att-class="{ 'avea-info-card-active': currentOrder.getPartner() }"
+                        t-on-click="() => this.pos.selectPartner()"
+                    >
+                        <span class="avea-info-card-icon" aria-hidden="true">
+                            <i class="fa fa-user"/>
+                        </span>
+                        <span class="avea-info-card-copy">
+                            <span class="avea-info-card-label">Customer</span>
+                            <span class="avea-info-card-value" t-esc="partnerDisplayName"/>
+                        </span>
+                        <span class="avea-info-card-chevron" aria-hidden="true">
+                            <i class="fa fa-chevron-right"/>
+                        </span>
+                    </button>
+
+                    <button
+                        class="avea-info-card avea-invoice-card"
+                        type="button"
+                        t-att-class="{
+                            'avea-info-card-active': currentOrder.isToInvoice(),
+                            'avea-info-card-unavailable': !pos.config.canInvoice,
+                        }"
+                        t-on-click="toggleIsToInvoice"
+                        t-att-disabled="currentOrder.lines[0]?.refunded_orderline_id?.order_id?.isToInvoice()"
+                    >
+                        <span class="avea-info-card-icon" aria-hidden="true">
+                            <i class="fa fa-file-text-o"/>
+                        </span>
+                        <span class="avea-info-card-copy">
+                            <span class="avea-info-card-label">Invoice</span>
+                            <span t-if="!pos.config.canInvoice" class="avea-info-card-value">Not available</span>
+                        </span>
+                        <span
+                            class="avea-switch"
+                            t-att-class="{ 'is-on': currentOrder.isToInvoice() }"
+                            role="presentation"
+                        />
+                    </button>
+
+                    <div t-if="(pos.config.iface_tipproduct and pos.config.tip_product_id) or pos.config.iface_cashdrawer or pos.config.ship_later" class="avea-optional-actions">
+                        <button t-if="pos.config.iface_tipproduct and pos.config.tip_product_id" class="avea-optional-btn" type="button" t-att-class="{ 'is-on': currentOrder.getTip() }" t-on-click="addTip">
+                            <i class="fa fa-heart me-2"/>Tip
+                            <t t-if="currentOrder.getTip() != 0">
+                                <t t-esc="env.utils.formatCurrency(currentOrder.getTip())"/>
+                            </t>
+                        </button>
+                        <button t-if="pos.config.iface_cashdrawer" class="avea-optional-btn" type="button" t-on-click="openCashbox">
+                            <i class="fa fa-archive me-2"/>Open Cashbox
+                        </button>
+                        <button t-if="pos.config.ship_later" class="avea-optional-btn" type="button" t-att-class="{ 'is-on': currentOrder.getShippingDate() }" t-on-click="toggleShippingDatePicker">
+                            <i class="fa fa-clock-o me-2"/>Ship Later
+                            <span t-if="currentOrder.getShippingDate()" t-esc="currentOrder.getShippingDate()"/>
+                        </button>
+                    </div>
+
+                    <Numpad class="'avea-numpad'" buttons="getNumpadButtons()"/>
+
+                    <div class="avea-customer-facts">
+                        <div class="avea-customer-fact">
+                            <span class="avea-customer-fact-label">Loyalty Points</span>
+                            <span class="avea-customer-fact-value" t-esc="partnerLoyaltyPointsLabel"/>
+                        </div>
+                        <div class="avea-customer-fact">
+                            <span class="avea-customer-fact-label">Available Credit</span>
+                            <span class="avea-customer-fact-value" t-esc="partnerAvailableCreditLabel"/>
+                        </div>
+                        <button
+                            t-if="canUseLoyaltyPoints"
+                            class="avea-use-loyalty"
+                            type="button"
+                            t-on-click="clickUseLoyaltyPoints"
+                        >
+                            <span>Use Loyalty Points</span>
+                        </button>
+                    </div>
+
+                    <div class="avea-payment-actions">
+                        <button
+                            type="button"
+                            class="avea-btn-back"
+                            t-on-click="() => pos.onClickBackButton()"
+                        >
+                            <i class="fa fa-arrow-left" aria-hidden="true"/>
+                            <span>Back</span>
+                        </button>
+                        <button
+                            type="button"
+                            class="avea-btn-validate"
+                            t-on-click="() => this.validateOrder()"
+                            t-att-class="{
+                                'highlight': canValidatePayment,
+                                'disabled': !canValidatePayment,
+                            }"
+                        >
+                            <i class="fa fa-check-circle" aria-hidden="true"/>
+                            <span>Validate Payment</span>
+                        </button>
+                    </div>
+                </aside>
+
+                <section class="avea-payment-center">
+                    <div class="avea-total-block">
+                        <div class="avea-total-label">TOTAL AMOUNT</div>
+                        <div class="avea-total-amount">
+                            <PriceFormatter price="orderTotalDisplay"/>
+                        </div>
+                    </div>
+
+                    <div t-if="paymentLines.length or hasAveaLoyaltyApplied" class="avea-remaining-block" t-att-class="{ 'is-settled': paymentIsSettled }">
+                        <span class="avea-remaining-label" t-esc="paymentStatusLabel"/>
+                        <span class="avea-remaining-amount">
+                            <PriceFormatter price="paymentStatusAmount"/>
+                        </span>
+                    </div>
+
+                    <div class="avea-pay-heading">Select payment method</div>
+                    <div class="avea-pay-grid">
+                        <t t-foreach="availablePaymentMethods" t-as="paymentMethod" t-key="paymentMethod.id">
+                            <div
+                                t-if="!(this.pos.cashier._role === 'minimal' and paymentMethod.type === 'pay_later')"
+                                role="button"
+                                t-att-class="paymentMethodCardClass(paymentMethod)"
+                                t-on-click="() => this.clickPaymentMethod(paymentMethod)"
+                            >
+                                <span t-att-class="paymentMethodIconClass(paymentMethod)" t-att-title="paymentMethodTitle(paymentMethod)" t-att-aria-label="paymentMethodTitle(paymentMethod)" role="img"/>
+                                <span class="avea-pay-card-copy">
+                                    <span class="avea-pay-card-title" t-esc="paymentMethodTitle(paymentMethod)"/>
+                                    <span t-if="paymentMethodSubtitle(paymentMethod)" class="avea-pay-card-sub" t-esc="paymentMethodSubtitle(paymentMethod)"/>
+                                    <span t-if="storeCreditAvailableLabel(paymentMethod)" class="avea-pay-card-balance" t-esc="storeCreditAvailableLabel(paymentMethod)"/>
+                                </span>
+                            </div>
+                        </t>
+                    </div>
+
+                    <div t-if="paymentLines.length or hasAveaLoyaltyApplied" class="avea-done-payments">
+                        <div class="avea-done-heading">Payments</div>
+                        <div t-if="hasAveaLoyaltyApplied" class="paymentline d-flex align-items-center rounded-3">
+                            <div class="payment-infos d-flex align-items-center justify-content-between flex-grow-1 text-truncate">
+                                <span class="payment-name">Loyalty Points</span>
+                                <div class="payment-amount">
+                                    <PriceFormatter price="aveaLoyaltyAppliedDisplay"/>
+                                </div>
+                            </div>
+                            <button
+                                class="delete-button btn btn-link mx-2 px-3"
+                                type="button"
+                                t-on-click="removeAveaLoyaltyReward"
+                                aria-label="Delete"
+                                title="Delete"
+                            >
+                                <i class="oi oi-close text-danger"/>
+                            </button>
+                        </div>
+                        <PaymentScreenPaymentLines
+                            t-if="paymentLines.length"
+                            paymentLines="paymentLines"
+                            deleteLine.bind="deletePaymentLine"
+                            sendForceDone.bind="sendForceDone"
+                            sendPaymentReverse.bind="sendPaymentReverse"
+                            sendPaymentCancel.bind="sendPaymentCancel"
+                            sendPaymentRequest.bind="sendPaymentRequest"
+                            selectLine.bind="selectPaymentLine"
+                            updateSelectedPaymentline.bind="updateSelectedPaymentline"
+                            isRefundOrder="isRefundOrder"
+                        />
+                    </div>
+                </section>
+
+                <aside class="avea-sale-summary">
+                    <div class="avea-receipt">
+                        <div class="avea-receipt-title">Sale Summary</div>
+                        <div class="avea-receipt-customer">
+                            <div class="avea-receipt-k">Customer</div>
+                            <div class="avea-receipt-v" t-esc="partnerDisplayName"/>
+                        </div>
+                        <div class="avea-receipt-rule"/>
+                        <div class="avea-receipt-lines">
+                            <t t-foreach="saleSummaryLines" t-as="line" t-key="line.uuid">
+                                <div class="avea-receipt-line">
+                                    <div class="avea-receipt-product">
+                                        <span class="avea-receipt-name" t-esc="line.getFullProductName()"/>
+                                        <span class="avea-receipt-meta">
+                                            <t t-esc="line.getQuantityStr().qtyStr"/>
+                                            ×
+                                            <t t-esc="line.currencyDisplayPriceUnit"/>
+                                            <t t-if="line.getDiscount()">
+                                                <span class="avea-receipt-disc">
+                                                    -<t t-esc="line.getDiscount()"/>%
+                                                </span>
+                                            </t>
+                                        </span>
+                                    </div>
+                                    <span class="avea-receipt-line-total" t-esc="line.currencyDisplayPrice"/>
+                                </div>
+                            </t>
+                        </div>
+                        <div class="avea-receipt-rule"/>
+                        <div t-if="showSaleSubtotal" class="avea-receipt-totrow">
+                            <span>Subtotal</span>
+                            <span t-esc="saleSubtotalDisplay"/>
+                        </div>
+                        <div t-if="saleDiscountTotal" class="avea-receipt-totrow avea-receipt-discount">
+                            <span>Discount</span>
+                            <span t-esc="saleDiscountDisplay"/>
+                        </div>
+                        <div class="avea-receipt-totrow avea-receipt-grand">
+                            <span>Total</span>
+                            <span>
+                                <PriceFormatter price="orderTotalDisplay"/>
+                            </span>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            <footer class="avea-pos-status">
+                <div class="avea-pos-status-left">
+                    <span class="avea-pos-online" t-att-class="{ 'is-offline': !aveaIsOnline }">
+                        <i class="fa fa-wifi" aria-hidden="true"/>
+                        <span class="avea-pos-online-dot"/>
+                        <span t-if="aveaIsOnline">Online</span>
+                        <span t-else="">Offline</span>
+                    </span>
+                    <span class="avea-pos-status-sep"/>
+                    <span>Till: <t t-esc="aveaTillName"/></span>
+                    <span class="avea-pos-status-sep"/>
+                    <span>Cashier: <t t-esc="aveaCashierName"/></span>
+                </div>
+                <div class="avea-pos-status-right">
+                    <i class="fa fa-clock-o" aria-hidden="true"/>
+                    <span t-esc="aveaStatusTime"/>
+                    <span t-esc="aveaStatusDate"/>
+                </div>
+            </footer>
+        </div>
     </t>
 
-    <t t-name="point_of_sale.PaymentScreenButtons" t-inherit="point_of_sale.PaymentScreenButtons" t-inherit-mode="extension">
-        <xpath expr="//button[hasclass('partner-button')]" position="after">
-            <div
-                t-if="showPartnerStoreCredit"
-                class="avea-store-credit-balance alert alert-info py-2 px-3 mb-0 w-100 text-center"
-                role="status"
-            >
-                <span class="fw-bold">Store Credit: </span>
-                <span t-esc="this.pos.formatStoreCreditAmount(partnerStoreCreditBalance, currentOrder.getPartner())"/>
-            </div>
+    <t t-name="point_of_sale.PaymentScreen" t-inherit="point_of_sale.PaymentScreen" t-inherit-mode="extension">
+        <xpath expr="//t[@t-if='ui.isSmall']" position="attributes">
+            <attribute name="t-if">false</attribute>
+        </xpath>
+        <xpath expr="//t[@t-else='']" position="replace">
+            <t t-call="avea_till.PaymentScreenBody"/>
         </xpath>
     </t>
 

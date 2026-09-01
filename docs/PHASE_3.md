@@ -38,7 +38,7 @@ Do not rename existing technical till identifiers unless specifically required.
 | **P0 — Bugs / UX** | Completed. Session Dashboard / Cash Ledger in `0a8d782c3cdeb08fcf591fa68f3aa711290753ae`; Customer Credit Dashboard mobile and Issue Credit in `19.0.2.27.0`. |
 | **P1 — Improvements** | Completed on `develop` (`19.0.2.28.0`) — Business Overview landing page and Avea navigation. **Not in production.** |
 | **P2 — Major Features** | Partially implemented. Account Balances (`19.0.2.59.0`), Cash Up, Transfer Money, and Operational Expense are on `develop`. Remaining P2 items are specified only. |
-| **P3 — Future** | Open-session **Correct Payment Method** and POS payment-button visual distinction are implemented in `19.0.2.60.0`. Remaining P3 items stay specified only. Do not start Phase 4. |
+| **P3 — Future** | Open-session **Correct Payment Method** is implemented in `19.0.2.60.0`. The modern Avea POS payment screen is implemented in `19.0.2.61.0` and refined through `19.0.2.70.0`. Remaining P3 items stay specified only. Do not start Phase 4. |
 
 ---
 
@@ -332,7 +332,7 @@ Simplify / wrap Odoo promotions, coupons, rewards and barcode functionality so a
 
 ## P3 — Future
 
-**Status: partially implemented.** Correct Payment Method (open sessions) and payment-button visual distinction landed in `19.0.2.60.0`. Remaining items below stay specified only. Do not start Phase 4.
+**Status: partially implemented.** Correct Payment Method (open sessions) landed in `19.0.2.60.0`. The modern Avea POS payment screen landed in `19.0.2.61.0` and was refined through `19.0.2.69.0`. Remaining items below stay specified only. Do not start Phase 4.
 
 - **Business Owner Workspace** — later owner-facing workspace beyond the P1 Business Overview.
 - **Future Cash Office** — receive/verify cash bags, record bag custody, reconcile physical deposits into Company Safe, and provide an audit trail. This is deliberately separate from the cashier Cash Up feature in P2.
@@ -345,7 +345,7 @@ Busy cashiers can occasionally select the wrong tender, for example recording a 
 
 #### Payment Selection Safety
 
-**Status: visual distinction implemented in `19.0.2.60.0`.** Cash, Card, EFT and Store Credit POS buttons use distinct icons and colours. Extra confirmation workflows remain specified only.
+**Status: modern payment screen implemented in `19.0.2.61.0`, layout refined through `19.0.2.68.0`, loyalty redemption from payment in `19.0.2.69.0`.** Cash, Card, EFT and Store Credit are compact method buttons with quiet colour accents. Selected method is highlighted only after it is used or clicked — Cash is the keyboard/numpad fallback, not a visual default. Entered tenders appear in a Payments list. Store Credit shows the customer's existing available balance. When a customer has redeemable loyalty points, a compact **Use Loyalty Points** action on the left applies Odoo's existing loyalty reward (PE Loyalty is R1 per point) without adding a fifth payment-method card. The three columns read as Left = tools, Centre = payment, Right = receipt. Extra confirmation workflows remain specified only.
 
 Improve the cashier-facing payment workflow so Cash, Card, EFT and other configured payment methods are clearly differentiated and difficult to mis-select under pressure.
 

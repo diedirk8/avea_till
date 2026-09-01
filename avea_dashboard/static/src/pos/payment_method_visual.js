@@ -26,7 +26,7 @@ export function paymentMethodIconClass(paymentMethod) {
         cash: "fa fa-money",
         card: "fa fa-credit-card",
         eft: "fa fa-university",
-        store_credit: "fa fa-id-card-o",
+        store_credit: "fa fa-ticket",
         other: "fa fa-circle-o",
     };
     return `avea-pm-icon ${icons[kind] || icons.other}`;

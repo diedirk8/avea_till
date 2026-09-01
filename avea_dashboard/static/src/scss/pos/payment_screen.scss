@@ -1,0 +1,890 @@
+/* Avea POS payment screen — compact professional retail checkout. */
+
+.avea-payment-screen {
+    --avea-pay-bg: #f5f6f7;
+    --avea-pay-card: #ffffff;
+    --avea-pay-text: #1f2937;
+    --avea-pay-muted: #6b7280;
+    --avea-pay-line: #e5e7eb;
+    --avea-pay-navy: #1f2937;
+    --avea-pay-navy-hover: #111827;
+    --avea-brand: #c45c26;
+    --avea-brand-hover: #a74c1f;
+    --avea-card-blue: #3d5a80;
+    --avea-cash-green: #3d6b52;
+    --avea-eft-purple: #5c5470;
+    --avea-credit-orange: #b45309;
+    --avea-radius: 8px;
+
+    background: var(--avea-pay-bg);
+    color: var(--avea-pay-text);
+    gap: 0;
+    min-height: 0;
+    padding: 0;
+}
+
+.avea-payment-body {
+    display: flex;
+    flex: 1 1 auto;
+    gap: 0.5rem;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0.5rem 0.55rem 0.45rem;
+}
+
+.avea-payment-left {
+    background: #f8f9fa;
+    border: 1px solid var(--avea-pay-line);
+    border-radius: var(--avea-radius);
+    display: flex;
+    flex: 0 0 17.25rem;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-width: 17.25rem;
+    min-height: 0;
+    min-width: 16rem;
+    padding: 0.65rem 0.85rem 0.6rem;
+}
+
+.avea-payment-center {
+    align-items: center;
+    background: var(--avea-pay-card);
+    border: 1px solid var(--avea-pay-line);
+    border-radius: var(--avea-radius);
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.7rem;
+    min-height: 0;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0.85rem 1.5rem 0.75rem;
+}
+
+.avea-payment-center > .avea-total-block,
+.avea-payment-center > .avea-remaining-block,
+.avea-payment-center > .avea-pay-heading,
+.avea-payment-center > .avea-pay-grid,
+.avea-payment-center > .avea-done-payments {
+    max-width: 50rem;
+    width: 100%;
+}
+
+.avea-sale-summary {
+    background: transparent;
+    display: flex;
+    flex: 0 0 20.5rem;
+    max-width: 21.5rem;
+    min-height: 0;
+    min-width: 17.5rem;
+    padding: 0;
+}
+
+.avea-info-card {
+    align-items: center;
+    background: var(--avea-pay-card);
+    border: 1px solid var(--avea-pay-line);
+    border-radius: var(--avea-radius);
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.6rem;
+    min-height: 2.85rem;
+    padding: 0.4rem 0.7rem;
+    text-align: left;
+    transition: border-color 0.12s ease;
+    width: 100%;
+}
+
+.avea-info-card:hover,
+.avea-info-card:focus-visible {
+    border-color: #cbd5e1;
+}
+
+.avea-info-card-active {
+    border-color: #94a3b8;
+}
+
+.avea-info-card-unavailable {
+    opacity: 0.55;
+}
+
+.avea-info-card-icon {
+    align-items: center;
+    color: #64748b;
+    display: inline-flex;
+    flex-shrink: 0;
+    font-size: 0.95rem;
+    height: 1.4rem;
+    justify-content: center;
+    width: 1.4rem;
+}
+
+.avea-info-card-copy {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.avea-info-card-label {
+    color: var(--avea-pay-muted);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.avea-info-card-value {
+    font-size: 0.88rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.avea-info-card-chevron {
+    color: #94a3b8;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+}
+
+.avea-switch {
+    background: #d1d5db;
+    border-radius: 999px;
+    flex-shrink: 0;
+    height: 1.2rem;
+    position: relative;
+    transition: background 0.15s ease;
+    width: 2.1rem;
+}
+
+.avea-switch::after {
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.18);
+    content: "";
+    height: 0.92rem;
+    left: 0.14rem;
+    position: absolute;
+    top: 0.14rem;
+    transition: transform 0.15s ease;
+    width: 0.92rem;
+}
+
+.avea-switch.is-on {
+    background: var(--avea-pay-navy);
+}
+
+.avea-switch.is-on::after {
+    transform: translateX(0.88rem);
+}
+
+.avea-optional-actions {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: 0.3rem;
+}
+
+.avea-optional-btn {
+    background: var(--avea-pay-card);
+    border: 1px solid var(--avea-pay-line);
+    border-radius: 0.5rem;
+    color: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    padding: 0.35rem 0.6rem;
+    text-align: left;
+}
+
+.avea-optional-btn.is-on {
+    border-color: #94a3b8;
+}
+
+.avea-payment-screen .avea-numpad.numpad {
+    align-self: stretch;
+    background: transparent;
+    flex: 0 0 auto;
+    gap: 0.22rem;
+    margin-top: 0.05rem;
+    max-width: none;
+    min-height: 0;
+    opacity: 0.92;
+    overflow: hidden;
+    width: 100%;
+}
+
+.avea-payment-screen .numpad-button,
+.avea-payment-screen .numpad-button[class*="o_colorlist_item"],
+.avea-payment-screen .avea-numpad .btn-lg {
+    background: #f7f8f9 !important;
+    border: 1px solid #e8eaed !important;
+    border-radius: 4px !important;
+    box-shadow: none;
+    color: #4b5563 !important;
+    font-size: 0.82rem !important;
+    font-weight: 600;
+    line-height: 2.05rem !important;
+    min-height: 2.05rem !important;
+    padding: 0 !important;
+}
+
+.avea-payment-screen .numpad-button::after {
+    display: none;
+}
+
+.avea-payment-screen .numpad-button:active {
+    background: #f3f4f6 !important;
+}
+
+.avea-payment-screen .numpad-button.avea-key-quick {
+    font-size: 0.78rem !important;
+    font-weight: 600;
+}
+
+.avea-payment-screen .numpad-button.avea-key-sign,
+.avea-payment-screen .numpad-button.avea-key-back {
+    color: #4b5563 !important;
+}
+
+.avea-customer-facts {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: 0.12rem;
+    padding: 0.2rem 0.1rem 0.05rem;
+}
+
+.avea-customer-fact {
+    align-items: baseline;
+    display: flex;
+    gap: 0.75rem;
+    justify-content: space-between;
+    min-height: 1.3rem;
+}
+
+.avea-customer-fact-label {
+    color: var(--avea-pay-muted);
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
+.avea-customer-fact-value {
+    color: var(--avea-pay-text);
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.avea-use-loyalty {
+    align-items: center;
+    background: var(--avea-pay-card);
+    border: 1px solid var(--avea-pay-line);
+    border-radius: var(--avea-radius);
+    color: var(--avea-pay-text);
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 600;
+    justify-content: center;
+    margin-top: 0.35rem;
+    min-height: 2.15rem;
+    padding: 0.3rem 0.7rem;
+    width: 100%;
+}
+
+.avea-use-loyalty:hover,
+.avea-use-loyalty:focus-visible {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--avea-pay-text);
+}
+
+.avea-payment-actions {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: 0.4rem;
+    margin-top: auto;
+    padding-top: 0.2rem;
+}
+
+.avea-btn-back,
+.avea-btn-validate {
+    align-items: center;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    display: inline-flex;
+    font-size: 0.95rem;
+    font-weight: 600;
+    gap: 0.45rem;
+    justify-content: center;
+    min-height: 2.65rem;
+    width: 100%;
+}
+
+.avea-btn-back {
+    background: #fff;
+    border-color: var(--avea-pay-line);
+    color: var(--avea-pay-text);
+}
+
+.avea-btn-back:hover {
+    background: #f8fafc;
+}
+
+.avea-btn-validate {
+    background: var(--avea-brand);
+    color: #fff;
+}
+
+.avea-btn-validate:hover {
+    background: var(--avea-brand-hover);
+    color: #fff;
+}
+
+.avea-btn-validate.disabled,
+.avea-payment-screen .avea-btn-validate.disabled {
+    background: #c4b8b0;
+    color: #fff;
+    cursor: default;
+    opacity: 0.72;
+    pointer-events: none;
+}
+
+.avea-total-block {
+    flex-shrink: 0;
+    padding: 0.35rem 0 0.1rem;
+    text-align: center;
+    width: 100%;
+}
+
+.avea-total-label {
+    color: var(--avea-pay-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+}
+
+.avea-total-amount {
+    color: #111827;
+    font-size: clamp(2.2rem, 3.6vw, 3.15rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.08;
+}
+
+.avea-remaining-block {
+    align-items: baseline;
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.75rem;
+    justify-content: center;
+    width: 100%;
+}
+
+.avea-remaining-label {
+    color: var(--avea-pay-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.avea-remaining-amount {
+    color: #111827;
+    font-size: 1.15rem;
+    font-weight: 700;
+}
+
+.avea-remaining-block.is-settled .avea-remaining-amount {
+    color: var(--avea-cash-green);
+}
+
+.avea-payment-screen .paymentlines-container.border-top {
+    border-top: none !important;
+    padding-top: 0 !important;
+}
+
+.avea-payment-screen .paymentlines-container .highlight {
+    font-size: 1rem;
+}
+
+.avea-pay-heading {
+    color: #4b5563;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    width: 100%;
+}
+
+.avea-pay-grid {
+    display: grid;
+    flex: 0 0 auto;
+    gap: 0.55rem;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+}
+
+.avea-pay-card {
+    align-items: center;
+    background: #f3f4f6;
+    border: 1px solid transparent;
+    border-radius: var(--avea-radius);
+    box-shadow: none;
+    color: var(--avea-pay-text);
+    cursor: pointer;
+    display: flex;
+    flex-direction: row;
+    gap: 0.85rem;
+    min-height: clamp(5rem, 9.6vh, 6.875rem);
+    padding: 0.7rem 0.95rem;
+    transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.avea-pay-card:hover {
+    background: #eceef1;
+}
+
+.avea-pay-card:active {
+    background: #e5e7eb;
+}
+
+.avea-pay-card .avea-pm-icon {
+    background: transparent;
+    color: #64748b;
+    font-size: 1.45rem;
+    height: auto;
+    justify-content: center;
+    margin: 0;
+    width: 1.6rem;
+}
+
+.avea-pay-card-copy {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.avea-pay-card-title {
+    color: var(--avea-pay-text);
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    text-transform: uppercase;
+}
+
+.avea-pay-card-sub {
+    color: #6b7280;
+    font-size: 0.78rem;
+    font-weight: 500;
+    line-height: 1.25;
+    margin-top: 0.08rem;
+}
+
+.avea-pay-card-balance {
+    color: var(--avea-credit-orange);
+    font-size: 0.72rem;
+    font-weight: 600;
+}
+
+.avea-pay-card-card .avea-pm-icon {
+    color: var(--avea-card-blue);
+}
+
+.avea-pay-card-cash .avea-pm-icon {
+    color: var(--avea-cash-green);
+}
+
+.avea-pay-card-eft .avea-pm-icon {
+    color: var(--avea-eft-purple);
+}
+
+.avea-pay-card-store-credit .avea-pm-icon {
+    color: var(--avea-credit-orange);
+}
+
+.avea-pay-card-selected {
+    background: #fff;
+    border-color: #cbd5e1;
+}
+
+.avea-pay-card-card.avea-pay-card-selected {
+    background: #f4f7fb;
+    border-color: var(--avea-card-blue);
+}
+
+.avea-pay-card-cash.avea-pay-card-selected {
+    background: #f3f8f5;
+    border-color: var(--avea-cash-green);
+}
+
+.avea-pay-card-eft.avea-pay-card-selected {
+    background: #f6f5f8;
+    border-color: var(--avea-eft-purple);
+}
+
+.avea-pay-card-store-credit.avea-pay-card-selected {
+    background: #f8f6f4;
+    border-color: var(--avea-credit-orange);
+}
+
+.avea-pay-card-disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+}
+
+.avea-done-payments {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+}
+
+.avea-done-heading {
+    color: #4b5563;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.avea-payment-screen .paymentlines {
+    flex: 1 1 auto;
+    gap: 0.35rem;
+    margin-bottom: 0;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.avea-payment-screen .paymentline.selected,
+.avea-payment-screen .paymentline {
+    background: #f3f4f6;
+    border: none;
+    min-height: 2.6rem;
+}
+
+.avea-payment-screen .payment-infos {
+    font-size: 0.92rem !important;
+    padding: 0.45rem 0.8rem !important;
+}
+
+.avea-payment-screen .payment-name {
+    font-size: 0.86rem;
+    font-weight: 500;
+}
+
+.avea-payment-screen .payment-amount {
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0 !important;
+}
+
+.avea-receipt {
+    background: var(--avea-pay-card);
+    border: 1px solid var(--avea-pay-line);
+    border-radius: var(--avea-radius);
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    padding: 0.8rem 0.95rem 0.7rem;
+    width: 100%;
+}
+
+.avea-receipt-title {
+    color: #4b5563;
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.avea-receipt-customer {
+    flex-shrink: 0;
+    padding: 0.55rem 0 0.15rem;
+}
+
+.avea-receipt-k {
+    color: var(--avea-pay-muted);
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.avea-receipt-v {
+    font-size: 0.95rem;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.avea-receipt-rule {
+    background: var(--avea-pay-line);
+    flex-shrink: 0;
+    height: 1px;
+    margin: 0.55rem 0;
+}
+
+.avea-receipt-lines {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.avea-receipt-line {
+    align-items: flex-start;
+    display: flex;
+    gap: 0.6rem;
+    justify-content: space-between;
+}
+
+.avea-receipt-product {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.avea-receipt-name {
+    font-size: 0.86rem;
+    font-weight: 600;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.avea-receipt-meta {
+    color: var(--avea-pay-muted);
+    font-size: 0.72rem;
+    font-weight: 500;
+    margin-top: 0.08rem;
+}
+
+.avea-receipt-disc {
+    color: #8a5a3c;
+    margin-left: 0.35rem;
+}
+
+.avea-receipt-line-total {
+    flex-shrink: 0;
+    font-size: 0.86rem;
+    font-weight: 600;
+    padding-top: 0.05rem;
+    white-space: nowrap;
+}
+
+.avea-receipt-totrow {
+    align-items: baseline;
+    color: var(--avea-pay-muted);
+    display: flex;
+    flex-shrink: 0;
+    font-size: 0.82rem;
+    font-weight: 500;
+    justify-content: space-between;
+    padding: 0.08rem 0;
+}
+
+.avea-receipt-discount {
+    color: #8a5a3c;
+}
+
+.avea-receipt-grand {
+    color: var(--avea-pay-text);
+    font-size: 0.98rem;
+    font-weight: 700;
+    padding-top: 0.15rem;
+}
+
+.avea-pos-status {
+    align-items: center;
+    background: #fff;
+    border-top: 1px solid var(--avea-pay-line);
+    color: #6b7280;
+    display: flex;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    justify-content: space-between;
+    min-height: 2rem;
+    padding: 0.3rem 1.1rem;
+}
+
+.avea-pos-status-left,
+.avea-pos-status-right {
+    align-items: center;
+    display: flex;
+    gap: 0.7rem;
+}
+
+.avea-pos-status-sep {
+    background: #e5e7eb;
+    height: 0.85rem;
+    width: 1px;
+}
+
+.avea-pos-online {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
+}
+
+.avea-pos-online-dot {
+    background: #16a34a;
+    border-radius: 50%;
+    height: 0.45rem;
+    width: 0.45rem;
+}
+
+.avea-pos-online.is-offline .avea-pos-online-dot {
+    background: #dc2626;
+}
+
+@media (max-width: 1280px) {
+    .avea-sale-summary {
+        flex-basis: 18.5rem;
+        max-width: 19rem;
+        min-width: 16.5rem;
+    }
+
+    .avea-payment-left {
+        flex-basis: 16.25rem;
+        max-width: 16.25rem;
+        min-width: 15.5rem;
+    }
+
+    .avea-payment-center {
+        padding-left: 1.15rem;
+        padding-right: 1.15rem;
+    }
+
+    .avea-pay-card {
+        min-height: 5rem;
+        padding: 0.55rem 0.75rem;
+    }
+}
+
+@media (max-width: 1100px) {
+    .avea-payment-body {
+        flex-wrap: wrap;
+        overflow: auto;
+    }
+
+    .avea-payment-left {
+        background: #f8f9fa;
+        flex: 0 0 15.5rem;
+        max-width: 15.5rem;
+    }
+
+    .avea-payment-center {
+        flex: 1 1 22rem;
+        min-height: auto;
+    }
+
+    .avea-sale-summary {
+        flex: 1 1 100%;
+        max-width: none;
+        min-height: 14rem;
+        padding: 0;
+    }
+
+    .avea-receipt-lines {
+        max-height: 12rem;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .avea-payment-body {
+        flex-direction: column;
+        overflow: auto;
+    }
+
+    .avea-payment-left,
+    .avea-payment-center,
+    .avea-sale-summary {
+        flex: 0 0 auto;
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .avea-payment-left {
+        min-height: auto;
+    }
+
+    .avea-payment-screen .avea-numpad.numpad {
+        width: 100%;
+        max-width: none;
+    }
+
+    .avea-pay-grid {
+        flex: 0 0 auto;
+    }
+
+    .avea-receipt-lines {
+        max-height: 10rem;
+    }
+
+    .avea-payment-actions {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+    }
+}
+
+@media (max-height: 820px) {
+    .avea-payment-body {
+        gap: 0.65rem;
+        padding: 0.5rem 0.75rem 0.4rem;
+    }
+
+    .avea-info-card {
+        min-height: 2.55rem;
+        padding: 0.3rem 0.55rem;
+    }
+
+    .avea-total-amount {
+        font-size: clamp(1.7rem, 3.6vw, 2.6rem);
+    }
+
+    .avea-payment-screen .avea-numpad.numpad {
+        width: 100%;
+        max-width: none;
+    }
+
+    .avea-payment-screen .numpad-button,
+    .avea-payment-screen .numpad-button[class*="o_colorlist_item"] {
+        font-size: 0.85rem !important;
+        line-height: 2.05rem !important;
+        min-height: 2.05rem !important;
+    }
+
+    .avea-btn-back,
+    .avea-btn-validate {
+        min-height: 2.4rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .avea-pay-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .avea-pos-status {
+        flex-wrap: wrap;
+        gap: 0.25rem;
+    }
+}

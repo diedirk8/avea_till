@@ -2,6 +2,34 @@
 <templates id="template" xml:space="preserve">
 
     <t t-name="point_of_sale.Navbar" t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('navbar-menu')]" position="before">
+            <div class="avea-pos-brand" aria-label="Avea POS">
+                <span class="avea-pos-mark" aria-hidden="true">A</span>
+                <span class="avea-pos-wordmark">Avea POS</span>
+            </div>
+        </xpath>
+        <xpath expr="//button[hasclass('register-label')]/span" position="replace">
+            <span t-if="!ui.isSmall" class="avea-nav-label">
+                <i class="fa fa-th-large" aria-hidden="true"/>
+                Register
+            </span>
+        </xpath>
+        <xpath expr="//button[hasclass('orders-button')]//span" position="replace">
+            <span class="avea-nav-label">
+                <i class="fa fa-list" aria-hidden="true"/>
+                Orders
+            </span>
+        </xpath>
+        <xpath expr="//CashierName" position="before">
+            <button
+                type="button"
+                class="avea-header-icon avea-header-lock"
+                title="Lock"
+                t-on-click="() => this.pos.showLoginScreen()"
+            >
+                <i class="fa fa-lock" aria-hidden="true"/>
+            </button>
+        </xpath>
         <xpath expr="//DropdownItem[contains(@onSelected, 'cashMove')]" position="after">
             <DropdownItem
                 t-if="showIssueStoreCreditMenu"

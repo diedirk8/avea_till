@@ -1,0 +1,173 @@
+/* Avea POS header — quiet retail chrome. */
+
+.pos .pos-topheader {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    min-height: 3.2rem;
+    padding: 0.3rem 0.85rem;
+}
+
+.pos .avea-pos-brand {
+    align-items: center;
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.5rem;
+    margin-right: 0.85rem;
+}
+
+.pos .avea-pos-mark {
+    align-items: center;
+    background: #c45c26;
+    border-radius: 6px;
+    color: #fff;
+    display: inline-flex;
+    font-size: 0.95rem;
+    font-weight: 700;
+    height: 1.75rem;
+    justify-content: center;
+    line-height: 1;
+    width: 1.75rem;
+}
+
+.pos .avea-pos-wordmark {
+    color: #1f2937;
+    font-size: 0.98rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+}
+
+.pos .navbar-menu {
+    gap: 0.1rem;
+}
+
+.pos .navbar-menu .register-label,
+.pos .navbar-menu .orders-button {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0;
+    box-shadow: none !important;
+    color: #6b7280;
+    font-size: 0.92rem;
+    font-weight: 500;
+    min-height: 2.5rem;
+    padding: 0.3rem 0.8rem;
+}
+
+.pos .navbar-menu .register-label.active,
+.pos .navbar-menu .orders-button.active {
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #111827;
+    font-weight: 600;
+    position: relative;
+}
+
+.pos .navbar-menu .register-label.active::after,
+.pos .navbar-menu .orders-button.active::after {
+    background: #111827;
+    border-radius: 0;
+    bottom: 0.05rem;
+    content: "";
+    height: 2px;
+    left: 0.75rem;
+    position: absolute;
+    right: 0.75rem;
+}
+
+.pos .avea-nav-label {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.35rem;
+}
+
+.pos .navbar-separator {
+    display: none;
+}
+
+.pos .floating-order-container .btn {
+    background: #f3f4f6 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    color: #4b5563 !important;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-height: 1.6rem;
+    min-width: auto !important;
+    padding: 0.12rem 0.6rem;
+}
+
+.pos .floating-order-container .btn.active {
+    background: #e5e7eb !important;
+    color: #111827 !important;
+}
+
+.pos .avea-header-icon {
+    align-items: center;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #6b7280;
+    display: inline-flex;
+    height: 2.25rem;
+    justify-content: center;
+    width: 2.25rem;
+}
+
+.pos .avea-header-icon:hover {
+    background: #f3f4f6;
+    color: #111827;
+}
+
+.pos .status-buttons .cashier-name {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: none;
+    padding: 0.15rem;
+}
+
+.pos .status-buttons .cashier-name .avatar {
+    border-radius: 50% !important;
+    height: 1.85rem;
+    object-fit: cover;
+    width: 1.85rem;
+}
+
+.pos .status-buttons > .o-dropdown > button,
+.pos .status-buttons .dropdown-toggle {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #6b7280;
+}
+
+.pos .status-buttons .lock-screen {
+    display: none;
+}
+
+.pos .status-buttons {
+    align-items: center;
+}
+
+.pos .status-buttons .avea-header-lock {
+    order: 20;
+}
+
+.pos .status-buttons .cashier-name {
+    order: 21;
+}
+
+.pos .status-buttons > .o-dropdown {
+    order: 22;
+}
+
+@media (max-width: 767.98px) {
+    .pos .avea-pos-wordmark {
+        display: none;
+    }
+
+    .pos .avea-pos-brand {
+        margin-right: 0.35rem;
+    }
+}

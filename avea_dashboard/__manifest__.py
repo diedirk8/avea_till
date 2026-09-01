@@ -17,7 +17,7 @@ Features:
 - POS Cash Up
 - Correct payment method on open POS sessions
 """,
-    "version": "19.0.2.60.0",
+    "version": "19.0.2.70.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -85,7 +85,9 @@ Features:
         ],
         "point_of_sale._assets_pos": [
             "avea_till/static/src/scss/pos/store_credit.scss",
+            "avea_till/static/src/scss/pos/navbar.scss",
             "avea_till/static/src/scss/pos/payment_methods.scss",
+            "avea_till/static/src/scss/pos/payment_screen.scss",
             "avea_till/static/src/pos/store_credit.js",
             "avea_till/static/src/pos/payment_method_visual.js",
             "avea_till/static/src/pos/pos_store.js",
