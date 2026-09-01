@@ -140,13 +140,15 @@ class AveaStockReturn(models.TransientModel):
     @api.model
     def action_open_return(self):
         wizard = self.create({})
+        view_id = self.env.ref("avea_till.view_avea_stock_return_form").id
         return {
             "type": "ir.actions.act_window",
             "name": _("Return Stock"),
             "res_model": self._name,
             "view_mode": "form",
+            "views": [(view_id, "form")],
+            "view_id": view_id,
             "res_id": wizard.id,
-            "view_id": self.env.ref("avea_till.view_avea_stock_return_form").id,
             "target": "current",
             "context": {"clear_breadcrumbs": True},
         }

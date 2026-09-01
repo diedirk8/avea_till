@@ -279,13 +279,15 @@ class AveaStockReceive(models.TransientModel):
     @api.model
     def action_open_receive(self):
         receive = self.create({})
+        view_id = self.env.ref("avea_till.view_avea_stock_receive_form").id
         return {
             "type": "ir.actions.act_window",
             "name": _("Receive Stock"),
             "res_model": self._name,
             "view_mode": "form",
+            "views": [(view_id, "form")],
+            "view_id": view_id,
             "res_id": receive.id,
-            "view_id": self.env.ref("avea_till.view_avea_stock_receive_form").id,
             "target": "current",
             "context": {"clear_breadcrumbs": True},
         }
