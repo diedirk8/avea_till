@@ -18,7 +18,7 @@ Features:
 - Correct payment method on open POS sessions
 - Receive Stock and Return Stock
 """,
-    "version": "19.0.3.5.1",
+    "version": "19.0.3.5.3",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",

@@ -474,6 +474,23 @@
         gap: 0.55rem;
         max-width: none;
         min-width: 0;
+
+        .o_field_monetary {
+            span.o_input.position-absolute {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                min-height: 0 !important;
+                padding: 0 !important;
+            }
+
+            input.o_input {
+                background: #fff;
+                color: var(--o-gray-900, #212529);
+                position: relative;
+                z-index: 1;
+            }
+        }
     }
 
     .o_avea_stock_mismatch {
