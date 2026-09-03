@@ -3,3 +3,4 @@ access_avea_operational_expense_wizard,access.avea.operational.expense.wizard,mo
 access_avea_money_transfer_wizard,access.avea.money.transfer.wizard,model_avea_money_transfer_wizard,,1,1,1,1
 access_avea_account_balance_wizard,access.avea.account.balance.wizard,model_avea_account_balance_wizard,,1,1,1,1
 access_avea_account_balance_line,access.avea.account.balance.line,model_avea_account_balance_line,,1,1,1,1
+access_avea_manual_journal_wizard,access.avea.manual.journal.wizard,model_avea_manual_journal_wizard,,1,1,1,1

@@ -13,12 +13,13 @@ Features:
 - POS Store Credit payments
 - Operational expenses
 - Money transfers between company accounts
+- Manual journal entries
 - Account balances for Avea cash and bank accounts
 - POS Cash Up
 - Correct payment method on open POS sessions
 - Receive Stock and Return Stock
 """,
-    "version": "19.0.3.5.4",
+    "version": "19.0.3.6.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -67,6 +68,7 @@ Features:
         "views/operations/operational_expense_wizard_views.xml",
         "views/operations/money_transfer_wizard_views.xml",
         "views/operations/account_balance_wizard_views.xml",
+        "views/operations/manual_journal_wizard_views.xml",
         "views/operations/operations_menu.xml",
         "views/stock/stock_receive_views.xml",
         "views/stock/stock_return_views.xml",

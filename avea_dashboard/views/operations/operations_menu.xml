@@ -36,4 +36,12 @@
         sequence="20"
     />
 
+    <menuitem
+        id="menu_avea_operations_manual_journal"
+        name="Manual Journal"
+        parent="menu_avea_operations"
+        action="action_avea_manual_journal_wizard"
+        sequence="30"
+    />
+
 </odoo>
