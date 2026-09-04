@@ -2,7 +2,7 @@
 
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
-import { TextInputPopup } from "@point_of_sale/app/utils/input_popups/text_input_popup";
+import { TextInputPopup } from "@point_of_sale/app/components/popups/text_input_popup/text_input_popup";
 import { _t } from "@web/core/l10n/translation";
 import { patch } from "@web/core/utils/patch";
 
