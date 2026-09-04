@@ -332,7 +332,7 @@ Simplify / wrap Odoo promotions, coupons, rewards and barcode functionality so a
 
 ## P3 — Future
 
-**Status: partially implemented.** Correct Payment Method (open sessions) landed in `19.0.2.60.0`. The modern Avea POS payment screen landed in `19.0.2.61.0` and was refined through `19.0.2.69.0`. Remaining items below stay specified only. Do not start Phase 4.
+**Status: partially implemented.** Correct Payment Method (open sessions) landed in `19.0.2.60.0` and was eligibility-hardened in `19.0.3.8.3`. The modern Avea POS payment screen landed in `19.0.2.61.0` and was refined through `19.0.2.69.0`. Remaining items below stay specified only.
 
 - **Business Owner Workspace** — later owner-facing workspace beyond the P1 Business Overview.
 - **Future Cash Office** — receive/verify cash bags, record bag custody, reconcile physical deposits into Company Safe, and provide an audit trail. This is deliberately separate from the cashier Cash Up feature in P2.
