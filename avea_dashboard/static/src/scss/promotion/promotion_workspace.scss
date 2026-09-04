@@ -18,11 +18,50 @@
     }
 
     .o_avea_workspace_hero {
+        align-items: flex-start;
         background: transparent;
         border: none;
         box-shadow: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem 1rem;
+        justify-content: space-between;
         margin-bottom: 0.95rem;
         padding: 0.05rem 0 0;
+    }
+
+    .o_avea_promotion_hero_actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-left: auto;
+
+        .btn {
+            min-height: 2.45rem;
+            min-width: 7.5rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--avea-info, #01666b);
+            border-color: var(--avea-info, #01666b);
+            font-weight: 700;
+
+            &:hover,
+            &:focus {
+                background: #01494d;
+                border-color: #01494d;
+            }
+        }
+
+        .btn-secondary {
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            color: var(--o-gray-800, #343a40);
+            font-weight: 600;
+        }
     }
 
     .o_avea_workspace_hero_intro {
@@ -460,6 +499,44 @@
 
     .o_avea_promotion_summary_blurb .o_field_widget {
         font-weight: 500;
+    }
+
+    .o_avea_promotion_footer,
+    .o_avea_promotion_footer--bar {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        justify-content: flex-end;
+        margin-top: 1rem;
+        padding-top: 0.85rem;
+        border-top: 1px solid rgba(1, 102, 107, 0.12);
+
+        .btn {
+            min-height: 2.45rem;
+            min-width: 7.5rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--avea-info, #01666b);
+            border-color: var(--avea-info, #01666b);
+            font-weight: 700;
+
+            &:hover,
+            &:focus {
+                background: #01494d;
+                border-color: #01494d;
+            }
+        }
+
+        .btn-secondary {
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            color: var(--o-gray-800, #343a40);
+            font-weight: 600;
+        }
     }
 }
 

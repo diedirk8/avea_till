@@ -263,8 +263,8 @@ class AveaPromotion(models.Model):
         if self.deal_type == "combo_price":
             self.product_scope = "products"
             self.product_category_id = False
-            if not self.combo_line_ids:
-                self.combo_line_ids = [Command.create({"quantity": 1.0})]
+            # Do not auto-create an empty combo line — that made incomplete forms
+            # fail "missing fields" validation when leaving without saving.
 
     @api.constrains(
         "deal_type",

@@ -5,7 +5,7 @@
         <field name="name">avea.promotion.list</field>
         <field name="model">avea.promotion</field>
         <field name="arch" type="xml">
-            <list string="Promotions" class="o_avea_promotion_list">
+            <list string="Promotions" class="o_avea_promotion_list" create="1" delete="1">
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
                 <field name="date_from" optional="show"/>
@@ -47,6 +47,20 @@
                             <p class="o_avea_workspace_section_subtitle">
                                 Set up a simple deal for your till. Review the summary before you save.
                             </p>
+                        </div>
+                        <div class="o_avea_promotion_hero_actions">
+                            <button
+                                string="Cancel"
+                                special="cancel"
+                                class="btn btn-secondary"
+                                data-hotkey="x"
+                            />
+                            <button
+                                string="Save"
+                                special="save"
+                                class="btn btn-primary"
+                                data-hotkey="s"
+                            />
                         </div>
                     </div>
 
@@ -281,6 +295,21 @@
                                     <span class="o_avea_promotion_summary_label">What this does</span>
                                     <field name="summary_blurb" nolabel="1" readonly="1"/>
                                 </div>
+
+                                <div class="o_avea_promotion_footer o_avea_promotion_footer--bar">
+                                    <button
+                                        string="Cancel"
+                                        special="cancel"
+                                        class="btn btn-secondary"
+                                        data-hotkey="x"
+                                    />
+                                    <button
+                                        string="Save"
+                                        special="save"
+                                        class="btn btn-primary"
+                                        data-hotkey="s"
+                                    />
+                                </div>
                             </div>
                         </aside>
                     </div>
@@ -300,7 +329,8 @@
                 Create your first promotion
             </p>
             <p>
-                Simple deals for your till — discounts, buy-one-get-one, spend-and-save, or extra loyalty points.
+                Use the New button to add a deal — discounts, buy-one-get-one, spend-and-save, combo price, or extra loyalty points.
+                Cancel on the form leaves without saving.
             </p>
         </field>
     </record>
