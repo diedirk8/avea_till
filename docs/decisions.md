@@ -143,3 +143,25 @@ Decision
 - Split tender means more than one distinct payment **method** among non-change lines. Cash change lines are not a second tender.
 - On correction, consolidate to one exact tender at `amount_total`, remove change/duplicate same-method lines, sync `avea.till.movement`, and post an audit message.
 - POS UI may soft-hide obvious cases only; it must not invent stricter rules than the server.
+---
+
+# ADR-007
+
+## Combo Price exclusive quantity allocation
+
+Status
+
+Accepted
+
+Reason
+
+Multiple Combo Price promotions that share a product (e.g. one bag of food paired with different treats) each matched against the full cart independently. One shared unit was counted for every matching promo, so `1× shared + 2× partners` produced two combo discounts.
+
+Decision
+
+In POS `combo_promotions.js`:
+
+- Maintain one `availableQty` pool for the cart while applying Combo Price programs.
+- Rank eligible programs by highest customer saving per complete set (`catalogIncl − combo_price`), then by lower program id.
+- Allocate as many complete sets as the pool allows for each program in that order, then subtract component quantities from the pool.
+- Leftover units remain at normal retail. VAT/accounting for combo discount lines is unchanged (tax-included discount matching native loyalty).

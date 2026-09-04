@@ -29,16 +29,39 @@ function _aveaComboIsCodeActivated(order, program) {
     );
 }
 
+function _aveaComboInDate(order, program) {
+    if (!program.date_from && !program.date_to) {
+        return true;
+    }
+    const now = order.date_order ? new Date(order.date_order) : new Date();
+    if (program.date_from) {
+        const start = new Date(program.date_from);
+        start.setHours(0, 0, 0, 0);
+        if (now < start) {
+            return false;
+        }
+    }
+    if (program.date_to) {
+        const end = new Date(program.date_to);
+        end.setHours(23, 59, 59, 999);
+        if (now > end) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function _aveaProductLines(order) {
     return (order.getOrderlines?.() || order.lines || []).filter(
         (line) => !line.is_reward_line && !line.avea_combo_program_id && !line.combo_parent_id
     );
 }
 
-function _aveaCountCompleteComboSets(order, components) {
-    if (!components?.length) {
-        return 0;
-    }
+/**
+ * Shared remaining quantity pool for exclusive cross-combo allocation.
+ * A unit consumed by one Combo Price promotion cannot be used by another.
+ */
+function _aveaBuildAvailableQty(order) {
     const qtyByProduct = new Map();
     for (const line of _aveaProductLines(order)) {
         const productId = line.getProduct?.()?.id || line.product_id?.id;
@@ -46,7 +69,17 @@ function _aveaCountCompleteComboSets(order, components) {
             continue;
         }
         const qty = Number(line.getQuantity?.() ?? line.qty) || 0;
+        if (qty <= 0) {
+            continue;
+        }
         qtyByProduct.set(productId, (qtyByProduct.get(productId) || 0) + qty);
+    }
+    return qtyByProduct;
+}
+
+function _aveaCountSetsFromPool(components, availableQty) {
+    if (!components?.length) {
+        return 0;
     }
     let sets = Infinity;
     for (const component of components) {
@@ -54,10 +87,47 @@ function _aveaCountCompleteComboSets(order, components) {
         if (required <= 0) {
             return 0;
         }
-        const available = qtyByProduct.get(component.product_id) || 0;
+        const available = availableQty.get(component.product_id) || 0;
         sets = Math.min(sets, Math.floor(available / required));
     }
     return Number.isFinite(sets) ? sets : 0;
+}
+
+function _aveaConsumeSetsFromPool(components, availableQty, sets) {
+    for (const component of components) {
+        const productId = component.product_id;
+        const used = (Number(component.quantity) || 0) * sets;
+        availableQty.set(productId, (availableQty.get(productId) || 0) - used);
+    }
+}
+
+/**
+ * Tax-included catalog total for `sets` complete combos, taken from cart lines.
+ */
+function _aveaCatalogInclForSets(order, components, sets) {
+    if (sets <= 0) {
+        return 0;
+    }
+    const remaining = new Map(
+        components.map((component) => [component.product_id, component.quantity * sets])
+    );
+    let total = 0;
+    for (const line of _aveaProductLines(order)) {
+        const productId = line.getProduct?.()?.id || line.product_id?.id;
+        const need = remaining.get(productId) || 0;
+        if (need <= 0) {
+            continue;
+        }
+        const lineQty = Number(line.getQuantity?.() ?? line.qty) || 0;
+        if (lineQty <= 0) {
+            continue;
+        }
+        const take = Math.min(need, lineQty);
+        const lineIncl = Number(line.prices?.total_included ?? line.price_subtotal_incl) || 0;
+        total += (lineIncl / lineQty) * take;
+        remaining.set(productId, need - take);
+    }
+    return total;
 }
 
 /**
@@ -69,7 +139,7 @@ function _aveaComboDiscountByTax(order, components, sets, discountIncl) {
     const remaining = new Map(
         components.map((component) => [component.product_id, component.quantity * sets])
     );
-    const discountablePerTax = new Map(); // taxKey -> { taxes, baseExcl, inclShare }
+    const discountablePerTax = new Map();
     let catalogIncl = 0;
     let catalogBase = 0;
 
@@ -105,11 +175,6 @@ function _aveaComboDiscountByTax(order, components, sets, discountIncl) {
         return { catalogIncl: 0, parts: [] };
     }
 
-    // Native loyalty: price_unit is the negative tax-excluded base share times
-    // (discountIncl / catalogIncl), with the product taxes attached. For
-    // price-included taxes POS stores/display uses included amounts on normal
-    // lines; real posted loyalty discounts use price_unit = -included with taxes.
-    // Match posted loyalty behaviour: split the included discount by base weight.
     const parts = [];
     const entries = [...discountablePerTax.entries()].filter(([, value]) => value.base);
     const totalBase = entries.reduce((sum, [, value]) => sum + value.base, 0) || catalogBase;
@@ -128,7 +193,6 @@ function _aveaComboDiscountByTax(order, components, sets, discountIncl) {
         parts.push({
             taxKey,
             taxes: value.taxes,
-            // Tax-included negative unit, same as native loyalty reward lines.
             priceUnit: -partIncl,
         });
     });
@@ -159,6 +223,38 @@ function _aveaComboLineLabel(program, sets) {
         return _t("%(name)s × %(sets)s", { name: program.name, sets });
     }
     return program.name;
+}
+
+/**
+ * Eligible Combo Price programs, ordered by:
+ * 1) highest customer saving per complete set (catalog − combo price)
+ * 2) lower program id when savings are equal
+ */
+function _aveaRankComboPrograms(order, programs) {
+    const ranked = [];
+    for (const program of programs) {
+        if (!_aveaComboIsCodeActivated(order, program) || !_aveaComboInDate(order, program)) {
+            continue;
+        }
+        const components = program.avea_combo_components || [];
+        if (!components.length) {
+            continue;
+        }
+        const catalogOne = _aveaCatalogInclForSets(order, components, 1);
+        const comboPrice = Number(program.avea_combo_price) || 0;
+        ranked.push({
+            program,
+            components,
+            savingPerSet: catalogOne - comboPrice,
+        });
+    }
+    ranked.sort((left, right) => {
+        if (right.savingPerSet !== left.savingPerSet) {
+            return right.savingPerSet - left.savingPerSet;
+        }
+        return (left.program.id || 0) - (right.program.id || 0);
+    });
+    return ranked;
 }
 
 patch(PosOrder.prototype, {
@@ -222,60 +318,18 @@ patch(PosStore.prototype, {
         );
         _aveaRemoveComboDiscountLines(order);
 
-        for (const program of programs) {
-            if (!_aveaComboIsCodeActivated(order, program)) {
-                continue;
-            }
-            if (program.date_from || program.date_to) {
-                const now = order.date_order ? new Date(order.date_order) : new Date();
-                if (program.date_from) {
-                    const start = new Date(program.date_from);
-                    start.setHours(0, 0, 0, 0);
-                    if (now < start) {
-                        continue;
-                    }
-                }
-                if (program.date_to) {
-                    const end = new Date(program.date_to);
-                    end.setHours(23, 59, 59, 999);
-                    if (now > end) {
-                        continue;
-                    }
-                }
-            }
+        // One shared pool: each product unit is consumed by at most one combo.
+        const availableQty = _aveaBuildAvailableQty(order);
+        const ranked = _aveaRankComboPrograms(order, programs);
 
-            const components = program.avea_combo_components || [];
-            const sets = _aveaCountCompleteComboSets(order, components);
+        for (const { program, components } of ranked) {
+            const sets = _aveaCountSetsFromPool(components, availableQty);
             if (sets <= 0) {
                 continue;
             }
+
             const comboTotal = (Number(program.avea_combo_price) || 0) * sets;
-            const catalogIncl = (() => {
-                const remaining = new Map(
-                    components.map((component) => [
-                        component.product_id,
-                        component.quantity * sets,
-                    ])
-                );
-                let total = 0;
-                for (const line of _aveaProductLines(order)) {
-                    const productId = line.getProduct?.()?.id || line.product_id?.id;
-                    const need = remaining.get(productId) || 0;
-                    if (need <= 0) {
-                        continue;
-                    }
-                    const lineQty = Number(line.getQuantity?.() ?? line.qty) || 0;
-                    if (lineQty <= 0) {
-                        continue;
-                    }
-                    const take = Math.min(need, lineQty);
-                    const lineIncl =
-                        Number(line.prices?.total_included ?? line.price_subtotal_incl) || 0;
-                    total += (lineIncl / lineQty) * take;
-                    remaining.set(productId, need - take);
-                }
-                return total;
-            })();
+            const catalogIncl = _aveaCatalogInclForSets(order, components, sets);
             const discountIncl = _aveaRoundMoney(order, catalogIncl - comboTotal);
             if (discountIncl <= 0.0001) {
                 continue;
@@ -310,6 +364,8 @@ patch(PosStore.prototype, {
                     full_product_name: label,
                 });
             }
+            // Reserve units only after a discount is actually applied.
+            _aveaConsumeSetsFromPool(components, availableQty, sets);
         }
     },
 });

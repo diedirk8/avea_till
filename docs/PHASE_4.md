@@ -38,7 +38,7 @@ Avea Promotions (`avea.promotion`) wrap Odoo Discount & Loyalty for a shop-owner
 
 Deal types: % off, Fixed amount off, Buy X Get Y, Spend X Save, **Combo Price**, Extra Loyalty Points.
 
-**Combo Price:** unlimited dynamic combo product lines (product + qty) sold together for one fixed price. POS matches complete sets in the cart (including multiple sets) and applies the combo price; leftovers stay at normal retail. Documented in `PHASE_4_PROMOTIONS_SCOPE.md`.
+**Combo Price:** unlimited dynamic combo product lines (product + qty) sold together for one fixed price. POS matches complete sets with **exclusive quantity allocation** across competing Combo Price promotions (highest saving per set first, then program id); leftovers stay at normal retail. Documented in `PHASE_4_PROMOTIONS_SCOPE.md`.
 
 ## Stock Count — Priority #3
 
