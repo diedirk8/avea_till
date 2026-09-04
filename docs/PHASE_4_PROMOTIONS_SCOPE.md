@@ -12,17 +12,29 @@ Keep configuration to the essentials:
    - Specific products
    - Product category
    - All products
+   - For **Combo Price**, a dynamic unlimited list of combo products with quantities
 2. **When?**
    - Start date
    - End date
+   - Open ended (no end date until deactivated)
 3. **What is the deal?**
    - Percentage off
    - Fixed amount off
    - Buy X, Get Y
    - Spend X, Save R / %
+   - **Combo Price** — any number of products sold together for one fixed price (no artificial maximum product count)
    - Extra loyalty points
 4. **Promo code** — optional
 5. Promotions should normally apply automatically when their conditions are met.
+
+## Combo Price
+
+- Shop owners build a combo as: selected products + required quantities = one combo price.
+- Combo product lines are unlimited; users can keep adding products.
+- POS recognises complete combinations in the cart and charges the configured combo price.
+- Multiple complete combos in one cart are supported (e.g. 2× each required product → 2 combos).
+- Quantities beyond complete sets remain at normal retail price.
+- Native Odoo loyalty cannot express multi-product fixed combo pricing with per-line quantities, so Avea applies the combo discount in POS while still publishing a loyalty program shell for till availability, dates and promo codes.
 
 ## POS experience
 

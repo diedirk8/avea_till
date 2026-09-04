@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <!-- Fallback product if a loyalty reward has no discount_line_product yet.
+         Loaded in POS via reward relation when present; not shown as a sellable item. -->
+    <record id="product_template_avea_combo_discount" model="product.template">
+        <field name="name">Combo Price</field>
+        <field name="default_code">AVEA_COMBO_DISCOUNT</field>
+        <field name="type">service</field>
+        <field name="list_price">0</field>
+        <field name="sale_ok" eval="False"/>
+        <field name="purchase_ok" eval="False"/>
+        <field name="available_in_pos" eval="False"/>
+        <field name="taxes_id" eval="[(5, 0, 0)]"/>
+    </record>
+</odoo>

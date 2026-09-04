@@ -157,9 +157,17 @@ class PosOrder(models.Model):
 
     @api.model
     def _load_pos_data_fields(self, config):
+        # Odoo 19 pos.order uses an empty field list (= read all fields). Do not
+        # replace that with a one-field list or POS order loading breaks.
         fields_list = super()._load_pos_data_fields(config)
+        if fields_list is None:
+            fields_list = []
+        else:
+            fields_list = list(fields_list)
+        # When a concrete field list exists, keep our flag in it. When empty,
+        # read([]) already includes computed fields such as this one.
         if fields_list and "avea_can_correct_payment" not in fields_list:
-            fields_list = list(fields_list) + ["avea_can_correct_payment"]
+            fields_list.append("avea_can_correct_payment")
         return fields_list
 
     @api.model
@@ -205,15 +213,16 @@ class PosOrder(models.Model):
         if self.state not in ("paid", "done"):
             return _("This order is not completed.")
         tenders = self._avea_non_change_payments()
-        if len(tenders) != 1:
+        if not tenders:
+            return _("This order has no payment to correct.")
+        # One payment method only (ignore cash-change lines). Multiple positive
+        # tenders = split tender, which remains intentionally unsupported.
+        tender_methods = tenders.mapped("payment_method_id")
+        if len(tender_methods) != 1:
             return _(
                 "This order used more than one payment method. Split payments cannot be corrected here."
             )
-        if self._avea_change_payments():
-            return _(
-                "This order includes change. Payment method can only be corrected on exact payments."
-            )
-        method = tenders.payment_method_id
+        method = tender_methods
         if method.is_avea_store_credit or method._avea_tender_kind() == "store_credit":
             return _("Store Credit payments cannot be corrected this way.")
         if not method._avea_is_open_session_correctable_tender():
@@ -223,8 +232,13 @@ class PosOrder(models.Model):
         return False
 
     def _avea_correctable_tender(self):
+        """Primary (non-change) payment line for an eligible single-tender order."""
         self.ensure_one()
-        return self._avea_non_change_payments()[:1]
+        tenders = self._avea_non_change_payments()
+        if not tenders:
+            return tenders
+        # Prefer the largest absolute amount when change created multiple cash lines.
+        return tenders.sorted(key=lambda payment: abs(payment.amount), reverse=True)[:1]
 
     def _avea_open_session_correction_methods(self):
         self.ensure_one()
@@ -275,6 +289,10 @@ class PosOrder(models.Model):
                 for method in self._avea_open_session_correction_methods()
                 if method != current_method
             ]
+        display_amount = abs(tender.amount) if tender else 0.0
+        # Display the order total when change lines exist (net tender).
+        if tender and self._avea_change_payments():
+            display_amount = abs(self.amount_total)
         return {
             "blocked": bool(block),
             "block_reason": block or "",
@@ -283,7 +301,7 @@ class PosOrder(models.Model):
             "amount": tender.amount if tender else 0.0,
             "amount_display": formatLang(
                 self.env,
-                abs(tender.amount) if tender else 0.0,
+                display_amount,
                 currency_obj=self.currency_id,
             ),
             "current_method_id": current_method.id or False,
@@ -302,6 +320,8 @@ class PosOrder(models.Model):
         if not reason_text:
             raise UserError(_("Enter a reason for the correction."))
         tender = self._avea_correctable_tender()
+        if not tender:
+            raise UserError(_("This order has no payment to correct."))
         new_method = self.env["pos.payment.method"].browse(payment_method_id).exists()
         if not new_method:
             raise UserError(_("Select a payment method."))
@@ -314,21 +334,31 @@ class PosOrder(models.Model):
 
         original_method = tender.payment_method_id
         original_name = original_method.name
-        amount = tender.amount
-        self.write(
-            {
-                "payment_ids": [
-                    Command.update(
-                        tender.id,
-                        {
-                            "payment_method_id": new_method.id,
-                            "name": new_method.name,
-                        },
-                    )
-                ]
-            }
-        )
-        self.invalidate_recordset(["payment_ids"])
+        change_payments = self._avea_change_payments()
+        # Same-method duplicate tenders (e.g. two Cash lines) are not split
+        # tender; consolidate onto one corrected line at the order total.
+        duplicate_tenders = self._avea_non_change_payments() - tender
+        # Use order total so cash-with-change becomes an exact Card/EFT tender.
+        corrected_amount = self.amount_total
+
+        payment_commands = [
+            Command.update(
+                tender.id,
+                {
+                    "payment_method_id": new_method.id,
+                    "name": new_method.name,
+                    "amount": corrected_amount,
+                    "is_change": False,
+                },
+            )
+        ]
+        # Drop cash-change and same-method duplicate lines so the corrected
+        # tender is a single exact payment.
+        for payment in change_payments | duplicate_tenders:
+            payment_commands.append(Command.delete(payment.id))
+
+        self.write({"payment_ids": payment_commands})
+        self.invalidate_recordset(["payment_ids", "amount_paid", "avea_can_correct_payment"])
         self._avea_till_sync_cash_movement_after_payment_correction()
         self.session_id.invalidate_recordset(
             ["cash_register_balance_end", "cash_register_difference"]
@@ -340,7 +370,9 @@ class PosOrder(models.Model):
                     "Corrected payment method from %(original)s to %(corrected)s (%(amount)s).",
                     original=original_name,
                     corrected=new_method.name,
-                    amount=formatLang(self.env, amount, currency_obj=self.currency_id),
+                    amount=formatLang(
+                        self.env, corrected_amount, currency_obj=self.currency_id
+                    ),
                 ),
                 _("Reason: %s", reason_text),
             )
@@ -352,4 +384,5 @@ class PosOrder(models.Model):
             "payment_method_id": new_method.id,
             "payment_method_name": new_method.name,
             "expected_cash": expected_cash,
+            "amount": corrected_amount,
         }

@@ -38,7 +38,7 @@ Do not rename existing technical till identifiers unless specifically required.
 | **P0 — Bugs / UX** | Completed. Session Dashboard / Cash Ledger in `0a8d782c3cdeb08fcf591fa68f3aa711290753ae`; Customer Credit Dashboard mobile and Issue Credit in `19.0.2.27.0`. |
 | **P1 — Improvements** | Completed on `develop` (`19.0.2.28.0`) — Business Overview landing page and Avea navigation. **Not in production.** |
 | **P2 — Major Features** | Partially implemented. Account Balances (`19.0.2.59.0`), Cash Up, Transfer Money, and Operational Expense are on `develop`. Remaining P2 items are specified only. |
-| **P3 — Future** | Open-session **Correct Payment Method** is implemented in `19.0.2.60.0`. The modern Avea POS payment screen is implemented in `19.0.2.61.0` and refined through `19.0.2.70.0`. Remaining P3 items stay specified only. Do not start Phase 4. |
+| **P3 — Future** | Open-session **Correct Payment Method** is implemented in `19.0.2.60.0` and eligibility-hardened in `19.0.3.8.3`. The modern Avea POS payment screen is implemented in `19.0.2.61.0` and refined through `19.0.2.70.0`. Remaining P3 items stay specified only. |
 
 ---
 
@@ -358,7 +358,7 @@ Improve the cashier-facing payment workflow so Cash, Card, EFT and other configu
 
 #### Correct Payment Method
 
-**Status: implemented for open sessions in `19.0.2.60.0`.** Manager-only. Cash ↔ Card/EFT. No Store Credit, split tenders, invoiced orders, or closed sessions. Closed-session correction remains a separate future workflow.
+**Status: implemented for open sessions in `19.0.2.60.0`; eligibility hardened in `19.0.3.8.3`.** Manager-only. Cash ↔ Card/EFT. No Store Credit, split tenders, invoiced orders, or closed sessions. Closed-session correction remains a separate future workflow.
 
 Provide an authorised Avea workflow for correcting an honest payment-method mistake on a completed POS transaction without refunding and re-selling the entire transaction.
 
@@ -379,6 +379,25 @@ The correction must:
 - Be fully tested against Cash Up, session closing, cash/card totals and accounting before deployment.
 
 The preferred outcome is that a normal cashier mistake can be corrected in a few seconds instead of requiring a refund, re-sale, camera review and merchant-terminal investigation.
+
+##### Eligibility hardening (`19.0.3.8.3`)
+
+Orders appeared to “pick and choose” which completed sales could be corrected. Root causes:
+
+1. **Frontend over-blocked `state === "done"`** as if every done order belonged to a closed session. Backend already allows `paid` and `done` while the session is still open (invoiced-during-session is `done` + `account_move` and is blocked separately).
+2. **Client re-implemented eligibility** (`avea_can_correct_payment`, tender/change heuristics) drifted from the server. Odoo 19 `pos.order` loads with an empty field list (`read([])` = all fields); treating that list as “missing our flag” made the POS flag unreliable.
+3. **Backend rejected any order with cash-change lines** (“exact payments only”). That was not an Avea business rule and excluded normal Cash sales that tendered more than the total.
+
+**Rules now (server is source of truth):**
+
+| Allowed | Rejected |
+| --- | --- |
+| Open session, completed (`paid`/`done`), single Cash/Card/EFT tender | Closed sessions |
+| Cash with change (change lines ignored for eligibility; consolidated on correct) | Store Credit |
+| Manager group + required reason + chatter audit | Split tender (more than one payment **method**) |
+| Till ledger / expected cash updated after correction | Invoiced orders (`account_move` / `invoiced`) |
+
+POS Ticket Screen only soft-filters (permission, current open session, completed, not invoiced). The Correct Payment popup always calls `avea_get_payment_correction_options` / `avea_correct_payment_method`.
 
 ---
 

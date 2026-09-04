@@ -18,14 +18,16 @@ Features:
 - POS Cash Up
 - Correct payment method on open POS sessions
 - Receive Stock and Return Stock
+- Avea Promotions (wrapper over Odoo Discount & Loyalty), including Combo Price
 """,
-    "version": "19.0.3.6.0",
+    "version": "19.0.3.8.3",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
     "category": "Point of Sale",
     "depends": [
         "point_of_sale",
+        "pos_loyalty",
         "account",
         "contacts",
         "purchase_stock",
@@ -38,7 +40,9 @@ Features:
         "security/credit/ir.model.access.csv",
         "security/operations/ir.model.access.csv",
         "security/stock/ir.model.access.csv",
+        "security/promotion/ir.model.access.csv",
         "data/stock/decimal_precision_data.xml",
+        "data/promotion/combo_discount_product_data.xml",
         "data/credit/sequence.xml",
         "data/credit/credit_reason_data.xml",
         "views/till/till_movement_views.xml",
@@ -73,6 +77,8 @@ Features:
         "views/stock/stock_receive_views.xml",
         "views/stock/stock_return_views.xml",
         "views/stock/stock_menu.xml",
+        "views/promotion/promotion_views.xml",
+        "views/promotion/promotion_menu.xml",
     ],
     "assets": {
         "web.report_assets_common": [
@@ -88,6 +94,7 @@ Features:
             "avea_till/static/src/scss/credit/credit_ledger.scss",
             "avea_till/static/src/scss/operations/account_balances.scss",
             "avea_till/static/src/scss/stock/stock_workspace.scss",
+            "avea_till/static/src/scss/promotion/promotion_workspace.scss",
             "avea_till/static/src/credit/fields/credit_ledger_amount/credit_ledger_amount.xml",
             "avea_till/static/src/credit/fields/credit_ledger_amount/credit_ledger_amount.js",
             "avea_till/static/src/till/fields/till_ledger_amount/till_ledger_amount.xml",
@@ -98,7 +105,10 @@ Features:
             "avea_till/static/src/scss/pos/navbar.scss",
             "avea_till/static/src/scss/pos/payment_methods.scss",
             "avea_till/static/src/scss/pos/payment_screen.scss",
+            "avea_till/static/src/scss/pos/promotions.scss",
             "avea_till/static/src/pos/store_credit.js",
+            "avea_till/static/src/pos/promotions.js",
+            "avea_till/static/src/pos/combo_promotions.js",
             "avea_till/static/src/pos/payment_method_visual.js",
             "avea_till/static/src/pos/pos_store.js",
             "avea_till/static/src/pos/issue_store_credit_popup.js",

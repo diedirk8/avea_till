@@ -122,3 +122,24 @@ Avea Stock (`avea.stock.*`) is a simple workspace over that existing flow:
 - Optionally pay with the Operational Expense statement-line pattern
 
 Do not create a parallel stock or accounting ledger. Do not change periodic valuation, AVCO, or Anglo-Saxon settings. Landed costs stay out of Receive Stock so they can be a later Stock feature.
+
+---
+
+# ADR-006
+
+## Correct Payment eligibility is server-authoritative
+
+Status
+
+Accepted
+
+Reason
+
+Re-implementing Correct Payment rules in the POS Ticket Screen caused legitimate open-session Cash/Card/EFT orders (including cash-with-change and some `done` orders) to be hidden while other similar orders remained available. The POS `avea_can_correct_payment` flag was also unreliable when Odoo 19 loads `pos.order` with an empty field list.
+
+Decision
+
+- Keep hard eligibility in `pos.order._avea_payment_correction_block_reason` / `avea_get_payment_correction_options` / `avea_correct_payment_method`.
+- Split tender means more than one distinct payment **method** among non-change lines. Cash change lines are not a second tender.
+- On correction, consolidate to one exact tender at `amount_total`, remove change/duplicate same-method lines, sync `avea.till.movement`, and post an audit message.
+- POS UI may soft-hide obvious cases only; it must not invent stricter rules than the server.

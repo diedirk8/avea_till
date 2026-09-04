@@ -82,6 +82,14 @@
                         >
                             <span>Use Loyalty Points</span>
                         </button>
+                        <button
+                            t-if="canEnterPromoCode"
+                            class="avea-use-loyalty avea-enter-promo"
+                            type="button"
+                            t-on-click="clickEnterPromoCode"
+                        >
+                            <span>Enter Promo Code</span>
+                        </button>
                     </div>
 
                     <div class="avea-payment-actions">
@@ -209,9 +217,16 @@
                             <span>Subtotal</span>
                             <span t-esc="saleSubtotalDisplay"/>
                         </div>
-                        <div t-if="saleDiscountTotal" class="avea-receipt-totrow avea-receipt-discount">
+                        <div t-if="saleDiscountTotal or hasAveaPromotionsApplied" class="avea-receipt-totrow avea-receipt-discount">
                             <span>Discount</span>
                             <span t-esc="saleDiscountDisplay"/>
+                        </div>
+                        <div t-if="hasAveaPromotionsApplied" class="avea-receipt-promotions">
+                            <t t-foreach="aveaAppliedPromotions" t-as="promoLine" t-key="promoLine.uuid">
+                                <div class="avea-receipt-promo-line">
+                                    <span t-esc="aveaPromotionLabel(promoLine)"/>
+                                </div>
+                            </t>
                         </div>
                         <div class="avea-receipt-totrow avea-receipt-grand">
                             <span>Total</span>

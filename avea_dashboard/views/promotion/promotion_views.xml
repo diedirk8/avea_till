@@ -1,0 +1,308 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_promotion_list" model="ir.ui.view">
+        <field name="name">avea.promotion.list</field>
+        <field name="model">avea.promotion</field>
+        <field name="arch" type="xml">
+            <list string="Promotions" class="o_avea_promotion_list">
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="date_from" optional="show"/>
+                <field name="date_to" optional="show"/>
+                <field name="deal_summary" string="Deal"/>
+                <field name="pos_order_count" string="POS orders" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_promotion_search" model="ir.ui.view">
+        <field name="name">avea.promotion.search</field>
+        <field name="model">avea.promotion</field>
+        <field name="arch" type="xml">
+            <search string="Promotions">
+                <field name="name"/>
+                <field name="promo_code"/>
+                <field name="deal_summary"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Inactive" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_promotion_form" model="ir.ui.view">
+        <field name="name">avea.promotion.form</field>
+        <field name="model">avea.promotion</field>
+        <field name="arch" type="xml">
+            <form string="Promotion" class="o_avea_workspace o_avea_workspace--promotion">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="program_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Promotions</span>
+                            <h1 class="o_avea_workspace_title">Promotion</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Set up a simple deal for your till. Review the summary before you save.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_promotion_workspace">
+                        <div class="o_avea_promotion_setup">
+                            <div class="o_avea_promotion_setup_row o_avea_promotion_setup_row--top">
+                                <div class="o_avea_promotion_panel o_avea_promotion_panel--details">
+                                    <h2 class="o_avea_workspace_section_title">
+                                        <i class="fa fa-info-circle" title="Promotion details" aria-hidden="true"/>
+                                        Promotion details
+                                    </h2>
+                                    <div class="o_avea_promotion_fields">
+                                        <div class="o_avea_workspace_info_item">
+                                            <span class="o_avea_workspace_info_label">Name</span>
+                                            <field name="name" nolabel="1" placeholder="e.g. June bird food promo"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item">
+                                            <span class="o_avea_workspace_info_label">Description</span>
+                                            <field name="description" nolabel="1" placeholder="Short note for staff"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item o_avea_promotion_check_row">
+                                            <field name="active" nolabel="1"/>
+                                            <span class="o_avea_workspace_info_label">Active</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="o_avea_promotion_panel o_avea_promotion_panel--dates">
+                                    <h2 class="o_avea_workspace_section_title">
+                                        <i class="fa fa-calendar" title="Dates" aria-hidden="true"/>
+                                        Dates
+                                    </h2>
+                                    <p class="o_avea_promotion_panel_hint">
+                                        Choose when this promotion should start and end.
+                                    </p>
+                                    <div class="o_avea_promotion_fields o_avea_promotion_fields--pair">
+                                        <div class="o_avea_workspace_info_item">
+                                            <span class="o_avea_workspace_info_label">From</span>
+                                            <field name="date_from" nolabel="1"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item" invisible="open_ended">
+                                            <span class="o_avea_workspace_info_label">To</span>
+                                            <field name="date_to" nolabel="1"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item o_avea_promotion_open_ended" invisible="not open_ended">
+                                            <span class="o_avea_workspace_info_label">To</span>
+                                            <div class="o_avea_promotion_open_ended_state">Open ended</div>
+                                        </div>
+                                    </div>
+                                    <div class="o_avea_promotion_open_ended_row">
+                                        <div class="o_avea_workspace_info_item o_avea_promotion_check_row">
+                                            <field name="open_ended" nolabel="1"/>
+                                            <span class="o_avea_workspace_info_label">Open ended</span>
+                                        </div>
+                                        <p class="o_avea_promotion_open_ended_help">
+                                            No end date — the promotion stays active until you turn it off.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="o_avea_promotion_panel o_avea_promotion_panel--products" invisible="deal_type == 'combo_price'">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-cube" title="Products" aria-hidden="true"/>
+                                    Products
+                                </h2>
+                                <div class="o_avea_promotion_fields">
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Apply to</span>
+                                        <field name="product_scope" nolabel="1" widget="radio" options="{'horizontal': true}"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="product_scope != 'category'">
+                                        <span class="o_avea_workspace_info_label">Category</span>
+                                        <field name="product_category_id" nolabel="1" options="{'no_create': True}"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="product_scope != 'products'">
+                                        <span class="o_avea_workspace_info_label">Products</span>
+                                        <field
+                                            name="product_ids"
+                                            nolabel="1"
+                                            widget="many2many_tags"
+                                            options="{'no_create': True}"
+                                            domain="[('sale_ok', '=', True)]"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="o_avea_promotion_panel o_avea_promotion_panel--deal">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-tag" title="Deal" aria-hidden="true"/>
+                                    Deal
+                                </h2>
+                                <div class="o_avea_promotion_fields">
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Type</span>
+                                        <field name="deal_type" nolabel="1" widget="radio" options="{'horizontal': true}"/>
+                                    </div>
+                                    <div class="o_avea_promotion_deal_settings" invisible="deal_type == 'combo_price'">
+                                        <div class="o_avea_workspace_info_item" invisible="deal_type != 'percent_off'">
+                                            <span class="o_avea_workspace_info_label">Discount %</span>
+                                            <field name="discount_percent" nolabel="1"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item" invisible="deal_type not in ('fixed_amount', 'spend_x_save')">
+                                            <span class="o_avea_workspace_info_label">Amount off</span>
+                                            <field name="discount_amount" nolabel="1"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item" invisible="deal_type != 'spend_x_save'">
+                                            <span class="o_avea_workspace_info_label">Spend at least</span>
+                                            <field name="spend_minimum" nolabel="1"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item" invisible="deal_type != 'buy_x_get_y'">
+                                            <span class="o_avea_workspace_info_label">Buy quantity</span>
+                                            <field name="buy_quantity" nolabel="1"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item" invisible="deal_type != 'buy_x_get_y'">
+                                            <span class="o_avea_workspace_info_label">Free quantity</span>
+                                            <field name="get_quantity" nolabel="1"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item o_avea_promotion_fields_span" invisible="deal_type != 'buy_x_get_y'">
+                                            <span class="o_avea_workspace_info_label">Free product</span>
+                                            <field
+                                                name="get_product_id"
+                                                nolabel="1"
+                                                placeholder="Same product if empty"
+                                                options="{'no_create': True}"
+                                                domain="[('sale_ok', '=', True)]"
+                                            />
+                                        </div>
+                                        <div class="o_avea_workspace_info_item" invisible="deal_type != 'extra_loyalty_points'">
+                                            <span class="o_avea_workspace_info_label">Points</span>
+                                            <field name="loyalty_points" nolabel="1"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item o_avea_promotion_fields_span" invisible="deal_type != 'extra_loyalty_points'">
+                                            <span class="o_avea_workspace_info_label">Earn points</span>
+                                            <field name="loyalty_points_mode" nolabel="1" widget="radio" options="{'horizontal': true}"/>
+                                        </div>
+                                    </div>
+                                    <div class="o_avea_promotion_combo" invisible="deal_type != 'combo_price'">
+                                        <p class="o_avea_promotion_panel_hint">
+                                            These products together = this price.
+                                        </p>
+                                        <div class="o_avea_workspace_info_item">
+                                            <span class="o_avea_workspace_info_label">Combo products</span>
+                                            <field name="combo_line_ids" nolabel="1" context="{'default_quantity': 1.0}">
+                                                <list editable="bottom" class="o_avea_promotion_combo_list">
+                                                    <field
+                                                        name="product_id"
+                                                        options="{'no_create': True}"
+                                                        domain="[('sale_ok', '=', True), ('available_in_pos', '=', True)]"
+                                                    />
+                                                    <field name="quantity" string="Qty"/>
+                                                </list>
+                                            </field>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item o_avea_promotion_combo_price">
+                                            <span class="o_avea_workspace_info_label">Combo price</span>
+                                            <field name="combo_price" nolabel="1"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                                <div class="o_avea_promotion_panel o_avea_promotion_panel--pos">
+                                    <h2 class="o_avea_workspace_section_title">
+                                        <i class="fa fa-desktop" title="POS" aria-hidden="true"/>
+                                        POS
+                                    </h2>
+                                <div class="o_avea_promotion_fields o_avea_promotion_fields--pair">
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Promo code</span>
+                                        <field name="promo_code" nolabel="1" placeholder="Optional"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Point of Sale</span>
+                                        <field
+                                            name="pos_config_ids"
+                                            nolabel="1"
+                                            widget="many2many_tags"
+                                            options="{'no_create': True}"
+                                            placeholder="All tills if empty"
+                                        />
+                                    </div>
+                                    <div class="o_avea_workspace_info_item o_avea_promotion_fields_span" groups="base.group_multi_company">
+                                        <span class="o_avea_workspace_info_label">Company</span>
+                                        <field name="company_id" nolabel="1"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <aside class="o_avea_promotion_summary">
+                            <div class="o_avea_promotion_summary_card">
+                                <div class="o_avea_promotion_summary_header">
+                                    <span class="o_avea_promotion_summary_eyebrow">Review</span>
+                                    <h2 class="o_avea_promotion_summary_title">Promotion summary</h2>
+                                    <p class="o_avea_promotion_summary_intro">Check this before you save.</p>
+                                </div>
+
+                                <div class="o_avea_promotion_summary_name_block">
+                                    <field name="summary_name" nolabel="1" readonly="1" class="o_avea_promotion_summary_name"/>
+                                    <span
+                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--active"
+                                        invisible="not active"
+                                    >Active</span>
+                                    <span
+                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--inactive"
+                                        invisible="active"
+                                    >Inactive</span>
+                                </div>
+
+                                <div class="o_avea_promotion_summary_rows">
+                                    <div class="o_avea_promotion_summary_row">
+                                        <span class="o_avea_promotion_summary_label">Dates</span>
+                                        <field name="summary_date_range" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_promotion_summary_row">
+                                        <span class="o_avea_promotion_summary_label">Products</span>
+                                        <field name="summary_products" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_promotion_summary_row">
+                                        <span class="o_avea_promotion_summary_label">Deal</span>
+                                        <field name="deal_summary" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_promotion_summary_row" invisible="not promo_code">
+                                        <span class="o_avea_promotion_summary_label">Promo code</span>
+                                        <field name="summary_promo_code" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
+
+                                <div class="o_avea_promotion_summary_blurb">
+                                    <span class="o_avea_promotion_summary_label">What this does</span>
+                                    <field name="summary_blurb" nolabel="1" readonly="1"/>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_promotion" model="ir.actions.act_window">
+        <field name="name">Promotions</field>
+        <field name="res_model">avea.promotion</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_promotion_search"/>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first promotion
+            </p>
+            <p>
+                Simple deals for your till — discounts, buy-one-get-one, spend-and-save, or extra loyalty points.
+            </p>
+        </field>
+    </record>
+
+</odoo>

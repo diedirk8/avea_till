@@ -103,12 +103,24 @@ export class CorrectPaymentPopup extends Component {
             const method = this.pos.models["pos.payment.method"].get(
                 result.payment_method_id
             );
-            const payment = this.props.order.payment_ids.find(
+            const order = this.props.order;
+            const payment = order.payment_ids.find(
                 (line) => line.id === result.payment_id
             );
             if (payment && method) {
                 payment.payment_method_id = method;
                 payment.name = result.payment_method_name || method.name;
+                if (result.amount !== undefined) {
+                    payment.amount = result.amount;
+                }
+                payment.is_change = false;
+            }
+            // Remove local change / duplicate tender lines deleted on the server.
+            const keepId = result.payment_id;
+            for (const line of [...order.payment_ids]) {
+                if (line.id !== keepId) {
+                    line.delete();
+                }
             }
             this.notification.add(
                 _t("Payment method corrected to %(method)s.", {

@@ -5,7 +5,7 @@ Phase 4 is the current development phase. Work on DEV first; production only aft
 ## Priorities
 
 1. **Receive Stock — COMPLETE**
-2. **Promotions**
+2. **Promotions** — in progress on DEV (`avea.promotion` wrapping Odoo Loyalty; includes Combo Price)
 3. **Stock Count**
 4. **Yoco Neo Touch**
 5. **Products Sold**
@@ -31,6 +31,14 @@ Simple Avea Stock workflow wrapping standard Odoo Purchase → Stock Receipt →
 - Simple Return Stock workflow using Odoo returns and vendor credit notes.
 - Landed costs are not part of the Receive Stock screen; future Stock features must not prevent a later landed-cost workflow.
 - Preserve the company's periodic valuation, AVCO and Anglo-Saxon-off configuration.
+
+## Promotions — Priority #2 (DEV)
+
+Avea Promotions (`avea.promotion`) wrap Odoo Discount & Loyalty for a shop-owner-friendly setup screen.
+
+Deal types: % off, Fixed amount off, Buy X Get Y, Spend X Save, **Combo Price**, Extra Loyalty Points.
+
+**Combo Price:** unlimited dynamic combo product lines (product + qty) sold together for one fixed price. POS matches complete sets in the cart (including multiple sets) and applies the combo price; leftovers stay at normal retail. Documented in `PHASE_4_PROMOTIONS_SCOPE.md`.
 
 ## Stock Count — Priority #3
 
