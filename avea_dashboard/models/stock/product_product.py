@@ -32,18 +32,33 @@ class ProductProduct(models.Model):
     def get_formview_action(self, access_uid=None):
         """Open the Avea Stock Item form when creating/editing from Receive Stock."""
         if self.env.context.get("avea_receive_id") or self.env.context.get(
-            "avea_stock_workspace"
+            "avea_stock_receive_create"
         ):
             receive_id = self.env.context.get("avea_receive_id")
             templates = self.mapped("product_tmpl_id")
             if len(templates) == 1 and templates.id:
                 action = templates.action_avea_open_stock_item()
-            else:
-                action = self.env["product.template"].action_avea_new_stock_item()
+                if receive_id:
+                    action = dict(action)
+                    context = dict(action.get("context") or {})
+                    context["avea_return_receive_id"] = receive_id
+                    action["context"] = context
+                return action
+            action = (
+                self.env["product.template"]
+                .with_context(avea_quick_product_add=True)
+                .action_avea_new_stock_item()
+            )
             if receive_id:
                 action = dict(action)
                 context = dict(action.get("context") or {})
-                context["avea_return_receive_id"] = receive_id
+                context.update(
+                    {
+                        "avea_return_receive_id": receive_id,
+                        "avea_quick_product_add": True,
+                    }
+                )
                 action["context"] = context
+                action["target"] = "new"
             return action
         return super().get_formview_action(access_uid=access_uid)

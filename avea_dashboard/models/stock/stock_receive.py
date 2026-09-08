@@ -166,14 +166,18 @@ class AveaStockReceiveLine(models.Model):
         self.ensure_one()
         if not self.product_id:
             raise UserError(_("Choose a product first."))
-        if not self.id:
+        line = self._avea_ensure_persisted()
+        if not line:
             raise UserError(
-                _("Save this receive line first, then review pricing for the new cost.")
+                _(
+                    "Could not open pricing for this line yet. "
+                    "Check the product and cost, then try again."
+                )
             )
         wizard = (
             self.env["avea.stock.receive.pricing.wizard"]
-            .with_context(default_line_id=self.id)
-            .create({"line_id": self.id})
+            .with_context(default_line_id=line.id)
+            .create({"line_id": line.id})
         )
         view = self.env.ref("avea_till.view_avea_stock_receive_pricing_wizard_form")
         return {
@@ -185,8 +189,38 @@ class AveaStockReceiveLine(models.Model):
             "views": [(view.id, "form")],
             "view_id": view.id,
             "target": "new",
-            "context": {"default_line_id": self.id},
+            "context": {"default_line_id": line.id},
         }
+
+    def _avea_ensure_persisted(self):
+        """Return a saved receive line, matching unsaved inline rows when needed."""
+        self.ensure_one()
+        if self.id:
+            return self
+        receive = self.receive_id
+        if not receive or not receive.id or not self.product_id:
+            return self.env["avea.stock.receive.line"]
+        candidates = receive.line_ids.filtered(
+            lambda line: line.product_id == self.product_id
+        )
+        if candidates:
+            for line in reversed(candidates):
+                if float_compare(
+                    line.price_unit or 0.0,
+                    self.price_unit or 0.0,
+                    precision_digits=2,
+                ) == 0:
+                    return line
+            return candidates[-1]
+        return self.create(
+            {
+                "receive_id": receive.id,
+                "product_id": self.product_id.id,
+                "quantity": self.quantity or 1.0,
+                "price_unit": self.price_unit or 0.0,
+                "discount": self.discount or 0.0,
+            }
+        )
 
     def _avea_seller(self):
         self.ensure_one()
@@ -636,6 +670,7 @@ class AveaStockReceive(models.Model):
             {
                 "avea_return_receive_id": self.id,
                 "avea_stock_workspace": True,
+                "avea_quick_product_add": True,
             }
         )
         if self.partner_id:

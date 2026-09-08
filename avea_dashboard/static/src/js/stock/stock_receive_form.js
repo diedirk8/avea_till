@@ -7,8 +7,7 @@ import { useService } from "@web/core/utils/hooks";
 import { useEffect } from "@odoo/owl";
 
 /**
- * When a receive line's EX-tax cost differs from the product cost, open the
- * compact Avea pricing popup (once per pending line).
+ * Receive Stock form: pricing popup after cost changes, and save-before-pricing.
  */
 export class AveaStockReceiveFormController extends FormController {
     setup() {
@@ -23,6 +22,44 @@ export class AveaStockReceiveFormController extends FormController {
         });
     }
 
+    async beforeExecuteActionButton(clickParams) {
+        const saved = await super.beforeExecuteActionButton(clickParams);
+        if (saved !== false && clickParams.name === "action_open_pricing_wizard") {
+            await this.model.root.load();
+        }
+        return saved;
+    }
+
+    _aveaFindReceiveLine(productId, priceUnit) {
+        const lines = this.model.root.data?.line_ids?.records || [];
+        if (!productId) {
+            return null;
+        }
+        const matches = lines.filter(
+            (record) => record.data?.product_id?.[0] === productId
+        );
+        if (!matches.length) {
+            return null;
+        }
+        if (typeof priceUnit === "number") {
+            const exact = matches.find(
+                (record) => Math.abs((record.data.price_unit || 0) - priceUnit) < 0.005
+            );
+            if (exact?.resId) {
+                return exact;
+            }
+        }
+        return matches.find((record) => record.resId) || matches[matches.length - 1];
+    }
+
+    async _aveaEnsureReceiveSaved() {
+        const root = this.model.root;
+        if (!root.isDirty) {
+            return true;
+        }
+        return Boolean(await root.save());
+    }
+
     async _aveaMaybeOpenPricingWizard() {
         if (this._aveaPricingBusy) {
             return;
@@ -34,21 +71,35 @@ export class AveaStockReceiveFormController extends FormController {
         const lines = root.data?.line_ids?.records || [];
         for (const record of lines) {
             const data = record.data || {};
-            const lineId = record.resId;
-            if (!lineId || !data.avea_open_pricing_wizard) {
+            const productId = data.product_id?.[0];
+            const priceUnit = data.price_unit;
+            if (!productId || !data.avea_open_pricing_wizard) {
                 continue;
             }
-            if (this._aveaOpenedLineIds.has(lineId)) {
+            const lineKey = record.resId || `new-${productId}-${priceUnit}`;
+            if (this._aveaOpenedLineIds.has(lineKey)) {
                 continue;
             }
             this._aveaPricingBusy = true;
-            this._aveaOpenedLineIds.add(lineId);
+            this._aveaOpenedLineIds.add(lineKey);
             try {
                 await record.update({ avea_open_pricing_wizard: false });
+                if (!(await this._aveaEnsureReceiveSaved())) {
+                    this._aveaOpenedLineIds.delete(lineKey);
+                    this._aveaPricingBusy = false;
+                    continue;
+                }
+                await root.load();
+                const persisted = this._aveaFindReceiveLine(productId, priceUnit);
+                if (!persisted?.resId) {
+                    this._aveaOpenedLineIds.delete(lineKey);
+                    this._aveaPricingBusy = false;
+                    continue;
+                }
                 const action = await this.orm.call(
                     "avea.stock.receive.line",
                     "action_open_pricing_wizard",
-                    [[lineId]]
+                    [[persisted.resId]]
                 );
                 if (action) {
                     await this.action.doAction(action, {
@@ -64,7 +115,7 @@ export class AveaStockReceiveFormController extends FormController {
                     return;
                 }
             } catch (_err) {
-                this._aveaOpenedLineIds.delete(lineId);
+                this._aveaOpenedLineIds.delete(lineKey);
                 this._aveaPricingBusy = false;
             }
         }

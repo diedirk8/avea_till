@@ -532,7 +532,15 @@ class ProductTemplate(models.Model):
 
     @api.model
     def action_avea_new_stock_item(self):
-        view = self.env.ref("avea_till.view_avea_stock_product_form")
+        quick = bool(
+            self.env.context.get("avea_quick_product_add")
+            or self.env.context.get("avea_return_receive_id")
+        )
+        view = self.env.ref(
+            "avea_till.view_avea_stock_product_quick_form"
+            if quick
+            else "avea_till.view_avea_stock_product_form"
+        )
         context = {
             "avea_stock_workspace": True,
             "default_sale_ok": True,
@@ -544,8 +552,15 @@ class ProductTemplate(models.Model):
             if self.env.company.account_sale_tax_id
             else [],
         }
+        if quick:
+            context["avea_quick_product_add"] = True
         # Preserve return-to-receive (or other) context from the caller.
-        for key in ("avea_return_receive_id", "default_name", "default_categ_id"):
+        for key in (
+            "avea_return_receive_id",
+            "avea_quick_product_add",
+            "default_name",
+            "default_categ_id",
+        ):
             if self.env.context.get(key):
                 context[key] = self.env.context[key]
         return {
@@ -555,7 +570,7 @@ class ProductTemplate(models.Model):
             "view_mode": "form",
             "views": [(view.id, "form")],
             "view_id": view.id,
-            "target": "current",
+            "target": "new" if quick else "current",
             "context": context,
         }
 

@@ -26,19 +26,19 @@
                         <div class="o_avea_stock_pricing_compare_heading">Current</div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Cost EX Tax</span>
-                            <field name="current_cost" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="current_cost" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}" class="o_avea_stock_pricing_value"/>
                         </div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Retail INC Tax</span>
-                            <field name="current_retail" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="current_retail" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}" class="o_avea_stock_pricing_value"/>
                         </div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Markup %</span>
-                            <field name="current_markup" nolabel="1"/>
+                            <field name="current_markup" nolabel="1" class="o_avea_stock_pricing_value"/>
                         </div>
-                        <div class="o_avea_stock_pricing_row">
+                        <div class="o_avea_stock_pricing_row o_avea_stock_pricing_row--last">
                             <span class="o_avea_stock_pricing_label">Margin %</span>
-                            <field name="current_margin" nolabel="1"/>
+                            <field name="current_margin" nolabel="1" class="o_avea_stock_pricing_value"/>
                         </div>
                     </div>
 
@@ -46,19 +46,19 @@
                         <div class="o_avea_stock_pricing_compare_heading">New</div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Cost EX Tax</span>
-                            <field name="new_cost" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="new_cost" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}" class="o_avea_stock_pricing_value"/>
                         </div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Retail INC Tax</span>
-                            <field name="new_retail" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            <field name="new_retail" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}" class="o_avea_stock_pricing_value"/>
                         </div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Markup %</span>
-                            <field name="new_markup" nolabel="1"/>
+                            <field name="new_markup" nolabel="1" class="o_avea_stock_pricing_value"/>
                         </div>
-                        <div class="o_avea_stock_pricing_row">
+                        <div class="o_avea_stock_pricing_row o_avea_stock_pricing_row--last">
                             <span class="o_avea_stock_pricing_label">Margin %</span>
-                            <field name="new_margin" nolabel="1"/>
+                            <field name="new_margin" nolabel="1" class="o_avea_stock_pricing_value"/>
                         </div>
                     </div>
                 </div>

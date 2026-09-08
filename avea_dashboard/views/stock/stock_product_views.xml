@@ -519,6 +519,83 @@
         </field>
     </record>
 
+    <!-- Compact quick-add popup from Receive Stock -->
+    <record id="view_avea_stock_product_quick_form" model="ir.ui.view">
+        <field name="name">avea.stock.product.quick.form</field>
+        <field name="model">product.template</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <form string="New Stock Item" class="o_avea_wizard o_avea_stock_product_quick">
+                <sheet class="o_avea_stock_product_quick_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <field name="type" invisible="1"/>
+                    <field name="sale_ok" invisible="1"/>
+                    <field name="purchase_ok" invisible="1"/>
+                    <field name="is_storable" invisible="1"/>
+                    <field name="available_in_pos" invisible="1"/>
+                    <field name="taxes_id" invisible="1"/>
+
+                    <p class="o_avea_stock_product_quick_intro">
+                        Quick add for Receive Stock. You can fill in the rest later in Stock.
+                    </p>
+
+                    <div class="o_avea_stock_product_quick_fields">
+                        <div class="o_avea_workspace_info_item o_avea_stock_product_quick_span">
+                            <span class="o_avea_workspace_info_label">Product name</span>
+                            <field name="name" nolabel="1" placeholder="e.g. Mealworm Tub (30)"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">SKU</span>
+                            <field name="default_code" nolabel="1" placeholder="Optional"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Barcode</span>
+                            <field name="barcode" nolabel="1" placeholder="Optional"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Category</span>
+                            <field name="categ_id" nolabel="1" options="{'no_create': True}"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Cost EX Tax</span>
+                            <field name="standard_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Retail INC Tax</span>
+                            <field name="list_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item o_avea_stock_product_quick_span">
+                            <span class="o_avea_workspace_info_label">Supplier</span>
+                            <field
+                                name="avea_supplier_id"
+                                nolabel="1"
+                                context="{'res_partner_search_mode': 'supplier', 'default_supplier_rank': 1, 'default_company_type': 'company'}"
+                                options="{'no_open': True}"
+                                placeholder="Optional"
+                            />
+                        </div>
+                    </div>
+                </sheet>
+                <footer>
+                    <button
+                        string="Cancel"
+                        special="cancel"
+                        class="btn btn-secondary"
+                        data-hotkey="x"
+                    />
+                    <button
+                        string="Save &amp; add to Receive"
+                        name="action_avea_save_and_return_receive"
+                        type="object"
+                        class="btn btn-primary"
+                        data-hotkey="s"
+                    />
+                </footer>
+            </form>
+        </field>
+    </record>
+
     <record id="action_avea_stock_workspace_view_list" model="ir.actions.act_window.view">
         <field name="sequence" eval="1"/>
         <field name="view_mode">list</field>
