@@ -3,12 +3,23 @@ from odoo import _, api, fields, models, Command
 from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_compare, float_is_zero, float_round
 
+from .stock_mixin import AVEA_PRODUCT_COST_PRECISION, AVEA_SUPPLIER_COST_PRECISION
+
 # When no reorder rule exists, treat stock at or below this qty as Low Stock.
 AVEA_DEFAULT_LOW_STOCK_QTY = 5.0
 
 
 class ProductTemplate(models.Model):
     _inherit = "product.template"
+
+    avea_cost_ex_tax = fields.Float(
+        string="Cost EX Tax",
+        digits=AVEA_SUPPLIER_COST_PRECISION,
+        help=(
+            "Avea purchasing cost shown in Stock and Receive Stock. "
+            "This is not updated by inventory average costing."
+        ),
+    )
 
     # ---- Pricing (Cost EX VAT / Retail INC VAT) ----
     avea_retail_ex_vat = fields.Float(
@@ -102,6 +113,41 @@ class ProductTemplate(models.Model):
         self.ensure_one()
         return self.taxes_id._filter_taxes_by_company(self.env.company)
 
+    def _avea_get_cost_ex_tax(self):
+        self.ensure_one()
+        if self.avea_cost_ex_tax:
+            return self.avea_cost_ex_tax
+        return self.standard_price or 0.0
+
+    def _avea_apply_catalog_cost(self, cost_ex):
+        """Set Avea purchasing cost; sync Odoo standard cost only for standard costing."""
+        self.ensure_one()
+        mixin = self.env["avea.stock.mixin"]
+        cost = mixin._avea_round_supplier_cost(cost_ex)
+        self.avea_cost_ex_tax = cost
+        if self.cost_method == "standard":
+            self.standard_price = mixin._avea_round_product_cost(cost)
+
+    def _avea_pricing_from_cost_retail(self, cost, retail_inc):
+        self.ensure_one()
+        mixin = self.env["avea.stock.mixin"]
+        cost = mixin._avea_round_supplier_cost(cost)
+        retail_inc = mixin._avea_round_product_cost(retail_inc)
+        retail_ex = mixin._avea_round_product_cost(
+            self._avea_retail_ex_vat_from_inc(retail_inc)
+        )
+        currency = self.currency_id or self.env.company.currency_id
+        prec = currency.decimal_places
+        if float_is_zero(cost, precision_digits=prec):
+            markup = 0.0
+        else:
+            markup = mixin._avea_round_percent((retail_ex - cost) / cost * 100.0)
+        if float_is_zero(retail_ex, precision_digits=prec):
+            margin = 0.0
+        else:
+            margin = mixin._avea_round_percent((retail_ex - cost) / retail_ex * 100.0)
+        return retail_ex, markup, margin
+
     def _avea_retail_ex_vat_from_inc(self, retail_inc):
         """Convert Retail INC VAT → EX VAT using the product's sales taxes."""
         self.ensure_one()
@@ -126,22 +172,19 @@ class ProductTemplate(models.Model):
     def _avea_pricing_tuple(self):
         """Return (cost_ex, retail_inc, retail_ex, markup%, margin%)."""
         self.ensure_one()
-        currency = self.currency_id or self.env.company.currency_id
-        cost = self.standard_price or 0.0
+        cost = self._avea_get_cost_ex_tax()
         retail_inc = self.list_price or 0.0
-        retail_ex = self._avea_retail_ex_vat_from_inc(retail_inc)
-        prec = currency.decimal_places
-        if float_is_zero(cost, precision_digits=prec):
-            markup = 0.0
-        else:
-            markup = (retail_ex - cost) / cost * 100.0
-        if float_is_zero(retail_ex, precision_digits=prec):
-            margin = 0.0
-        else:
-            margin = (retail_ex - cost) / retail_ex * 100.0
+        retail_ex, markup, margin = self._avea_pricing_from_cost_retail(cost, retail_inc)
         return cost, retail_inc, retail_ex, markup, margin
 
-    @api.depends("list_price", "standard_price", "taxes_id", "taxes_id.amount", "taxes_id.price_include")
+    @api.depends(
+        "list_price",
+        "avea_cost_ex_tax",
+        "standard_price",
+        "taxes_id",
+        "taxes_id.amount",
+        "taxes_id.price_include",
+    )
     def _compute_avea_pricing(self):
         for product in self:
             _cost, _inc, retail_ex, markup, margin = product._avea_pricing_tuple()
@@ -151,19 +194,21 @@ class ProductTemplate(models.Model):
 
     def _avea_apply_retail_ex(self, retail_ex):
         """Set list_price (INC VAT) from an EX-VAT retail target."""
+        mixin = self.env["avea.stock.mixin"]
         for product in self:
-            product.list_price = product._avea_retail_inc_vat_from_ex(retail_ex)
+            retail_inc = product._avea_retail_inc_vat_from_ex(retail_ex)
+            product.list_price = mixin._avea_round_product_cost(retail_inc)
 
     def _inverse_avea_markup_percent(self):
         for product in self:
-            cost = product.standard_price or 0.0
+            cost = product._avea_get_cost_ex_tax()
             retail_ex = cost * (1.0 + (product.avea_markup_percent or 0.0) / 100.0)
             product._avea_apply_retail_ex(retail_ex)
         self._compute_avea_pricing()
 
     def _inverse_avea_margin_percent(self):
         for product in self:
-            cost = product.standard_price or 0.0
+            cost = product._avea_get_cost_ex_tax()
             margin = product.avea_margin_percent or 0.0
             if margin >= 100.0:
                 raise UserError(_("Margin must be less than 100%."))
@@ -173,7 +218,7 @@ class ProductTemplate(models.Model):
             product._avea_apply_retail_ex(retail_ex)
         self._compute_avea_pricing()
 
-    @api.onchange("standard_price", "list_price", "taxes_id")
+    @api.onchange("avea_cost_ex_tax", "standard_price", "list_price", "taxes_id")
     def _onchange_avea_pricing_fields(self):
         # Recompute display fields immediately while editing.
         self._compute_avea_pricing()
@@ -183,7 +228,7 @@ class ProductTemplate(models.Model):
         if self.env.context.get("avea_pricing_guard"):
             return
         self = self.with_context(avea_pricing_guard=True)
-        cost = self.standard_price or 0.0
+        cost = self._avea_get_cost_ex_tax()
         retail_ex = cost * (1.0 + (self.avea_markup_percent or 0.0) / 100.0)
         self.list_price = self._avea_retail_inc_vat_from_ex(retail_ex)
         self._compute_avea_pricing()
@@ -201,7 +246,7 @@ class ProductTemplate(models.Model):
                 }
             }
         self = self.with_context(avea_pricing_guard=True)
-        cost = self.standard_price or 0.0
+        cost = self._avea_get_cost_ex_tax()
         retail_ex = cost / (1.0 - margin / 100.0)
         self.list_price = self._avea_retail_inc_vat_from_ex(retail_ex)
         self._compute_avea_pricing()
@@ -371,7 +416,7 @@ class ProductTemplate(models.Model):
             {
                 "product_tmpl_id": self.id,
                 "partner_id": self.avea_supplier_id.id,
-                "price": self.avea_supplier_price or self.standard_price or 0.0,
+                "price": self.avea_supplier_price or self._avea_get_cost_ex_tax() or 0.0,
                 "product_uom_id": (self.avea_supplier_uom_id or self.uom_id).id,
                 "product_code": self.avea_supplier_code or False,
             }
@@ -426,6 +471,7 @@ class ProductTemplate(models.Model):
         "name",
         "default_code",
         "categ_id",
+        "avea_cost_ex_tax",
         "standard_price",
         "list_price",
         "avea_markup_percent",
@@ -442,7 +488,7 @@ class ProductTemplate(models.Model):
             product.avea_summary_name = product.name or _("New stock item")
             product.avea_summary_sku = product.default_code or _("Not set")
             product.avea_summary_category = product.categ_id.display_name or _("Not set")
-            product.avea_summary_cost = currency.format(product.standard_price or 0.0)
+            product.avea_summary_cost = currency.format(product._avea_get_cost_ex_tax())
             product.avea_summary_retail = currency.format(product.list_price or 0.0)
             product.avea_summary_markup = _("%.1f%%") % (product.avea_markup_percent or 0.0)
             product.avea_summary_margin = _("%.1f%%") % (product.avea_margin_percent or 0.0)
@@ -456,6 +502,33 @@ class ProductTemplate(models.Model):
             product.avea_summary_pos_category = (
                 ", ".join(product.pos_categ_ids.mapped("name")) or _("Not set")
             )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        mixin = self.env["avea.stock.mixin"]
+        for vals in vals_list:
+            if vals.get("avea_cost_ex_tax") is None and vals.get("standard_price") is not None:
+                vals["avea_cost_ex_tax"] = mixin._avea_round_supplier_cost(
+                    vals["standard_price"]
+                )
+            elif vals.get("standard_price") is None and vals.get("avea_cost_ex_tax") is not None:
+                vals["standard_price"] = mixin._avea_round_product_cost(
+                    vals["avea_cost_ex_tax"]
+                )
+        return super().create(vals_list)
+
+    def write(self, vals):
+        mixin = self.env["avea.stock.mixin"]
+        if (
+            "avea_cost_ex_tax" in vals
+            and "standard_price" not in vals
+            and len(self) == 1
+            and self.cost_method == "standard"
+        ):
+            vals = dict(vals)
+            vals["standard_price"] = mixin._avea_round_product_cost(vals["avea_cost_ex_tax"])
+        res = super().write(vals)
+        return res
 
     @api.model
     def default_get(self, fields_list):
@@ -595,7 +668,7 @@ class ProductTemplate(models.Model):
         if existing:
             # Keep the line; refresh cost from the product if empty.
             if not existing.price_unit:
-                existing.price_unit = self.standard_price or 0.0
+                existing.price_unit = self._avea_get_cost_ex_tax() or 0.0
         else:
             receive.write(
                 {
@@ -604,7 +677,7 @@ class ProductTemplate(models.Model):
                             {
                                 "product_id": variant.id,
                                 "quantity": 1.0,
-                                "price_unit": self.standard_price or 0.0,
+                                "price_unit": self._avea_get_cost_ex_tax() or 0.0,
                             }
                         )
                     ]

@@ -30,6 +30,7 @@ class TestAveaStockReceiveCharges(TransactionCase):
                 "is_storable": True,
                 "list_price": 115.0,
                 "standard_price": 100.0,
+                "avea_cost_ex_tax": 100.0,
                 "purchase_ok": True,
                 "sale_ok": True,
                 "company_id": cls.company.id,
@@ -109,7 +110,7 @@ class TestAveaStockReceiveCharges(TransactionCase):
 
     def test_vendor_bill_posts_expense_charge_lines(self):
         receive = self._create_receive(charges=[("Shipping", 50.0)])
-        standard_before = self.product.standard_price
+        avea_cost_before = self.product.product_tmpl_id.avea_cost_ex_tax
         qty_before = self.product.qty_available
 
         receive.action_receive_stock()
@@ -164,7 +165,9 @@ class TestAveaStockReceiveCharges(TransactionCase):
 
         # Product cost / on-hand must not absorb the charge amount.
         self.product.invalidate_recordset()
-        self.assertAlmostEqual(self.product.standard_price, standard_before, places=2)
+        self.assertAlmostEqual(
+            self.product.product_tmpl_id.avea_cost_ex_tax, avea_cost_before, places=2
+        )
         self.assertAlmostEqual(
             self.product.qty_available,
             qty_before + 1.0,

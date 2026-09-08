@@ -92,17 +92,23 @@ class AveaStockReceiveLine(models.Model):
         store=False,
     )
 
-    @api.depends("product_id", "product_id.standard_price", "price_unit")
+    def _avea_product_cost(self):
+        self.ensure_one()
+        if not self.product_id:
+            return 0.0
+        return self.product_id.product_tmpl_id._avea_get_cost_ex_tax()
+
+    @api.depends("product_id", "product_id.product_tmpl_id.avea_cost_ex_tax", "price_unit")
     def _compute_avea_cost_differs(self):
+        mixin = self.env["avea.stock.mixin"]
         for line in self:
             if not line.product_id:
                 line.avea_cost_differs = False
                 continue
             line.avea_cost_differs = (
-                float_compare(
-                    line.price_unit or 0.0,
-                    line.product_id.standard_price or 0.0,
-                    precision_digits=2,
+                mixin._avea_compare_supplier_cost(
+                    line.price_unit,
+                    line._avea_product_cost(),
                 )
                 != 0
             )
@@ -116,7 +122,7 @@ class AveaStockReceiveLine(models.Model):
                 line.avea_open_pricing_wizard = False
                 continue
             seller = line._avea_seller()
-            line.price_unit = seller.price if seller else line.product_id.standard_price
+            line.price_unit = seller.price if seller else line._avea_product_cost()
             line.discount = seller.discount if seller else 0.0
             line.avea_pricing_choice = False
             line.avea_update_product_cost = False
@@ -130,9 +136,10 @@ class AveaStockReceiveLine(models.Model):
                 line.avea_pricing_choice = False
                 line.avea_open_pricing_wizard = False
                 continue
-            current = line.product_id.standard_price or 0.0
+            current = line._avea_product_cost()
             new_cost = line.price_unit or 0.0
-            if float_compare(new_cost, current, precision_digits=2) == 0:
+            mixin = self.env["avea.stock.mixin"]
+            if mixin._avea_compare_supplier_cost(new_cost, current) == 0:
                 line.avea_pricing_choice = False
                 line.avea_open_pricing_wizard = False
                 line.avea_update_product_cost = False
@@ -147,13 +154,13 @@ class AveaStockReceiveLine(models.Model):
         if self.env.context.get("avea_skip_pricing_wizard"):
             return res
         if "price_unit" in vals:
+            mixin = self.env["avea.stock.mixin"]
             for line in self:
                 if (
                     line.product_id
-                    and float_compare(
-                        line.price_unit or 0.0,
-                        line.product_id.standard_price or 0.0,
-                        precision_digits=2,
+                    and mixin._avea_compare_supplier_cost(
+                        line.price_unit,
+                        line._avea_product_cost(),
                     )
                     != 0
                     and not line.avea_pricing_choice
@@ -195,6 +202,7 @@ class AveaStockReceiveLine(models.Model):
     def _avea_ensure_persisted(self):
         """Return a saved receive line, matching unsaved inline rows when needed."""
         self.ensure_one()
+        mixin = self.env["avea.stock.mixin"]
         if self.id:
             return self
         receive = self.receive_id
@@ -205,10 +213,9 @@ class AveaStockReceiveLine(models.Model):
         )
         if candidates:
             for line in reversed(candidates):
-                if float_compare(
+                if mixin._avea_compare_supplier_cost(
                     line.price_unit or 0.0,
                     self.price_unit or 0.0,
-                    precision_digits=2,
                 ) == 0:
                     return line
             return candidates[-1]
@@ -733,12 +740,12 @@ class AveaStockReceive(models.Model):
             return self._avea_confirmation_action()
         partner = self._avea_ensure_supplier()
         self._avea_check_receive(partner)
+        mixin = self.env["avea.stock.mixin"]
         pending = self.line_ids.filtered(
             lambda line: line.product_id
-            and float_compare(
-                line.price_unit or 0.0,
-                line.product_id.standard_price or 0.0,
-                precision_digits=2,
+            and mixin._avea_compare_supplier_cost(
+                line.price_unit,
+                line._avea_product_cost(),
             )
             != 0
             and not line.avea_pricing_choice

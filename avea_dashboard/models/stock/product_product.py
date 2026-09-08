@@ -21,6 +21,10 @@ class ProductProduct(models.Model):
         related="product_tmpl_id.is_storable",
         readonly=False,
     )
+    avea_cost_ex_tax = fields.Float(
+        related="product_tmpl_id.avea_cost_ex_tax",
+        readonly=False,
+    )
 
     @api.model
     def get_formview_id(self, access_uid=None):

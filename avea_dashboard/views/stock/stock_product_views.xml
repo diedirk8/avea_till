@@ -88,7 +88,7 @@
                     decoration-danger="avea_stock_status == 'out_of_stock'"
                     decoration-muted="avea_stock_status == 'not_tracked'"
                 />
-                <field name="standard_price" string="Cost EX Tax" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="avea_cost_ex_tax" string="Cost EX Tax" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                 <field name="avea_markup_percent" string="Markup %"/>
                 <field name="avea_margin_percent" string="Margin %"/>
                 <field name="list_price" string="Retail Price INC Tax" widget="monetary" options="{'currency_field': 'currency_id'}"/>
@@ -216,7 +216,7 @@
                                     </div>
                                     <div class="o_avea_workspace_info_item">
                                         <span class="o_avea_workspace_info_label">Cost EX Tax</span>
-                                        <field name="standard_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        <field name="avea_cost_ex_tax" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     </div>
                                     <div class="o_avea_workspace_info_item">
                                         <span class="o_avea_workspace_info_label">Markup %</span>
@@ -589,7 +589,7 @@
                             <div class="o_avea_stock_product_fields o_avea_stock_product_fields--pricing">
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Cost EX Tax</span>
-                                    <field name="standard_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="avea_cost_ex_tax" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Markup %</span>
@@ -710,7 +710,7 @@
                             <div class="o_avea_stock_product_fields o_avea_stock_product_fields--pricing">
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Cost EX Tax</span>
-                                    <field name="standard_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="avea_cost_ex_tax" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Markup %</span>

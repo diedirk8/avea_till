@@ -1,16 +1,65 @@
 from datetime import datetime, time
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools.float_utils import float_compare, float_round
 
 
 AVEA_RECEIVE_ORIGIN = "Avea Receive Stock"
 AVEA_SUPPLIER_COST_PRECISION = "Avea Supplier Cost"
+AVEA_PRODUCT_COST_PRECISION = "Product Price"
 
 
 class AveaStockMixin(models.AbstractModel):
     _name = "avea.stock.mixin"
     _description = "Avea Stock Helpers"
+
+    @api.model
+    def _avea_product_cost_digits(self):
+        return self.env["decimal.precision"].precision_get(AVEA_PRODUCT_COST_PRECISION)
+
+    @api.model
+    def _avea_supplier_cost_digits(self):
+        return self.env["decimal.precision"].precision_get(AVEA_SUPPLIER_COST_PRECISION)
+
+    @api.model
+    def _avea_round_product_cost(self, amount):
+        return float_round(amount or 0.0, precision_digits=self._avea_product_cost_digits())
+
+    @api.model
+    def _avea_round_supplier_cost(self, amount):
+        return float_round(amount or 0.0, precision_digits=self._avea_supplier_cost_digits())
+
+    @api.model
+    def _avea_round_percent(self, amount):
+        return float_round(amount or 0.0, precision_digits=2)
+
+    @api.model
+    def _avea_compare_product_cost(self, left, right):
+        return float_compare(
+            left or 0.0,
+            right or 0.0,
+            precision_digits=self._avea_product_cost_digits(),
+        )
+
+    @api.model
+    def _avea_compare_supplier_cost(self, left, right):
+        return float_compare(
+            left or 0.0,
+            right or 0.0,
+            precision_digits=self._avea_supplier_cost_digits(),
+        )
+
+    @api.model
+    def _avea_supplier_cost_matches_product_cost(self, supplier_cost, product_cost):
+        """True when a 4dp supplier cost equals a 2dp Avea product cost."""
+        return (
+            self._avea_compare_product_cost(supplier_cost, product_cost) == 0
+            or self._avea_compare_product_cost(
+                self._avea_round_supplier_cost(supplier_cost), product_cost
+            )
+            == 0
+        )
 
     def _avea_datetime_at_noon(self, date_value):
         if not date_value:
