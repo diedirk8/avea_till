@@ -1,5 +1,11 @@
 # AVEA DASHBOARD — PHASE 5
 
+**Current DEV work:** Stock Workspace is implemented on develop (`19.0.3.9.0`). See `STOCK_WORKSPACE.md` for catalogue, New/Edit Stock Item, pricing/tax rules and Stock Count placeholder.
+
+The remainder of this document is the broader Phase 5 plan (grooming, product tools evolution, simple business accounting).
+
+---
+
 Phase 5 is planned for after Phase 4 priorities are complete.
 
 ## Grooming Booking & Management

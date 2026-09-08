@@ -1,12 +1,14 @@
 # AVEA DASHBOARD — PHASE 4
 
-Phase 4 is the current development phase. Work on DEV first; production only after approval.
+Phase 4 priorities are largely complete or deferred. **Current development phase is Phase 5 (Stock Workspace)** — see `PHASE_5.md`.
+
+Work on DEV first; production only after approval.
 
 ## Priorities
 
 1. **Receive Stock — COMPLETE**
-2. **Promotions** — in progress on DEV (`avea.promotion` wrapping Odoo Loyalty; includes Combo Price)
-3. **Stock Count**
+2. **Promotions — COMPLETE on DEV** (`avea.promotion` wrapping Odoo Loyalty; includes Combo Price)
+3. **Stock Count** — placeholder entry in Stock Workspace; full workflow still to build
 4. **Yoco Neo Touch**
 5. **Products Sold**
 6. **Customer Accounts**

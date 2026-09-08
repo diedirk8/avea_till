@@ -1,0 +1,537 @@
+# -*- coding: utf-8 -*-
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
+from odoo.tools.float_utils import float_compare, float_is_zero, float_round
+
+# When no reorder rule exists, treat stock at or below this qty as Low Stock.
+AVEA_DEFAULT_LOW_STOCK_QTY = 5.0
+
+
+class ProductTemplate(models.Model):
+    _inherit = "product.template"
+
+    # ---- Pricing (Cost EX VAT / Retail INC VAT) ----
+    avea_retail_ex_vat = fields.Float(
+        string="Retail EX VAT",
+        compute="_compute_avea_pricing",
+        digits="Product Price",
+    )
+    avea_markup_percent = fields.Float(
+        string="Markup %",
+        compute="_compute_avea_pricing",
+        inverse="_inverse_avea_markup_percent",
+        digits=(16, 2),
+    )
+    avea_margin_percent = fields.Float(
+        string="Margin %",
+        compute="_compute_avea_pricing",
+        inverse="_inverse_avea_margin_percent",
+        digits=(16, 2),
+    )
+
+    # ---- Stock status ----
+    avea_stock_status = fields.Selection(
+        selection=[
+            ("in_stock", "In Stock"),
+            ("low_stock", "Low Stock"),
+            ("out_of_stock", "Out of Stock"),
+            ("not_tracked", "Not Tracked"),
+        ],
+        string="Stock Status",
+        compute="_compute_avea_stock_status",
+        search="_search_avea_stock_status",
+    )
+    avea_stock_qty = fields.Float(
+        string="Current Stock",
+        compute="_compute_avea_stock_qty",
+        inverse="_inverse_avea_stock_qty",
+        digits="Product Unit",
+    )
+    avea_low_stock_qty = fields.Float(
+        string="Low stock at",
+        compute="_compute_avea_low_stock_qty",
+        inverse="_inverse_avea_low_stock_qty",
+        digits="Product Unit",
+        help="Warn when on-hand quantity reaches this level or below.",
+    )
+
+    # ---- Supplier (primary vendor) ----
+    avea_supplier_id = fields.Many2one(
+        "res.partner",
+        string="Supplier",
+        compute="_compute_avea_supplier",
+        inverse="_inverse_avea_supplier_id",
+        search="_search_avea_supplier_id",
+    )
+    avea_supplier_code = fields.Char(
+        string="Supplier product reference",
+        compute="_compute_avea_supplier",
+        inverse="_inverse_avea_supplier_code",
+    )
+    avea_supplier_price = fields.Float(
+        string="Supplier cost EX VAT",
+        compute="_compute_avea_supplier",
+        inverse="_inverse_avea_supplier_price",
+        digits="Product Price",
+    )
+    avea_supplier_uom_id = fields.Many2one(
+        "uom.uom",
+        string="Purchase Unit of Measure",
+        compute="_compute_avea_supplier",
+        inverse="_inverse_avea_supplier_uom_id",
+    )
+
+    # ---- Review summary (form right panel) ----
+    avea_summary_name = fields.Char(compute="_compute_avea_summary")
+    avea_summary_sku = fields.Char(compute="_compute_avea_summary")
+    avea_summary_category = fields.Char(compute="_compute_avea_summary")
+    avea_summary_cost = fields.Char(compute="_compute_avea_summary")
+    avea_summary_retail = fields.Char(compute="_compute_avea_summary")
+    avea_summary_markup = fields.Char(compute="_compute_avea_summary")
+    avea_summary_margin = fields.Char(compute="_compute_avea_summary")
+    avea_summary_track_stock = fields.Char(compute="_compute_avea_summary")
+    avea_summary_stock_qty = fields.Char(compute="_compute_avea_summary")
+    avea_summary_pos = fields.Char(compute="_compute_avea_summary")
+    avea_summary_pos_category = fields.Char(compute="_compute_avea_summary")
+
+    # -------------------------------------------------------------------------
+    # Tax / pricing helpers
+    # -------------------------------------------------------------------------
+
+    def _avea_sale_taxes(self):
+        self.ensure_one()
+        return self.taxes_id._filter_taxes_by_company(self.env.company)
+
+    def _avea_retail_ex_vat_from_inc(self, retail_inc):
+        """Convert Retail INC VAT → EX VAT using the product's sales taxes."""
+        self.ensure_one()
+        taxes = self._avea_sale_taxes()
+        currency = self.currency_id or self.env.company.currency_id
+        if not taxes:
+            return retail_inc or 0.0
+        # price_include taxes treat the given amount as tax-included by default
+        return taxes.compute_all(retail_inc or 0.0, currency)["total_excluded"]
+
+    def _avea_retail_inc_vat_from_ex(self, retail_ex):
+        """Convert Retail EX VAT → INC VAT using the product's sales taxes."""
+        self.ensure_one()
+        taxes = self._avea_sale_taxes()
+        currency = self.currency_id or self.env.company.currency_id
+        if not taxes:
+            return retail_ex or 0.0
+        return taxes.with_context(force_price_include=False).compute_all(
+            retail_ex or 0.0, currency
+        )["total_included"]
+
+    def _avea_pricing_tuple(self):
+        """Return (cost_ex, retail_inc, retail_ex, markup%, margin%)."""
+        self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
+        cost = self.standard_price or 0.0
+        retail_inc = self.list_price or 0.0
+        retail_ex = self._avea_retail_ex_vat_from_inc(retail_inc)
+        prec = currency.decimal_places
+        if float_is_zero(cost, precision_digits=prec):
+            markup = 0.0
+        else:
+            markup = (retail_ex - cost) / cost * 100.0
+        if float_is_zero(retail_ex, precision_digits=prec):
+            margin = 0.0
+        else:
+            margin = (retail_ex - cost) / retail_ex * 100.0
+        return cost, retail_inc, retail_ex, markup, margin
+
+    @api.depends("list_price", "standard_price", "taxes_id", "taxes_id.amount", "taxes_id.price_include")
+    def _compute_avea_pricing(self):
+        for product in self:
+            _cost, _inc, retail_ex, markup, margin = product._avea_pricing_tuple()
+            product.avea_retail_ex_vat = retail_ex
+            product.avea_markup_percent = markup
+            product.avea_margin_percent = margin
+
+    def _avea_apply_retail_ex(self, retail_ex):
+        """Set list_price (INC VAT) from an EX-VAT retail target."""
+        for product in self:
+            product.list_price = product._avea_retail_inc_vat_from_ex(retail_ex)
+
+    def _inverse_avea_markup_percent(self):
+        for product in self:
+            cost = product.standard_price or 0.0
+            retail_ex = cost * (1.0 + (product.avea_markup_percent or 0.0) / 100.0)
+            product._avea_apply_retail_ex(retail_ex)
+        self._compute_avea_pricing()
+
+    def _inverse_avea_margin_percent(self):
+        for product in self:
+            cost = product.standard_price or 0.0
+            margin = product.avea_margin_percent or 0.0
+            if margin >= 100.0:
+                raise UserError(_("Margin must be less than 100%."))
+            if float_is_zero(100.0 - margin, precision_digits=4):
+                raise UserError(_("Margin must be less than 100%."))
+            retail_ex = cost / (1.0 - margin / 100.0) if margin < 100.0 else 0.0
+            product._avea_apply_retail_ex(retail_ex)
+        self._compute_avea_pricing()
+
+    @api.onchange("standard_price", "list_price", "taxes_id")
+    def _onchange_avea_pricing_fields(self):
+        # Recompute display fields immediately while editing.
+        self._compute_avea_pricing()
+
+    @api.onchange("avea_markup_percent")
+    def _onchange_avea_markup_percent(self):
+        if self.env.context.get("avea_pricing_guard"):
+            return
+        self = self.with_context(avea_pricing_guard=True)
+        cost = self.standard_price or 0.0
+        retail_ex = cost * (1.0 + (self.avea_markup_percent or 0.0) / 100.0)
+        self.list_price = self._avea_retail_inc_vat_from_ex(retail_ex)
+        self._compute_avea_pricing()
+
+    @api.onchange("avea_margin_percent")
+    def _onchange_avea_margin_percent(self):
+        if self.env.context.get("avea_pricing_guard"):
+            return
+        margin = self.avea_margin_percent or 0.0
+        if margin >= 100.0:
+            return {
+                "warning": {
+                    "title": _("Invalid margin"),
+                    "message": _("Margin must be less than 100%."),
+                }
+            }
+        self = self.with_context(avea_pricing_guard=True)
+        cost = self.standard_price or 0.0
+        retail_ex = cost / (1.0 - margin / 100.0)
+        self.list_price = self._avea_retail_inc_vat_from_ex(retail_ex)
+        self._compute_avea_pricing()
+
+    # -------------------------------------------------------------------------
+    # Stock
+    # -------------------------------------------------------------------------
+
+    def _avea_low_stock_threshold(self):
+        self.ensure_one()
+        if self.nbr_reordering_rules and self.reordering_min_qty > 0:
+            return self.reordering_min_qty
+        return AVEA_DEFAULT_LOW_STOCK_QTY
+
+    @api.depends(
+        "is_storable",
+        "qty_available",
+        "reordering_min_qty",
+        "nbr_reordering_rules",
+    )
+    def _compute_avea_stock_status(self):
+        for product in self:
+            if not product.is_storable:
+                product.avea_stock_status = "not_tracked"
+                continue
+            qty = product.qty_available
+            if float_compare(qty, 0.0, precision_digits=2) <= 0:
+                product.avea_stock_status = "out_of_stock"
+            elif float_compare(qty, product._avea_low_stock_threshold(), precision_digits=2) <= 0:
+                product.avea_stock_status = "low_stock"
+            else:
+                product.avea_stock_status = "in_stock"
+
+    def _search_avea_stock_status(self, operator, value):
+        if operator not in ("=", "!="):
+            raise UserError(_("Unsupported stock status search."))
+        statuses = value if isinstance(value, (list, tuple)) else [value]
+
+        def domain_for(status):
+            if status == "not_tracked":
+                return [("is_storable", "=", False)]
+            if status == "out_of_stock":
+                return [("is_storable", "=", True), ("qty_available", "<=", 0)]
+            if status == "in_stock":
+                # Approximate: tracked with qty above default threshold.
+                # Exact rule-based low stock is refined client-side via compute.
+                return [
+                    ("is_storable", "=", True),
+                    ("qty_available", ">", AVEA_DEFAULT_LOW_STOCK_QTY),
+                ]
+            if status == "low_stock":
+                return [
+                    ("is_storable", "=", True),
+                    ("qty_available", ">", 0),
+                    ("qty_available", "<=", AVEA_DEFAULT_LOW_STOCK_QTY),
+                ]
+            return [("id", "=", False)]
+
+        domains = [domain_for(status) for status in statuses]
+        if not domains:
+            return [("id", "=", False)]
+        if len(domains) == 1:
+            domain = domains[0]
+        else:
+            domain = ["|"] * (len(domains) - 1)
+            for part in domains:
+                domain.extend(part)
+        if operator == "!=":
+            return ["!"] + domain
+        return domain
+
+    @api.depends("qty_available", "is_storable")
+    def _compute_avea_stock_qty(self):
+        for product in self:
+            product.avea_stock_qty = product.qty_available if product.is_storable else 0.0
+
+    def _inverse_avea_stock_qty(self):
+        for product in self:
+            if not product.is_storable:
+                continue
+            variant = product.product_variant_id
+            if not variant:
+                continue
+            variant.qty_available = product.avea_stock_qty
+
+    @api.depends("reordering_min_qty", "nbr_reordering_rules")
+    def _compute_avea_low_stock_qty(self):
+        for product in self:
+            if product.nbr_reordering_rules and product.reordering_min_qty > 0:
+                product.avea_low_stock_qty = product.reordering_min_qty
+            else:
+                product.avea_low_stock_qty = AVEA_DEFAULT_LOW_STOCK_QTY
+
+    def _inverse_avea_low_stock_qty(self):
+        Orderpoint = self.env["stock.warehouse.orderpoint"]
+        warehouse = self.env["stock.warehouse"].search(
+            [("company_id", "=", self.env.company.id)], limit=1
+        )
+        for product in self:
+            if not product.is_storable or not product.product_variant_id:
+                continue
+            min_qty = max(product.avea_low_stock_qty or 0.0, 0.0)
+            orderpoint = Orderpoint.search(
+                [
+                    ("product_id", "=", product.product_variant_id.id),
+                    ("company_id", "=", self.env.company.id),
+                ],
+                limit=1,
+            )
+            if orderpoint:
+                orderpoint.product_min_qty = min_qty
+                if orderpoint.product_max_qty < min_qty:
+                    orderpoint.product_max_qty = min_qty
+            elif warehouse:
+                Orderpoint.create(
+                    {
+                        "product_id": product.product_variant_id.id,
+                        "warehouse_id": warehouse.id,
+                        "location_id": warehouse.lot_stock_id.id,
+                        "product_min_qty": min_qty,
+                        "product_max_qty": min_qty,
+                        "company_id": self.env.company.id,
+                    }
+                )
+
+    @api.onchange("is_storable")
+    def _onchange_avea_is_storable(self):
+        if self.is_storable and self.type != "consu":
+            self.type = "consu"
+        if not self.is_storable:
+            self.avea_stock_qty = 0.0
+
+    # -------------------------------------------------------------------------
+    # Supplier
+    # -------------------------------------------------------------------------
+
+    def _avea_primary_seller(self):
+        self.ensure_one()
+        sellers = self.seller_ids.filtered(
+            lambda s: not s.company_id or s.company_id == self.env.company
+        )
+        return sellers[:1]
+
+    @api.depends(
+        "seller_ids",
+        "seller_ids.partner_id",
+        "seller_ids.product_code",
+        "seller_ids.price",
+        "seller_ids.product_uom_id",
+    )
+    def _compute_avea_supplier(self):
+        for product in self:
+            seller = product._avea_primary_seller()
+            product.avea_supplier_id = seller.partner_id
+            product.avea_supplier_code = seller.product_code
+            product.avea_supplier_price = seller.price
+            product.avea_supplier_uom_id = seller.product_uom_id or product.uom_id
+
+    def _avea_ensure_primary_seller(self):
+        self.ensure_one()
+        seller = self._avea_primary_seller()
+        if seller:
+            return seller
+        if not self.avea_supplier_id or not self.id:
+            return self.env["product.supplierinfo"]
+        return self.env["product.supplierinfo"].create(
+            {
+                "product_tmpl_id": self.id,
+                "partner_id": self.avea_supplier_id.id,
+                "price": self.avea_supplier_price or self.standard_price or 0.0,
+                "product_uom_id": (self.avea_supplier_uom_id or self.uom_id).id,
+                "product_code": self.avea_supplier_code or False,
+            }
+        )
+
+    def _inverse_avea_supplier_id(self):
+        for product in self:
+            if not product.id:
+                continue
+            seller = product._avea_primary_seller()
+            if not product.avea_supplier_id:
+                if seller:
+                    seller.unlink()
+                continue
+            if seller:
+                seller.partner_id = product.avea_supplier_id
+            else:
+                product._avea_ensure_primary_seller()
+
+    def _inverse_avea_supplier_code(self):
+        for product in self:
+            if not product.avea_supplier_id:
+                continue
+            seller = product._avea_ensure_primary_seller()
+            if seller:
+                seller.product_code = product.avea_supplier_code
+
+    def _inverse_avea_supplier_price(self):
+        for product in self:
+            if not product.avea_supplier_id:
+                continue
+            seller = product._avea_ensure_primary_seller()
+            if seller:
+                seller.price = product.avea_supplier_price
+
+    def _inverse_avea_supplier_uom_id(self):
+        for product in self:
+            if not product.avea_supplier_id:
+                continue
+            seller = product._avea_ensure_primary_seller()
+            if seller and product.avea_supplier_uom_id:
+                seller.product_uom_id = product.avea_supplier_uom_id
+
+    def _search_avea_supplier_id(self, operator, value):
+        return [("seller_ids.partner_id", operator, value)]
+
+    # -------------------------------------------------------------------------
+    # Summary panel
+    # -------------------------------------------------------------------------
+
+    @api.depends(
+        "name",
+        "default_code",
+        "categ_id",
+        "standard_price",
+        "list_price",
+        "avea_markup_percent",
+        "avea_margin_percent",
+        "is_storable",
+        "avea_stock_qty",
+        "available_in_pos",
+        "pos_categ_ids",
+        "currency_id",
+    )
+    def _compute_avea_summary(self):
+        for product in self:
+            currency = product.currency_id or product.env.company.currency_id
+            product.avea_summary_name = product.name or _("New stock item")
+            product.avea_summary_sku = product.default_code or _("Not set")
+            product.avea_summary_category = product.categ_id.display_name or _("Not set")
+            product.avea_summary_cost = currency.format(product.standard_price or 0.0)
+            product.avea_summary_retail = currency.format(product.list_price or 0.0)
+            product.avea_summary_markup = _("%.1f%%") % (product.avea_markup_percent or 0.0)
+            product.avea_summary_margin = _("%.1f%%") % (product.avea_margin_percent or 0.0)
+            product.avea_summary_track_stock = _("Yes") if product.is_storable else _("No")
+            if product.is_storable:
+                qty = float_round(product.avea_stock_qty or 0.0, precision_digits=2)
+                product.avea_summary_stock_qty = ("%s" % qty).rstrip("0").rstrip(".")
+            else:
+                product.avea_summary_stock_qty = _("Not tracked")
+            product.avea_summary_pos = _("Yes") if product.available_in_pos else _("No")
+            product.avea_summary_pos_category = (
+                ", ".join(product.pos_categ_ids.mapped("name")) or _("Not set")
+            )
+
+    # -------------------------------------------------------------------------
+    # Actions
+    # -------------------------------------------------------------------------
+
+    def action_avea_open_stock_item(self):
+        self.ensure_one()
+        view = self.env.ref("avea_till.view_avea_stock_product_form")
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Stock Item"),
+            "res_model": "product.template",
+            "res_id": self.id,
+            "view_mode": "form",
+            "views": [(view.id, "form")],
+            "view_id": view.id,
+            "target": "current",
+            "context": dict(self.env.context, avea_stock_workspace=True),
+        }
+
+    @api.model
+    def action_avea_open_receive_stock(self):
+        return self.env["avea.stock.receive"].action_open_receive()
+
+    @api.model
+    def action_avea_open_stock_count(self):
+        view = self.env.ref("avea_till.view_avea_stock_count_placeholder_form")
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Stock Count"),
+            "res_model": "avea.stock.count.placeholder",
+            "view_mode": "form",
+            "views": [(view.id, "form")],
+            "view_id": view.id,
+            "target": "current",
+        }
+
+    @api.model
+    def action_avea_new_stock_item(self):
+        view = self.env.ref("avea_till.view_avea_stock_product_form")
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("New Stock Item"),
+            "res_model": "product.template",
+            "view_mode": "form",
+            "views": [(view.id, "form")],
+            "view_id": view.id,
+            "target": "current",
+            "context": {
+                "avea_stock_workspace": True,
+                "default_sale_ok": True,
+                "default_purchase_ok": True,
+                "default_available_in_pos": True,
+                "default_type": "consu",
+                "default_is_storable": True,
+                "default_taxes_id": [
+                    (6, 0, self.env.company.account_sale_tax_id.ids)
+                ]
+                if self.env.company.account_sale_tax_id
+                else [],
+            },
+        }
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if self.env.context.get("avea_stock_workspace"):
+                vals.setdefault("sale_ok", True)
+                vals.setdefault("purchase_ok", True)
+                if vals.get("available_in_pos") and not vals.get("sale_ok", True):
+                    vals["sale_ok"] = True
+                if vals.get("is_storable"):
+                    vals["type"] = "consu"
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if self.env.context.get("avea_stock_workspace") and vals.get("is_storable"):
+            vals = dict(vals, type="consu")
+        return super().write(vals)

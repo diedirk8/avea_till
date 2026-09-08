@@ -1,0 +1,482 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- ===================== Catalogue ===================== -->
+
+    <record id="view_avea_stock_product_search" model="ir.ui.view">
+        <field name="name">avea.stock.product.search</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <search string="Stock">
+                <field name="name" string="Product" filter_domain="['|', '|', ('name', 'ilike', self), ('default_code', 'ilike', self), ('barcode', 'ilike', self)]"/>
+                <field name="default_code" string="SKU"/>
+                <field name="barcode" string="Barcode"/>
+                <field name="categ_id" string="Category"/>
+                <field name="product_tag_ids" string="Tags"/>
+                <field name="avea_supplier_id" string="Supplier"/>
+                <separator/>
+                <filter string="In Stock" name="avea_in_stock" domain="[('avea_stock_status', '=', 'in_stock')]"/>
+                <filter string="Low Stock" name="avea_low_stock" domain="[('avea_stock_status', '=', 'low_stock')]"/>
+                <filter string="Out of Stock" name="avea_out_of_stock" domain="[('avea_stock_status', '=', 'out_of_stock')]"/>
+                <filter string="Not Tracked" name="avea_not_tracked" domain="[('avea_stock_status', '=', 'not_tracked')]"/>
+                <separator/>
+                <filter string="Sell on POS" name="avea_sell_on_pos" domain="[('available_in_pos', '=', True)]"/>
+                <filter string="Not on POS" name="avea_not_on_pos" domain="[('available_in_pos', '=', False)]"/>
+                <filter string="Track Stock" name="avea_track_stock" domain="[('is_storable', '=', True)]"/>
+                <filter string="Do not track" name="avea_no_track" domain="[('is_storable', '=', False)]"/>
+                <separator/>
+                <filter string="Active" name="avea_active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="avea_archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Category" name="group_categ" context="{'group_by': 'categ_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_stock_product_list" model="ir.ui.view">
+        <field name="name">avea.stock.product.list</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list
+                string="Stock"
+                class="o_avea_stock_catalogue_list"
+                editable="bottom"
+                multi_edit="1"
+                js_class="avea_stock_catalogue_list"
+                create="1"
+                delete="0"
+                duplicate="0"
+            >
+                <header>
+                    <button
+                        name="action_avea_open_receive_stock"
+                        type="object"
+                        string="Receive Stock"
+                        class="btn-secondary"
+                        display="always"
+                    />
+                    <button
+                        name="action_avea_open_stock_count"
+                        type="object"
+                        string="Stock Count"
+                        class="btn-secondary"
+                        display="always"
+                    />
+                </header>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="id" column_invisible="True"/>
+                <button
+                    name="action_avea_open_stock_item"
+                    type="object"
+                    string="Open"
+                    icon="fa-external-link"
+                    title="Open stock item"
+                    class="btn-link"
+                />
+                <field name="name" string="Product" readonly="1"/>
+                <field name="default_code" string="SKU" optional="show"/>
+                <field name="barcode" string="Barcode" optional="show"/>
+                <field name="categ_id" string="Category" optional="show" options="{'no_create': True}"/>
+                <field name="avea_supplier_id" string="Supplier" optional="show" options="{'no_create': True, 'no_open': True}"/>
+                <field name="avea_stock_qty" string="Current Stock" sum="Total"/>
+                <field name="avea_stock_status" string="Stock Status" widget="badge"
+                    decoration-success="avea_stock_status == 'in_stock'"
+                    decoration-warning="avea_stock_status == 'low_stock'"
+                    decoration-danger="avea_stock_status == 'out_of_stock'"
+                    decoration-muted="avea_stock_status == 'not_tracked'"
+                />
+                <field name="standard_price" string="Cost EX VAT" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="avea_markup_percent" string="Markup %"/>
+                <field name="avea_margin_percent" string="Margin %"/>
+                <field name="list_price" string="Retail Price INC VAT" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="available_in_pos" string="Sell on POS" widget="boolean_toggle"/>
+                <field name="is_storable" string="Track Stock" widget="boolean_toggle"/>
+                <field name="active" string="Active" widget="boolean_toggle" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ===================== Product form ===================== -->
+
+    <record id="view_avea_stock_product_form" model="ir.ui.view">
+        <field name="name">avea.stock.product.form</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="Stock Item" class="o_avea_workspace o_avea_workspace--stock-product">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+                    <field name="type" invisible="1"/>
+                    <field name="sale_ok" invisible="1"/>
+                    <field name="purchase_ok" invisible="1"/>
+                    <field name="nbr_reordering_rules" invisible="1"/>
+                    <field name="product_variant_id" invisible="1"/>
+                    <field name="avea_retail_ex_vat" invisible="1"/>
+                    <field name="avea_stock_status" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock</span>
+                            <h1 class="o_avea_workspace_title">
+                                <field name="id" invisible="1"/>
+                                <span invisible="id">New Stock Item</span>
+                                <span invisible="not id">Stock Item</span>
+                            </h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Set up the product once — pricing, stock and POS — then use it everywhere in Avea.
+                            </p>
+                        </div>
+                        <div class="o_avea_stock_product_hero_actions">
+                            <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
+                            <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_product_workspace">
+                        <div class="o_avea_stock_product_setup">
+
+                            <div class="o_avea_stock_product_panel o_avea_stock_product_panel--identity">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-cube" title="Product" aria-hidden="true"/>
+                                    Product
+                                </h2>
+                                <div class="o_avea_stock_product_identity">
+                                    <div class="o_avea_stock_product_image">
+                                        <field name="image_1920" widget="image" class="oe_avatar" options="{'preview_image': 'image_128'}"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_fields o_avea_stock_product_fields--identity">
+                                        <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
+                                            <span class="o_avea_workspace_info_label">Product name</span>
+                                            <field name="name" nolabel="1" placeholder="e.g. Mealworm Tub (30)"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item">
+                                            <span class="o_avea_workspace_info_label">SKU</span>
+                                            <field name="default_code" nolabel="1" placeholder="Internal reference"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item">
+                                            <span class="o_avea_workspace_info_label">Barcode</span>
+                                            <field name="barcode" nolabel="1" placeholder="Scan or type"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item">
+                                            <span class="o_avea_workspace_info_label">Category</span>
+                                            <field name="categ_id" nolabel="1" options="{'no_create': True}"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item">
+                                            <span class="o_avea_workspace_info_label">Tags</span>
+                                            <field name="product_tag_ids" nolabel="1" widget="many2many_tags" placeholder="Brand or labels"/>
+                                        </div>
+                                        <div class="o_avea_workspace_info_item o_avea_stock_check_row">
+                                            <field name="active" nolabel="1"/>
+                                            <span class="o_avea_workspace_info_label">Active</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="o_avea_stock_product_panel">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-tag" title="Selling" aria-hidden="true"/>
+                                    Selling
+                                </h2>
+                                <div class="o_avea_stock_product_fields o_avea_stock_product_fields--pricing">
+                                    <div class="o_avea_workspace_info_item o_avea_stock_check_row o_avea_stock_product_fields_span">
+                                        <field name="available_in_pos" nolabel="1"/>
+                                        <span class="o_avea_workspace_info_label">Sell on POS</span>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Cost EX VAT</span>
+                                        <field name="standard_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Markup %</span>
+                                        <field name="avea_markup_percent" nolabel="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Margin %</span>
+                                        <field name="avea_margin_percent" nolabel="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Retail Price INC VAT</span>
+                                        <field name="list_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
+                                        <span class="o_avea_workspace_info_label">Sales tax</span>
+                                        <field
+                                            name="taxes_id"
+                                            nolabel="1"
+                                            widget="many2many_tags"
+                                            domain="[('type_tax_use', '=', 'sale')]"
+                                            options="{'no_create': True}"
+                                            context="{'default_type_tax_use': 'sale'}"
+                                        />
+                                    </div>
+                                </div>
+                                <p class="o_avea_stock_product_hint">
+                                    Cost is always EX VAT. Retail is INC VAT. Markup and margin are calculated on the EX-VAT retail amount using this product's sales tax.
+                                </p>
+                            </div>
+
+                            <div class="o_avea_stock_product_panel">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-cubes" title="Stock" aria-hidden="true"/>
+                                    Stock
+                                </h2>
+                                <div class="o_avea_stock_product_fields">
+                                    <div class="o_avea_workspace_info_item o_avea_stock_check_row o_avea_stock_product_fields_span">
+                                        <field name="is_storable" nolabel="1"/>
+                                        <span class="o_avea_workspace_info_label">Track Stock</span>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not is_storable">
+                                        <span class="o_avea_workspace_info_label">Current Stock Level</span>
+                                        <field name="avea_stock_qty" nolabel="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not is_storable">
+                                        <span class="o_avea_workspace_info_label">Stock status</span>
+                                        <field name="avea_stock_status" nolabel="1" widget="badge"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not is_storable">
+                                        <span class="o_avea_workspace_info_label">Low stock at</span>
+                                        <field name="avea_low_stock_qty" nolabel="1"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="o_avea_stock_product_panel">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-truck" title="Purchasing" aria-hidden="true"/>
+                                    Purchasing
+                                </h2>
+                                <div class="o_avea_stock_product_fields">
+                                    <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
+                                        <span class="o_avea_workspace_info_label">Supplier</span>
+                                        <field
+                                            name="avea_supplier_id"
+                                            nolabel="1"
+                                            context="{'res_partner_search_mode': 'supplier', 'default_supplier_rank': 1, 'default_company_type': 'company'}"
+                                            options="{'no_open': True}"
+                                            placeholder="Select or create a supplier"
+                                        />
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not avea_supplier_id">
+                                        <span class="o_avea_workspace_info_label">Supplier product reference</span>
+                                        <field name="avea_supplier_code" nolabel="1" placeholder="Optional"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not avea_supplier_id">
+                                        <span class="o_avea_workspace_info_label">Supplier cost EX VAT</span>
+                                        <field name="avea_supplier_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not avea_supplier_id">
+                                        <span class="o_avea_workspace_info_label">Purchase Unit of Measure</span>
+                                        <field name="avea_supplier_uom_id" nolabel="1" options="{'no_create': True}"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="o_avea_stock_product_panel">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-balance-scale" title="Units" aria-hidden="true"/>
+                                    Units &amp; details
+                                </h2>
+                                <div class="o_avea_stock_product_fields">
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Sales Unit of Measure</span>
+                                        <field name="uom_id" nolabel="1" options="{'no_create': True}"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Weight</span>
+                                        <field name="weight" nolabel="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Volume</span>
+                                        <field name="volume" nolabel="1"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="o_avea_stock_product_panel">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-desktop" title="POS" aria-hidden="true"/>
+                                    POS
+                                </h2>
+                                <div class="o_avea_stock_product_fields">
+                                    <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
+                                        <span class="o_avea_workspace_info_label">POS category</span>
+                                        <field
+                                            name="pos_categ_ids"
+                                            nolabel="1"
+                                            widget="many2many_tags"
+                                            options="{'no_create': True}"
+                                            placeholder="Where it appears on the till"
+                                        />
+                                    </div>
+                                </div>
+                                <p class="o_avea_stock_product_hint">
+                                    Sell on POS, barcode, retail price, tax and image are enough for the till. Assign a POS category so staff can find it quickly.
+                                </p>
+                            </div>
+
+                        </div>
+
+                        <aside class="o_avea_stock_product_summary">
+                            <div class="o_avea_stock_product_summary_card">
+                                <div class="o_avea_stock_product_summary_header">
+                                    <span class="o_avea_stock_product_summary_eyebrow">Review</span>
+                                    <h2 class="o_avea_stock_product_summary_title">Product summary</h2>
+                                    <p class="o_avea_stock_product_summary_intro">Check this before you save.</p>
+                                </div>
+
+                                <div class="o_avea_stock_product_summary_block">
+                                    <span class="o_avea_stock_product_summary_block_title">Product</span>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Name</span>
+                                        <field name="avea_summary_name" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">SKU</span>
+                                        <field name="avea_summary_sku" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Category</span>
+                                        <field name="avea_summary_category" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
+
+                                <div class="o_avea_stock_product_summary_block">
+                                    <span class="o_avea_stock_product_summary_block_title">Pricing</span>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Cost EX VAT</span>
+                                        <field name="avea_summary_cost" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Retail INC VAT</span>
+                                        <field name="avea_summary_retail" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Markup</span>
+                                        <field name="avea_summary_markup" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Margin</span>
+                                        <field name="avea_summary_margin" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
+
+                                <div class="o_avea_stock_product_summary_block">
+                                    <span class="o_avea_stock_product_summary_block_title">Stock</span>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Track Stock</span>
+                                        <field name="avea_summary_track_stock" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Current Stock</span>
+                                        <field name="avea_summary_stock_qty" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
+
+                                <div class="o_avea_stock_product_summary_block">
+                                    <span class="o_avea_stock_product_summary_block_title">POS</span>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Sell on POS</span>
+                                        <field name="avea_summary_pos" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">POS category</span>
+                                        <field name="avea_summary_pos_category" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
+
+                                <div class="o_avea_stock_product_footer o_avea_stock_product_footer--bar">
+                                    <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
+                                    <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ===================== Stock Count placeholder ===================== -->
+
+    <record id="view_avea_stock_count_placeholder_form" model="ir.ui.view">
+        <field name="name">avea.stock.count.placeholder.form</field>
+        <field name="model">avea.stock.count.placeholder</field>
+        <field name="arch" type="xml">
+            <form string="Stock Count" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock">
+                <sheet class="o_avea_workspace_sheet">
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock</span>
+                            <h1 class="o_avea_workspace_title">Stock Count</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                A simple Avea stock-count workflow is next. Inventory stays in Odoo — this screen will just make counting easier.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="o_avea_stock_panel">
+                        <field name="note" nolabel="1" widget="html"/>
+                    </div>
+                    <div class="o_avea_stock_footer o_avea_stock_footer--bar">
+                        <button string="Receive Stock" name="action_open_receive_stock" type="object" class="btn btn-primary"/>
+                        <button string="Back to Stock" special="cancel" class="btn btn-secondary"/>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_stock_count" model="ir.actions.act_window">
+        <field name="name">Stock Count</field>
+        <field name="res_model">avea.stock.count.placeholder</field>
+        <field name="view_mode">form</field>
+        <field name="target">current</field>
+        <field name="view_id" ref="view_avea_stock_count_placeholder_form"/>
+    </record>
+
+    <!-- ===================== Main Stock Workspace action ===================== -->
+
+    <record id="action_avea_stock_workspace" model="ir.actions.act_window">
+        <field name="name">Stock</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_stock_product_search"/>
+        <field name="context">{
+            'avea_stock_workspace': True,
+            'search_default_avea_active': 1,
+            'default_sale_ok': True,
+            'default_purchase_ok': True,
+            'default_available_in_pos': True,
+            'default_type': 'consu',
+            'default_is_storable': True,
+        }</field>
+        <field name="domain">[('sale_ok', '=', True)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first stock item
+            </p>
+            <p>
+                Create products with cost, retail price, stock tracking and POS availability — without using the standard Odoo product form.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_avea_stock_workspace_view_list" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_avea_stock_product_list"/>
+        <field name="act_window_id" ref="action_avea_stock_workspace"/>
+    </record>
+
+    <record id="action_avea_stock_workspace_view_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_avea_stock_product_form"/>
+        <field name="act_window_id" ref="action_avea_stock_workspace"/>
+    </record>
+
+</odoo>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.StockCatalogueList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_stock_catalogue_banner">
+                <div class="o_avea_stock_catalogue_banner_intro">
+                    <span class="o_avea_workspace_eyebrow">Avea</span>
+                    <h1 class="o_avea_workspace_title">Stock</h1>
+                    <p class="o_avea_workspace_section_subtitle">
+                        See what you sell, what it costs, what you make, and what is on the shelf.
+                        Search, filter and update pricing without leaving this page.
+                    </p>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//button[hasclass('o_list_button_add')]" position="replace">
+            <button
+                t-if="!editedRecord and activeActions.create and props.showButtons"
+                type="button"
+                class="btn btn-primary o_list_button_add"
+                data-hotkey="c"
+                t-on-click="onClickCreate"
+                data-bounce-button=""
+            >
+                + New Stock Item
+            </button>
+        </xpath>
+    </t>
+
+</templates>

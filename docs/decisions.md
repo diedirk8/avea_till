@@ -165,3 +165,26 @@ In POS `combo_promotions.js`:
 - Rank eligible programs by highest customer saving per complete set (`catalogIncl − combo_price`), then by lower program id.
 - Allocate as many complete sets as the pool allows for each program in that order, then subtract component quantities from the pool.
 - Leftover units remain at normal retail. VAT/accounting for combo discount lines is unchanged (tax-included discount matching native loyalty).
+
+---
+
+# ADR-008
+
+## Stock Workspace pricing uses Cost EX VAT and Retail INC VAT
+
+Status
+
+Accepted
+
+Reason
+
+Shop owners think in cost-before-VAT and shelf price-including-VAT. Calculating markup or margin against the VAT-inclusive retail price understates profitability and confuses pricing decisions.
+
+Decision
+
+- Cost = `product.template.standard_price` (EX VAT)
+- Retail = `product.template.list_price` (INC VAT)
+- Retail EX VAT is derived with the product's sales taxes (`taxes_id`) via `account.tax.compute_all` — never a hard-coded VAT rate
+- Markup % = (Retail EX − Cost) / Cost; Margin % = (Retail EX − Cost) / Retail EX
+- Stock Workspace edits `product.template` / related sellerinfo / orderpoints / on-hand qty directly; no parallel product or stock tables
+- Stock Count remains a later dedicated workspace; Phase 5 ships a placeholder entry point only

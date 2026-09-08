@@ -5,13 +5,21 @@
         id="menu_avea_stock"
         name="Stock"
         parent="menu_avea_root"
-        action="action_avea_stock_receive"
+        action="action_avea_stock_workspace"
         sequence="14"
     />
 
     <record id="menu_avea_stock" model="ir.ui.menu">
-        <field name="action" ref="action_avea_stock_receive"/>
+        <field name="action" ref="action_avea_stock_workspace"/>
     </record>
+
+    <menuitem
+        id="menu_avea_stock_products"
+        name="Products"
+        parent="menu_avea_stock"
+        action="action_avea_stock_workspace"
+        sequence="1"
+    />
 
     <menuitem
         id="menu_avea_stock_receive"
@@ -19,6 +27,14 @@
         parent="menu_avea_stock"
         action="action_avea_stock_receive"
         sequence="5"
+    />
+
+    <menuitem
+        id="menu_avea_stock_count"
+        name="Stock Count"
+        parent="menu_avea_stock"
+        action="action_avea_stock_count"
+        sequence="8"
     />
 
     <menuitem
