@@ -5,7 +5,7 @@
         <field name="name">avea.stock.receive.form</field>
         <field name="model">avea.stock.receive</field>
         <field name="arch" type="xml">
-            <form string="Receive Stock" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock">
+            <form string="Receive Stock" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock" js_class="avea_stock_receive_form">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="company_id" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
@@ -57,7 +57,7 @@
                                     />
                                 </div>
                                 <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="not add_new_supplier">
-                                    <span class="o_avea_workspace_info_label">VAT number</span>
+                                    <span class="o_avea_workspace_info_label">Tax number</span>
                                     <field
                                         name="new_supplier_vat"
                                         nolabel="1"
@@ -100,32 +100,62 @@
                         </div>
 
                         <div class="o_avea_stock_panel o_avea_stock_panel--products">
-                            <h2 class="o_avea_workspace_section_title">
-                                <i class="fa fa-cube" title="Products received" aria-hidden="true"/>
-                                Products received
-                            </h2>
+                            <div class="o_avea_stock_products_heading">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-cube" title="Products received" aria-hidden="true"/>
+                                    Products received
+                                </h2>
+                                <button
+                                    name="action_new_stock_item"
+                                    type="object"
+                                    string="+ New Stock Item"
+                                    class="btn btn-secondary o_avea_stock_new_product_btn"
+                                />
+                            </div>
                             <div class="o_avea_stock_list_surface">
                                 <div class="o_avea_stock_empty">
                                     <span class="o_avea_stock_empty_icon" aria-hidden="true">
                                         <i class="fa fa-cube" title="No products added yet"/>
                                     </span>
                                     <p class="o_avea_stock_empty_title">No products added yet</p>
-                                    <p class="o_avea_stock_empty_hint">Add products to receive stock.</p>
+                                    <p class="o_avea_stock_empty_hint">
+                                        Search for a product, or use + New Stock Item if it does not exist yet.
+                                    </p>
                                 </div>
                                 <field name="line_ids" nolabel="1">
                                     <list editable="bottom" class="o_avea_stock_receive_list">
                                         <field name="company_id" column_invisible="True"/>
                                         <field name="currency_id" column_invisible="True"/>
                                         <field name="partner_id" column_invisible="True"/>
+                                        <field name="avea_cost_differs" column_invisible="True"/>
+                                        <field name="avea_pricing_choice" column_invisible="True"/>
+                                        <field name="avea_open_pricing_wizard" column_invisible="True"/>
                                         <field
                                             name="product_id"
-                                            options="{'no_create': True}"
-                                            context="{'display_default_code': True}"
+                                            options="{'no_quick_create': True}"
+                                            context="{
+                                                'display_default_code': True,
+                                                'avea_receive_id': parent.id,
+                                                'avea_stock_receive_create': True,
+                                                'default_purchase_ok': True,
+                                                'default_sale_ok': True,
+                                                'default_is_storable': True,
+                                                'default_available_in_pos': True,
+                                            }"
                                         />
                                         <field name="quantity"/>
-                                        <field name="price_unit" string="EX-VAT cost"/>
+                                        <field name="price_unit" string="EX-Tax cost"/>
                                         <field name="discount" string="Discount %"/>
                                         <field name="price_unit_discounted" string="Discounted cost"/>
+                                        <button
+                                            name="action_open_pricing_wizard"
+                                            type="object"
+                                            string="Pricing"
+                                            class="btn-link"
+                                            icon="fa-percent"
+                                            title="Review cost and pricing"
+                                            invisible="not avea_cost_differs"
+                                        />
                                         <field name="price_subtotal" string="Line total"/>
                                     </list>
                                 </field>
@@ -136,6 +166,9 @@
                                     <span class="o_avea_stock_products_meta_sep">|</span>
                                     <span>Total quantity: <field name="quantity_total" nolabel="1"/></span>
                                 </div>
+                                <p class="o_avea_stock_products_cost_hint">
+                                    If the EX-tax cost differs from the product cost, use Pricing to keep or update cost and retail.
+                                </p>
                             </div>
                         </div>
 
@@ -147,15 +180,15 @@
                             <div class="o_avea_stock_totals">
                                 <div class="o_avea_tax_summary_card">
                                     <div class="o_avea_tax_summary_row">
-                                        <span class="o_avea_tax_summary_label">Ex-VAT total</span>
+                                        <span class="o_avea_tax_summary_label">Ex-tax total</span>
                                         <field name="amount_untaxed" nolabel="1" widget="monetary" class="o_avea_tax_summary_value"/>
                                     </div>
                                     <div class="o_avea_tax_summary_row">
-                                        <span class="o_avea_tax_summary_label">VAT</span>
+                                        <span class="o_avea_tax_summary_label">Tax</span>
                                         <field name="amount_tax" nolabel="1" widget="monetary" class="o_avea_tax_summary_value"/>
                                     </div>
                                     <div class="o_avea_tax_summary_row o_avea_tax_summary_row--total">
-                                        <span class="o_avea_tax_summary_label">Total including VAT</span>
+                                        <span class="o_avea_tax_summary_label">Total including tax</span>
                                         <field name="amount_total" nolabel="1" widget="monetary" class="o_avea_tax_summary_value"/>
                                     </div>
                                 </div>
@@ -270,11 +303,11 @@
                         <div class="o_avea_stock_panel o_avea_stock_card--compact">
                             <div class="o_avea_tax_summary_card o_avea_stock_confirmation_totals">
                                 <div class="o_avea_tax_summary_row">
-                                    <span class="o_avea_tax_summary_label">Ex-VAT total</span>
+                                    <span class="o_avea_tax_summary_label">Ex-tax total</span>
                                     <field name="amount_untaxed" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
                                 </div>
                                 <div class="o_avea_tax_summary_row">
-                                    <span class="o_avea_tax_summary_label">VAT</span>
+                                    <span class="o_avea_tax_summary_label">Tax</span>
                                     <field name="amount_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
                                 </div>
                                 <div class="o_avea_tax_summary_row o_avea_tax_summary_row--total">

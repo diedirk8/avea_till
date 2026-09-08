@@ -170,7 +170,7 @@ In POS `combo_promotions.js`:
 
 # ADR-008
 
-## Stock Workspace pricing uses Cost EX VAT and Retail INC VAT
+## Stock Workspace pricing uses Cost EX Tax and Retail INC Tax
 
 Status
 
@@ -178,13 +178,14 @@ Accepted
 
 Reason
 
-Shop owners think in cost-before-VAT and shelf price-including-VAT. Calculating markup or margin against the VAT-inclusive retail price understates profitability and confuses pricing decisions.
+Shop owners think in cost-before-tax and shelf price-including-tax. Calculating markup or margin against the tax-inclusive retail price understates profitability and confuses pricing decisions.
 
 Decision
 
-- Cost = `product.template.standard_price` (EX VAT)
-- Retail = `product.template.list_price` (INC VAT)
-- Retail EX VAT is derived with the product's sales taxes (`taxes_id`) via `account.tax.compute_all` — never a hard-coded VAT rate
+- Cost = `product.template.standard_price` (EX tax)
+- Retail = `product.template.list_price` (INC tax)
+- Retail EX tax is derived with the product's sales taxes (`taxes_id`) via `account.tax.compute_all` — never a hard-coded tax rate
 - Markup % = (Retail EX − Cost) / Cost; Margin % = (Retail EX − Cost) / Retail EX
 - Stock Workspace edits `product.template` / related sellerinfo / orderpoints / on-hand qty directly; no parallel product or stock tables
 - Stock Count remains a later dedicated workspace; Phase 5 ships a placeholder entry point only
+- Receive Stock opens a compact **Current vs New** pricing popup when the line cost differs from the product cost (Keep / Update Cost Only / Update Cost & Pricing)

@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_stock_receive_pricing_wizard_form" model="ir.ui.view">
+        <field name="name">avea.stock.receive.pricing.wizard.form</field>
+        <field name="model">avea.stock.receive.pricing.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pricing update" class="o_avea_wizard o_avea_stock_pricing_wizard">
+                <field name="currency_id" invisible="1"/>
+                <field name="line_id" invisible="1"/>
+                <field name="product_id" invisible="1"/>
+                <field name="product_tmpl_id" invisible="1"/>
+                <field name="receive_cost" invisible="1"/>
+
+                <div class="o_avea_stock_pricing_wizard_intro">
+                    <p class="o_avea_stock_pricing_wizard_product">
+                        <field name="product_id" nolabel="1" readonly="1" options="{'no_open': True}"/>
+                    </p>
+                    <p class="o_avea_stock_pricing_wizard_hint">
+                        The receive cost differs from this product's cost. Choose what to update.
+                    </p>
+                </div>
+
+                <div class="o_avea_stock_pricing_compare">
+                    <div class="o_avea_stock_pricing_compare_col o_avea_stock_pricing_compare_col--current">
+                        <div class="o_avea_stock_pricing_compare_heading">Current</div>
+                        <div class="o_avea_stock_pricing_row">
+                            <span class="o_avea_stock_pricing_label">Cost EX Tax</span>
+                            <field name="current_cost" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        </div>
+                        <div class="o_avea_stock_pricing_row">
+                            <span class="o_avea_stock_pricing_label">Retail INC Tax</span>
+                            <field name="current_retail" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        </div>
+                        <div class="o_avea_stock_pricing_row">
+                            <span class="o_avea_stock_pricing_label">Markup %</span>
+                            <field name="current_markup" nolabel="1"/>
+                        </div>
+                        <div class="o_avea_stock_pricing_row">
+                            <span class="o_avea_stock_pricing_label">Margin %</span>
+                            <field name="current_margin" nolabel="1"/>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_pricing_compare_col o_avea_stock_pricing_compare_col--new">
+                        <div class="o_avea_stock_pricing_compare_heading">New</div>
+                        <div class="o_avea_stock_pricing_row">
+                            <span class="o_avea_stock_pricing_label">Cost EX Tax</span>
+                            <field name="new_cost" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        </div>
+                        <div class="o_avea_stock_pricing_row">
+                            <span class="o_avea_stock_pricing_label">Retail INC Tax</span>
+                            <field name="new_retail" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                        </div>
+                        <div class="o_avea_stock_pricing_row">
+                            <span class="o_avea_stock_pricing_label">Markup %</span>
+                            <field name="new_markup" nolabel="1"/>
+                        </div>
+                        <div class="o_avea_stock_pricing_row">
+                            <span class="o_avea_stock_pricing_label">Margin %</span>
+                            <field name="new_margin" nolabel="1"/>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="o_avea_stock_pricing_preview">
+                    <field name="preview_note" nolabel="1" readonly="1"/>
+                </p>
+                <p class="o_avea_stock_pricing_tax_hint">
+                    Markup and margin use this product's sales tax (Cost EX Tax vs Retail INC Tax).
+                </p>
+
+                <footer>
+                    <button
+                        name="action_keep_current_pricing"
+                        type="object"
+                        string="Keep Current Pricing"
+                        class="btn-secondary"
+                        data-hotkey="j"
+                    />
+                    <button
+                        name="action_update_cost_only"
+                        type="object"
+                        string="Update Cost Only"
+                        class="btn-secondary"
+                        data-hotkey="c"
+                    />
+                    <button
+                        name="action_update_cost_and_pricing"
+                        type="object"
+                        string="Update Cost &amp; Pricing"
+                        class="btn-primary"
+                        data-hotkey="q"
+                    />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

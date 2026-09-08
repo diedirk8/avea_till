@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import _, api, fields, models
+from odoo import _, api, fields, models, Command
 from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_compare, float_is_zero, float_round
 
@@ -457,6 +457,42 @@ class ProductTemplate(models.Model):
                 ", ".join(product.pos_categ_ids.mapped("name")) or _("Not set")
             )
 
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        if self.env.context.get("avea_stock_workspace"):
+            if "available_in_pos" in fields_list or not fields_list:
+                res.setdefault("available_in_pos", True)
+            if "sale_ok" in fields_list or not fields_list:
+                res.setdefault("sale_ok", True)
+            if "purchase_ok" in fields_list or not fields_list:
+                res.setdefault("purchase_ok", True)
+            if "is_storable" in fields_list or not fields_list:
+                res.setdefault("is_storable", True)
+            if "type" in fields_list or not fields_list:
+                res.setdefault("type", "consu")
+        return res
+
+    def _avea_pos_category_for_product_category(self, categ):
+        """Match or create a POS category with the same name as the product category."""
+        if not categ:
+            return self.env["pos.category"]
+        PosCategory = self.env["pos.category"]
+        pos_categ = PosCategory.search([("name", "=", categ.name)], limit=1)
+        if not pos_categ:
+            pos_categ = PosCategory.create({"name": categ.name})
+        return pos_categ
+
+    @api.onchange("categ_id")
+    def _onchange_avea_categ_carry_to_pos(self):
+        if not self.categ_id:
+            return
+        pos_categ = self._avea_pos_category_for_product_category(self.categ_id)
+        if pos_categ:
+            self.pos_categ_ids = [(6, 0, pos_categ.ids)]
+            if not self.available_in_pos and self.env.context.get("avea_stock_workspace"):
+                self.available_in_pos = True
+
     # -------------------------------------------------------------------------
     # Actions
     # -------------------------------------------------------------------------
@@ -464,6 +500,7 @@ class ProductTemplate(models.Model):
     def action_avea_open_stock_item(self):
         self.ensure_one()
         view = self.env.ref("avea_till.view_avea_stock_product_form")
+        context = dict(self.env.context, avea_stock_workspace=True)
         return {
             "type": "ir.actions.act_window",
             "name": _("Stock Item"),
@@ -473,7 +510,7 @@ class ProductTemplate(models.Model):
             "views": [(view.id, "form")],
             "view_id": view.id,
             "target": "current",
-            "context": dict(self.env.context, avea_stock_workspace=True),
+            "context": context,
         }
 
     @api.model
@@ -496,6 +533,21 @@ class ProductTemplate(models.Model):
     @api.model
     def action_avea_new_stock_item(self):
         view = self.env.ref("avea_till.view_avea_stock_product_form")
+        context = {
+            "avea_stock_workspace": True,
+            "default_sale_ok": True,
+            "default_purchase_ok": True,
+            "default_available_in_pos": True,
+            "default_type": "consu",
+            "default_is_storable": True,
+            "default_taxes_id": [(6, 0, self.env.company.account_sale_tax_id.ids)]
+            if self.env.company.account_sale_tax_id
+            else [],
+        }
+        # Preserve return-to-receive (or other) context from the caller.
+        for key in ("avea_return_receive_id", "default_name", "default_categ_id"):
+            if self.env.context.get(key):
+                context[key] = self.env.context[key]
         return {
             "type": "ir.actions.act_window",
             "name": _("New Stock Item"),
@@ -504,20 +556,56 @@ class ProductTemplate(models.Model):
             "views": [(view.id, "form")],
             "view_id": view.id,
             "target": "current",
-            "context": {
-                "avea_stock_workspace": True,
-                "default_sale_ok": True,
-                "default_purchase_ok": True,
-                "default_available_in_pos": True,
-                "default_type": "consu",
-                "default_is_storable": True,
-                "default_taxes_id": [
-                    (6, 0, self.env.company.account_sale_tax_id.ids)
-                ]
-                if self.env.company.account_sale_tax_id
-                else [],
-            },
+            "context": context,
         }
+
+    def action_avea_save_stock_item(self):
+        """Save and stay on the stock item (standard workspace save)."""
+        self.ensure_one()
+        return self.action_avea_open_stock_item()
+
+    def action_avea_save_and_return_receive(self):
+        """Save the product, add it to the Receive Stock draft, and go back."""
+        self.ensure_one()
+        receive_id = self.env.context.get("avea_return_receive_id")
+        if not receive_id:
+            return self.action_avea_open_stock_item()
+        receive = self.env["avea.stock.receive"].browse(receive_id).exists()
+        if not receive or receive.state != "draft":
+            raise UserError(_("The Receive Stock draft is no longer available."))
+        variant = self.product_variant_id
+        if not variant:
+            raise UserError(_("This product could not be added to Receive Stock yet."))
+        existing = receive.line_ids.filtered(lambda line: line.product_id == variant)[:1]
+        if existing:
+            # Keep the line; refresh cost from the product if empty.
+            if not existing.price_unit:
+                existing.price_unit = self.standard_price or 0.0
+        else:
+            receive.write(
+                {
+                    "line_ids": [
+                        Command.create(
+                            {
+                                "product_id": variant.id,
+                                "quantity": 1.0,
+                                "price_unit": self.standard_price or 0.0,
+                            }
+                        )
+                    ]
+                }
+            )
+        return receive._avea_receive_action(receive)
+
+    def action_avea_back_to_receive(self):
+        """Leave the product form and return to the Receive Stock draft."""
+        receive_id = self.env.context.get("avea_return_receive_id")
+        if not receive_id:
+            return {"type": "ir.actions.act_window_close"}
+        receive = self.env["avea.stock.receive"].browse(receive_id).exists()
+        if not receive:
+            return self.env["avea.stock.receive"].action_open_receive()
+        return receive._avea_receive_action(receive)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -525,13 +613,29 @@ class ProductTemplate(models.Model):
             if self.env.context.get("avea_stock_workspace"):
                 vals.setdefault("sale_ok", True)
                 vals.setdefault("purchase_ok", True)
+                vals.setdefault("available_in_pos", True)
                 if vals.get("available_in_pos") and not vals.get("sale_ok", True):
                     vals["sale_ok"] = True
                 if vals.get("is_storable"):
                     vals["type"] = "consu"
+                # Carry product category onto POS category when POS cats were not set.
+                if vals.get("categ_id") and not vals.get("pos_categ_ids"):
+                    categ = self.env["product.category"].browse(vals["categ_id"])
+                    pos_categ = self._avea_pos_category_for_product_category(categ)
+                    if pos_categ:
+                        vals["pos_categ_ids"] = [(6, 0, pos_categ.ids)]
         return super().create(vals_list)
 
     def write(self, vals):
         if self.env.context.get("avea_stock_workspace") and vals.get("is_storable"):
             vals = dict(vals, type="consu")
+        if (
+            self.env.context.get("avea_stock_workspace")
+            and vals.get("categ_id")
+            and "pos_categ_ids" not in vals
+        ):
+            categ = self.env["product.category"].browse(vals["categ_id"])
+            pos_categ = self._avea_pos_category_for_product_category(categ)
+            if pos_categ:
+                vals = dict(vals, pos_categ_ids=[(6, 0, pos_categ.ids)])
         return super().write(vals)

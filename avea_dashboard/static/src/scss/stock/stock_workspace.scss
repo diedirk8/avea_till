@@ -1087,3 +1087,186 @@
         }
     }
 }
+
+// Selling panel: keep the 2x2 pricing grid aligned (labels + inputs share one rhythm).
+.o_avea_workspace--stock-product {
+    .o_avea_stock_product_fields--pricing {
+        align-items: start;
+        column-gap: 0.85rem;
+        row-gap: 0.75rem;
+
+        > .o_avea_workspace_info_item {
+            min-width: 0;
+        }
+
+        .o_field_widget,
+        .o_field_monetary {
+            width: 100%;
+        }
+
+        .o_field_monetary {
+            align-items: center;
+            display: flex;
+            gap: 0.25rem;
+            min-height: 2.35rem;
+
+            .o_input {
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+        }
+
+        input.o_input {
+            width: 100%;
+        }
+    }
+}
+
+.o_avea_workspace--stock {
+    .o_avea_stock_products_heading {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem 0.75rem;
+        justify-content: space-between;
+        margin-bottom: 0.7rem;
+
+        .o_avea_workspace_section_title {
+            margin-bottom: 0;
+        }
+    }
+
+    .o_avea_stock_new_product_btn {
+        font-weight: 600;
+        min-height: 2.2rem;
+    }
+
+    .o_avea_stock_products_cost_hint {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.78rem;
+        margin: 0.45rem 0 0;
+    }
+}
+
+// Compact receive pricing popup
+.o_avea_stock_pricing_wizard {
+    .o_avea_stock_pricing_wizard_intro {
+        margin-bottom: 0.85rem;
+    }
+
+    .o_avea_stock_pricing_wizard_product {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+    }
+
+    .o_avea_stock_pricing_wizard_hint {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.85rem;
+        margin: 0;
+    }
+
+    .o_avea_stock_pricing_compare {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-bottom: 0.65rem;
+    }
+
+    .o_avea_stock_pricing_compare_col {
+        background: #f8f9fa;
+        border: 1px solid rgba(16, 24, 40, 0.08);
+        border-radius: 0.55rem;
+        padding: 0.7rem 0.8rem 0.8rem;
+    }
+
+    .o_avea_stock_pricing_compare_col--new {
+        background: #fff;
+        border-color: rgba(1, 102, 107, 0.28);
+        box-shadow: 0 0 0 1px rgba(1, 102, 107, 0.06);
+    }
+
+    .o_avea_stock_pricing_compare_heading {
+        color: var(--avea-info, #01666b);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.55rem;
+        text-transform: uppercase;
+    }
+
+    .o_avea_stock_pricing_row {
+        display: grid;
+        gap: 0.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .o_avea_stock_pricing_label {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.72rem;
+        font-weight: 600;
+    }
+
+    .o_avea_stock_pricing_row .o_field_widget {
+        margin: 0;
+        width: 100%;
+    }
+
+    .o_avea_stock_pricing_row .o_field_monetary {
+        align-items: center;
+        display: flex;
+        min-height: 2.2rem;
+    }
+
+    .o_avea_stock_pricing_row input.o_input {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.4rem;
+        min-height: 2.2rem;
+        padding: 0.3rem 0.55rem;
+        width: 100%;
+    }
+
+    .o_avea_stock_pricing_compare_col--current .o_field_widget {
+        font-weight: 600;
+        pointer-events: none;
+    }
+
+    .o_avea_stock_pricing_preview {
+        color: var(--o-gray-800, #343a40);
+        font-size: 0.84rem;
+        font-weight: 600;
+        margin: 0.15rem 0 0.2rem;
+    }
+
+    .o_avea_stock_pricing_tax_hint {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.75rem;
+        margin: 0 0 0.35rem;
+    }
+
+    footer {
+        gap: 0.45rem;
+        justify-content: stretch;
+
+        .btn {
+            flex: 1 1 auto;
+            font-size: 0.82rem;
+            font-weight: 600;
+            min-height: 2.45rem;
+            white-space: normal;
+        }
+
+        .btn-primary {
+            background: var(--avea-info, #01666b);
+            border-color: var(--avea-info, #01666b);
+            font-weight: 700;
+        }
+    }
+}
+
+@media (max-width: 575.98px) {
+    .o_avea_stock_pricing_wizard .o_avea_stock_pricing_compare {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

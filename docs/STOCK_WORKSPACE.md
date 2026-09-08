@@ -45,9 +45,17 @@ Example: Cost R100 EX, Retail R172.50 INC @ 15% included → Retail EX R150 → 
 - Low stock uses reorder min when set, otherwise default threshold of 5
 - On-hand qty via Odoo `qty_available` (inventory adjustment inverse)
 
-## Stock Count
+## Receive Stock pricing popup
 
-Placeholder entry only. Full category-paged count remains planned (Phase 4 priority #3).
+When a line's EX-tax cost differs from the product cost, Avea opens a compact popup showing **Current vs New** for Cost, Retail, Markup % and Margin % (tax-aware).
+
+Choices:
+
+- **Keep Current Pricing** — leave the product unchanged
+- **Update Cost Only** — set product cost to the receive cost; keep retail
+- **Update Cost & Pricing** — set cost and retail (editable in the popup; markup/margin recalculate live)
+
+If the cashier skips the popup, **Receive Stock** opens it for any undecided differing line before posting.
 
 ## Key files
 

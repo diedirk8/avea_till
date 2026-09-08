@@ -88,10 +88,10 @@
                     decoration-danger="avea_stock_status == 'out_of_stock'"
                     decoration-muted="avea_stock_status == 'not_tracked'"
                 />
-                <field name="standard_price" string="Cost EX VAT" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="standard_price" string="Cost EX Tax" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                 <field name="avea_markup_percent" string="Markup %"/>
                 <field name="avea_margin_percent" string="Margin %"/>
-                <field name="list_price" string="Retail Price INC VAT" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="list_price" string="Retail Price INC Tax" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                 <field name="available_in_pos" string="Sell on POS" widget="boolean_toggle"/>
                 <field name="is_storable" string="Track Stock" widget="boolean_toggle"/>
                 <field name="active" string="Active" widget="boolean_toggle" optional="hide"/>
@@ -131,8 +131,35 @@
                             </p>
                         </div>
                         <div class="o_avea_stock_product_hero_actions">
-                            <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
-                            <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
+                            <button
+                                string="Back to Receive"
+                                name="action_avea_back_to_receive"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not context.get('avea_return_receive_id')"
+                            />
+                            <button
+                                string="Cancel"
+                                special="cancel"
+                                class="btn btn-secondary"
+                                data-hotkey="x"
+                                invisible="context.get('avea_return_receive_id')"
+                            />
+                            <button
+                                string="Save &amp; back to Receive"
+                                name="action_avea_save_and_return_receive"
+                                type="object"
+                                class="btn btn-primary"
+                                data-hotkey="s"
+                                invisible="not context.get('avea_return_receive_id')"
+                            />
+                            <button
+                                string="Save"
+                                special="save"
+                                class="btn btn-primary"
+                                data-hotkey="s"
+                                invisible="context.get('avea_return_receive_id')"
+                            />
                         </div>
                     </div>
 
@@ -177,7 +204,7 @@
                                 </div>
                             </div>
 
-                            <div class="o_avea_stock_product_panel">
+                            <div class="o_avea_stock_product_panel o_avea_stock_product_panel--selling">
                                 <h2 class="o_avea_workspace_section_title">
                                     <i class="fa fa-tag" title="Selling" aria-hidden="true"/>
                                     Selling
@@ -188,7 +215,7 @@
                                         <span class="o_avea_workspace_info_label">Sell on POS</span>
                                     </div>
                                     <div class="o_avea_workspace_info_item">
-                                        <span class="o_avea_workspace_info_label">Cost EX VAT</span>
+                                        <span class="o_avea_workspace_info_label">Cost EX Tax</span>
                                         <field name="standard_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     </div>
                                     <div class="o_avea_workspace_info_item">
@@ -200,7 +227,7 @@
                                         <field name="avea_margin_percent" nolabel="1"/>
                                     </div>
                                     <div class="o_avea_workspace_info_item">
-                                        <span class="o_avea_workspace_info_label">Retail Price INC VAT</span>
+                                        <span class="o_avea_workspace_info_label">Retail Price INC Tax</span>
                                         <field name="list_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     </div>
                                     <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
@@ -216,7 +243,7 @@
                                     </div>
                                 </div>
                                 <p class="o_avea_stock_product_hint">
-                                    Cost is always EX VAT. Retail is INC VAT. Markup and margin are calculated on the EX-VAT retail amount using this product's sales tax.
+                                    Cost is always EX tax. Retail is INC tax. Markup and margin use the EX-tax retail amount from this product's sales tax.
                                 </p>
                             </div>
 
@@ -266,7 +293,7 @@
                                         <field name="avea_supplier_code" nolabel="1" placeholder="Optional"/>
                                     </div>
                                     <div class="o_avea_workspace_info_item" invisible="not avea_supplier_id">
-                                        <span class="o_avea_workspace_info_label">Supplier cost EX VAT</span>
+                                        <span class="o_avea_workspace_info_label">Supplier cost EX Tax</span>
                                         <field name="avea_supplier_price" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     </div>
                                     <div class="o_avea_workspace_info_item" invisible="not avea_supplier_id">
@@ -348,11 +375,11 @@
                                 <div class="o_avea_stock_product_summary_block">
                                     <span class="o_avea_stock_product_summary_block_title">Pricing</span>
                                     <div class="o_avea_stock_product_summary_row">
-                                        <span class="o_avea_stock_product_summary_label">Cost EX VAT</span>
+                                        <span class="o_avea_stock_product_summary_label">Cost EX Tax</span>
                                         <field name="avea_summary_cost" nolabel="1" readonly="1"/>
                                     </div>
                                     <div class="o_avea_stock_product_summary_row">
-                                        <span class="o_avea_stock_product_summary_label">Retail INC VAT</span>
+                                        <span class="o_avea_stock_product_summary_label">Retail INC Tax</span>
                                         <field name="avea_summary_retail" nolabel="1" readonly="1"/>
                                     </div>
                                     <div class="o_avea_stock_product_summary_row">
@@ -390,8 +417,35 @@
                                 </div>
 
                                 <div class="o_avea_stock_product_footer o_avea_stock_product_footer--bar">
-                                    <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
-                                    <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
+                                    <button
+                                        string="Back to Receive"
+                                        name="action_avea_back_to_receive"
+                                        type="object"
+                                        class="btn btn-secondary"
+                                        invisible="not context.get('avea_return_receive_id')"
+                                    />
+                                    <button
+                                        string="Cancel"
+                                        special="cancel"
+                                        class="btn btn-secondary"
+                                        data-hotkey="x"
+                                        invisible="context.get('avea_return_receive_id')"
+                                    />
+                                    <button
+                                        string="Save &amp; back to Receive"
+                                        name="action_avea_save_and_return_receive"
+                                        type="object"
+                                        class="btn btn-primary"
+                                        data-hotkey="s"
+                                        invisible="not context.get('avea_return_receive_id')"
+                                    />
+                                    <button
+                                        string="Save"
+                                        special="save"
+                                        class="btn btn-primary"
+                                        data-hotkey="s"
+                                        invisible="context.get('avea_return_receive_id')"
+                                    />
                                 </div>
                             </div>
                         </aside>

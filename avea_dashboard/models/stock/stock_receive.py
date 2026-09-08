@@ -1,5 +1,6 @@
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools.float_utils import float_compare
 
 from .stock_mixin import AVEA_RECEIVE_ORIGIN, AVEA_SUPPLIER_COST_PRECISION
 
@@ -31,22 +32,22 @@ class AveaStockReceiveLine(models.Model):
         default=1.0,
     )
     price_unit = fields.Float(
-        string="EX-VAT Cost",
+        string="EX-Tax Cost",
         digits=AVEA_SUPPLIER_COST_PRECISION,
         default=0.0,
-        help="Original EX-VAT unit cost from the supplier invoice, before discount.",
+        help="Original EX-tax unit cost from the supplier invoice, before discount.",
     )
     discount = fields.Float(
         string="Discount (%)",
         digits="Discount",
         default=0.0,
-        help="Percentage discount on this line. Odoo applies it to the EX-VAT cost before VAT.",
+        help="Percentage discount on this line. Applied to the EX-tax cost before tax.",
     )
     price_unit_discounted = fields.Float(
         string="Discounted Cost",
         digits=AVEA_SUPPLIER_COST_PRECISION,
         compute="_compute_price_unit_discounted",
-        help="EX-VAT unit cost after the line discount.",
+        help="EX-tax unit cost after the line discount.",
     )
     price_subtotal = fields.Monetary(
         string="Line Total",
@@ -54,7 +55,7 @@ class AveaStockReceiveLine(models.Model):
         compute="_compute_line_totals",
     )
     price_tax = fields.Monetary(
-        string="VAT",
+        string="Tax",
         currency_field="currency_id",
         compute="_compute_line_totals",
     )
@@ -63,15 +64,129 @@ class AveaStockReceiveLine(models.Model):
         currency_field="currency_id",
         compute="_compute_line_totals",
     )
+    avea_cost_differs = fields.Boolean(
+        string="Cost differs",
+        compute="_compute_avea_cost_differs",
+    )
+    avea_pricing_choice = fields.Selection(
+        selection=[
+            ("keep", "Keep Current Pricing"),
+            ("cost_only", "Update Cost Only"),
+            ("cost_and_pricing", "Update Cost & Pricing"),
+        ],
+        string="Pricing choice",
+        copy=False,
+    )
+    avea_update_product_cost = fields.Boolean(
+        string="Update product cost",
+        default=False,
+        help="Legacy flag; pricing updates are handled by the pricing popup.",
+    )
+    avea_pending_retail = fields.Float(
+        string="Pending retail",
+        digits="Product Price",
+        copy=False,
+    )
+    avea_open_pricing_wizard = fields.Boolean(
+        string="Open pricing wizard",
+        store=False,
+    )
+
+    @api.depends("product_id", "product_id.standard_price", "price_unit")
+    def _compute_avea_cost_differs(self):
+        for line in self:
+            if not line.product_id:
+                line.avea_cost_differs = False
+                continue
+            line.avea_cost_differs = (
+                float_compare(
+                    line.price_unit or 0.0,
+                    line.product_id.standard_price or 0.0,
+                    precision_digits=2,
+                )
+                != 0
+            )
 
     @api.onchange("product_id")
     def _onchange_product_id(self):
         for line in self:
             if not line.product_id:
+                line.avea_pricing_choice = False
+                line.avea_update_product_cost = False
+                line.avea_open_pricing_wizard = False
                 continue
             seller = line._avea_seller()
             line.price_unit = seller.price if seller else line.product_id.standard_price
             line.discount = seller.discount if seller else 0.0
+            line.avea_pricing_choice = False
+            line.avea_update_product_cost = False
+            line.avea_open_pricing_wizard = False
+
+    @api.onchange("price_unit")
+    def _onchange_price_unit_cost_update(self):
+        """Flag a pricing review when receive cost differs from the product cost."""
+        for line in self:
+            if not line.product_id:
+                line.avea_pricing_choice = False
+                line.avea_open_pricing_wizard = False
+                continue
+            current = line.product_id.standard_price or 0.0
+            new_cost = line.price_unit or 0.0
+            if float_compare(new_cost, current, precision_digits=2) == 0:
+                line.avea_pricing_choice = False
+                line.avea_open_pricing_wizard = False
+                line.avea_update_product_cost = False
+                continue
+            # Reset previous decision whenever the typed cost changes.
+            line.avea_pricing_choice = False
+            line.avea_update_product_cost = False
+            line.avea_open_pricing_wizard = True
+
+    def write(self, vals):
+        res = super().write(vals)
+        if self.env.context.get("avea_skip_pricing_wizard"):
+            return res
+        if "price_unit" in vals:
+            for line in self:
+                if (
+                    line.product_id
+                    and float_compare(
+                        line.price_unit or 0.0,
+                        line.product_id.standard_price or 0.0,
+                        precision_digits=2,
+                    )
+                    != 0
+                    and not line.avea_pricing_choice
+                ):
+                    # Persisted signal for the receive form JS to open the popup.
+                    line.avea_pricing_choice = False
+        return res
+
+    def action_open_pricing_wizard(self):
+        self.ensure_one()
+        if not self.product_id:
+            raise UserError(_("Choose a product first."))
+        if not self.id:
+            raise UserError(
+                _("Save this receive line first, then review pricing for the new cost.")
+            )
+        wizard = (
+            self.env["avea.stock.receive.pricing.wizard"]
+            .with_context(default_line_id=self.id)
+            .create({"line_id": self.id})
+        )
+        view = self.env.ref("avea_till.view_avea_stock_receive_pricing_wizard_form")
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Pricing update"),
+            "res_model": "avea.stock.receive.pricing.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(view.id, "form")],
+            "view_id": view.id,
+            "target": "new",
+            "context": {"default_line_id": self.id},
+        }
 
     def _avea_seller(self):
         self.ensure_one()
@@ -460,6 +575,24 @@ class AveaStockReceive(models.Model):
     def action_open_return(self):
         return self.env["avea.stock.return"].action_open_return()
 
+    def action_new_stock_item(self):
+        """Open New Stock Item and return here with the product on the receive list."""
+        self.ensure_one()
+        if self.state != "draft" or self.show_confirmation:
+            raise UserError(_("Start a new Receive Stock draft before adding a product."))
+        action = self.env["product.template"].action_avea_new_stock_item()
+        context = dict(action.get("context") or {})
+        context.update(
+            {
+                "avea_return_receive_id": self.id,
+                "avea_stock_workspace": True,
+            }
+        )
+        if self.partner_id:
+            context["default_avea_supplier_id"] = self.partner_id.id
+        action["context"] = context
+        return action
+
     def action_done(self):
         self._avea_archive_completed()
         return self.env["avea.stock.receive"].action_open_receive()
@@ -500,6 +633,18 @@ class AveaStockReceive(models.Model):
             return self._avea_confirmation_action()
         partner = self._avea_ensure_supplier()
         self._avea_check_receive(partner)
+        pending = self.line_ids.filtered(
+            lambda line: line.product_id
+            and float_compare(
+                line.price_unit or 0.0,
+                line.product_id.standard_price or 0.0,
+                precision_digits=2,
+            )
+            != 0
+            and not line.avea_pricing_choice
+        )
+        if pending:
+            return pending[0].action_open_pricing_wizard()
         order = self._avea_create_purchase_order(partner)
         self._avea_confirm_purchase_order(order)
         picking = self._avea_incoming_picking(order)
@@ -517,6 +662,10 @@ class AveaStockReceive(models.Model):
                 self.invoice_number,
             )
         return self._avea_success(partner, order, bill)
+
+    def _avea_apply_product_cost_updates(self):
+        """Pricing updates are applied in the pricing popup; keep for compatibility."""
+        return
 
     def _avea_check_receive(self, partner):
         self.ensure_one()
