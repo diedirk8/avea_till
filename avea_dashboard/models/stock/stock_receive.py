@@ -324,19 +324,47 @@ class AveaStockReceive(models.Model):
         "receive_id",
         string="Products",
     )
+    charge_ids = fields.One2many(
+        "avea.stock.receive.charge",
+        "receive_id",
+        string="Additional Charges",
+    )
     amount_untaxed = fields.Monetary(
-        string="Ex-VAT total",
+        string="Ex-tax total",
         currency_field="currency_id",
         compute="_compute_amounts",
     )
     amount_tax = fields.Monetary(
-        string="VAT",
+        string="Tax",
         currency_field="currency_id",
         compute="_compute_amounts",
     )
     amount_total = fields.Monetary(
-        string="Total including VAT",
+        string="Total including tax",
         currency_field="currency_id",
+        compute="_compute_amounts",
+    )
+    amount_charges_untaxed = fields.Monetary(
+        string="Charges ex-tax",
+        currency_field="currency_id",
+        compute="_compute_amounts",
+    )
+    amount_charges_tax = fields.Monetary(
+        string="Charges tax",
+        currency_field="currency_id",
+        compute="_compute_amounts",
+    )
+    amount_charges_total = fields.Monetary(
+        string="Charges total",
+        currency_field="currency_id",
+        compute="_compute_amounts",
+    )
+    charge_count = fields.Integer(
+        string="Charges",
+        compute="_compute_amounts",
+    )
+    charge_line_count = fields.Integer(
+        string="Charge lines",
         compute="_compute_amounts",
     )
     invoice_total = fields.Monetary(
@@ -431,12 +459,34 @@ class AveaStockReceive(models.Model):
                 company._avea_expense_journals() if company else False
             )
 
-    @api.depends("line_ids.price_subtotal", "line_ids.price_tax", "line_ids.price_total")
+    @api.depends(
+        "line_ids.price_subtotal",
+        "line_ids.price_tax",
+        "line_ids.price_total",
+        "charge_ids.price_subtotal",
+        "charge_ids.price_tax",
+        "charge_ids.price_total",
+        "charge_ids.amount",
+        "charge_ids.name",
+        "charge_ids",
+    )
     def _compute_amounts(self):
         for receive in self:
-            receive.amount_untaxed = sum(receive.line_ids.mapped("price_subtotal"))
-            receive.amount_tax = sum(receive.line_ids.mapped("price_tax"))
-            receive.amount_total = sum(receive.line_ids.mapped("price_total"))
+            product_untaxed = sum(receive.line_ids.mapped("price_subtotal"))
+            product_tax = sum(receive.line_ids.mapped("price_tax"))
+            product_total = sum(receive.line_ids.mapped("price_total"))
+            charges = receive.charge_ids.filtered(lambda charge: charge.amount)
+            charge_untaxed = sum(charges.mapped("price_subtotal"))
+            charge_tax = sum(charges.mapped("price_tax"))
+            charge_total = sum(charges.mapped("price_total"))
+            receive.amount_charges_untaxed = charge_untaxed
+            receive.amount_charges_tax = charge_tax
+            receive.amount_charges_total = charge_total
+            receive.charge_count = len(charges)
+            receive.charge_line_count = len(receive.charge_ids)
+            receive.amount_untaxed = product_untaxed + charge_untaxed
+            receive.amount_tax = product_tax + charge_tax
+            receive.amount_total = product_total + charge_total
 
     @api.depends("line_ids.product_id", "line_ids.quantity")
     def _compute_confirmation_stats(self):
@@ -601,6 +651,21 @@ class AveaStockReceive(models.Model):
         self._avea_archive_completed()
         receive = self.env["avea.stock.receive"]._avea_create_draft_receive()
         return receive._avea_receive_action(receive)
+
+    def action_add_charge_line(self):
+        """Add a blank charge row from the compact Totals header."""
+        self.ensure_one()
+        if self.state != "draft":
+            return False
+        self.charge_ids = [
+            Command.create(
+                {
+                    "name": "",
+                    "amount": 0.0,
+                }
+            )
+        ]
+        return False
 
     def action_cancel_receive(self):
         self.ensure_one()
@@ -817,9 +882,71 @@ class AveaStockReceive(models.Model):
                 "ref": self.invoice_number.strip(),
             }
         )
+        self._avea_add_charge_lines_to_bill(bill)
         bill.sudo().action_post()
         if bill.state != "posted":
             raise UserError(_("The supplier bill could not be posted."))
+        return bill
+
+    def _avea_additional_charge_account(self):
+        """Expense account for receive charges (not stock valuation)."""
+        self.ensure_one()
+        company = self.company_id
+        Account = self.env["account.account"].sudo().with_company(company)
+        account = Account.search([("code", "=", "610060")], limit=1)
+        if not account:
+            account = Account.search(
+                [
+                    ("account_type", "=", "expense"),
+                    ("name", "ilike", "Shipping"),
+                ],
+                limit=1,
+            )
+        if not account:
+            account = Account.search(
+                [("account_type", "in", ("expense", "expense_direct_cost"))],
+                limit=1,
+            )
+        if not account:
+            raise UserError(
+                _(
+                    "No expense account is available for additional charges. "
+                    "Ask an administrator to configure a Shipping or expense account."
+                )
+            )
+        return account
+
+    def _avea_add_charge_lines_to_bill(self, bill):
+        """Append expense lines for additional charges before the bill is posted.
+
+        Charges are never written into inventory valuation. They remain ordinary
+        vendor-bill expense lines (``avea_additional_charge``) so a later Landed
+        Costs feature can optionally select them without changing this path.
+        """
+        self.ensure_one()
+        charges = self.charge_ids.filtered(
+            lambda charge: charge.name and charge.amount and charge.charge_kind == "expense"
+        )
+        if not charges:
+            return bill
+        account = self._avea_additional_charge_account()
+        commands = []
+        for charge in charges:
+            taxes = charge._avea_charge_taxes()
+            commands.append(
+                Command.create(
+                    {
+                        "name": charge.name.strip(),
+                        "quantity": 1.0,
+                        "price_unit": charge.amount,
+                        "account_id": account.id,
+                        "tax_ids": [Command.set(taxes.ids)],
+                        "display_type": "product",
+                        "avea_additional_charge": True,
+                    }
+                )
+            )
+        bill.sudo().write({"invoice_line_ids": commands})
         return bill
 
     def _avea_attach_invoice(self, bill):

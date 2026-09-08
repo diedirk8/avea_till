@@ -178,6 +178,34 @@
                                 Totals
                             </h2>
                             <div class="o_avea_stock_totals">
+                                <div class="o_avea_stock_charges_strip" title="EX tax · included in totals · not in product cost">
+                                    <field name="charge_line_count" invisible="1"/>
+                                    <div class="o_avea_stock_charges_strip_head">
+                                        <span class="o_avea_stock_charges_strip_label">Additional charges</span>
+                                        <button
+                                            name="action_add_charge_line"
+                                            type="object"
+                                            string="+ Add charge"
+                                            class="btn btn-link o_avea_stock_add_charge_btn"
+                                        />
+                                    </div>
+                                    <field
+                                        name="charge_ids"
+                                        nolabel="1"
+                                        mode="list"
+                                        class="o_avea_stock_charge_field"
+                                        invisible="not charge_line_count"
+                                        context="{'default_receive_id': id}"
+                                    >
+                                        <list editable="bottom" create="false" class="o_avea_stock_charge_list">
+                                            <field name="name" string="Description" placeholder="Shipping"/>
+                                            <field name="amount" string="Amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                            <field name="currency_id" column_invisible="1"/>
+                                            <field name="price_tax" column_invisible="1"/>
+                                            <field name="price_total" column_invisible="1"/>
+                                        </list>
+                                    </field>
+                                </div>
                                 <div class="o_avea_tax_summary_card">
                                     <div class="o_avea_tax_summary_row">
                                         <span class="o_avea_tax_summary_label">Ex-tax total</span>
@@ -206,7 +234,7 @@
                                         <field name="invoice_difference" nolabel="1"/>
                                     </div>
                                     <div class="alert alert-warning o_avea_stock_mismatch" role="status" invisible="not totals_mismatch">
-                                        The captured total does not match the invoice total. Check quantities and costs before receiving.
+                                        The captured total does not match the invoice total. Check quantities, costs, and charges before receiving.
                                     </div>
                                 </div>
                             </div>
@@ -310,13 +338,16 @@
                                     <span class="o_avea_tax_summary_label">Tax</span>
                                     <field name="amount_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
                                 </div>
+                                <div class="o_avea_tax_summary_row" invisible="not charge_count">
+                                    <span class="o_avea_tax_summary_label">Additional charges</span>
+                                    <field name="amount_charges_total" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
+                                </div>
                                 <div class="o_avea_tax_summary_row o_avea_tax_summary_row--total">
                                     <span class="o_avea_tax_summary_label">Total</span>
                                     <field name="amount_total" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
                                 </div>
                             </div>
                         </div>
-
                         <div class="o_avea_stock_panel o_avea_stock_card--compact o_avea_stock_status o_avea_stock_status--paid" invisible="not mark_as_paid">
                             <div class="o_avea_workspace_info_item">
                                 <span class="o_avea_workspace_info_label">Payment</span>

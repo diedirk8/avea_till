@@ -32,6 +32,7 @@ Simple Avea Stock workflow wrapping standard Odoo Purchase → Stock Receipt →
 - Completion screen confirms the transaction instead of redirecting to native Odoo Purchase.
 - Simple Return Stock workflow using Odoo returns and vendor credit notes.
 - Landed costs are not part of the Receive Stock screen; future Stock features must not prevent a later landed-cost workflow.
+- **Additional Charges** (Description + Amount EX tax, multiple lines) sit in the Totals panel and are included in the invoice-total check. They post as expense lines on the vendor bill (`avea_additional_charge`), not into product cost / inventory valuation (ADR-009).
 - Preserve the company's periodic valuation, AVCO and Anglo-Saxon-off configuration.
 
 ## Promotions — Priority #2 (DEV)

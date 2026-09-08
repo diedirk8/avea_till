@@ -468,6 +468,129 @@
         padding: 0;
     }
 
+    .o_avea_stock_charges_strip {
+        background: rgba(1, 102, 107, 0.035);
+        border: 1px solid rgba(1, 102, 107, 0.12);
+        border-radius: 0.45rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.15rem;
+        padding: 0.3rem 0.45rem;
+    }
+
+    .o_avea_stock_charges_strip_head {
+        align-items: center;
+        display: flex;
+        gap: 0.5rem;
+        justify-content: space-between;
+        line-height: 1.2;
+        min-height: 1.25rem;
+    }
+
+    .o_avea_stock_charges_strip_label {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        line-height: 1.2;
+        text-transform: uppercase;
+    }
+
+    .o_avea_stock_add_charge_btn {
+        color: var(--avea-info, #01666b);
+        font-size: 0.78rem;
+        font-weight: 600;
+        line-height: 1.2;
+        min-height: 0;
+        padding: 0;
+        text-decoration: none;
+
+        &:hover,
+        &:focus {
+            color: #01494d;
+            text-decoration: underline;
+        }
+    }
+
+    .o_avea_stock_charge_field {
+        margin: 0;
+        min-height: 0;
+    }
+
+    .o_avea_stock_charge_list {
+        .o_field_widget,
+        .o_field_x2many,
+        .o_list_renderer {
+            min-height: 0;
+            width: 100%;
+        }
+
+        .o_list_renderer {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            overflow: visible;
+        }
+
+        .o_list_table {
+            margin-bottom: 0;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .o_list_table thead {
+            display: none;
+        }
+
+        .o_data_row td {
+            border: none;
+            padding: 0.08rem 0.12rem 0.08rem 0;
+            vertical-align: middle;
+        }
+
+        td[name="name"] {
+            width: auto;
+        }
+
+        td[name="amount"] {
+            width: 6.5rem;
+        }
+
+        .o_input,
+        .o_field_monetary input.o_input,
+        .o_field_char input.o_input {
+            font-size: 0.82rem;
+            min-height: 1.55rem;
+            padding-block: 0.1rem;
+            padding-inline: 0.35rem;
+        }
+
+        .o_list_record_remove {
+            opacity: 0.45;
+            padding-inline: 0.1rem 0;
+
+            button {
+                font-size: 0.75rem;
+                min-height: 1.55rem;
+                padding: 0.1rem 0.2rem;
+            }
+        }
+    }
+
+    .o_avea_stock_charge_list:has(.o_data_row:nth-child(3)) .o_list_renderer {
+        max-height: 3.35rem;
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+    }
+
+    .o_avea_stock_totals .o_avea_tax_summary_card {
+        border-top: 1px solid var(--o-gray-200, #e9ecef);
+        margin-top: 0.15rem;
+        padding-top: 0.55rem;
+    }
+
     .o_avea_stock_invoice_check {
         display: flex;
         flex-direction: column;

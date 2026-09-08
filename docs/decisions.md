@@ -123,6 +123,8 @@ Avea Stock (`avea.stock.*`) is a simple workspace over that existing flow:
 
 Do not create a parallel stock or accounting ledger. Do not change periodic valuation, AVCO, or Anglo-Saxon settings. Landed costs stay out of Receive Stock so they can be a later Stock feature.
 
+Additional Charges on Receive Stock (see ADR-009) are posted as ordinary vendor-bill expense lines only. They are included in the supplier invoice total but are never allocated into inventory valuation or product cost from this screen.
+
 ---
 
 # ADR-006
@@ -189,3 +191,31 @@ Decision
 - Stock Workspace edits `product.template` / related sellerinfo / orderpoints / on-hand qty directly; no parallel product or stock tables
 - Stock Count remains a later dedicated workspace; Phase 5 ships a placeholder entry point only
 - Receive Stock opens a compact **Current vs New** pricing popup when the line cost differs from the product cost (Keep / Update Cost Only / Update Cost & Pricing)
+
+---
+
+# ADR-009
+
+## Receive Stock additional charges are bill expenses, not inventory cost
+
+Status
+
+Accepted
+
+Reason
+
+Supplier invoices often include shipping, handling, or similar charges that must match the paper total and the vendor bill, without changing product cost or stock valuation yet. Proper Landed Costs allocation is a later Stock feature.
+
+Decision
+
+- Capture charges as `avea.stock.receive.charge` lines (Description + Amount EX tax)
+- Include charge tax using the company purchase tax / fiscal position (same convention as product receive lines)
+- Include charges in Receive Stock totals and the optional invoice-total check
+- After the PO-based vendor bill is created and before `action_post`, append ordinary invoice lines:
+  - no product / no purchase order line
+  - expense account (prefer Shipping `610060`, else a Shipping-named expense, else any expense)
+  - company purchase taxes
+  - flag `account.move.line.avea_additional_charge = True`
+- Accounting entries follow standard Odoo vendor-bill posting: debit expense (+ input tax), credit payable
+- Do **not** allocate into inventory valuation, AVCO, or `standard_price` from Receive Stock
+- Keep `charge_kind` / `avea_additional_charge` so a future Landed Costs workflow can select these bill lines without rewriting Receive Stock

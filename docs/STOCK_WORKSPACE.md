@@ -57,6 +57,18 @@ Choices:
 
 If the cashier skips the popup, **Receive Stock** opens it for any undecided differing line before posting.
 
+## Receive Stock additional charges
+
+Compact **Additional Charges** block in the left Totals panel (before the invoice-total check):
+
+- Lines: Description + Amount (EX tax)
+- Multiple lines allowed
+- Included in Ex-tax / Tax / Total and the optional invoice-total comparison
+- Posted on the supplier bill as expense lines (prefer Shipping `610060`), with company purchase tax
+- **Not** allocated into inventory or product cost (future Landed Costs can select `avea_additional_charge` bill lines)
+
+See ADR-009.
+
 ## Key files
 
 - `models/stock/product_template.py`
