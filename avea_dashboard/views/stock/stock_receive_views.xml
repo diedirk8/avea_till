@@ -137,10 +137,13 @@
                                                 'display_default_code': True,
                                                 'avea_receive_id': parent.id,
                                                 'avea_stock_receive_create': True,
+                                                'form_view_ref': 'avea_till.view_avea_stock_product_variant_quick_form',
                                                 'default_purchase_ok': True,
                                                 'default_sale_ok': True,
                                                 'default_is_storable': True,
                                                 'default_available_in_pos': True,
+                                                'default_type': 'consu',
+                                                'default_avea_supplier_id': parent.partner_id,
                                             }"
                                         />
                                         <field name="quantity"/>

@@ -1,9 +1,37 @@
 # -*- coding: utf-8 -*-
-from odoo import api, models
+from odoo import api, fields, models
 
 
 class ProductProduct(models.Model):
     _inherit = "product.product"
+
+    avea_markup_percent = fields.Float(
+        related="product_tmpl_id.avea_markup_percent",
+        readonly=False,
+    )
+    avea_margin_percent = fields.Float(
+        related="product_tmpl_id.avea_margin_percent",
+        readonly=False,
+    )
+    avea_supplier_id = fields.Many2one(
+        related="product_tmpl_id.avea_supplier_id",
+        readonly=False,
+    )
+    is_storable = fields.Boolean(
+        related="product_tmpl_id.is_storable",
+        readonly=False,
+    )
+
+    @api.model
+    def get_formview_id(self, access_uid=None):
+        """Use the Avea compact popup when creating/editing from Receive Stock."""
+        if self.env.context.get("avea_receive_id") or self.env.context.get(
+            "avea_stock_receive_create"
+        ):
+            return self.env.ref(
+                "avea_till.view_avea_stock_product_variant_quick_form"
+            ).id
+        return super().get_formview_id(access_uid=access_uid)
 
     @api.model
     def name_create(self, name):

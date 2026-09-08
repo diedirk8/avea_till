@@ -862,6 +862,140 @@
 // Stock Item form (create / edit)
 // =============================================================================
 
+// Shared field/grid containment for Stock Item forms (full page + quick popup).
+@mixin avea-stock-product-field-containment($input-min-height: 2.35rem) {
+    .o_cell,
+    .o_wrap_field,
+    .o_wrap_input {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .o_avea_stock_product_fields,
+    .o_avea_stock_product_fields--pricing,
+    .o_avea_stock_product_fields--identity {
+        > .o_avea_workspace_info_item {
+            min-width: 0;
+        }
+    }
+
+    .o_avea_workspace_info_item .o_field_widget {
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .o_field_char,
+    .o_field_many2one,
+    .o_field_text {
+        max-width: 100%;
+        width: 100%;
+
+        .o_input,
+        input {
+            max-width: 100%;
+            width: 100%;
+        }
+    }
+
+    .o_field_widget:not(.o_field_many2many_tags):not(.o_field_monetary):not(.o_field_boolean) {
+        input:not([type="checkbox"]):not([type="radio"]),
+        textarea,
+        .o_input {
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            border-radius: var(--avea-stock-input-radius);
+            box-shadow: none;
+            box-sizing: border-box;
+            color: var(--o-gray-900, #212529);
+            max-width: 100%;
+            min-height: $input-min-height;
+            padding: 0.35rem 0.7rem;
+            width: 100%;
+        }
+
+        input:not([type="checkbox"]):not([type="radio"]):focus,
+        textarea:focus,
+        .o_input:focus {
+            border-color: var(--avea-info, #01666b);
+            box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
+            outline: none;
+        }
+    }
+
+    // Odoo 19 monetary: currency symbol is an absolute overlay — border belongs on the wrapper.
+    .o_field_monetary {
+        display: block;
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+
+        > .text-nowrap,
+        > .d-inline-flex {
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            border-radius: var(--avea-stock-input-radius);
+            box-sizing: border-box;
+            max-width: 100%;
+            min-height: $input-min-height;
+            min-width: 0;
+            padding: 0 0.7rem;
+            position: relative;
+            width: 100%;
+
+            &:focus-within {
+                border-color: var(--avea-info, #01666b);
+                box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
+            }
+        }
+
+        span.o_input.position-absolute {
+            align-items: center;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            display: flex !important;
+            inset: 0 0.7rem;
+            min-height: 0 !important;
+            padding: 0 !important;
+            pointer-events: none;
+            position: absolute;
+            width: auto;
+            z-index: 0;
+        }
+
+        input.o_input {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            flex: 1 1 0% !important;
+            max-width: 100%;
+            min-height: 0 !important;
+            min-width: 0 !important;
+            padding: 0 !important;
+            position: relative;
+            width: 100% !important;
+            z-index: 1;
+        }
+    }
+
+    .o_field_float.o_readonly_modifier,
+    .o_field_integer.o_readonly_modifier {
+        align-items: center;
+        background: #f8f9fa;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: var(--avea-stock-input-radius);
+        box-sizing: border-box;
+        display: flex;
+        max-width: 100%;
+        min-height: $input-min-height;
+        min-width: 0;
+        padding: 0.35rem 0.7rem;
+        width: 100%;
+    }
+}
+
 .o_avea_workspace--stock-product {
     --avea-stock-card-radius: 0.7rem;
     --avea-stock-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04);
@@ -1008,20 +1142,10 @@
         border-radius: var(--avea-stock-card-radius);
         box-shadow: var(--avea-stock-card-shadow);
         min-width: 0;
+        overflow: hidden;
         padding: 0.95rem 1.05rem 1.05rem;
 
-        .o_field_widget:not(.o_field_many2many_tags) input:not([type="checkbox"]):not([type="radio"]),
-        .o_field_widget textarea,
-        .o_field_monetary input.o_input,
-        .o_field_many2one .o_input {
-            background: #fff;
-            border: 1px solid var(--o-gray-300, #dee2e6);
-            border-radius: var(--avea-stock-input-radius);
-            box-shadow: none;
-            color: var(--o-gray-900, #212529);
-            min-height: 2.35rem;
-            padding: 0.35rem 0.7rem;
-        }
+        @include avea-stock-product-field-containment();
 
         .o_field_many2many_tags {
             width: 100%;
@@ -1042,20 +1166,13 @@
                 width: 100%;
             }
         }
-
-        .o_field_widget:not(.o_field_many2many_tags) input:not([type="checkbox"]):not([type="radio"]):focus,
-        .o_field_monetary input.o_input:focus,
-        .o_field_many2one .o_input:focus {
-            border-color: var(--avea-info, #01666b);
-            box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
-            outline: none;
-        }
     }
 
     .o_avea_stock_product_identity {
         display: grid;
         gap: 1rem;
         grid-template-columns: 7.5rem minmax(0, 1fr);
+        min-width: 0;
     }
 
     .o_avea_stock_product_image {
@@ -1074,6 +1191,7 @@
         display: grid;
         gap: 0.75rem 0.85rem;
         grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-width: 0;
     }
 
     .o_avea_stock_product_fields--pricing {
@@ -1207,40 +1325,6 @@
         .o_avea_stock_product_fields,
         .o_avea_stock_product_fields--pricing {
             grid-template-columns: minmax(0, 1fr);
-        }
-    }
-}
-
-// Selling panel: keep the 2x2 pricing grid aligned (labels + inputs share one rhythm).
-.o_avea_workspace--stock-product {
-    .o_avea_stock_product_fields--pricing {
-        align-items: start;
-        column-gap: 0.85rem;
-        row-gap: 0.75rem;
-
-        > .o_avea_workspace_info_item {
-            min-width: 0;
-        }
-
-        .o_field_widget,
-        .o_field_monetary {
-            width: 100%;
-        }
-
-        .o_field_monetary {
-            align-items: center;
-            display: flex;
-            gap: 0.25rem;
-            min-height: 2.35rem;
-
-            .o_input {
-                flex: 1 1 auto;
-                min-width: 0;
-            }
-        }
-
-        input.o_input {
-            width: 100%;
         }
     }
 }
@@ -1415,40 +1499,166 @@
     }
 }
 
-.modal-dialog:has(.o_avea_stock_product_quick) {
-    max-width: 30rem;
+.modal-dialog:has(.o_avea_workspace--stock-product-quick) {
+    max-width: 42rem;
 }
 
-.o_avea_stock_product_quick {
-    .o_avea_stock_product_quick_sheet {
+// Avea quick-add product dialog (Receive Stock)
+.o_dialog:has(.o_avea_workspace--stock-product-quick) {
+    .modal-dialog {
+        max-width: 42rem;
+    }
+
+    .modal-content,
+    .modal-body,
+    .o_form_view,
+    .o_form_renderer {
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .modal-content {
+        background: var(--o-webclient-background-color, #f4f5f7);
+        border: none;
+        border-radius: 0.75rem;
+        box-shadow:
+            0 12px 28px rgba(16, 24, 40, 0.12),
+            0 4px 10px rgba(16, 24, 40, 0.06);
+        overflow: hidden;
+    }
+
+    .modal-header {
+        display: none;
+    }
+
+    .modal-body {
+        background: transparent;
         padding: 0;
     }
 
-    .o_avea_stock_product_quick_intro {
-        color: var(--o-gray-600, #6c757d);
-        font-size: 0.8rem;
-        line-height: 1.35;
-        margin: 0 0 0.65rem;
-    }
-
-    .o_avea_stock_product_quick_fields {
-        display: grid;
-        gap: 0.55rem 0.75rem;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .o_avea_stock_product_quick_span {
-        grid-column: 1 / -1;
-    }
-
-    footer {
-        gap: 0.45rem;
+    .modal-footer {
+        background: var(--o-view-background-color, #fff);
+        border-top: 1px solid rgba(16, 24, 40, 0.08);
+        gap: 0.55rem;
         justify-content: flex-end;
+        margin: 0;
+        padding: 0.75rem 1rem;
+
+        .btn {
+            font-weight: 600;
+            min-height: 2.35rem;
+            min-width: 6.5rem;
+        }
 
         .btn-primary {
             background: var(--avea-info, #01666b);
             border-color: var(--avea-info, #01666b);
+            font-weight: 700;
+
+            &:hover,
+            &:focus {
+                background: #01494d;
+                border-color: #01494d;
+            }
         }
+
+        .btn-secondary {
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            color: var(--o-gray-800, #343a40);
+        }
+    }
+}
+
+.o_avea_workspace--stock-product-quick {
+    background: transparent;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+
+    .o_form_sheet_bg,
+    .o_form_sheet {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        margin: 0;
+        max-width: 100%;
+        min-width: 0;
+        padding: 0;
+    }
+
+    .o_avea_workspace_sheet {
+        box-sizing: border-box;
+        max-width: 100%;
+        min-width: 0;
+        padding: 0.9rem 1rem 0.65rem;
+    }
+
+    .o_avea_stock_product_quick_hero {
+        margin-bottom: 0.7rem;
+        padding: 0;
+    }
+
+    .o_avea_workspace_title {
+        font-size: 1.28rem;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .o_avea_workspace_section_subtitle {
+        font-size: 0.82rem;
+        line-height: 1.35;
+        margin-top: 0.25rem;
+        max-width: none;
+    }
+
+    .o_avea_stock_product_quick_body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .o_avea_stock_product_panel {
+        box-sizing: border-box;
+        max-width: 100%;
+        min-width: 0;
+        padding: 0.72rem 0.82rem 0.78rem;
+
+        @include avea-stock-product-field-containment(2.15rem);
+    }
+
+    .o_avea_workspace_section_title {
+        font-size: 0.88rem;
+        margin-bottom: 0.62rem;
+    }
+
+    .o_avea_stock_product_identity--compact {
+        gap: 0.65rem;
+        grid-template-columns: 4.25rem minmax(0, 1fr);
+        min-width: 0;
+    }
+
+    .o_avea_stock_product_image--compact {
+        img {
+            border-radius: 0.45rem;
+            max-height: 4.25rem;
+            object-fit: cover;
+            width: 4.25rem;
+        }
+
+        .o_field_image img {
+            max-width: 4.25rem;
+        }
+    }
+
+    .o_avea_stock_product_fields--identity {
+        gap: 0.55rem 0.65rem;
+    }
+
+    .o_avea_stock_product_fields--pricing {
+        gap: 0.55rem 0.65rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -1457,7 +1667,24 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .o_avea_stock_product_quick .o_avea_stock_product_quick_fields {
-        grid-template-columns: minmax(0, 1fr);
+    .o_avea_workspace--stock-product-quick {
+        .o_avea_stock_product_identity--compact {
+            grid-template-columns: minmax(0, 1fr);
+        }
+
+        .o_avea_stock_product_fields--pricing {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
+
+    .o_dialog:has(.o_avea_workspace--stock-product-quick) {
+        .modal-dialog {
+            margin: 0.5rem;
+            max-width: calc(100vw - 1rem);
+        }
+
+        .modal-footer .btn {
+            flex: 1 1 auto;
+        }
     }
 }
