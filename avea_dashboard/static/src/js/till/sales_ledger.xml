@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.SalesLedgerList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_sales_ledger_banner">
+                <div class="o_avea_sales_ledger_banner_intro">
+                    <span class="o_avea_workspace_eyebrow">Sessions</span>
+                    <h1 class="o_avea_workspace_title">Sales Ledger</h1>
+                    <p class="o_avea_workspace_section_subtitle">
+                        Individual product sale lines across all POS sessions.
+                        Search by product, customer, order number or date.
+                    </p>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

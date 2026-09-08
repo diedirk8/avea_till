@@ -26,11 +26,19 @@
         name="Session Dashboard"
         parent="menu_avea_till"
         action="action_avea_session_dashboard"
-        sequence="90"
+        sequence="5"
+    />
+
+    <menuitem
+        id="menu_avea_sales_ledger"
+        name="Sales Ledger"
+        parent="menu_avea_till"
+        action="action_avea_sales_ledger"
+        sequence="10"
     />
 
     <record id="menu_avea_session_dashboard" model="ir.ui.menu">
-        <field name="active" eval="False"/>
+        <field name="active" eval="True"/>
     </record>
 
     <menuitem

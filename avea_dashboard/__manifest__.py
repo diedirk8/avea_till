@@ -7,7 +7,7 @@ Avea Dashboard
 A modular retail dashboard for Odoo Point of Sale.
 
 Features:
-- Session Dashboard
+- Session Dashboard and Sales Ledger
 - Cash Ledger and till management
 - Customer Credit (foundation)
 - POS Store Credit payments
@@ -21,7 +21,7 @@ Features:
 - Receive Stock and Return Stock
 - Avea Promotions (wrapper over Odoo Discount & Loyalty), including Combo Price
 """,
-    "version": "19.0.3.9.10",
+    "version": "19.0.3.9.11",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -53,6 +53,7 @@ Features:
         "views/till/payment_correction_wizard_views.xml",
         "views/till/till_dashboard_views.xml",
         "views/till/session_dashboard_views.xml",
+        "views/till/sales_ledger_views.xml",
         "views/till/sessions_views.xml",
         "views/till/business_overview_views.xml",
         "views/credit/credit_dashboard_views.xml",
@@ -92,6 +93,7 @@ Features:
             "avea_till/static/src/scss/till/till_dashboard.scss",
             "avea_till/static/src/scss/till/session_dashboard.scss",
             "avea_till/static/src/scss/till/business_overview.scss",
+            "avea_till/static/src/scss/till/sales_ledger.scss",
             "avea_till/static/src/scss/till/till_ledger_amount.scss",
             "avea_till/static/src/scss/credit/credit_workspace.scss",
             "avea_till/static/src/scss/credit/credit_ledger.scss",
@@ -99,6 +101,8 @@ Features:
             "avea_till/static/src/scss/stock/stock_workspace.scss",
             "avea_till/static/src/scss/promotion/promotion_workspace.scss",
             "avea_till/static/src/js/promotion/promotion_form.js",
+            "avea_till/static/src/js/till/sales_ledger.js",
+            "avea_till/static/src/js/till/sales_ledger.xml",
             "avea_till/static/src/js/stock/stock_catalogue.js",
             "avea_till/static/src/js/stock/stock_catalogue.xml",
             "avea_till/static/src/js/stock/stock_receive_form.js",

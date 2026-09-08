@@ -61,7 +61,7 @@ Feature (e.g. credit/)
 
 | Feature | Model namespace | Description |
 |---------|-----------------|-------------|
-| Till | `avea.till.*` | Session Dashboard, Cash Ledger, till movements |
+| Till | `avea.till.*` | Session Dashboard, Sales Ledger, Cash Ledger, till movements |
 | Customer Credit | `avea.credit.*` | Store credit foundation (placeholders) |
 | Operations | `avea.operational.*` / `avea.money.*` | Account balances, operational expense, money transfer |
 | Stock | `avea.stock.*` + `product.template` extensions | Stock Workspace catalogue, New/Edit Stock Item, Receive Stock, Return Stock |

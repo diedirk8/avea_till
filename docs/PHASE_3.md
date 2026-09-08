@@ -401,6 +401,27 @@ POS Ticket Screen only soft-filters (permission, current open session, completed
 
 ---
 
+## Sales Ledger — implemented (`19.0.3.9.11`)
+
+**Menu:** Sessions → Sales Ledger (alongside Session Dashboard).
+
+Global, paginated list of individual **POS product sale lines** across all sessions. Source of truth is native `pos.order.line` — no parallel ledger model.
+
+| Column | Source |
+|--------|--------|
+| Date / Time | `order_id.date_order` |
+| Product | `full_product_name` / product |
+| Qty | `qty` (negative for refunds) |
+| Customer | `order_id.partner_id` |
+| Order # | Receipt / order reference (clickable → POS order form) |
+
+- ~100 rows per page (standard Odoo pager).
+- Default sort: newest first.
+- Filters: Product, Customer, Order #, Date, Refunds/Sales.
+- Completed orders only (`paid`, `done`, `invoiced`); excludes combo container lines and zero-qty rows.
+
+---
+
 ## Development rules
 
 - Inspect the existing implementation before changing anything.

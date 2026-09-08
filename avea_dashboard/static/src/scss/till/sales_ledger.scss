@@ -1,0 +1,102 @@
+// Sales Ledger — global POS product sale lines.
+
+.o_avea_sales_ledger_banner {
+    background: transparent;
+    margin-bottom: 0.75rem;
+    padding: 0.35rem 0 0.15rem;
+
+    .o_avea_workspace_title {
+        font-size: 1.7rem;
+        letter-spacing: -0.04em;
+    }
+
+    .o_avea_workspace_section_subtitle {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.9rem;
+        margin: 0.35rem 0 0;
+        max-width: 42rem;
+    }
+}
+
+.o_avea_sales_ledger_list {
+    .o_list_table {
+        table-layout: auto;
+        width: 100%;
+
+        thead {
+            background-color: var(--o-gray-100, #f8f9fa);
+        }
+
+        th,
+        td {
+            vertical-align: middle;
+        }
+
+        th[data-name="avea_order_date"],
+        td[name="avea_order_date"] {
+            min-width: 10rem;
+            white-space: nowrap;
+            width: 16%;
+        }
+
+        th[data-name="avea_product_display"],
+        td[name="avea_product_display"] {
+            min-width: 12rem;
+            width: 34%;
+        }
+
+        th[data-name="qty"],
+        td[name="qty"] {
+            min-width: 4rem;
+            text-align: right;
+            white-space: nowrap;
+            width: 8%;
+        }
+
+        th[data-name="avea_order_partner_id"],
+        td[name="avea_order_partner_id"] {
+            min-width: 10rem;
+            width: 22%;
+        }
+
+        th[data-name="avea_order_reference"],
+        td[name="avea_order_reference"] {
+            min-width: 8rem;
+            width: 14%;
+        }
+
+        td[name="avea_order_reference"] .o_field_widget {
+            color: var(--o-action, #66598f);
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: underline;
+            text-underline-offset: 0.12rem;
+        }
+
+        td[name="avea_order_reference"] .o_field_widget:hover {
+            color: var(--o-action-accent, #564b78);
+        }
+    }
+}
+
+.o_action_manager:has(.o_avea_sales_ledger_list) {
+    .o_control_panel {
+        background: transparent;
+        border-bottom: 1px solid var(--o-gray-200, #dee2e6);
+        margin-bottom: 0.35rem;
+        padding-bottom: 0.35rem;
+    }
+
+    .o_cp_searchview {
+        min-width: 16rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .o_avea_sales_ledger_list .o_list_table {
+        th[data-name="avea_order_partner_id"],
+        td[name="avea_order_partner_id"] {
+            min-width: 8rem;
+        }
+    }
+}
