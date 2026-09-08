@@ -17,15 +17,16 @@
                 js_class="avea_sales_ledger_list"
             >
                 <field name="avea_order_date" string="Date / Time" widget="datetime"/>
-                <field name="avea_product_display" string="Product"/>
-                <field name="product_id" column_invisible="True"/>
-                <field name="qty" string="Qty" decoration-danger="qty &lt; 0"/>
-                <field name="avea_order_partner_id" string="Customer"/>
                 <field
                     name="avea_order_reference"
                     string="Order #"
                     class="o_avea_sales_ledger_order_link"
                 />
+                <field name="avea_product_reference" string="Ref"/>
+                <field name="avea_product_display" string="Product"/>
+                <field name="product_id" column_invisible="True"/>
+                <field name="qty" string="Qty" decoration-danger="qty &lt; 0"/>
+                <field name="avea_order_partner_id" string="Customer" optional="show"/>
                 <field name="order_id" column_invisible="True"/>
                 <field name="currency_id" column_invisible="True"/>
             </list>
@@ -41,7 +42,12 @@
                 <field
                     name="avea_product_display"
                     string="Product"
-                    filter_domain="['|', ('avea_product_display', 'ilike', self), ('product_id', 'ilike', self)]"
+                    filter_domain="['|', '|', ('avea_product_display', 'ilike', self), ('avea_product_reference', 'ilike', self), ('product_id', 'ilike', self)]"
+                />
+                <field
+                    name="avea_product_reference"
+                    string="Ref"
+                    filter_domain="[('avea_product_reference', 'ilike', self)]"
                 />
                 <field name="avea_order_partner_id" string="Customer"/>
                 <field
@@ -50,6 +56,21 @@
                     filter_domain="['|', ('avea_order_reference', 'ilike', self), ('order_id.name', 'ilike', self)]"
                 />
                 <separator/>
+                <filter
+                    string="Today"
+                    name="avea_ledger_today"
+                    domain="[('avea_order_date', '&gt;=', context_today().strftime('%Y-%m-%d 00:00:00')), ('avea_order_date', '&lt;', (context_today() + relativedelta(days=1)).strftime('%Y-%m-%d 00:00:00'))]"
+                />
+                <filter
+                    string="Last 7 Days"
+                    name="avea_ledger_last_7"
+                    domain="[('avea_order_date', '&gt;=', (context_today() - relativedelta(days=6)).strftime('%Y-%m-%d 00:00:00'))]"
+                />
+                <filter
+                    string="Last 30 Days"
+                    name="avea_ledger_last_30"
+                    domain="[('avea_order_date', '&gt;=', (context_today() - relativedelta(days=29)).strftime('%Y-%m-%d 00:00:00'))]"
+                />
                 <filter string="Refunds" name="refunds" domain="[('qty', '&lt;', 0)]"/>
                 <filter string="Sales" name="sales" domain="[('qty', '&gt;', 0)]"/>
                 <filter string="Date" name="filter_order_date" date="avea_order_date"/>

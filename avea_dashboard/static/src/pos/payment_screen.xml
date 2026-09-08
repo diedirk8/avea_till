@@ -23,30 +23,6 @@
                         </span>
                     </button>
 
-                    <button
-                        class="avea-info-card avea-invoice-card"
-                        type="button"
-                        t-att-class="{
-                            'avea-info-card-active': currentOrder.isToInvoice(),
-                            'avea-info-card-unavailable': !pos.config.canInvoice,
-                        }"
-                        t-on-click="toggleIsToInvoice"
-                        t-att-disabled="currentOrder.lines[0]?.refunded_orderline_id?.order_id?.isToInvoice()"
-                    >
-                        <span class="avea-info-card-icon" aria-hidden="true">
-                            <i class="fa fa-file-text-o"/>
-                        </span>
-                        <span class="avea-info-card-copy">
-                            <span class="avea-info-card-label">Invoice</span>
-                            <span t-if="!pos.config.canInvoice" class="avea-info-card-value">Not available</span>
-                        </span>
-                        <span
-                            class="avea-switch"
-                            t-att-class="{ 'is-on': currentOrder.isToInvoice() }"
-                            role="presentation"
-                        />
-                    </button>
-
                     <div t-if="(pos.config.iface_tipproduct and pos.config.tip_product_id) or pos.config.iface_cashdrawer or pos.config.ship_later" class="avea-optional-actions">
                         <button t-if="pos.config.iface_tipproduct and pos.config.tip_product_id" class="avea-optional-btn" type="button" t-att-class="{ 'is-on': currentOrder.getTip() }" t-on-click="addTip">
                             <i class="fa fa-heart me-2"/>Tip

@@ -1,5 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.tools import email_normalize
 
 
 class ResCompany(models.Model):
@@ -32,6 +33,22 @@ class ResCompany(models.Model):
         ),
         help="Existing cash and bank journals shown as From/To in Transfer Money. "
         "Unselected journals stay in Odoo accounting but are hidden from Avea.",
+    )
+    avea_auto_email_receipt = fields.Boolean(
+        string="Automatically Email POS Receipt",
+        default=False,
+        help="When enabled, Avea emails a receipt to the customer after each "
+        "completed POS sale when the customer has a valid email address.",
+    )
+    avea_receipt_sender_name = fields.Char(
+        string="Receipt Sender Name",
+        default=lambda self: self.env.company.name,
+        help="Business name shown as the sender on emailed Avea receipts.",
+    )
+    avea_receipt_sender_email = fields.Char(
+        string="Receipt Sender Email",
+        default=lambda self: self.env.company.email,
+        help="Business email address used to send Avea receipts.",
     )
     avea_expense_journal_ids = fields.Many2many(
         "account.journal",
@@ -97,6 +114,17 @@ class ResCompany(models.Model):
         if journal.id in self._avea_pos_till_cash_journal_ids():
             return False
         return True
+
+    @api.constrains("avea_receipt_sender_email")
+    def _check_avea_receipt_sender_email(self):
+        for company in self:
+            email = (company.avea_receipt_sender_email or "").strip()
+            if not email:
+                continue
+            if not email_normalize(email):
+                raise ValidationError(
+                    _("Enter a valid sender email address for Avea receipts.")
+                )
 
     @api.constrains("avea_cash_safe_journal_id")
     def _check_avea_cash_safe_journal(self):
@@ -251,4 +279,7 @@ class ResCompany(models.Model):
 
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)
-        return fields_list + ["avea_cash_safe_journal_id"]
+        return fields_list + [
+            "avea_cash_safe_journal_id",
+            "avea_auto_email_receipt",
+        ]

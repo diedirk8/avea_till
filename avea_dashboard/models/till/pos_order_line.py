@@ -1,9 +1,12 @@
+import re
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools.misc import format_date
 
 
 class PosOrderLine(models.Model):
-    _inherit = "pos.order.line"
+    _inherit = ["pos.order.line", "avea.performance.analytics.mixin"]
 
     avea_order_date = fields.Datetime(
         string="Sale date",
@@ -27,6 +30,13 @@ class PosOrderLine(models.Model):
         index=True,
         readonly=True,
     )
+    avea_product_reference = fields.Char(
+        string="Ref",
+        compute="_compute_avea_product_display",
+        store=True,
+        index=True,
+        readonly=True,
+    )
     avea_product_display = fields.Char(
         string="Product name",
         compute="_compute_avea_product_display",
@@ -45,15 +55,35 @@ class PosOrderLine(models.Model):
             reference = order._avea_till_display_reference()
             line.avea_order_reference = reference or str(order.id)
 
-    @api.depends("full_product_name", "product_id.display_name")
+    @api.depends(
+        "full_product_name",
+        "product_id.display_name",
+        "product_id.name",
+        "product_id.default_code",
+    )
     def _compute_avea_product_display(self):
+        bracket_ref_re = re.compile(r"^\[(?P<ref>[^\]]+)\]\s*(?P<name>.*)$")
         for line in self:
-            line.avea_product_display = (
+            reference = (line.product_id.default_code or "").strip()
+            raw = (
                 line.full_product_name
                 or line.product_id.display_name
                 or line.product_id.name
                 or ""
-            )
+            ).strip()
+            name = raw
+            if raw:
+                match = bracket_ref_re.match(raw)
+                if match:
+                    bracket_ref = match.group("ref").strip()
+                    bracket_name = match.group("name").strip()
+                    if not reference:
+                        reference = bracket_ref
+                    name = bracket_name or raw
+                elif reference and raw.startswith(f"[{reference}]"):
+                    name = raw[len(f"[{reference}]") :].strip() or raw
+            line.avea_product_reference = reference or False
+            line.avea_product_display = name or raw
 
     @api.model
     def _avea_sales_ledger_domain(self):
@@ -74,8 +104,10 @@ class PosOrderLine(models.Model):
         if product:
             domain += [
                 "|",
+                "|",
+                ("avea_product_display", "ilike", product),
+                ("avea_product_reference", "ilike", product),
                 ("product_id", "ilike", product),
-                ("full_product_name", "ilike", product),
             ]
         if customer:
             domain.append(("avea_order_partner_id", "ilike", customer))
@@ -90,6 +122,45 @@ class PosOrderLine(models.Model):
         if date_to:
             domain.append(("avea_order_date", "<=", date_to))
         return domain
+
+    @api.model
+    def _avea_format_ledger_date(self, dt):
+        if not dt:
+            return False
+        return format_date(self.env, fields.Datetime.to_datetime(dt).date())
+
+    @api.model
+    def avea_sales_ledger_banner_info(self, domain=None):
+        """Summary text for the Sales Ledger hero banner."""
+        domain = list(domain or self._avea_sales_ledger_domain())
+        total = self.search_count(domain)
+        if not total:
+            return {
+                "total": 0,
+                "range_display": _("No sale lines match the current filters"),
+                "summary_display": _("0 sale lines"),
+            }
+
+        oldest = self.search(domain, order="avea_order_date asc, id asc", limit=1)
+        newest = self.search(domain, order="avea_order_date desc, id desc", limit=1)
+        oldest_label = self._avea_format_ledger_date(oldest.avea_order_date)
+        newest_label = self._avea_format_ledger_date(newest.avea_order_date)
+        if oldest_label == newest_label:
+            range_display = oldest_label
+        else:
+            range_display = _("%(from)s – %(to)s") % {
+                "from": oldest_label,
+                "to": newest_label,
+            }
+
+        summary_display = _("%(count)s sale lines") % {
+            "count": f"{total:,}",
+        }
+        return {
+            "total": total,
+            "range_display": range_display,
+            "summary_display": summary_display,
+        }
 
     def action_avea_open_pos_order(self):
         self.ensure_one()

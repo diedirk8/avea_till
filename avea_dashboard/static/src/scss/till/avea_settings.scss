@@ -1,0 +1,93 @@
+.o_avea_workspace--settings {
+    .o_control_panel {
+        display: none !important;
+    }
+
+    .o_form_sheet_bg {
+        padding-top: 0.5rem;
+    }
+
+    .o_avea_workspace_sheet {
+        margin: 0 auto;
+        max-width: 40rem;
+        padding: 0 1rem 1.5rem;
+    }
+
+    .o_avea_workspace_hero {
+        margin-bottom: 0.75rem;
+    }
+
+    .o_avea_workspace_hero_intro {
+        gap: 0.2rem;
+    }
+
+    .o_avea_workspace_title {
+        font-size: 1.65rem;
+        margin-bottom: 0;
+    }
+
+    .o_avea_workspace_lead {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.875rem;
+        line-height: 1.45;
+        margin: 0.25rem 0 0;
+        max-width: 36rem;
+    }
+
+    .o_avea_settings_sections {
+        display: grid;
+        gap: 0.85rem;
+        margin-top: 0.85rem;
+    }
+
+    .o_avea_settings_section {
+        padding: 1rem 1.1rem 1.1rem;
+    }
+
+    .o_avea_settings_section_title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+    }
+
+    .o_avea_settings_section_help {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.8125rem;
+        line-height: 1.4;
+        margin: 0 0 0.85rem;
+    }
+
+    .o_avea_settings_row {
+        align-items: center;
+        border-top: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        display: flex;
+        gap: 0.85rem;
+        justify-content: space-between;
+        padding-top: 0.85rem;
+    }
+
+    .o_avea_settings_row_copy {
+        min-width: 0;
+    }
+
+    .o_avea_settings_row_label {
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .o_avea_settings_row_hint {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.78rem;
+        line-height: 1.35;
+        margin-top: 0.15rem;
+    }
+
+    .o_avea_settings_sender_grid {
+        border-top: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        display: grid;
+        gap: 0.85rem 1rem;
+        grid-template-columns: 1fr;
+        margin-top: 0.85rem;
+        padding-top: 0.85rem;
+    }
+}

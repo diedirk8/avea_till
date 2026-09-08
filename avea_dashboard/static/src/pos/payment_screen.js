@@ -555,4 +555,8 @@ patch(PaymentScreen.prototype, {
         }
         return super.deletePaymentLine(...arguments);
     },
+
+    toggleIsToInvoice() {
+        // Avea POS does not expose invoice generation on the payment screen.
+    },
 });

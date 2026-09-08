@@ -2,3 +2,5 @@
 from . import test_stock_receive_charges
 from . import test_stock_receive_pricing
 from . import test_sales_ledger
+from . import test_business_performance
+from . import test_avea_settings_receipt_email

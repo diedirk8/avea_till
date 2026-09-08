@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="report_avea_pos_receipt_email">
+        <t t-foreach="docs" t-as="order">
+            <div style="font-family: Arial, Helvetica, sans-serif; color: #212529; font-size: 14px; line-height: 1.45; max-width: 520px;">
+                <div style="margin-bottom: 1rem;">
+                    <div style="font-size: 18px; font-weight: 700;" t-out="order.company_id.avea_receipt_sender_name or order.company_id.name"/>
+                    <t t-if="order.company_id.street">
+                        <div t-out="order.company_id.street"/>
+                    </t>
+                    <t t-if="order.company_id.city or order.company_id.zip">
+                        <div>
+                            <t t-if="order.company_id.city" t-out="order.company_id.city"/>
+                            <t t-if="order.company_id.zip">
+                                <t t-if="order.company_id.city"> </t>
+                                <t t-out="order.company_id.zip"/>
+                            </t>
+                        </div>
+                    </t>
+                    <t t-if="order.company_id.phone">
+                        <div t-out="order.company_id.phone"/>
+                    </t>
+                    <t t-if="order.company_id.vat">
+                        <div>
+                            <span>VAT: </span>
+                            <span t-out="order.company_id.vat"/>
+                        </div>
+                    </t>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <div>
+                        <strong>Order:</strong>
+                        <span t-out="order.pos_reference or order.name"/>
+                    </div>
+                    <div>
+                        <strong>Date:</strong>
+                        <span t-out="format_datetime(order.date_order, dt_format='medium')"/>
+                    </div>
+                    <t t-if="order.partner_id">
+                        <div>
+                            <strong>Customer:</strong>
+                            <span t-out="order.partner_id.name"/>
+                        </div>
+                    </t>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; border-bottom: 1px solid #dee2e6; padding: 0.35rem 0;">Item</th>
+                            <th style="text-align: right; border-bottom: 1px solid #dee2e6; padding: 0.35rem 0;">Qty</th>
+                            <th style="text-align: right; border-bottom: 1px solid #dee2e6; padding: 0.35rem 0;">Price</th>
+                            <th style="text-align: right; border-bottom: 1px solid #dee2e6; padding: 0.35rem 0;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-foreach="order.lines" t-as="line">
+                            <td style="padding: 0.35rem 0; vertical-align: top;">
+                                <div t-out="line.full_product_name or line.product_id.display_name"/>
+                                <t t-if="line.discount">
+                                    <div style="color: #6c757d; font-size: 12px;">
+                                        Discount: <t t-out="line.discount"/>%
+                                    </div>
+                                </t>
+                            </td>
+                            <td style="text-align: right; padding: 0.35rem 0; vertical-align: top;" t-out="line.qty"/>
+                            <td style="text-align: right; padding: 0.35rem 0; vertical-align: top;" t-out="format_amount(line.price_unit, order.currency_id)"/>
+                            <td style="text-align: right; padding: 0.35rem 0; vertical-align: top;" t-out="format_amount(line.price_subtotal_incl, order.currency_id)"/>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="border-top: 1px solid #dee2e6; padding-top: 0.75rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                        <span>Tax</span>
+                        <span t-out="format_amount(order.amount_tax, order.currency_id)"/>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px;">
+                        <span>Total</span>
+                        <span t-out="format_amount(order.amount_total, order.currency_id)"/>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 1rem;">
+                    <div style="font-weight: 600; margin-bottom: 0.35rem;">Payment</div>
+                    <t t-foreach="order._avea_receipt_payment_rows()" t-as="payment">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span t-out="payment['name']"/>
+                            <span t-out="payment['amount']"/>
+                        </div>
+                    </t>
+                </div>
+
+                <div style="color: #6c757d; font-size: 12px;">
+                    Thank you for your purchase.
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <record id="email_template_avea_pos_receipt" model="mail.template">
+        <field name="name">Avea POS Receipt</field>
+        <field name="description">Receipt emailed automatically after Avea POS sales</field>
+        <field name="model_id" ref="point_of_sale.model_pos_order"/>
+        <field name="subject">Your receipt from {{ object.company_id.avea_receipt_sender_name or object.company_id.name }}</field>
+        <field name="email_from">{{ object._avea_receipt_email_from() }}</field>
+        <field name="email_to" eval="False"/>
+        <field name="partner_to" eval="False"/>
+        <field name="use_default_to" eval="False"/>
+        <field name="lang">{{ object.partner_id.lang or user.lang }}</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="body_html" type="html">
+            <t t-call="avea_till.report_avea_pos_receipt_email">
+                <t t-set="docs" t-value="object"/>
+            </t>
+        </field>
+    </record>
+
+</odoo>

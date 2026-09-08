@@ -219,3 +219,110 @@ Decision
 - Accounting entries follow standard Odoo vendor-bill posting: debit expense (+ input tax), credit payable
 - Do **not** allocate into inventory valuation, AVCO, or `standard_price` from Receive Stock
 - Keep `charge_kind` / `avea_additional_charge` so a future Landed Costs workflow can select these bill lines without rewriting Receive Stock
+
+---
+
+# ADR-010
+
+## Business Performance ranking methodology
+
+Status
+
+Accepted
+
+Reason
+
+Business owners need commercially meaningful answers — not naive “top sellers by quantity” or “highest margin %” lists that mislead when sample sizes, discounts, refunds, or price points differ.
+
+Decision
+
+Performance is a **separate workspace** under Business Overview. Business Overview itself stays unchanged.
+
+### Data source
+
+- Native `pos.order.line` rows from **paid** POS orders in the selected reporting period (`reporting_period.py` windows, same as Business Overview).
+- Same line filter as Sales Ledger: real products only, exclude service/combo parent lines, include refunds as negative quantities/amounts.
+- **Revenue EX tax** = Σ `price_subtotal` (already net of line discounts and promotions).
+- **Unit cost** = `product.template._avea_get_cost_ex_tax()` (Avea commercial cost, falling back to `standard_price`).
+- **Gross profit** = Σ (`price_subtotal` − unit cost × qty) per line.
+- **Categories** aggregate underlying sale lines — never average product margins.
+
+### Top Performing (products and categories)
+
+Rank by **performance score**:
+
+```
+performance_score = revenue_ex_tax × sqrt(units_positive / period_units_positive)
+```
+
+Where `units_positive` counts only qty > 0 on each line, and `period_units_positive` is the sum across all qualifying rows in that ranking set.
+
+Only rows with `revenue_ex_tax > 0` and at least one unit sold qualify. Refunds reduce net totals but do not appear as “top performers” on their own.
+
+This balances high-volume/low-value and lower-volume/high-value strengths without arbitrary formulas such as quantity + revenue.
+
+### Most Profitable (products and categories)
+
+Rank by **gross profit contribution** (absolute currency), not margin percentage.
+
+Only rows with positive gross profit in the period qualify.
+
+### Presentation
+
+- Reuse Avea workspace shell, hero, period selector, and card styling from Business Overview.
+- Show supporting columns: Qty, Revenue EX Tax; add Gross Profit on profitability tables.
+- Limit each list to eight rows (same practical limit as Business Overview top products).
+
+---
+
+# ADR-011
+
+## Standalone Avea Settings workspace
+
+Status
+
+Accepted
+
+Reason
+
+Avea is evolving into a standalone product. Business owners should configure Avea in Avea — not through Odoo's General Settings screens or POS invoice workflows.
+
+Decision
+
+### Settings surface
+
+- Add a top-level **Settings** item in Avea navigation.
+- Use the same Avea workspace shell and visual language as Business Overview and Performance.
+- Do **not** add these controls to Odoo General Settings → Avea Dashboard.
+- Store business-level settings on `res.company` underneath, exposed through a transient `avea.business.settings` workspace that can grow with future sections.
+
+### Initial section: Receipts & Email
+
+Business-level controls:
+
+1. **Automatically email receipt to customer** (ON/OFF)
+2. **Sender name**
+3. **Sender email**
+
+When ON, after a successfully completed POS sale:
+
+- If a customer is selected and has a valid email address, Avea automatically emails a simple **Avea receipt** (not an invoice).
+- No cashier action, no payment-screen email choice, and no Odoo invoice generated/downloaded/opened from POS.
+
+When OFF, no automatic email is sent.
+
+### Receipt content and sender
+
+- Reuse Avea/Odoo POS order data and a dedicated QWeb email template aligned with printed receipt information: business details, date/time, order number, products, quantities, prices, discounts/promotions, tax, total, and payment method.
+- Email is sent as the **business** (`avea_receipt_sender_name` / `avea_receipt_sender_email`), not the cashier/session user.
+- Use Odoo `mail.template` and `mail.mail` underneath; Avea owns the user-facing wording and layout.
+- The email body stays a simple Avea summary. The attachment is the **same POS `OrderReceipt` component** used for printing, rendered in POS after payment and attached as a PDF (no second receipt template).
+
+### POS behaviour
+
+- Hide the POS **Invoice** toggle from the Avea payment screen.
+- Force `to_invoice = False` on POS sync so invoice workflow is not exposed or triggered from Avea POS.
+
+### Tests
+
+Cover setting ON/OFF, customer with/without email, no customer, successful completed sale, receipt contents, business sender identity, cashier not used as sender, and no invoice on POS.

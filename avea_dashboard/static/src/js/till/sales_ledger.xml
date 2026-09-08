@@ -3,15 +3,72 @@
 
     <t t-name="avea_till.SalesLedgerList" t-inherit="web.ListView" t-inherit-mode="primary">
         <xpath expr="//Layout" position="before">
-            <div class="o_avea_sales_ledger_banner">
-                <div class="o_avea_sales_ledger_banner_intro">
-                    <span class="o_avea_workspace_eyebrow">Sessions</span>
-                    <h1 class="o_avea_workspace_title">Sales Ledger</h1>
-                    <p class="o_avea_workspace_section_subtitle">
-                        Individual product sale lines across all POS sessions.
-                        Search by product, customer, order number or date.
-                    </p>
+            <div class="o_avea_workspace_sheet o_avea_sales_ledger_sheet">
+                <div class="o_avea_workspace_hero">
+                    <div class="o_avea_workspace_hero_intro">
+                        <span class="o_avea_workspace_eyebrow">Product sales across all sessions</span>
+                        <h1 class="o_avea_workspace_title">Sales Ledger</h1>
+                        <div class="o_avea_period_range">
+                            <t t-esc="bannerState.rangeDisplay"/>
+                        </div>
+                        <div class="o_avea_comparison_range">
+                            <t t-esc="bannerState.summaryDisplay"/>
+                        </div>
+                        <p class="o_avea_tax_note">Including tax</p>
+                    </div>
+                    <div class="o_avea_period_selector">
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('all')"
+                            t-on-click="() => this.onFilterClick('all')"
+                        >
+                            All
+                        </button>
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('today')"
+                            t-on-click="() => this.onFilterClick('today')"
+                        >
+                            Today
+                        </button>
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('last_7')"
+                            t-on-click="() => this.onFilterClick('last_7')"
+                        >
+                            Last 7 Days
+                        </button>
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('last_30')"
+                            t-on-click="() => this.onFilterClick('last_30')"
+                        >
+                            Last 30 Days
+                        </button>
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('sales')"
+                            t-on-click="() => this.onFilterClick('sales')"
+                        >
+                            Sales
+                        </button>
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('refunds')"
+                            t-on-click="() => this.onFilterClick('refunds')"
+                        >
+                            Refunds
+                        </button>
+                    </div>
                 </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div
+                t-if="env.config.pagerProps.total > 0"
+                class="o_avea_sales_ledger_pager o_cp_pager text-nowrap"
+            >
+                <Pager t-props="env.config.pagerProps"/>
             </div>
         </xpath>
     </t>

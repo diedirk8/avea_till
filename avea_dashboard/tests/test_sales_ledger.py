@@ -188,3 +188,26 @@ class TestAveaSalesLedger(TestPoSCommon):
         action = line.action_avea_open_pos_order()
         self.assertEqual(action["res_model"], "pos.order")
         self.assertEqual(action["res_id"], order.id)
+
+    def test_product_reference_split_from_pos_name(self):
+        self.product_a.default_code = "00180"
+        order, _session = self._create_paid_order(
+            lines=[(self.product_a, 1)],
+            uuid="sales-ledger-ref-split",
+        )
+        line = self._ledger_lines([("order_id", "=", order.id)])
+        line.write({"full_product_name": "[00180] RC Mini Puppy 4kg"})
+        line._compute_avea_product_display()
+        self.assertEqual(line.avea_product_reference, "00180")
+        self.assertEqual(line.avea_product_display, "RC Mini Puppy 4kg")
+
+    def test_banner_info_reports_count_and_range(self):
+        order, _session = self._create_paid_order(
+            lines=[(self.product_a, 1), (self.product_b, 1)],
+            uuid="sales-ledger-banner",
+        )
+        domain = self.Line._avea_sales_ledger_domain() + [("order_id", "=", order.id)]
+        info = self.Line.avea_sales_ledger_banner_info(domain)
+        self.assertEqual(info["total"], 2)
+        self.assertIn("sale lines", info["summary_display"])
+        self.assertTrue(info["range_display"])

@@ -1,0 +1,153 @@
+"""Performance analytics for Avea Business Performance workspace.
+
+Ranking methodology is defined in ADR-010 (docs/decisions.md).
+"""
+import math
+
+from odoo import _, api, models
+
+PERFORMANCE_RANK_LIMIT = 8
+
+
+class PosOrderLinePerformanceAnalytics(models.AbstractModel):
+    _name = "avea.performance.analytics.mixin"
+    _description = "Avea Performance Analytics Helpers"
+
+    @api.model
+    def _avea_performance_line_domain(self, order_ids):
+        if not order_ids:
+            return [("id", "=", 0)]
+        return [
+            ("order_id", "in", order_ids),
+            ("product_id", "!=", False),
+            ("product_id.type", "not in", ("service", "combo")),
+            ("combo_line_ids", "=", False),
+            ("qty", "!=", 0.0),
+        ]
+
+    @api.model
+    def _avea_performance_lines_for_orders(self, orders):
+        if not orders:
+            return self.env["pos.order.line"].browse()
+        return self.env["pos.order.line"].search(
+            self._avea_performance_line_domain(orders.ids)
+        )
+
+    @api.model
+    def _avea_performance_unit_cost(self, product):
+        template = product.product_tmpl_id
+        return template._avea_get_cost_ex_tax() if template else 0.0
+
+    @api.model
+    def _avea_performance_line_metrics(self, line):
+        """Return revenue, cost, gross profit and unit counts for one POS line."""
+        qty = float(line.qty or 0.0)
+        revenue_ex_tax = float(line.price_subtotal or 0.0)
+        unit_cost = self._avea_performance_unit_cost(line.product_id)
+        cost_total = unit_cost * qty
+        gross_profit = revenue_ex_tax - cost_total
+        units_positive = qty if qty > 0 else 0.0
+        return {
+            "qty": qty,
+            "revenue_ex_tax": revenue_ex_tax,
+            "cost_total": cost_total,
+            "gross_profit": gross_profit,
+            "units_positive": units_positive,
+        }
+
+    @api.model
+    def _avea_performance_bucket_key(self, line, *, group_by):
+        if group_by == "product":
+            product = line.product_id
+            if not product:
+                return False
+            return ("product", product.id, product.display_name)
+        category = line.product_id.categ_id
+        if not category:
+            return ("category", 0, _("Uncategorised"))
+        return ("category", category.id, category.complete_name or category.name)
+
+    @api.model
+    def _avea_performance_aggregate(self, lines, *, group_by):
+        """Aggregate sale lines by product or category."""
+        buckets = {}
+        for line in lines:
+            key = self._avea_performance_bucket_key(line, group_by=group_by)
+            if not key:
+                continue
+            _kind, record_id, label = key
+            metrics = self._avea_performance_line_metrics(line)
+            bucket = buckets.setdefault(
+                record_id,
+                {
+                    "record_id": record_id,
+                    "label": label,
+                    "qty_net": 0.0,
+                    "units_positive": 0.0,
+                    "revenue_ex_tax": 0.0,
+                    "gross_profit": 0.0,
+                },
+            )
+            bucket["qty_net"] += metrics["qty"]
+            bucket["units_positive"] += metrics["units_positive"]
+            bucket["revenue_ex_tax"] += metrics["revenue_ex_tax"]
+            bucket["gross_profit"] += metrics["gross_profit"]
+        return list(buckets.values())
+
+    @api.model
+    def _avea_performance_score_rows(self, aggregates):
+        """Rank by balanced commercial strength (ADR-010)."""
+        candidates = [
+            row
+            for row in aggregates
+            if row["revenue_ex_tax"] > 0 and row["units_positive"] >= 1.0
+        ]
+        if not candidates:
+            return []
+
+        period_units = sum(row["units_positive"] for row in candidates)
+        if period_units <= 0:
+            return []
+
+        scored = []
+        for row in candidates:
+            volume_ratio = row["units_positive"] / period_units
+            performance_score = row["revenue_ex_tax"] * math.sqrt(volume_ratio)
+            scored.append({**row, "performance_score": performance_score})
+
+        scored.sort(
+            key=lambda row: (
+                -row["performance_score"],
+                -row["revenue_ex_tax"],
+                -row["units_positive"],
+                row["label"],
+            )
+        )
+        return scored[:PERFORMANCE_RANK_LIMIT]
+
+    @api.model
+    def _avea_performance_profit_rows(self, aggregates):
+        """Rank by gross-profit contribution (ADR-010)."""
+        candidates = [row for row in aggregates if row["gross_profit"] > 0]
+        candidates.sort(
+            key=lambda row: (
+                -row["gross_profit"],
+                -row["revenue_ex_tax"],
+                -row["units_positive"],
+                row["label"],
+            )
+        )
+        return candidates[:PERFORMANCE_RANK_LIMIT]
+
+    @api.model
+    def _avea_performance_rankings(self, orders):
+        """Return four ranked lists for the selected paid POS orders."""
+        lines = self._avea_performance_lines_for_orders(orders)
+        product_aggs = self._avea_performance_aggregate(lines, group_by="product")
+        category_aggs = self._avea_performance_aggregate(lines, group_by="category")
+        return {
+            "top_products": self._avea_performance_score_rows(product_aggs),
+            "top_categories": self._avea_performance_score_rows(category_aggs),
+            "profit_products": self._avea_performance_profit_rows(product_aggs),
+            "profit_categories": self._avea_performance_profit_rows(category_aggs),
+        }

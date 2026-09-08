@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_business_settings_form" model="ir.ui.view">
+        <field name="name">avea.business.settings.form</field>
+        <field name="model">avea.business.settings</field>
+        <field name="arch" type="xml">
+            <form string="Settings" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--settings">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Business preferences</span>
+                            <h1 class="o_avea_workspace_title">Settings</h1>
+                            <p class="o_avea_workspace_lead">
+                                Configure how Avea works for your business. More sections will appear here over time.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_settings_sections">
+                        <section class="o_avea_workspace_info_card o_avea_settings_section">
+                            <h2 class="o_avea_settings_section_title">Receipts &amp; Email</h2>
+                            <p class="o_avea_settings_section_help">
+                                Control whether customers receive an Avea receipt by email after a completed sale.
+                            </p>
+
+                            <div class="o_avea_settings_row">
+                                <div class="o_avea_settings_row_copy">
+                                    <div class="o_avea_settings_row_label">Automatically email receipt to customer</div>
+                                    <div class="o_avea_settings_row_hint">
+                                        When on, Avea emails a receipt after payment when the customer has an email address.
+                                    </div>
+                                </div>
+                                <field
+                                    name="avea_auto_email_receipt"
+                                    widget="boolean_toggle"
+                                    nolabel="1"
+                                    class="o_avea_settings_toggle"
+                                />
+                            </div>
+
+                            <div class="o_avea_settings_sender_grid" invisible="not avea_auto_email_receipt">
+                                <div class="o_avea_workspace_info_item">
+                                    <label class="o_avea_workspace_info_label" for="avea_receipt_sender_name">Sender name</label>
+                                    <field name="avea_receipt_sender_name" placeholder="Business name" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <label class="o_avea_workspace_info_label" for="avea_receipt_sender_email">Sender email</label>
+                                    <field name="avea_receipt_sender_email" placeholder="receipts@yourbusiness.com" nolabel="1"/>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_settings" model="ir.actions.server">
+        <field name="name">Settings</field>
+        <field name="model_id" ref="model_avea_business_settings"/>
+        <field name="state">code</field>
+        <field name="code">action = env['avea.business.settings'].action_open_avea_settings()</field>
+    </record>
+
+</odoo>

@@ -1,4 +1,7 @@
+from . import avea_settings
 from . import pos_order
+from . import pos_receipt_email
+from . import performance_analytics
 from . import pos_order_line
 from . import pos_payment_method
 from . import till_movement
@@ -6,6 +9,8 @@ from . import pos_session
 from . import pos_config
 from . import payment_correction_wizard
 from . import business_overview
+from . import business_performance
+from . import performance_analytics
 from . import session_dashboard
 from . import till_dashboard
 from . import res_company

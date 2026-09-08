@@ -2,11 +2,26 @@
 <odoo>
 
     <menuitem
-        id="menu_avea_business_overview"
+        id="menu_avea_business_section"
         name="Business Overview"
         parent="menu_avea_root"
+        sequence="5"
+    />
+
+    <menuitem
+        id="menu_avea_business_overview"
+        name="Overview"
+        parent="menu_avea_business_section"
         action="action_avea_business_overview"
         sequence="5"
+    />
+
+    <menuitem
+        id="menu_avea_business_performance"
+        name="Performance"
+        parent="menu_avea_business_section"
+        action="action_avea_business_performance"
+        sequence="10"
     />
 
     <menuitem
@@ -40,6 +55,14 @@
     <record id="menu_avea_session_dashboard" model="ir.ui.menu">
         <field name="active" eval="True"/>
     </record>
+
+    <menuitem
+        id="menu_avea_settings"
+        name="Settings"
+        parent="menu_avea_root"
+        action="action_avea_settings"
+        sequence="90"
+    />
 
     <menuitem
         id="menu_avea_cash_up"

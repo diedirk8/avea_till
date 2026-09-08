@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_business_performance_form" model="ir.ui.view">
+        <field name="name">avea.business.performance.form</field>
+        <field name="model">avea.business.performance</field>
+        <field name="arch" type="xml">
+            <form string="Performance" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="period" invisible="1"/>
+                    <field name="show_top_products" invisible="1"/>
+                    <field name="show_top_categories" invisible="1"/>
+                    <field name="show_profit_products" invisible="1"/>
+                    <field name="show_profit_categories" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">What is driving sales and profit?</span>
+                            <h1 class="o_avea_workspace_title">Performance</h1>
+                            <div class="o_avea_period_range">
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_comparison_range">
+                                <field name="comparison_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                            <p class="o_avea_tax_note">Revenue figures exclude tax</p>
+                        </div>
+                        <div class="o_avea_period_selector">
+                            <button
+                                name="action_period_today"
+                                type="object"
+                                string="Today"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'today'"
+                            />
+                            <button
+                                name="action_period_today"
+                                type="object"
+                                string="Today"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'today'"
+                            />
+                            <button
+                                name="action_period_wtd"
+                                type="object"
+                                string="Week to Date"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'wtd'"
+                            />
+                            <button
+                                name="action_period_wtd"
+                                type="object"
+                                string="Week to Date"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'wtd'"
+                            />
+                            <button
+                                name="action_period_mtd"
+                                type="object"
+                                string="Month to Date"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'mtd'"
+                            />
+                            <button
+                                name="action_period_mtd"
+                                type="object"
+                                string="Month to Date"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'mtd'"
+                            />
+                            <button
+                                name="action_period_last_7"
+                                type="object"
+                                string="Last 7 Days"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'last_7'"
+                            />
+                            <button
+                                name="action_period_last_7"
+                                type="object"
+                                string="Last 7 Days"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'last_7'"
+                            />
+                            <button
+                                name="action_period_last_30"
+                                type="object"
+                                string="Last 30 Days"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'last_30'"
+                            />
+                            <button
+                                name="action_period_last_30"
+                                type="object"
+                                string="Last 30 Days"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'last_30'"
+                            />
+                            <button
+                                name="action_period_ytd"
+                                type="object"
+                                string="Year to Date"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'ytd'"
+                            />
+                            <button
+                                name="action_period_ytd"
+                                type="object"
+                                string="Year to Date"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'ytd'"
+                            />
+                            <button
+                                name="action_period_custom"
+                                type="object"
+                                string="Custom Period"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'custom'"
+                            />
+                            <button
+                                name="action_period_custom"
+                                type="object"
+                                string="Custom Period"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'custom'"
+                            />
+                        </div>
+                        <div class="o_avea_custom_period" invisible="period != 'custom'">
+                            <div class="o_avea_custom_period_field">
+                                <span class="o_avea_custom_period_label">From</span>
+                                <field name="date_from" nolabel="1" readonly="0"/>
+                            </div>
+                            <div class="o_avea_custom_period_field">
+                                <span class="o_avea_custom_period_label">To</span>
+                                <field name="date_to" nolabel="1" readonly="0"/>
+                            </div>
+                            <button
+                                name="action_apply_custom_period"
+                                type="object"
+                                string="Apply"
+                                class="btn-primary o_avea_custom_period_apply"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">What is performing best?</h2>
+                            <span class="o_avea_workspace_section_meta">
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </span>
+                        </div>
+                        <div class="o_avea_overview_visuals">
+                            <div class="o_avea_overview_visual_panel">
+                                <div class="o_avea_workspace_block_heading">
+                                    <div class="o_avea_overview_visual_heading">
+                                        <h2 class="o_avea_workspace_section_title">Top Products</h2>
+                                        <p class="o_avea_workspace_section_subtitle">Balanced strength of sales volume and revenue</p>
+                                    </div>
+                                </div>
+                                <div class="o_avea_session_products_empty" invisible="show_top_products">
+                                    <p class="o_avea_session_products_empty_text">No product sales in this period.</p>
+                                </div>
+                                <div class="o_avea_workspace_ledger_card o_avea_products_sold_card" invisible="not show_top_products">
+                                    <field name="top_product_line_ids" nolabel="1" readonly="1">
+                                        <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                            <field name="name" string="Product"/>
+                                            <field name="quantity_sold" string="Qty"/>
+                                            <field name="revenue_ex_tax" string="Revenue EX Tax" widget="monetary"/>
+                                            <field name="rank" column_invisible="True"/>
+                                            <field name="section" column_invisible="True"/>
+                                            <field name="currency_id" column_invisible="True"/>
+                                            <field name="product_id" column_invisible="True"/>
+                                            <field name="category_id" column_invisible="True"/>
+                                            <field name="gross_profit" column_invisible="True"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                            <div class="o_avea_overview_visual_panel">
+                                <div class="o_avea_workspace_block_heading">
+                                    <div class="o_avea_overview_visual_heading">
+                                        <h2 class="o_avea_workspace_section_title">Top Categories</h2>
+                                        <p class="o_avea_workspace_section_subtitle">Categories with the strongest combined pull</p>
+                                    </div>
+                                </div>
+                                <div class="o_avea_session_products_empty" invisible="show_top_categories">
+                                    <p class="o_avea_session_products_empty_text">No category sales in this period.</p>
+                                </div>
+                                <div class="o_avea_workspace_ledger_card o_avea_products_sold_card" invisible="not show_top_categories">
+                                    <field name="top_category_line_ids" nolabel="1" readonly="1">
+                                        <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                            <field name="name" string="Category"/>
+                                            <field name="quantity_sold" string="Qty"/>
+                                            <field name="revenue_ex_tax" string="Revenue EX Tax" widget="monetary"/>
+                                            <field name="rank" column_invisible="True"/>
+                                            <field name="section" column_invisible="True"/>
+                                            <field name="currency_id" column_invisible="True"/>
+                                            <field name="product_id" column_invisible="True"/>
+                                            <field name="category_id" column_invisible="True"/>
+                                            <field name="gross_profit" column_invisible="True"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">What is making us the most money?</h2>
+                            <span class="o_avea_workspace_section_meta">Ranked by gross profit contribution</span>
+                        </div>
+                        <div class="o_avea_overview_visuals">
+                            <div class="o_avea_overview_visual_panel">
+                                <div class="o_avea_workspace_block_heading">
+                                    <div class="o_avea_overview_visual_heading">
+                                        <h2 class="o_avea_workspace_section_title">Most Profitable Products</h2>
+                                        <p class="o_avea_workspace_section_subtitle">Actual profit after Avea cost and discounts</p>
+                                    </div>
+                                </div>
+                                <div class="o_avea_session_products_empty" invisible="show_profit_products">
+                                    <p class="o_avea_session_products_empty_text">No profitable product sales in this period.</p>
+                                </div>
+                                <div class="o_avea_workspace_ledger_card o_avea_products_sold_card" invisible="not show_profit_products">
+                                    <field name="profit_product_line_ids" nolabel="1" readonly="1">
+                                        <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                            <field name="name" string="Product"/>
+                                            <field name="quantity_sold" string="Qty"/>
+                                            <field name="revenue_ex_tax" string="Revenue EX Tax" widget="monetary"/>
+                                            <field name="gross_profit" string="Gross Profit" widget="monetary"/>
+                                            <field name="rank" column_invisible="True"/>
+                                            <field name="section" column_invisible="True"/>
+                                            <field name="currency_id" column_invisible="True"/>
+                                            <field name="product_id" column_invisible="True"/>
+                                            <field name="category_id" column_invisible="True"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                            <div class="o_avea_overview_visual_panel">
+                                <div class="o_avea_workspace_block_heading">
+                                    <div class="o_avea_overview_visual_heading">
+                                        <h2 class="o_avea_workspace_section_title">Most Profitable Categories</h2>
+                                        <p class="o_avea_workspace_section_subtitle">Profit aggregated across all products in each category</p>
+                                    </div>
+                                </div>
+                                <div class="o_avea_session_products_empty" invisible="show_profit_categories">
+                                    <p class="o_avea_session_products_empty_text">No profitable category sales in this period.</p>
+                                </div>
+                                <div class="o_avea_workspace_ledger_card o_avea_products_sold_card" invisible="not show_profit_categories">
+                                    <field name="profit_category_line_ids" nolabel="1" readonly="1">
+                                        <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                            <field name="name" string="Category"/>
+                                            <field name="quantity_sold" string="Qty"/>
+                                            <field name="revenue_ex_tax" string="Revenue EX Tax" widget="monetary"/>
+                                            <field name="gross_profit" string="Gross Profit" widget="monetary"/>
+                                            <field name="rank" column_invisible="True"/>
+                                            <field name="section" column_invisible="True"/>
+                                            <field name="currency_id" column_invisible="True"/>
+                                            <field name="product_id" column_invisible="True"/>
+                                            <field name="category_id" column_invisible="True"/>
+                                        </list>
+                                    </field>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_business_performance" model="ir.actions.server">
+        <field name="name">Performance</field>
+        <field name="model_id" ref="model_avea_business_performance"/>
+        <field name="state">code</field>
+        <field name="code">action = env['avea.business.performance'].action_open_business_performance()</field>
+    </record>
+
+</odoo>
