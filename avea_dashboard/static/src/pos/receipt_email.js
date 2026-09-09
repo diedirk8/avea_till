@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import OrderPaymentValidation from "@point_of_sale/app/utils/order_payment_validation";
-import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/order_receipt";
 import { isValidEmail } from "@point_of_sale/utils";
 import { patch } from "@web/core/utils/patch";
 
@@ -19,35 +18,31 @@ patch(OrderPaymentValidation.prototype, {
     },
 
     _aveaScheduleReceiptEmail() {
-        void this._aveaSendReceiptEmailInBackground();
-    },
-
-    async _aveaSendReceiptEmailInBackground() {
         const order = this.order;
-        const company = this.pos.company;
-        if (!company?.avea_auto_email_receipt || !order?.id) {
+        if (!order?.isSynced) {
+            return;
+        }
+        if (order.uiState?.aveaReceiptEmailScheduled) {
             return;
         }
         const partner = order.getPartner();
-        const email = partner?.email;
+        const email = partner?.email?.trim();
         if (!partner || !email || !isValidEmail(email)) {
             return;
         }
+        order.uiState.aveaReceiptEmailScheduled = true;
+        void this._aveaSendReceiptEmailInBackground(order);
+    },
+
+    async _aveaSendReceiptEmailInBackground(order) {
         try {
-            const ticketImage = await this.pos.env.services.renderer.toJpeg(
-                OrderReceipt,
-                {
-                    order,
-                    basic_receipt: false,
-                },
-                { addClass: "pos-receipt-print p-3" }
-            );
             await this.pos.data.silentCall(
                 "pos.order",
                 "avea_send_receipt_email_automatic",
-                [[order.id], ticketImage]
+                [[order.id]]
             );
         } catch (error) {
+            order.uiState.aveaReceiptEmailScheduled = false;
             console.warn("Avea receipt email could not be sent.", error);
         }
     },

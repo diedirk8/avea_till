@@ -60,8 +60,23 @@
         id="menu_avea_settings"
         name="Settings"
         parent="menu_avea_root"
-        action="action_avea_settings"
         sequence="90"
+    />
+
+    <menuitem
+        id="menu_avea_settings_email"
+        name="Email Receipt"
+        parent="menu_avea_settings"
+        action="action_avea_settings"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_avea_settings_printed"
+        name="Printed Receipt"
+        parent="menu_avea_settings"
+        action="action_avea_printed_receipt_settings"
+        sequence="20"
     />
 
     <menuitem

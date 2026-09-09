@@ -1,16 +1,8 @@
-import base64
-import io
 import logging
 import re
 
 from odoo import api, fields, models
 from odoo.tools import email_normalize, formataddr
-from odoo.tools.misc import formatLang
-
-try:
-    from PIL import Image
-except ImportError:  # pragma: no cover - Pillow is bundled with Odoo
-    Image = None
 
 _logger = logging.getLogger(__name__)
 
@@ -49,17 +41,11 @@ class PosOrder(models.Model):
     def _avea_receipt_sender_identity(self):
         self.ensure_one()
         company = self.company_id
-        name = (company.avea_receipt_sender_name or company.name or "").strip()
-        email = (
-            company.avea_receipt_sender_email
-            or company.email
-            or company.partner_id.email
-            or ""
-        ).strip()
-        normalized = email_normalize(email) if email else False
-        if not normalized:
+        name = company._avea_receipt_email_business_name()
+        email = company._avea_receipt_email_sender_email()
+        if not email:
             return False, False
-        return name or company.name, normalized
+        return name or company.name, email
 
     def _avea_receipt_email_from(self):
         self.ensure_one()
@@ -67,56 +53,6 @@ class PosOrder(models.Model):
         if not email:
             return False
         return formataddr((name, email))
-
-    def _avea_receipt_payment_rows(self):
-        self.ensure_one()
-        rows = []
-        for payment in self.payment_ids.filtered(lambda line: not line.is_change):
-            rows.append(
-                {
-                    "name": payment.payment_method_id.name,
-                    "amount": formatLang(
-                        self.env,
-                        payment.amount,
-                        currency_obj=self.currency_id,
-                    ),
-                }
-            )
-        return rows
-
-    def _avea_receipt_jpeg_to_pdf(self, ticket_image_b64):
-        self.ensure_one()
-        if not Image:
-            return False
-        if not ticket_image_b64:
-            return False
-        try:
-            image_bytes = base64.b64decode(ticket_image_b64)
-            image = Image.open(io.BytesIO(image_bytes))
-        except (ValueError, OSError):
-            return False
-        if image.mode in ("RGBA", "P"):
-            image = image.convert("RGB")
-        pdf_buffer = io.BytesIO()
-        image.save(pdf_buffer, format="PDF")
-        return base64.b64encode(pdf_buffer.getvalue())
-
-    def _avea_receipt_pdf_attachment(self, ticket_image_b64):
-        self.ensure_one()
-        pdf_b64 = self._avea_receipt_jpeg_to_pdf(ticket_image_b64)
-        if not pdf_b64:
-            return self.env["ir.attachment"]
-        reference = self.pos_reference or self.name or str(self.id)
-        return self.env["ir.attachment"].create(
-            {
-                "name": f"Receipt-{reference}.pdf",
-                "type": "binary",
-                "datas": pdf_b64,
-                "res_model": "pos.order",
-                "res_id": self.id,
-                "mimetype": "application/pdf",
-            }
-        )
 
     def _avea_claim_receipt_email_send(self):
         """Atomically claim this order so concurrent POS calls cannot double-send."""
@@ -141,47 +77,84 @@ class PosOrder(models.Model):
         self.write({"avea_receipt_email_sent": False})
 
     @api.model
+    def _avea_deliver_receipt_mail(self, mail_id):
+        """Send a queued receipt mail in a dedicated transaction."""
+        if not mail_id:
+            return False
+        registry = self.env.registry
+        dbname = self.env.cr.dbname
+        with registry.cursor() as cr:
+            env = api.Environment(cr, api.SUPERUSER_ID, {})
+            mail = env["mail.mail"].browse(mail_id).exists()
+            if not mail or mail.state != "outgoing":
+                return False
+            mail.send()
+            cr.commit()
+        _logger.info(
+            "Avea receipt email dispatched (mail.mail #%s, db=%s)",
+            mail_id,
+            dbname,
+        )
+        return True
+
+    @api.model
     def _avea_schedule_receipt_mail_delivery(self, mail_id):
         """Deliver queued receipt mail after the POS RPC transaction commits."""
         if not mail_id:
             return
-        dbname = self.env.cr.dbname
-        registry = self.env.registry
 
         def _send_after_commit():
             try:
-                with registry.cursor() as cr:
-                    env = api.Environment(cr, api.SUPERUSER_ID, {})
-                    mail = env["mail.mail"].browse(mail_id).exists()
-                    if mail and mail.state == "outgoing":
-                        mail.send()
-                    cr.commit()
+                type(self)._avea_deliver_receipt_mail(mail_id)
             except Exception:
                 _logger.exception(
                     "Failed to deliver Avea receipt email (mail.mail #%s)",
                     mail_id,
                 )
+                try:
+                    with self.env.registry.cursor() as cr:
+                        env = api.Environment(cr, api.SUPERUSER_ID, {})
+                        cron = env.ref(
+                            "mail.ir_cron_mail_scheduler_action",
+                            raise_if_not_found=False,
+                        )
+                        if cron:
+                            cron._trigger()
+                        cr.commit()
+                except Exception:
+                    _logger.exception(
+                        "Failed to trigger mail cron after receipt email error"
+                    )
 
         self.env.cr.postcommit.add(_send_after_commit)
 
-    def avea_send_receipt_email_automatic(self, ticket_image_b64):
-        """Queue the Avea receipt email with the printed POS receipt attached as PDF.
+    def avea_send_receipt_email_automatic(self):
+        """Queue the Avea receipt email as lightweight HTML.
 
         Called from POS after payment in the background. Must return quickly and
         must never block order validation on the client.
         """
         self.ensure_one()
+        reference = self.pos_reference or self.name or self.id
         company = self.company_id
         if not company.avea_auto_email_receipt:
+            _logger.info(
+                "Skipping Avea receipt email for order %s: setting disabled.",
+                reference,
+            )
             return False
         recipient = self._avea_valid_customer_email()
         if not recipient:
+            _logger.info(
+                "Skipping Avea receipt email for order %s: customer has no valid email.",
+                reference,
+            )
             return False
         email_from = self._avea_receipt_email_from()
         if not email_from:
             _logger.warning(
                 "Skipping Avea receipt email for order %s: business sender email is not configured.",
-                self.pos_reference or self.name or self.id,
+                reference,
             )
             return False
         template = self.env.ref(
@@ -189,18 +162,27 @@ class PosOrder(models.Model):
             raise_if_not_found=False,
         )
         if not template:
+            _logger.error(
+                "Skipping Avea receipt email for order %s: template missing.",
+                reference,
+            )
             return False
         if not self._avea_claim_receipt_email_send():
+            _logger.info(
+                "Skipping Avea receipt email for order %s: already sent or claimed.",
+                reference,
+            )
             return False
         try:
-            attachment = self._avea_receipt_pdf_attachment(ticket_image_b64)
+            reply_to = company._avea_receipt_email_reply_to() or email_from
             email_values = {
                 "email_to": recipient,
                 "email_from": email_from,
-                "reply_to": email_from,
+                "reply_to": reply_to,
+                "subject": company._avea_receipt_email_subject_render(self),
+                "body_html": company._avea_receipt_email_body_html(self),
+                "attachment_ids": [(5, 0, 0)],
             }
-            if attachment:
-                email_values["attachment_ids"] = [(4, attachment.id)]
             mail_id = template.send_mail(
                 self.id,
                 force_send=False,
@@ -208,13 +190,23 @@ class PosOrder(models.Model):
             )
             if not mail_id:
                 self._avea_release_receipt_email_send_claim()
+                _logger.error(
+                    "Failed to queue Avea receipt email for order %s: send_mail returned no id.",
+                    reference,
+                )
                 return False
             self._avea_schedule_receipt_mail_delivery(mail_id)
+            _logger.info(
+                "Queued Avea receipt email for order %s to %s (mail.mail #%s).",
+                reference,
+                recipient,
+                mail_id,
+            )
         except Exception:
             self._avea_release_receipt_email_send_claim()
             _logger.exception(
                 "Failed to queue Avea receipt email for POS order %s",
-                self.pos_reference or self.name or self.id,
+                reference,
             )
             return False
         return True

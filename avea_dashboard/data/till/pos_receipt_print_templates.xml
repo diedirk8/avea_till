@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="avea_print_receipt_preview">
+        <div t-attf-class="avea-print-receipt #{layout_class}" t-att-style="layout_styles.get('root')">
+            <t t-if="not customize">
+                <div style="margin-bottom: 0.75rem; color: #6c757d; font-style: italic;">
+                    Customization is off — the standard Odoo POS receipt is used at the till.
+                </div>
+            </t>
+
+            <t t-if="customize and show_logo and logo_src">
+                <div t-attf-style="text-align: center; margin-bottom: #{layout_styles.get('section_gap')};">
+                    <img t-att-src="logo_src" alt="Business logo" t-att-style="logo_style"/>
+                </div>
+            </t>
+
+            <t t-if="customize and show_order_number">
+                <div t-attf-style="text-align: center; margin-bottom: #{layout_styles.get('section_gap')};">
+                    <strong>Receipt <span t-out="order_reference"/></strong>
+                </div>
+            </t>
+
+            <t t-if="customize and show_datetime">
+                <div t-attf-style="text-align: center; margin-bottom: #{layout_styles.get('section_gap')};" t-out="order_datetime"/>
+            </t>
+
+            <t t-if="customize and show_cashier">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')};">
+                    Served by: <span t-out="cashier_name"/>
+                </div>
+            </t>
+
+            <t t-if="customize and show_customer">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')};">
+                    <div t-out="customer_name"/>
+                    <div style="font-size: 90%;" t-out="customer_address"/>
+                </div>
+            </t>
+
+            <t t-if="customize and show_products and lines">
+                <div t-attf-style="border-top: 1px dashed #bbb; padding-top: #{layout_styles.get('section_gap')}; margin-bottom: #{layout_styles.get('section_gap')};">
+                    <t t-foreach="lines" t-as="line">
+                        <div t-attf-style="padding: #{layout_styles.get('line_padding')};">
+                            <div class="d-flex" style="justify-content: space-between;">
+                                <span>
+                                    <t t-if="show_quantity">
+                                        <span t-out="line.get('qty')"/> x
+                                    </t>
+                                    <span t-out="line.get('name')"/>
+                                </span>
+                                <span t-out="line.get('subtotal')"/>
+                            </div>
+                            <t t-if="show_sku and line.get('sku')">
+                                <div style="font-size: 90%; color: #555;">SKU: <span t-out="line.get('sku')"/></div>
+                            </t>
+                            <t t-if="show_unit_price and line.get('unit_price')">
+                                <div style="font-size: 90%; color: #555;">
+                                    <span t-out="line.get('unit_price')"/> each
+                                </div>
+                            </t>
+                            <t t-if="show_discounts and line.get('discount')">
+                                <div style="font-size: 90%; color: #555;">
+                                    Discount: <span t-out="line.get('discount')"/>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </div>
+            </t>
+
+            <t t-if="customize and (show_subtotal or show_tax or show_total)">
+                <div t-attf-style="border-top: 1px dashed #bbb; padding-top: #{layout_styles.get('section_gap')}; margin-bottom: #{layout_styles.get('section_gap')};">
+                    <t t-if="show_subtotal">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Subtotal</span>
+                            <span t-out="subtotal"/>
+                        </div>
+                    </t>
+                    <t t-if="show_tax">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Tax</span>
+                            <span t-out="tax"/>
+                        </div>
+                    </t>
+                    <t t-if="show_discounts">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Discounts</span>
+                            <span t-out="discount_total"/>
+                        </div>
+                    </t>
+                    <t t-if="show_total">
+                        <div style="display: flex; justify-content: space-between; font-weight: 700;">
+                            <span>Total</span>
+                            <span t-out="total"/>
+                        </div>
+                    </t>
+                </div>
+            </t>
+
+            <t t-if="customize and (show_payment_method or show_amount_paid)">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')};">
+                    <t t-if="show_payment_method">
+                        <t t-foreach="payments" t-as="payment">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span t-out="payment.get('name')"/>
+                                <span t-out="payment.get('amount')"/>
+                            </div>
+                        </t>
+                    </t>
+                    <t t-if="show_amount_paid">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Amount paid</span>
+                            <span t-out="amount_paid"/>
+                        </div>
+                    </t>
+                </div>
+            </t>
+
+            <t t-if="customize and show_change">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')}; display: flex; justify-content: space-between;">
+                    <span>Change</span>
+                    <span t-out="change"/>
+                </div>
+            </t>
+
+            <t t-if="customize and show_loyalty_balance">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')}; display: flex; justify-content: space-between;">
+                    <span>Loyalty balance</span>
+                    <span t-out="loyalty_balance"/>
+                </div>
+            </t>
+
+            <t t-if="customize and show_store_credit_balance">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')}; display: flex; justify-content: space-between;">
+                    <span>Store Credit</span>
+                    <span t-out="store_credit_balance"/>
+                </div>
+            </t>
+
+            <t t-if="customize and show_customer_account_balance">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')}; display: flex; justify-content: space-between;">
+                    <span>Account balance</span>
+                    <span t-out="customer_account_balance"/>
+                </div>
+            </t>
+
+            <t t-if="customize and footer_message">
+                <div t-attf-style="border-top: 1px dashed #bbb; padding-top: #{layout_styles.get('section_gap')}; margin-top: #{layout_styles.get('section_gap')}; white-space: pre-line; text-align: center;" t-out="footer_message"/>
+            </t>
+
+            <t t-if="is_preview">
+                <div style="margin-top: 0.75rem; color: #6c757d; font-size: 10px; font-style: italic; text-align: center;">
+                    Sample preview — actual receipts use live sale data.
+                </div>
+            </t>
+        </div>
+    </template>
+
+</odoo>

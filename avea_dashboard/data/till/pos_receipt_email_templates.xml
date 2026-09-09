@@ -1,120 +1,187 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <template id="report_avea_pos_receipt_email">
-        <t t-foreach="docs" t-as="order">
-            <div style="font-family: Arial, Helvetica, sans-serif; color: #212529; font-size: 14px; line-height: 1.45; max-width: 520px;">
-                <div style="margin-bottom: 1rem;">
-                    <div style="font-size: 18px; font-weight: 700;" t-out="order.company_id.avea_receipt_sender_name or order.company_id.name"/>
-                    <t t-if="order.company_id.street">
-                        <div t-out="order.company_id.street"/>
+    <template id="avea_receipt_email_body">
+        <div t-attf-class="avea-receipt-email #{layout_class}" t-att-style="layout_styles.get('root')">
+            <t t-if="show_logo and logo_src">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')}; text-align: center;">
+                    <img t-att-src="logo_src" alt="Business logo" t-att-style="logo_style"/>
+                </div>
+            </t>
+
+            <t t-if="show_business_details">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')};">
+                    <div t-attf-style="font-size: 18px; font-weight: 700; color: #{accent_color};" t-out="sender_name"/>
+                    <t t-if="business_street">
+                        <div t-out="business_street"/>
                     </t>
-                    <t t-if="order.company_id.city or order.company_id.zip">
+                    <t t-if="business_city or business_zip">
                         <div>
-                            <t t-if="order.company_id.city" t-out="order.company_id.city"/>
-                            <t t-if="order.company_id.zip">
-                                <t t-if="order.company_id.city"> </t>
-                                <t t-out="order.company_id.zip"/>
+                            <t t-if="business_city" t-out="business_city"/>
+                            <t t-if="business_zip">
+                                <t t-if="business_city"> </t>
+                                <t t-out="business_zip"/>
                             </t>
                         </div>
                     </t>
-                    <t t-if="order.company_id.phone">
-                        <div t-out="order.company_id.phone"/>
+                    <t t-if="business_phone">
+                        <div t-out="business_phone"/>
                     </t>
-                    <t t-if="order.company_id.vat">
-                        <div>
-                            <span>VAT: </span>
-                            <span t-out="order.company_id.vat"/>
-                        </div>
+                    <t t-if="business_vat">
+                        <div>VAT: <span t-out="business_vat"/></div>
                     </t>
                 </div>
+            </t>
 
-                <div style="margin-bottom: 1rem;">
+            <t t-if="greeting">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')}; white-space: pre-line;" t-out="greeting"/>
+            </t>
+
+            <t t-if="show_order_info">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')}; padding: #{layout_styles.get('card_padding')}; border: 1px solid #dee2e6; border-radius: 8px;">
+                    <div t-attf-style="font-weight: 700; color: #{accent_color}; margin-bottom: 0.35rem;">Receipt</div>
                     <div>
-                        <strong>Order:</strong>
-                        <span t-out="order.pos_reference or order.name"/>
+                        <strong>Reference:</strong>
+                        <span t-out="order_reference"/>
                     </div>
                     <div>
                         <strong>Date:</strong>
-                        <span t-out="format_datetime(order.date_order, dt_format='medium')"/>
+                        <span t-out="order_date"/>
                     </div>
-                    <t t-if="order.partner_id">
-                        <div>
-                            <strong>Customer:</strong>
-                            <span t-out="order.partner_id.name"/>
-                        </div>
+                </div>
+            </t>
+
+            <t t-if="show_customer_info and customer_name">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')};">
+                    <div t-attf-style="font-weight: 700; color: #{accent_color}; margin-bottom: 0.35rem;">Customer</div>
+                    <div t-out="customer_name"/>
+                    <t t-if="customer_email">
+                        <div style="color: #6c757d; font-size: 13px;" t-out="customer_email"/>
                     </t>
                 </div>
+            </t>
 
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 1rem;">
+            <t t-if="show_products and lines">
+                <table t-attf-style="width: 100%; border-collapse: collapse; margin-bottom: #{layout_styles.get('section_gap')};">
                     <thead>
                         <tr>
-                            <th style="text-align: left; border-bottom: 1px solid #dee2e6; padding: 0.35rem 0;">Item</th>
-                            <th style="text-align: right; border-bottom: 1px solid #dee2e6; padding: 0.35rem 0;">Qty</th>
-                            <th style="text-align: right; border-bottom: 1px solid #dee2e6; padding: 0.35rem 0;">Price</th>
-                            <th style="text-align: right; border-bottom: 1px solid #dee2e6; padding: 0.35rem 0;">Total</th>
+                            <th t-attf-style="text-align: left; border-bottom: 2px solid #{accent_color}; padding: 0.35rem 0;">Item</th>
+                            <th t-attf-style="text-align: right; border-bottom: 2px solid #{accent_color}; padding: 0.35rem 0;">Qty</th>
+                            <th t-attf-style="text-align: right; border-bottom: 2px solid #{accent_color}; padding: 0.35rem 0;">Price</th>
+                            <th t-attf-style="text-align: right; border-bottom: 2px solid #{accent_color}; padding: 0.35rem 0;">Total</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr t-foreach="order.lines" t-as="line">
+                        <tr t-foreach="lines" t-as="line">
                             <td style="padding: 0.35rem 0; vertical-align: top;">
-                                <div t-out="line.full_product_name or line.product_id.display_name"/>
-                                <t t-if="line.discount">
+                                <div t-out="line.get('name')"/>
+                                <t t-if="show_line_discounts and line.get('discount_label')">
                                     <div style="color: #6c757d; font-size: 12px;">
-                                        Discount: <t t-out="line.discount"/>%
+                                        Discount: <t t-out="line.get('discount_label')"/>
                                     </div>
                                 </t>
                             </td>
-                            <td style="text-align: right; padding: 0.35rem 0; vertical-align: top;" t-out="line.qty"/>
-                            <td style="text-align: right; padding: 0.35rem 0; vertical-align: top;" t-out="format_amount(line.price_unit, order.currency_id)"/>
-                            <td style="text-align: right; padding: 0.35rem 0; vertical-align: top;" t-out="format_amount(line.price_subtotal_incl, order.currency_id)"/>
+                            <td style="text-align: right; padding: 0.35rem 0; vertical-align: top;" t-out="line.get('qty')"/>
+                            <td style="text-align: right; padding: 0.35rem 0; vertical-align: top;" t-out="line.get('price_unit')"/>
+                            <td style="text-align: right; padding: 0.35rem 0; vertical-align: top;" t-out="line.get('subtotal')"/>
                         </tr>
                     </tbody>
                 </table>
+            </t>
 
-                <div style="border-top: 1px solid #dee2e6; padding-top: 0.75rem; margin-bottom: 1rem;">
+            <t t-if="show_totals and totals">
+                <div t-attf-style="border-top: 1px solid #dee2e6; padding-top: 0.75rem; margin-bottom: #{layout_styles.get('section_gap')};">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                        <span>Subtotal</span>
+                        <span t-out="totals.get('subtotal')"/>
+                    </div>
+                    <t t-if="totals.get('discount')">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                            <span>Discount</span>
+                            <span t-out="totals.get('discount')"/>
+                        </div>
+                    </t>
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
                         <span>Tax</span>
-                        <span t-out="format_amount(order.amount_tax, order.currency_id)"/>
+                        <span t-out="totals.get('tax')"/>
                     </div>
-                    <div style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px;">
+                    <div t-attf-style="display: flex; justify-content: space-between; font-weight: 700; font-size: 16px; color: #{accent_color};">
                         <span>Total</span>
-                        <span t-out="format_amount(order.amount_total, order.currency_id)"/>
+                        <span t-out="totals.get('total')"/>
                     </div>
                 </div>
+            </t>
 
-                <div style="margin-bottom: 1rem;">
-                    <div style="font-weight: 600; margin-bottom: 0.35rem;">Payment</div>
-                    <t t-foreach="order._avea_receipt_payment_rows()" t-as="payment">
+            <t t-if="show_payments and payments">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')};">
+                    <div t-attf-style="font-weight: 700; color: #{accent_color}; margin-bottom: 0.35rem;">Payment</div>
+                    <t t-foreach="payments" t-as="payment">
                         <div style="display: flex; justify-content: space-between;">
-                            <span t-out="payment['name']"/>
-                            <span t-out="payment['amount']"/>
+                            <span t-out="payment.get('name')"/>
+                            <span t-out="payment.get('amount')"/>
+                        </div>
+                    </t>
+                    <t t-if="change">
+                        <div style="display: flex; justify-content: space-between; margin-top: 0.25rem;">
+                            <span>Change</span>
+                            <span t-out="change"/>
                         </div>
                     </t>
                 </div>
+            </t>
 
-                <div style="color: #6c757d; font-size: 12px;">
-                    Thank you for your purchase.
+            <t t-if="balances and (balances.get('loyalty') or balances.get('store_credit') or balances.get('customer_account'))">
+                <div t-attf-style="margin-bottom: #{layout_styles.get('section_gap')}; padding: #{layout_styles.get('card_padding')}; background: #f8f9fa; border-radius: 8px;">
+                    <div t-attf-style="font-weight: 700; color: #{accent_color}; margin-bottom: 0.35rem;">Balances</div>
+                    <t t-if="balances.get('loyalty')">
+                        <t t-foreach="balances.get('loyalty')" t-as="loyalty_item">
+                            <div style="display: flex; justify-content: space-between;">
+                                <span t-out="loyalty_item.get('label')"/>
+                                <span t-out="loyalty_item.get('value')"/>
+                            </div>
+                        </t>
+                    </t>
+                    <t t-if="balances.get('store_credit')">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Store Credit</span>
+                            <span t-out="balances.get('store_credit')"/>
+                        </div>
+                    </t>
+                    <t t-if="balances.get('customer_account')">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Account balance</span>
+                            <span t-out="balances.get('customer_account')"/>
+                        </div>
+                    </t>
                 </div>
-            </div>
-        </t>
+            </t>
+
+            <t t-if="closing">
+                <div style="color: #6c757d; font-size: 13px; white-space: pre-line; border-top: 1px solid #dee2e6; padding-top: 0.75rem;" t-out="closing"/>
+            </t>
+
+            <t t-if="is_preview">
+                <div style="margin-top: 1rem; color: #6c757d; font-size: 11px; font-style: italic;">
+                    Sample preview — actual emails use real sale data.
+                </div>
+            </t>
+        </div>
     </template>
 
     <record id="email_template_avea_pos_receipt" model="mail.template">
         <field name="name">Avea POS Receipt</field>
         <field name="description">Receipt emailed automatically after Avea POS sales</field>
         <field name="model_id" ref="point_of_sale.model_pos_order"/>
-        <field name="subject">Your receipt from {{ object.company_id.avea_receipt_sender_name or object.company_id.name }}</field>
+        <field name="subject">{{ object.company_id._avea_receipt_email_subject_render(object) }}</field>
         <field name="email_from">{{ object._avea_receipt_email_from() }}</field>
+        <field name="reply_to">{{ object.company_id._avea_receipt_email_reply_to() or object._avea_receipt_email_from() }}</field>
         <field name="email_to" eval="False"/>
         <field name="partner_to" eval="False"/>
         <field name="use_default_to" eval="False"/>
         <field name="lang">{{ object.partner_id.lang or user.lang }}</field>
         <field name="auto_delete" eval="True"/>
         <field name="body_html" type="html">
-            <t t-call="avea_till.report_avea_pos_receipt_email">
-                <t t-set="docs" t-value="object"/>
-            </t>
+            <t t-out="object.company_id._avea_receipt_email_body_html(object)"/>
         </field>
     </record>
 

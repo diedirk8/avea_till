@@ -5,51 +5,198 @@
         <field name="name">avea.business.settings.form</field>
         <field name="model">avea.business.settings</field>
         <field name="arch" type="xml">
-            <form string="Settings" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--settings">
+            <form string="Email Receipt" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--settings">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="company_id" invisible="1"/>
 
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">Business preferences</span>
-                            <h1 class="o_avea_workspace_title">Settings</h1>
+                            <h1 class="o_avea_workspace_title">Email Receipt</h1>
                             <p class="o_avea_workspace_lead">
-                                Configure how Avea works for your business. More sections will appear here over time.
+                                Configure the receipt customers receive by email after a completed sale.
                             </p>
+                        </div>
+                        <div class="o_avea_settings_hero_actions">
+                            <button
+                                name="action_save_settings"
+                                type="object"
+                                string="Save settings"
+                                class="btn btn-primary"
+                                icon="fa-save"
+                                data-hotkey="s"
+                            />
                         </div>
                     </div>
 
                     <div class="o_avea_settings_sections">
-                        <section class="o_avea_workspace_info_card o_avea_settings_section">
-                            <h2 class="o_avea_settings_section_title">Receipts &amp; Email</h2>
-                            <p class="o_avea_settings_section_help">
-                                Control whether customers receive an Avea receipt by email after a completed sale.
-                            </p>
+                        <section class="o_avea_workspace_info_card o_avea_settings_section o_avea_settings_receipt_section">
+                            <div class="o_avea_settings_receipt_layout">
+                                <div class="o_avea_settings_receipt_controls">
+                                    <h2 class="o_avea_settings_section_title">Receipts &amp; Email</h2>
+                                    <p class="o_avea_settings_section_help">
+                                        Choose what customers receive by email after a completed sale.
+                                    </p>
 
-                            <div class="o_avea_settings_row">
-                                <div class="o_avea_settings_row_copy">
-                                    <div class="o_avea_settings_row_label">Automatically email receipt to customer</div>
-                                    <div class="o_avea_settings_row_hint">
-                                        When on, Avea emails a receipt after payment when the customer has an email address.
+                                    <div class="o_avea_settings_group">
+                                        <h3 class="o_avea_settings_group_title">Sending</h3>
+                                        <div class="o_avea_settings_row">
+                                            <div class="o_avea_settings_row_copy">
+                                                <div class="o_avea_settings_row_label">Automatically email receipt to customer</div>
+                                                <div class="o_avea_settings_row_hint">
+                                                    When on, Avea sends a receipt after payment when the customer has an email address.
+                                                </div>
+                                            </div>
+                                            <field
+                                                name="avea_auto_email_receipt"
+                                                widget="boolean_toggle"
+                                                nolabel="1"
+                                                class="o_avea_settings_toggle"
+                                            />
+                                        </div>
+
+                                        <div class="o_avea_settings_field_grid" invisible="not avea_auto_email_receipt">
+                                            <div class="o_avea_workspace_info_item">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_sender_name">Sender name</label>
+                                                <field name="avea_receipt_sender_name" placeholder="Business name" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_workspace_info_item">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_sender_email">Sender email</label>
+                                                <field name="avea_receipt_sender_email" placeholder="receipts@yourbusiness.com" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_workspace_info_item o_avea_settings_field_grid_span">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_email_reply_to">Reply-to email</label>
+                                                <field name="avea_receipt_email_reply_to" placeholder="Optional — uses sender email when blank" nolabel="1"/>
+                                                <div class="o_avea_settings_field_hint">Where customer replies should go. Leave blank to use the sender email.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="o_avea_settings_group" invisible="not avea_auto_email_receipt">
+                                        <h3 class="o_avea_settings_group_title">Message</h3>
+                                        <p class="o_avea_settings_group_help">
+                                            Personalise the subject and opening message. Use {business}, {customer}, {order}, or {date} as placeholders.
+                                        </p>
+                                        <div class="o_avea_settings_field_grid">
+                                            <div class="o_avea_workspace_info_item o_avea_settings_field_grid_span">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_email_subject">Subject line</label>
+                                                <field name="avea_receipt_email_subject" placeholder="Your receipt from {business}" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_workspace_info_item o_avea_settings_field_grid_span">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_email_greeting">Opening message</label>
+                                                <field name="avea_receipt_email_greeting" widget="text" nolabel="1" placeholder="Hi {customer},&#10;&#10;Thank you for shopping with us."/>
+                                            </div>
+                                            <div class="o_avea_workspace_info_item o_avea_settings_field_grid_span">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_email_closing">Closing message</label>
+                                                <field name="avea_receipt_email_closing" widget="text" nolabel="1" placeholder="We look forward to seeing you again."/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="o_avea_settings_group" invisible="not avea_auto_email_receipt">
+                                        <h3 class="o_avea_settings_group_title">What to include</h3>
+                                        <p class="o_avea_settings_group_help">
+                                            Turn sections on or off. Balance details only appear when a customer has a non-zero balance.
+                                        </p>
+                                        <div class="o_avea_settings_toggle_grid">
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Business details</span>
+                                                <field name="avea_receipt_email_show_business_details" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Order details</span>
+                                                <field name="avea_receipt_email_show_order_info" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Customer details</span>
+                                                <field name="avea_receipt_email_show_customer_info" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Products purchased</span>
+                                                <field name="avea_receipt_email_show_products" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Line discounts</span>
+                                                <field name="avea_receipt_email_show_line_discounts" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Subtotal, tax and total</span>
+                                                <field name="avea_receipt_email_show_totals" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Payment and change</span>
+                                                <field name="avea_receipt_email_show_payments" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Loyalty balance</span>
+                                                <field name="avea_receipt_email_show_loyalty_balance" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Store Credit balance</span>
+                                                <field name="avea_receipt_email_show_store_credit_balance" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_settings_toggle_item">
+                                                <span class="o_avea_settings_toggle_label">Customer account balance</span>
+                                                <field name="avea_receipt_email_show_customer_account_balance" widget="boolean_toggle" nolabel="1"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="o_avea_settings_group" invisible="not avea_auto_email_receipt">
+                                        <h3 class="o_avea_settings_group_title">Appearance</h3>
+                                        <p class="o_avea_settings_group_help">
+                                            Adjust branding and layout while keeping sensible defaults.
+                                        </p>
+                                        <div class="o_avea_settings_field_grid">
+                                            <div class="o_avea_settings_row o_avea_settings_row--inline o_avea_settings_field_grid_span">
+                                                <div class="o_avea_settings_row_copy">
+                                                    <div class="o_avea_settings_row_label">Show business logo</div>
+                                                    <div class="o_avea_settings_row_hint">Uses your company logo when available.</div>
+                                                </div>
+                                                <field name="avea_receipt_email_show_logo" widget="boolean_toggle" nolabel="1" class="o_avea_settings_toggle"/>
+                                            </div>
+                                            <div class="o_avea_workspace_info_item" invisible="not avea_receipt_email_show_logo">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_email_logo_size">Logo size</label>
+                                                <field name="avea_receipt_email_logo_size" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_workspace_info_item" invisible="not avea_receipt_email_show_logo">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_email_logo_max_height">Custom max height (px)</label>
+                                                <field name="avea_receipt_email_logo_max_height" placeholder="0 = use preset" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_workspace_info_item">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_email_accent_color">Accent colour</label>
+                                                <field name="avea_receipt_email_accent_color" placeholder="#2563eb" nolabel="1"/>
+                                            </div>
+                                            <div class="o_avea_workspace_info_item">
+                                                <label class="o_avea_workspace_info_label" for="avea_receipt_email_layout">Layout</label>
+                                                <field name="avea_receipt_email_layout" nolabel="1"/>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <field
-                                    name="avea_auto_email_receipt"
-                                    widget="boolean_toggle"
-                                    nolabel="1"
-                                    class="o_avea_settings_toggle"
-                                />
-                            </div>
 
-                            <div class="o_avea_settings_sender_grid" invisible="not avea_auto_email_receipt">
-                                <div class="o_avea_workspace_info_item">
-                                    <label class="o_avea_workspace_info_label" for="avea_receipt_sender_name">Sender name</label>
-                                    <field name="avea_receipt_sender_name" placeholder="Business name" nolabel="1"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item">
-                                    <label class="o_avea_workspace_info_label" for="avea_receipt_sender_email">Sender email</label>
-                                    <field name="avea_receipt_sender_email" placeholder="receipts@yourbusiness.com" nolabel="1"/>
-                                </div>
+                                <aside class="o_avea_settings_receipt_preview" invisible="not avea_auto_email_receipt">
+                                    <div class="o_avea_settings_preview_card">
+                                        <div class="o_avea_settings_preview_header">
+                                            <span class="o_avea_settings_preview_eyebrow">Live preview</span>
+                                            <h3 class="o_avea_settings_preview_title">Customer email</h3>
+                                            <p class="o_avea_settings_preview_help">Preview updates as you edit. Click Save settings to confirm.</p>
+                                        </div>
+                                        <div class="o_avea_settings_preview_frame">
+                                            <div class="o_avea_settings_preview_subject">
+                                                <span class="o_avea_settings_preview_subject_label">Subject</span>
+                                                <field name="avea_receipt_email_subject" readonly="1" nolabel="1" class="o_avea_settings_preview_subject_value"/>
+                                            </div>
+                                            <field
+                                                name="receipt_email_preview_html"
+                                                widget="html"
+                                                readonly="1"
+                                                nolabel="1"
+                                                class="o_avea_settings_preview_body"
+                                            />
+                                        </div>
+                                    </div>
+                                </aside>
                             </div>
                         </section>
                     </div>
@@ -59,7 +206,7 @@
     </record>
 
     <record id="action_avea_settings" model="ir.actions.server">
-        <field name="name">Settings</field>
+        <field name="name">Email Receipt</field>
         <field name="model_id" ref="model_avea_business_settings"/>
         <field name="state">code</field>
         <field name="code">action = env['avea.business.settings'].action_open_avea_settings()</field>

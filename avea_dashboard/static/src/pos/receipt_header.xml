@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="point_of_sale.ReceiptHeader" t-inherit="point_of_sale.ReceiptHeader" t-inherit-mode="extension">
+        <xpath expr="//img[hasclass('pos-receipt-logo')]" position="attributes">
+            <attribute name="t-if">!aveaPrintCustomizeEnabled or aveaPrintShow('avea_print_receipt_show_logo')</attribute>
+            <attribute name="t-att-class">{
+                'pos-receipt-logo': true,
+                [aveaPrintLogoClass]: aveaPrintCustomizeEnabled and aveaPrintLogoClass,
+            }</attribute>
+            <attribute name="t-att-style">aveaPrintLogoStyle or None</attribute>
+        </xpath>
+
+        <xpath expr="//span[hasclass('ticket-name-prefix')]" position="replace">
+            <t t-if="aveaPrintCustomizeEnabled">
+                <span class="avea-receipt-order-label">Receipt</span>
+            </t>
+            <t t-else="">
+                <span class="ticket-name-prefix">
+                    <t t-if="order.config._IS_VAT"> VAT </t>
+                    Ticket
+                </span>
+            </t>
+        </xpath>
+
+        <xpath expr="//span[hasclass('pos-receipt-vat')]" position="attributes">
+            <attribute name="t-if">!aveaPrintCustomizeEnabled or aveaPrintShow('avea_print_receipt_show_order_number')</attribute>
+        </xpath>
+
+        <xpath expr="//div[@id='order-date']" position="attributes">
+            <attribute name="t-if">order.date_order and (!aveaPrintCustomizeEnabled or aveaPrintShow('avea_print_receipt_show_datetime'))</attribute>
+        </xpath>
+
+        <xpath expr="//div[hasclass('cashier')]" position="attributes">
+            <attribute name="t-if">order?.getCashierName() and (!aveaPrintCustomizeEnabled or aveaPrintShow('avea_print_receipt_show_cashier'))</attribute>
+        </xpath>
+
+        <xpath expr="//div[hasclass('pos-receipt-customer')]" position="attributes">
+            <attribute name="t-if">order.partner_id and (!aveaPrintCustomizeEnabled or aveaPrintShow('avea_print_receipt_show_customer'))</attribute>
+        </xpath>
+    </t>
+
+</templates>

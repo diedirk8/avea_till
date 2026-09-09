@@ -298,31 +298,37 @@ Decision
 
 ### Initial section: Receipts & Email
 
-Business-level controls:
+Business-level controls grouped as **Sending**, **Message**, **What to include**, and **Appearance**:
 
-1. **Automatically email receipt to customer** (ON/OFF)
-2. **Sender name**
-3. **Sender email**
+1. **Sending** — automatically email receipt to customer (ON/OFF), sender name, sender email, optional reply-to
+2. **Message** — subject line, opening message, closing message (placeholders: `{business}`, `{customer}`, `{order}`, `{date}`)
+3. **What to include** — toggles for order details, customer details, products, line details, totals, payment, change, and customer balances (loyalty, Store Credit, account)
+4. **Appearance** — business logo, accent colour, layout (comfortable / compact)
+
+The Settings workspace uses a **two-column layout on desktop**: controls on the left and a live **email preview** on the right (`receipt_email_preview_html`, server-computed from sample sale data). Mobile stays single-column.
 
 When ON, after a successfully completed POS sale:
 
-- If a customer is selected and has a valid email address, Avea automatically emails a simple **Avea receipt** (not an invoice).
+- If a customer is selected and has a valid email address, Avea automatically emails a configurable **HTML receipt** (not an invoice).
 - No cashier action, no payment-screen email choice, and no Odoo invoice generated/downloaded/opened from POS.
+- Email generation is lightweight HTML only — no POS receipt rendering, JPEG capture, or PDF attachment.
 
 When OFF, no automatic email is sent.
 
 ### Receipt content and sender
 
-- Reuse Avea/Odoo POS order data and a dedicated QWeb email template aligned with printed receipt information: business details, date/time, order number, products, quantities, prices, discounts/promotions, tax, total, and payment method.
-- Email is sent as the **business** (`avea_receipt_sender_name` / `avea_receipt_sender_email`), not the cashier/session user.
+- Reuse Avea/Odoo POS order data rendered through a dedicated QWeb email template (`avea_till.avea_receipt_email_body`) with configurable sections.
+- Email is sent as the **business** (`avea_receipt_sender_name` / `avea_receipt_sender_email`), not the cashier/session user. Reply-to is configurable separately.
 - Use Odoo `mail.template` and `mail.mail` underneath; Avea owns the user-facing wording and layout.
-- The email body stays a simple Avea summary. The attachment is the **same POS `OrderReceipt` component** used for printing, rendered in POS after payment and attached as a PDF (no second receipt template).
+- Balance sections (loyalty, Store Credit, customer account) appear **only when non-zero** for that customer.
+- **No PDF attachment.** The printed POS receipt remains unchanged for in-store use.
 
 ### POS behaviour
 
 - Hide the POS **Invoice** toggle from the Avea payment screen.
 - Force `to_invoice = False` on POS sync so invoice workflow is not exposed or triggered from Avea POS.
+- Receipt email RPC runs in the background after payment; POS completion must never wait on email generation or SMTP.
 
 ### Tests
 
-Cover setting ON/OFF, customer with/without email, no customer, successful completed sale, receipt contents, business sender identity, cashier not used as sender, and no invoice on POS.
+Cover setting ON/OFF, HTML email without attachments, configurable content toggles (hide products, custom greeting/subject), conditional balances, preview sample data, automatic sending without blocking POS sync, customer with/without email, no customer, business sender identity, duplicate-send guard, and no invoice on POS.

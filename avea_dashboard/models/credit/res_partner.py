@@ -64,12 +64,15 @@ class ResPartner(models.Model):
 
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)
+        extra_fields = ["credit"]
         if config.avea_credit_enabled:
-            fields_list = fields_list + [
-                "avea_credit_balance",
-                "avea_credit_currency_id",
-            ]
-        return fields_list
+            extra_fields.extend(
+                [
+                    "avea_credit_balance",
+                    "avea_credit_currency_id",
+                ]
+            )
+        return fields_list + extra_fields
 
     @api.model
     def pos_get_store_credit_balance(self, partner_id):

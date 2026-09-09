@@ -1,0 +1,113 @@
+.pos-receipt {
+    &.avea-pos-receipt--customized {
+        font-family: "Courier New", Courier, monospace;
+
+        .pos-receipt-logo {
+            display: block;
+            height: auto;
+            margin: 0 auto;
+            object-fit: contain;
+            width: auto;
+        }
+
+        .avea-receipt-order-label {
+            font-weight: 700;
+        }
+    }
+
+    &.avea-pos-receipt--compact {
+        font-size: 85%;
+        line-height: 1.25;
+
+        .pos-receipt-logo.avea-pos-receipt-logo--small {
+            max-height: 40px;
+            max-width: 120px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--medium {
+            max-height: 56px;
+            max-width: 160px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--large {
+            max-height: 72px;
+            max-width: 200px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--extra_large {
+            max-height: 88px;
+            max-width: 240px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--maximum {
+            max-height: 104px;
+            max-width: 280px;
+        }
+    }
+
+    &.avea-pos-receipt--standard {
+        .pos-receipt-logo.avea-pos-receipt-logo--small {
+            max-height: 48px;
+            max-width: 140px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--medium {
+            max-height: 64px;
+            max-width: 180px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--large {
+            max-height: 80px;
+            max-width: 220px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--extra_large {
+            max-height: 96px;
+            max-width: 260px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--maximum {
+            max-height: 120px;
+            max-width: 300px;
+        }
+    }
+
+    &.avea-pos-receipt--detailed {
+        font-size: 95%;
+        line-height: 1.45;
+
+        .pos-receipt-logo.avea-pos-receipt-logo--small {
+            max-height: 56px;
+            max-width: 160px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--medium {
+            max-height: 72px;
+            max-width: 200px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--large {
+            max-height: 88px;
+            max-width: 240px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--extra_large {
+            max-height: 104px;
+            max-width: 280px;
+        }
+
+        .pos-receipt-logo.avea-pos-receipt-logo--maximum {
+            max-height: 120px;
+            max-width: 300px;
+        }
+    }
+
+    .avea-pos-receipt-sku {
+        font-size: 75%;
+        color: #555;
+    }
+
+    .avea-pos-receipt-custom-footer {
+        white-space: pre-line;
+    }
+}
