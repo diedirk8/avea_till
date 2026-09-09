@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import base64
 import io
+from unittest.mock import patch
 
-from odoo import fields
 from odoo.tests import tagged
 from odoo.addons.point_of_sale.tests.common import TestPoSCommon
 
@@ -24,7 +24,7 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
         cls.product = cls.create_product(
             "Receipt Test Product", cls.categ_basic, 25.0, 10.0
         )
-        cls.company = cls.env.company
+        cls.company = cls.config.company_id
         cls.company.write(
             {
                 "avea_auto_email_receipt": True,
@@ -33,12 +33,15 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
                 "email": "receipts@aveatest.local",
             }
         )
-        cls.customer_with_email = cls.env["res.partner"].create(
-            {
-                "name": "Receipt Customer",
-                "email": "customer@example.com",
-            }
+        cls.receipt_test_email = "visagiedl@gmail.com"
+        cls.customer_with_email = cls.env["res.partner"].search(
+            [("email", "=", cls.receipt_test_email)],
+            limit=1,
         )
+        if not cls.customer_with_email:
+            raise AssertionError(
+                "Dirk Visagie partner (visagiedl@gmail.com) is required for receipt email tests."
+            )
         cls.customer_without_email = cls.env["res.partner"].create(
             {
                 "name": "Walk-in Customer",
@@ -79,14 +82,31 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
         return order
 
     def _send_receipt_email(self, order):
-        return order.avea_send_receipt_email_automatic(self._sample_receipt_jpeg_b64())
+        with patch.object(
+            type(order),
+            "_avea_schedule_receipt_mail_delivery",
+            return_value=None,
+        ):
+            return order.avea_send_receipt_email_automatic(
+                self._sample_receipt_jpeg_b64()
+            )
 
-    def _latest_mail_for(self, email_to):
+    def _order_mail_domain(self, order):
+        reference = order.pos_reference or order.name
+        return [
+            ("email_to", "=", self.receipt_test_email),
+            ("body_html", "ilike", reference),
+        ]
+
+    def _mail_for_order(self, order):
         return self.env["mail.mail"].search(
-            [("email_to", "=", email_to)],
+            self._order_mail_domain(order),
             order="id desc",
             limit=1,
         )
+
+    def _mail_count_for_order(self, order):
+        return self.env["mail.mail"].search_count(self._order_mail_domain(order))
 
     def test_setting_on_sends_receipt_to_customer_with_email(self):
         order = self._create_paid_order(
@@ -94,7 +114,7 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
             uuid="receipt-on-with-email",
         )
         self.assertTrue(self._send_receipt_email(order))
-        mail = self._latest_mail_for("customer@example.com")
+        mail = self._mail_for_order(order)
         self.assertTrue(mail)
         self.assertTrue(order.avea_receipt_email_sent)
         self.assertIn(self.product.display_name, mail.body_html)
@@ -109,7 +129,7 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
             uuid="receipt-pdf-attachment",
         )
         self._send_receipt_email(order)
-        mail = self._latest_mail_for("customer@example.com")
+        mail = self._mail_for_order(order)
         pdf_attachments = mail.attachment_ids.filtered(
             lambda attachment: attachment.mimetype == "application/pdf"
         )
@@ -122,7 +142,7 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
             uuid="receipt-no-client-send",
         )
         self.assertFalse(order.avea_receipt_email_sent)
-        self.assertFalse(self._latest_mail_for("customer@example.com"))
+        self.assertFalse(self._mail_for_order(order))
 
     def test_setting_off_does_not_send_receipt(self):
         self.company.avea_auto_email_receipt = False
@@ -131,7 +151,7 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
             uuid="receipt-off-with-email",
         )
         self.assertFalse(self._send_receipt_email(order))
-        mail = self._latest_mail_for("customer@example.com")
+        mail = self._mail_for_order(order)
         self.assertFalse(mail)
         self.assertFalse(order.avea_receipt_email_sent)
 
@@ -166,7 +186,7 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
             uuid="receipt-contents",
         )
         self._send_receipt_email(order)
-        mail = self._latest_mail_for("customer@example.com")
+        mail = self._mail_for_order(order)
         self.assertIn(self.cash_pm1.name, mail.body_html)
         self.assertIn("Total", mail.body_html)
 
@@ -178,3 +198,73 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
         self.assertEqual(settings.company_id, self.company)
         settings.avea_receipt_sender_name = "Updated Business Name"
         self.assertEqual(self.company.avea_receipt_sender_name, "Updated Business Name")
+
+    def test_paid_order_completes_without_background_email_rpc(self):
+        order = self._create_paid_order(
+            customer=self.customer_with_email,
+            uuid="receipt-sync-only",
+        )
+        self.assertEqual(order.state, "paid")
+        self.assertFalse(order.avea_receipt_email_sent)
+        self.assertFalse(self._mail_for_order(order))
+
+    def test_duplicate_background_send_is_ignored(self):
+        order = self._create_paid_order(
+            customer=self.customer_with_email,
+            uuid="receipt-duplicate-guard",
+        )
+        self.assertTrue(self._send_receipt_email(order))
+        mail_count = self._mail_count_for_order(order)
+        self.assertFalse(self._send_receipt_email(order))
+        self.assertEqual(self._mail_count_for_order(order), mail_count)
+
+    def test_email_failure_does_not_block_order_or_leave_claim(self):
+        order = self._create_paid_order(
+            customer=self.customer_with_email,
+            uuid="receipt-email-failure",
+        )
+        template = self.env.ref("avea_till.email_template_avea_pos_receipt")
+        with patch.object(
+            type(template),
+            "send_mail",
+            side_effect=RuntimeError("smtp down"),
+        ):
+            self.assertFalse(
+                order.avea_send_receipt_email_automatic(
+                    self._sample_receipt_jpeg_b64()
+                )
+            )
+        self.assertEqual(order.state, "paid")
+        self.assertFalse(order.avea_receipt_email_sent)
+
+    def test_email_send_queues_mail_without_force_send(self):
+        order = self._create_paid_order(
+            customer=self.customer_with_email,
+            uuid="receipt-async-queue",
+        )
+        template = self.env.ref("avea_till.email_template_avea_pos_receipt")
+        with patch.object(type(template), "send_mail", return_value=42) as mocked:
+            with patch.object(
+                type(order),
+                "_avea_schedule_receipt_mail_delivery",
+            ) as schedule_mock:
+                self.assertTrue(
+                    order.avea_send_receipt_email_automatic(
+                        self._sample_receipt_jpeg_b64()
+                    )
+                )
+        mocked.assert_called_once()
+        self.assertFalse(mocked.call_args.kwargs.get("force_send"))
+        schedule_mock.assert_called_once_with(42)
+
+    def test_null_sent_flag_can_still_be_claimed(self):
+        order = self._create_paid_order(
+            customer=self.customer_with_email,
+            uuid="receipt-null-flag",
+        )
+        self.env.cr.execute(
+            "UPDATE pos_order SET avea_receipt_email_sent = NULL WHERE id = %s",
+            [order.id],
+        )
+        order.invalidate_recordset(["avea_receipt_email_sent"])
+        self.assertTrue(self._send_receipt_email(order))

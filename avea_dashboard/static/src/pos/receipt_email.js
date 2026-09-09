@@ -5,13 +5,24 @@ import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/
 import { isValidEmail } from "@point_of_sale/utils";
 import { patch } from "@web/core/utils/patch";
 
+/**
+ * Schedule automatic receipt email without blocking order validation.
+ *
+ * ``afterOrderValidation`` runs inside ``finalizeValidation()``, which the
+ * Feedback screen awaits before allowing the cashier to continue. Any await
+ * here keeps the "Amount Paid" screen stuck on background processing.
+ */
 patch(OrderPaymentValidation.prototype, {
-    async afterOrderValidation() {
-        await super.afterOrderValidation(...arguments);
-        await this._aveaMaybeSendReceiptEmail();
+    async afterOrderValidation(...args) {
+        await super.afterOrderValidation(...args);
+        this._aveaScheduleReceiptEmail();
     },
 
-    async _aveaMaybeSendReceiptEmail() {
+    _aveaScheduleReceiptEmail() {
+        void this._aveaSendReceiptEmailInBackground();
+    },
+
+    async _aveaSendReceiptEmailInBackground() {
         const order = this.order;
         const company = this.pos.company;
         if (!company?.avea_auto_email_receipt || !order?.id) {
@@ -31,13 +42,13 @@ patch(OrderPaymentValidation.prototype, {
                 },
                 { addClass: "pos-receipt-print p-3" }
             );
-            await this.pos.data.call(
+            await this.pos.data.silentCall(
                 "pos.order",
                 "avea_send_receipt_email_automatic",
                 [[order.id], ticketImage]
             );
-        } catch {
-            // Receipt email must never block the cashier after payment.
+        } catch (error) {
+            console.warn("Avea receipt email could not be sent.", error);
         }
     },
 });
