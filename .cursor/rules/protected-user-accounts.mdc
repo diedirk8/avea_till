@@ -1,0 +1,41 @@
+---
+description: Protect existing Odoo user accounts; use dedicated test users for auth testing
+alwaysApply: true
+---
+
+# Protected Odoo User Accounts
+
+Never modify personal Odoo user accounts or existing administrator accounts for testing.
+
+## Off-limits (unless explicitly instructed)
+
+- Dirk Visagie (`visagiedl@gmail.com`, user #2)
+- Brent Petersen (`brent@petsempire.co.za`, user #5)
+- Any other existing production or development user
+
+## Forbidden actions on existing users
+
+- Setting or resetting passwords via `odoo shell`, RPC, or UI automation
+- `user.password = ...`, `new_password`, `_set_password`, `action_reset_password`
+- Creating temporary password-reset helper scripts targeting existing users
+
+## Required approach for login/auth testing
+
+1. Create or reuse a dedicated test user with an obvious name (e.g. **Cursor Test**, **POS Test User**, **Development Test**).
+2. Assign only the minimum groups required for the feature under test.
+3. Password changes on the test user are allowed during testing.
+4. If admin permissions are needed, create a dedicated **Test Administrator** account — do not use real admin accounts.
+
+## End-of-task reporting
+
+Report:
+
+- Which test user was used
+- Any password changes made to the test user
+- Any temporary scripts or helper files created
+
+## Cleanup
+
+Delete temporary helper scripts (e.g. password reset scripts) when testing is complete unless the user asks to keep them.
+
+Treat user authentication and credentials as protected.
