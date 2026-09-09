@@ -191,28 +191,34 @@ class ResCompany(models.Model):
         if layout == "compact":
             return {
                 "root": (
-                    "font-family: 'Courier New', Courier, monospace; color: #111; "
-                    "font-size: 11px; line-height: 1.3; max-width: 280px; margin: 0 auto;"
+                    "font-family: Arial, Helvetica, sans-serif; color: #000; "
+                    "font-size: 13px; font-weight: 500; line-height: 1.35; "
+                    "max-width: 280px; margin: 0 auto;"
                 ),
                 "section_gap": "0.35rem",
                 "line_padding": "0.15rem 0",
+                "emphasis": "font-weight: 700;",
             }
         if layout == "detailed":
             return {
                 "root": (
-                    "font-family: 'Courier New', Courier, monospace; color: #111; "
-                    "font-size: 13px; line-height: 1.5; max-width: 320px; margin: 0 auto;"
+                    "font-family: Arial, Helvetica, sans-serif; color: #000; "
+                    "font-size: 15px; font-weight: 500; line-height: 1.45; "
+                    "max-width: 320px; margin: 0 auto;"
                 ),
                 "section_gap": "0.65rem",
                 "line_padding": "0.3rem 0",
+                "emphasis": "font-weight: 700;",
             }
         return {
             "root": (
-                "font-family: 'Courier New', Courier, monospace; color: #111; "
-                "font-size: 12px; line-height: 1.4; max-width: 300px; margin: 0 auto;"
+                "font-family: Arial, Helvetica, sans-serif; color: #000; "
+                "font-size: 14px; font-weight: 500; line-height: 1.4; "
+                "max-width: 300px; margin: 0 auto;"
             ),
             "section_gap": "0.5rem",
             "line_padding": "0.2rem 0",
+            "emphasis": "font-weight: 700;",
         }
 
     def _avea_print_receipt_logo_style(self, logo_size=None, max_height=None):

@@ -42,7 +42,7 @@
                 <div t-attf-style="border-top: 1px dashed #bbb; padding-top: #{layout_styles.get('section_gap')}; margin-bottom: #{layout_styles.get('section_gap')};">
                     <t t-foreach="lines" t-as="line">
                         <div t-attf-style="padding: #{layout_styles.get('line_padding')};">
-                            <div class="d-flex" style="justify-content: space-between;">
+                            <div class="d-flex" t-attf-style="justify-content: space-between; #{layout_styles.get('emphasis')}">
                                 <span>
                                     <t t-if="show_quantity">
                                         <span t-out="line.get('qty')"/> x
@@ -52,15 +52,15 @@
                                 <span t-out="line.get('subtotal')"/>
                             </div>
                             <t t-if="show_sku and line.get('sku')">
-                                <div style="font-size: 90%; color: #555;">SKU: <span t-out="line.get('sku')"/></div>
+                                <div style="font-size: 92%; color: #000;">SKU: <span t-out="line.get('sku')"/></div>
                             </t>
                             <t t-if="show_unit_price and line.get('unit_price')">
-                                <div style="font-size: 90%; color: #555;">
+                                <div style="font-size: 92%; color: #000;">
                                     <span t-out="line.get('unit_price')"/> each
                                 </div>
                             </t>
                             <t t-if="show_discounts and line.get('discount')">
-                                <div style="font-size: 90%; color: #555;">
+                                <div style="font-size: 92%; color: #000;">
                                     Discount: <span t-out="line.get('discount')"/>
                                 </div>
                             </t>

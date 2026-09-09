@@ -1,6 +1,12 @@
+// Avea customized POS receipts — tuned for thermal printers.
+// Match Odoo's 14px print baseline and avoid thin monospace text.
+
 .pos-receipt {
     &.avea-pos-receipt--customized {
-        font-family: "Courier New", Courier, monospace;
+        color: #000;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+        line-height: 1.4;
 
         .pos-receipt-logo {
             display: block;
@@ -10,15 +16,63 @@
             width: auto;
         }
 
-        .avea-receipt-order-label {
+        .avea-receipt-order-label,
+        .receipt-total,
+        .receipt-total .label-total,
+        .orderline .product-name,
+        .orderline .product-price {
             font-weight: 700;
+        }
+
+        .pos-receipt-amount,
+        .paymentlines,
+        .receipt-change,
+        .receipt-rounding,
+        .receipt-to-pay,
+        .pos-receipt-taxes,
+        .pos-receipt-store-credit,
+        .pos-receipt-loyalty,
+        .pos-receipt-account-balance,
+        .receipt-amount-paid {
+            font-weight: 600;
+        }
+
+        .cashier,
+        .pos-receipt-vat,
+        #order-date,
+        .pos-receipt-customer,
+        .pos-receipt-order-data {
+            font-weight: 600;
+        }
+
+        .avea-pos-receipt-sku {
+            color: #000;
+            font-size: 92%;
+            font-weight: 500;
+        }
+
+        .avea-pos-receipt-custom-footer {
+            font-weight: 600;
+            white-space: pre-line;
         }
     }
 
-    &.avea-pos-receipt--compact {
-        font-size: 85%;
-        line-height: 1.25;
+    &.avea-pos-receipt--compact.avea-pos-receipt--customized {
+        font-size: 13px;
+        line-height: 1.35;
+    }
 
+    &.avea-pos-receipt--standard.avea-pos-receipt--customized {
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    &.avea-pos-receipt--detailed.avea-pos-receipt--customized {
+        font-size: 15px;
+        line-height: 1.45;
+    }
+
+    &.avea-pos-receipt--compact {
         .pos-receipt-logo.avea-pos-receipt-logo--small {
             max-height: 40px;
             max-width: 120px;
@@ -73,9 +127,6 @@
     }
 
     &.avea-pos-receipt--detailed {
-        font-size: 95%;
-        line-height: 1.45;
-
         .pos-receipt-logo.avea-pos-receipt-logo--small {
             max-height: 56px;
             max-width: 160px;
@@ -101,13 +152,49 @@
             max-width: 300px;
         }
     }
+}
 
-    .avea-pos-receipt-sku {
-        font-size: 75%;
-        color: #555;
-    }
+@media print {
+    .pos-receipt.avea-pos-receipt--customized {
+        color: #000 !important;
+        font-weight: 500 !important;
 
-    .avea-pos-receipt-custom-footer {
-        white-space: pre-line;
+        &.avea-pos-receipt--compact {
+            font-size: 13px !important;
+            line-height: 1.35 !important;
+        }
+
+        &.avea-pos-receipt--standard {
+            font-size: 14px !important;
+            line-height: 1.4 !important;
+        }
+
+        &.avea-pos-receipt--detailed {
+            font-size: 15px !important;
+            line-height: 1.45 !important;
+        }
+
+        .orderline .product-name,
+        .orderline .product-price,
+        .receipt-total,
+        .receipt-total .label-total {
+            font-weight: 700 !important;
+        }
+
+        .pos-receipt-amount,
+        .paymentlines,
+        .receipt-change,
+        .pos-receipt-taxes,
+        .cashier,
+        .pos-receipt-vat,
+        #order-date,
+        .pos-receipt-customer {
+            font-weight: 600 !important;
+        }
+
+        .avea-pos-receipt-sku {
+            color: #000 !important;
+            font-weight: 500 !important;
+        }
     }
 }
