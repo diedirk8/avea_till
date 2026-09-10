@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+import re
+
 from odoo import api, fields, models
+
+_AVEA_BRACKET_REF_RE = re.compile(r"^\[(?P<ref>[^\]]+)\]\s*(?P<name>.*)$")
 
 
 class ProductProduct(models.Model):
@@ -27,10 +31,20 @@ class ProductProduct(models.Model):
     )
 
     def _avea_plain_name(self):
-        """Customer-facing product label without internal reference/SKU prefix."""
+        """Full product title without the internal reference/SKU prefix."""
         self.ensure_one()
-        name = (self.name or "").strip()
-        return name or (self.display_name or "")
+        reference = (self.default_code or "").strip()
+        raw = (self.display_name or self.name or "").strip()
+        if not raw:
+            return ""
+        match = _AVEA_BRACKET_REF_RE.match(raw)
+        if match:
+            name = (match.group("name") or "").strip()
+            return name or raw
+        if reference and raw.startswith(f"[{reference}]"):
+            stripped = raw[len(f"[{reference}]") :].strip()
+            return stripped or raw
+        return raw
 
     @api.model
     def get_formview_id(self, access_uid=None):

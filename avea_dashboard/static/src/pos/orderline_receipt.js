@@ -31,12 +31,17 @@ patch(Orderline.prototype, {
         if (!aveaPrintShow(company, "avea_print_receipt_show_products", null)) {
             values.price = false;
             values.name = "";
-        } else {
+        } else if (values.name) {
             const product = this.line.product_id;
-            const plainName = product?.name?.trim();
-            if (plainName) {
-                values.name = plainName;
+            const reference = product?.default_code?.trim();
+            let plainName = values.name.trim();
+            const bracketMatch = plainName.match(/^\[([^\]]+)\]\s*(.*)$/);
+            if (bracketMatch) {
+                plainName = bracketMatch[2].trim() || plainName;
+            } else if (reference && plainName.startsWith(`[${reference}]`)) {
+                plainName = plainName.slice(reference.length + 2).trim() || plainName;
             }
+            values.name = plainName;
         }
         values.aveaSkuLabel = false;
         return values;

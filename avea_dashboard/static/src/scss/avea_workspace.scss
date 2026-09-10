@@ -619,18 +619,19 @@
             th[data-name="product_name"],
             td[name="name"],
             td[name="product_name"] {
+                overflow: visible;
+                white-space: normal;
                 width: auto;
 
                 .o_field_widget,
-                .o_field_char {
-                    display: -webkit-box;
-                    -webkit-box-orient: vertical;
-                    -webkit-line-clamp: 2;
-                    line-clamp: 2;
+                .o_field_char,
+                .text-truncate {
+                    display: block;
                     max-width: 100%;
                     min-width: 0;
-                    overflow: hidden;
+                    overflow: visible;
                     overflow-wrap: break-word;
+                    text-overflow: clip;
                     white-space: normal;
                     word-break: normal;
                 }

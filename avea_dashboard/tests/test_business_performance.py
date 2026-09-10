@@ -63,6 +63,12 @@ class TestAveaBusinessPerformance(TestPoSCommon):
         self.assertNotIn("[", label)
         self.assertNotIn("00180", label)
 
+    def test_plain_name_strips_reference_but_keeps_full_title(self):
+        product = self.product_high_vol
+        product.name = "RC Mini Puppy 4kg"
+        product.default_code = "00180"
+        self.assertEqual(product._avea_plain_name(), "RC Mini Puppy 4kg")
+
     def test_balanced_performer_outranks_one_off_high_value(self):
         aggregates = [
             {
