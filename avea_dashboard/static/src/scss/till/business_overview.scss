@@ -839,17 +839,6 @@
         .o_avea_pattern_legend {
             justify-content: flex-start;
         }
-
-        .o_avea_products_sold_card {
-            .o_list_table td[name="product_name"],
-            .o_list_table th[data-name="product_name"],
-            .o_list_table td[name="name"],
-            .o_list_table th[data-name="name"] {
-                overflow: visible;
-                overflow-wrap: anywhere;
-                white-space: normal;
-            }
-        }
     }
 }
 

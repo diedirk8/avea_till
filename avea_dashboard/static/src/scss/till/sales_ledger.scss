@@ -43,7 +43,7 @@
         line-height: 1.3;
         margin: 0.55rem 0 0;
         min-width: 0;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
     }
 
     .o_avea_comparison_range {
@@ -53,7 +53,7 @@
         line-height: 1.4;
         margin: 0.3rem 0 0;
         min-width: 0;
-        overflow-wrap: anywhere;
+        overflow-wrap: break-word;
     }
 
     .o_avea_sales_ledger_block {
@@ -69,6 +69,7 @@
         border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
         border-radius: var(--border-radius-lg, 0.5rem);
         box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        min-width: 0;
         padding: 0 !important;
 
         .o_list_renderer {
@@ -76,6 +77,10 @@
             border-radius: 0;
             box-shadow: none;
             margin: 0;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
     }
 
@@ -178,10 +183,10 @@
             display: block;
             font-weight: 600;
             max-width: 100%;
-            overflow-wrap: anywhere;
+            overflow-wrap: break-word;
             text-decoration: none;
             white-space: normal;
-            word-break: break-word;
+            word-break: normal;
 
             &:hover {
                 color: #01494d;
@@ -193,11 +198,10 @@
         td[name="avea_product_reference"],
         td[name="avea_product_display"],
         td[name="avea_order_partner_id"] {
-            overflow: visible !important;
-            overflow-wrap: anywhere;
-            text-overflow: clip !important;
-            white-space: normal !important;
-            word-break: break-word;
+            line-height: 1.35;
+            overflow-wrap: break-word;
+            white-space: normal;
+            word-break: normal;
 
             .o_field_widget,
             .o_field_char,
@@ -205,11 +209,9 @@
                 display: block;
                 max-width: 100%;
                 min-width: 0;
-                overflow: visible !important;
-                overflow-wrap: anywhere;
-                text-overflow: clip !important;
-                white-space: normal !important;
-                word-break: break-word;
+                overflow-wrap: break-word;
+                white-space: normal;
+                word-break: normal;
             }
         }
 
@@ -253,53 +255,107 @@
         .o_avea_period_range {
             font-size: 1.05rem;
         }
+
+        > .o_content .o_list_renderer {
+            overflow-x: visible;
+        }
     }
 
     .o_avea_sales_ledger_list .o_list_table {
-        th[data-name="avea_order_partner_id"],
-        td[name="avea_order_partner_id"] {
+        table-layout: auto;
+
+        thead {
             display: none;
         }
 
-        th[data-name="avea_order_date"],
-        td[name="avea_order_date"] {
-            min-width: 0;
-            white-space: normal;
-            width: 22%;
+        tbody > tr.o_data_row {
+            align-items: baseline;
+            border-bottom: 1px solid var(--o-gray-200, #e9ecef);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem 0.75rem;
+            min-height: 0;
+            padding: 0.8rem 0.85rem;
+
+            &:last-child {
+                border-bottom: none;
+            }
+
+            > td {
+                border: none !important;
+                display: block;
+                max-width: 100%;
+                min-width: 0 !important;
+                padding: 0 !important;
+                width: auto !important;
+            }
         }
 
-        th[data-name="avea_order_reference"],
-        td[name="avea_order_reference"] {
-            min-width: 0;
-            width: 18%;
-        }
-
-        th[data-name="avea_product_reference"],
         td[name="avea_product_reference"] {
-            min-width: 0;
-            width: 12%;
+            color: var(--o-gray-600, #6c757d);
+            flex: 1 1 100%;
+            font-size: 0.75rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            order: 1;
+
+            &:empty {
+                display: none;
+            }
         }
 
-        th[data-name="avea_product_display"],
         td[name="avea_product_display"] {
-            min-width: 0;
-            width: auto;
+            flex: 1 1 100%;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            line-height: 1.35;
+            order: 2;
         }
 
-        th[data-name="qty"],
+        td[name="avea_order_date"] {
+            color: var(--o-gray-600, #6c757d);
+            flex: 1 1 auto;
+            font-size: 0.75rem;
+            font-variant-numeric: tabular-nums;
+            order: 3;
+            white-space: nowrap;
+
+            &::before {
+                color: var(--o-gray-500, #6c757d);
+                content: "Date ";
+                font-weight: 600;
+            }
+        }
+
         td[name="qty"] {
-            min-width: 3.25rem;
-            padding-left: 0.35rem;
-            padding-right: 0.35rem;
-            width: 4.5rem;
-        }
-    }
-}
+            flex: 0 0 auto;
+            font-size: 0.8125rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            margin-left: auto;
+            order: 4;
+            text-align: right;
+            white-space: nowrap;
 
-@media (max-width: 575.98px) {
-    .o_avea_sales_ledger_list .o_list_table {
-        th[data-name="avea_product_reference"],
-        td[name="avea_product_reference"] {
+            &::before {
+                color: var(--o-gray-600, #6c757d);
+                content: "Qty ";
+                font-weight: 600;
+            }
+
+            .o_field_widget {
+                justify-content: flex-end;
+            }
+        }
+
+        td[name="avea_order_reference"] {
+            flex: 1 1 100%;
+            font-size: 0.8125rem;
+            order: 5;
+        }
+
+        th[data-name="avea_order_partner_id"],
+        td[name="avea_order_partner_id"] {
             display: none;
         }
     }
