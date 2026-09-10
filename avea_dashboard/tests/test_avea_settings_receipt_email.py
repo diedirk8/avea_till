@@ -356,6 +356,19 @@ class TestAveaSettingsReceiptEmail(TestPoSCommon):
         self.assertFalse(mocked.call_args.kwargs.get("force_send"))
         schedule_mock.assert_called_once_with(42)
 
+    def test_postcommit_delivery_calls_deliver_receipt_mail(self):
+        """Regression: post-commit callback must not call deliver on the model class."""
+        pos_order_model = self.env["pos.order"]
+        mail_id = 4242
+        with patch.object(
+            type(pos_order_model),
+            "_avea_deliver_receipt_mail",
+            return_value=True,
+        ) as deliver_mock:
+            pos_order_model._avea_schedule_receipt_mail_delivery(mail_id)
+            self.env.cr.postcommit.run()
+        deliver_mock.assert_called_once_with(mail_id)
+
     def test_null_sent_flag_can_still_be_claimed(self):
         order = self._create_paid_order(
             customer=self.customer_with_email,

@@ -103,16 +103,20 @@ class PosOrder(models.Model):
         if not mail_id:
             return
 
+        registry = self.env.registry
+
         def _send_after_commit():
             try:
-                type(self)._avea_deliver_receipt_mail(mail_id)
+                with registry.cursor() as cr:
+                    env = api.Environment(cr, api.SUPERUSER_ID, {})
+                    env["pos.order"]._avea_deliver_receipt_mail(mail_id)
             except Exception:
                 _logger.exception(
                     "Failed to deliver Avea receipt email (mail.mail #%s)",
                     mail_id,
                 )
                 try:
-                    with self.env.registry.cursor() as cr:
+                    with registry.cursor() as cr:
                         env = api.Environment(cr, api.SUPERUSER_ID, {})
                         cron = env.ref(
                             "mail.ir_cron_mail_scheduler_action",
