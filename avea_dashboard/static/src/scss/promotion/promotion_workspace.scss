@@ -146,9 +146,8 @@
         min-width: 0;
         padding: 0.95rem 1.05rem 1.05rem;
 
-        .o_field_widget:not(.o_field_many2many_tags) input:not([type="checkbox"]):not([type="radio"]),
+        .o_field_widget:not(.o_field_many2many_tags):not(.o_field_monetary) input:not([type="checkbox"]):not([type="radio"]),
         .o_field_widget textarea,
-        .o_field_monetary input.o_input,
         .o_field_many2one .o_input {
             background: #fff;
             border: 1px solid var(--o-gray-300, #dee2e6);
@@ -214,13 +213,69 @@
             resize: vertical;
         }
 
-        .o_field_widget:not(.o_field_many2many_tags) input:not([type="checkbox"]):not([type="radio"]):focus,
+        .o_field_widget:not(.o_field_many2many_tags):not(.o_field_monetary) input:not([type="checkbox"]):not([type="radio"]):focus,
         .o_field_widget textarea:focus,
-        .o_field_monetary input.o_input:focus,
         .o_field_many2one .o_input:focus {
             border-color: var(--avea-info, #01666b);
             box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
             outline: none;
+        }
+
+        // Odoo 19 monetary: currency symbol is an overlay — border belongs on the wrapper.
+        .o_field_monetary {
+            display: block;
+            max-width: 100%;
+            min-width: 0;
+            width: 100%;
+
+            > .text-nowrap,
+            > .d-inline-flex {
+                align-items: center;
+                background: #fff;
+                border: 1px solid var(--o-gray-300, #dee2e6);
+                border-radius: var(--avea-promotion-input-radius);
+                box-sizing: border-box;
+                max-width: 100%;
+                min-height: 2.35rem;
+                min-width: 0;
+                padding: 0 0.7rem;
+                position: relative;
+                width: 100%;
+
+                &:focus-within {
+                    border-color: var(--avea-info, #01666b);
+                    box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
+                }
+            }
+
+            span.o_input.position-absolute {
+                align-items: center;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: flex !important;
+                inset: 0 0.7rem;
+                min-height: 0 !important;
+                padding: 0 !important;
+                pointer-events: none;
+                position: absolute;
+                width: auto;
+                z-index: 0;
+            }
+
+            input.o_input {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                flex: 1 1 0% !important;
+                max-width: 100%;
+                min-height: 0 !important;
+                min-width: 0 !important;
+                padding: 0 !important;
+                position: relative;
+                width: 100% !important;
+                z-index: 1;
+            }
         }
     }
 
