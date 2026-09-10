@@ -189,6 +189,20 @@ class TestAveaSalesLedger(TestPoSCommon):
         self.assertEqual(action["res_model"], "pos.order")
         self.assertEqual(action["res_id"], order.id)
 
+    def test_order_date_label_stacks_date_and_time(self):
+        order, _session = self._create_paid_order(
+            lines=[(self.product_a, 1)],
+            uuid="sales-ledger-date-label",
+        )
+        line = self._ledger_lines([("order_id", "=", order.id)])
+        line._compute_avea_order_date_label()
+        self.assertTrue(line.avea_order_date_label)
+        self.assertIn("\n", line.avea_order_date_label)
+        parts = line.avea_order_date_label.split("\n", 1)
+        self.assertEqual(len(parts), 2)
+        self.assertTrue(parts[0])
+        self.assertTrue(parts[1])
+
     def test_product_reference_split_from_pos_name(self):
         self.product_a.default_code = "00180"
         order, _session = self._create_paid_order(

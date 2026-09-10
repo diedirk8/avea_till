@@ -17,6 +17,7 @@
                 js_class="avea_sales_ledger_list"
             >
                 <field name="avea_order_date" string="Date / Time" widget="datetime"/>
+                <field name="avea_order_date_label" string="Date / Time"/>
                 <field
                     name="avea_order_reference"
                     string="Order #"

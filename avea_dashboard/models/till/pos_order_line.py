@@ -2,7 +2,7 @@ import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-from odoo.tools.misc import format_date
+from odoo.tools.misc import format_date, format_time
 
 
 class PosOrderLine(models.Model):
@@ -13,6 +13,12 @@ class PosOrderLine(models.Model):
         related="order_id.date_order",
         store=True,
         index=True,
+        readonly=True,
+    )
+    avea_order_date_label = fields.Char(
+        string="Date / Time",
+        compute="_compute_avea_order_date_label",
+        store=True,
         readonly=True,
     )
     avea_order_partner_id = fields.Many2one(
@@ -44,6 +50,17 @@ class PosOrderLine(models.Model):
         index=True,
         readonly=True,
     )
+    @api.depends("avea_order_date")
+    def _compute_avea_order_date_label(self):
+        for line in self:
+            if not line.avea_order_date:
+                line.avea_order_date_label = False
+                continue
+            dt = fields.Datetime.context_timestamp(line, line.avea_order_date)
+            date_part = format_date(line.env, dt.date())
+            time_part = format_time(line.env, dt.time())
+            line.avea_order_date_label = f"{date_part}\n{time_part}"
+
     @api.depends("order_id.pos_reference", "order_id.name")
     def _compute_avea_order_reference(self):
         for line in self:

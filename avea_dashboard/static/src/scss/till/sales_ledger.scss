@@ -109,8 +109,15 @@
         }
 
         th[data-name="avea_order_date"],
-        td[name="avea_order_date"] {
+        td[name="avea_order_date"],
+        th[data-name="avea_order_date_label"],
+        td[name="avea_order_date_label"] {
             width: 11%;
+        }
+
+        th[data-name="avea_order_date_label"],
+        td[name="avea_order_date_label"] {
+            display: none;
         }
 
         th[data-name="avea_order_reference"],
@@ -146,6 +153,24 @@
         td[name="avea_order_date"] {
             font-size: 0.8125rem;
             white-space: nowrap;
+        }
+
+        td[name="avea_order_date_label"] {
+            font-size: 0.8125rem;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.35;
+            white-space: nowrap;
+
+            .o_field_widget,
+            .o_field_char,
+            span {
+                display: block;
+                max-width: 100%;
+                min-width: 0;
+                overflow: visible !important;
+                text-overflow: clip !important;
+                white-space: inherit !important;
+            }
         }
 
         td[name="avea_order_reference"] .o_field_widget {
@@ -260,15 +285,29 @@
             display: none !important;
         }
 
+        th[data-name="avea_order_date_label"],
+        td[name="avea_order_date_label"] {
+            display: table-cell !important;
+            width: 24% !important;
+        }
+
         th[data-name="avea_product_display"],
         td[name="avea_product_display"] {
             max-width: none !important;
-            width: 72% !important;
+            width: 56% !important;
         }
 
         th[data-name="qty"],
         td[name="qty"] {
-            width: 28% !important;
+            width: 20% !important;
+        }
+
+        td[name="avea_order_date_label"] {
+            font-size: 0.75rem;
+            line-height: 1.35;
+            padding-top: 0.55rem;
+            padding-bottom: 0.55rem;
+            white-space: pre-line;
         }
 
         td[name="avea_product_display"] {
