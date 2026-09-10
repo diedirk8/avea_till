@@ -75,6 +75,8 @@ class ResPartner(models.Model):
 
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)
+        # Never expose accounting-only partner.credit to POS cashiers.
+        fields_list = [field_name for field_name in fields_list if field_name != "credit"]
         extra_fields = ["avea_customer_account_balance"]
         if config.avea_credit_enabled:
             extra_fields.extend(

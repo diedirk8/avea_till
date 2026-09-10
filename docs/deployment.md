@@ -15,8 +15,9 @@ Production is updated only after successful testing.
 3. Pull latest changes on the production server.
 4. Ensure the addon directory is named `avea_dashboard` (replacing the old `avea_till` folder if upgrading).
 5. Update the module: `-u avea_dashboard`
-6. Verify functionality.
-7. Resume normal operation.
+6. Restart the Odoo service/container so running workers load the new Python code.
+7. Verify functionality.
+8. Resume normal operation.
 
 ---
 
