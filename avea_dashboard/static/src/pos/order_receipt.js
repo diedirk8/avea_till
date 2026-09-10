@@ -118,15 +118,15 @@ patch(OrderReceipt.prototype, {
             return false;
         }
         const partner = this.order.getPartner();
-        return Boolean(partner?.credit);
+        return Boolean(partner?.avea_customer_account_balance);
     },
 
     get aveaCustomerAccountBalance() {
         const partner = this.order.getPartner();
-        if (!partner?.credit) {
+        if (!partner?.avea_customer_account_balance) {
             return 0;
         }
-        return partner.credit;
+        return partner.avea_customer_account_balance;
     },
 
     get aveaTotalAmountPaid() {

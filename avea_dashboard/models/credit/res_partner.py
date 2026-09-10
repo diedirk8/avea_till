@@ -23,6 +23,12 @@ class ResPartner(models.Model):
         currency_field="avea_credit_currency_id",
         help="Current store credit balance derived from confirmed ledger entries.",
     )
+    avea_customer_account_balance = fields.Monetary(
+        string="Customer Account Balance",
+        compute="_compute_avea_customer_account_balance",
+        currency_field="currency_id",
+        help="Outstanding receivable balance for POS receipts without accounting access.",
+    )
 
     @api.depends(
         "avea_credit_ledger_entry_ids.amount",
@@ -44,6 +50,11 @@ class ResPartner(models.Model):
             partner.avea_credit_balance = balance
             partner.avea_credit_currency_id = currency
 
+    def _compute_avea_customer_account_balance(self):
+        credit_by_id = {partner.id: partner.credit for partner in self.sudo()}
+        for partner in self:
+            partner.avea_customer_account_balance = credit_by_id.get(partner.id, 0.0)
+
     def _avea_credit_ensure_customer(self):
         partners = self.filtered(lambda partner: not partner.customer_rank)
         if partners:
@@ -64,7 +75,7 @@ class ResPartner(models.Model):
 
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)
-        extra_fields = ["credit"]
+        extra_fields = ["avea_customer_account_balance"]
         if config.avea_credit_enabled:
             extra_fields.extend(
                 [

@@ -555,9 +555,12 @@ class PosOrder(models.Model):
                     )
 
             if company.avea_receipt_email_show_customer_account_balance:
-                if partner.credit:
+                partner.invalidate_recordset(["avea_customer_account_balance"])
+                if partner.avea_customer_account_balance:
                     balances["customer_account"] = (
-                        self._avea_receipt_email_format_amount(partner.credit)
+                        self._avea_receipt_email_format_amount(
+                            partner.avea_customer_account_balance
+                        )
                     )
 
         return {
