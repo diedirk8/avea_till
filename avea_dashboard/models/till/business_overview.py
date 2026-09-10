@@ -544,8 +544,7 @@ class AveaBusinessOverview(models.TransientModel):
 
     def _busy_stats_from_orders(self, orders):
         day_buckets = {}
-        hour_buckets = {}
-        hour_date_buckets = {}
+        time_slot_buckets = {}
         for order in orders:
             local_dt = self._local_order_datetime(order)
             if not local_dt:
@@ -556,17 +555,15 @@ class AveaBusinessOverview(models.TransientModel):
             day_entry = day_buckets.setdefault(day, [0.0, 0, day.toordinal()])
             day_entry[0] += amount
             day_entry[1] += 1
-            hour_entry = hour_buckets.setdefault(hour, [0.0, 0, hour])
-            hour_entry[0] += amount
-            hour_entry[1] += 1
-            hour_day_entry = hour_date_buckets.setdefault(hour, {}).setdefault(
-                day, [0.0, 0, day.toordinal()]
+            slot_key = (day, hour)
+            slot_entry = time_slot_buckets.setdefault(
+                slot_key, [0.0, 0, day.toordinal() * 24 + hour]
             )
-            hour_day_entry[0] += amount
-            hour_day_entry[1] += 1
+            slot_entry[0] += amount
+            slot_entry[1] += 1
 
         busiest_day = self._pick_busiest_bucket(day_buckets)
-        busiest_hour = self._pick_busiest_bucket(hour_buckets)
+        busiest_time = self._pick_busiest_bucket(time_slot_buckets)
         result = {
             "day_name": False,
             "day_sales": 0.0,
@@ -584,20 +581,15 @@ class AveaBusinessOverview(models.TransientModel):
                     "day_count": count,
                 }
             )
-        if busiest_hour:
-            hour, (sales, count, _sort) = busiest_hour
-            hour_range = self._format_hour_range(hour)
-            hour_day = self._pick_busiest_bucket(hour_date_buckets.get(hour) or {})
-            if hour_day:
-                time_display = _("%s on %s") % (
-                    hour_range,
-                    self._format_busy_date(hour_day[0]),
-                )
-            else:
-                time_display = hour_range
+        if busiest_time:
+            (day, hour), (sales, count, _sort) = busiest_time
             result.update(
                 {
-                    "time_display": time_display,
+                    "time_display": _("%s on %s")
+                    % (
+                        self._format_hour_range(hour),
+                        self._format_busy_date(day),
+                    ),
                     "time_sales": sales,
                     "time_count": count,
                 }
