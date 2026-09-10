@@ -57,8 +57,8 @@ class PosOrderLine(models.Model):
                 line.avea_order_date_label = False
                 continue
             dt = fields.Datetime.context_timestamp(line, line.avea_order_date)
-            date_part = format_date(line.env, dt.date())
-            time_part = format_time(line.env, dt.time())
+            date_part = format_date(line.env, dt.date(), date_format="d MMM")
+            time_part = format_time(line.env, dt.time(), time_format="short")
             line.avea_order_date_label = f"{date_part}\n{time_part}"
 
     @api.depends("order_id.pos_reference", "order_id.name")

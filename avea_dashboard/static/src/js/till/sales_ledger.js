@@ -23,6 +23,17 @@ export class AveaSalesLedgerRenderer extends ListRenderer {
         this.actionService = useService("action");
     }
 
+    getCellClass(column, record) {
+        const className = super.getCellClass(column, record);
+        if (
+            column.name === "avea_order_date_label" ||
+            column.name === "avea_product_display"
+        ) {
+            return `${className} o_list_text o_avea_ledger_wrap_cell`.trim();
+        }
+        return className;
+    }
+
     async onCellClicked(record, column, ev, newWindow) {
         if (
             (column.name === "avea_order_reference" ||

@@ -108,16 +108,9 @@
             min-height: 2.5rem;
         }
 
-        th[data-name="avea_order_date"],
-        td[name="avea_order_date"],
         th[data-name="avea_order_date_label"],
         td[name="avea_order_date_label"] {
             width: 11%;
-        }
-
-        th[data-name="avea_order_date_label"],
-        td[name="avea_order_date_label"] {
-            display: none;
         }
 
         th[data-name="avea_order_reference"],
@@ -150,27 +143,20 @@
             width: 18%;
         }
 
-        td[name="avea_order_date"] {
-            font-size: 0.8125rem;
-            white-space: nowrap;
+        td.o_avea_ledger_wrap_cell,
+        td[name="avea_order_date_label"],
+        td[name="avea_product_display"] {
+            max-width: none !important;
+            overflow: visible !important;
+            text-overflow: clip !important;
+            white-space: pre-line !important;
+            word-break: normal;
         }
 
         td[name="avea_order_date_label"] {
             font-size: 0.8125rem;
             font-variant-numeric: tabular-nums;
             line-height: 1.35;
-            white-space: nowrap;
-
-            .o_field_widget,
-            .o_field_char,
-            span {
-                display: block;
-                max-width: 100%;
-                min-width: 0;
-                overflow: visible !important;
-                text-overflow: clip !important;
-                white-space: inherit !important;
-            }
         }
 
         td[name="avea_order_reference"] .o_field_widget {
@@ -191,41 +177,33 @@
             }
         }
 
-        td[name="avea_product_display"] {
-            max-width: none;
-            overflow: visible;
-            text-overflow: clip;
-            white-space: normal;
-
-            &,
-            &.o_list_char,
-            &.o_field_cell {
-                overflow: visible !important;
-                text-overflow: clip !important;
-                white-space: normal !important;
-            }
-
-            .o_field_widget,
-            .o_field_char,
-            .text-truncate,
-            span {
-                display: block;
-                max-width: 100%;
-                min-width: 0;
-                overflow: visible !important;
-                overflow-wrap: break-word;
-                text-overflow: clip !important;
-                white-space: normal !important;
-                word-break: normal;
-            }
-        }
-
         td[name="avea_order_partner_id"] .o_field_widget {
             display: block;
             max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+
+        .o_data_row:not(.o_selected_row) {
+            td.o_avea_ledger_wrap_cell.o_list_char,
+            td[name="avea_order_date_label"].o_list_char,
+            td[name="avea_product_display"].o_list_char {
+                white-space: pre-line !important;
+
+                .o_field_widget,
+                .o_field_char,
+                .text-truncate,
+                span {
+                    display: inline !important;
+                    max-width: none !important;
+                    overflow: visible !important;
+                    overflow-wrap: anywhere;
+                    text-overflow: clip !important;
+                    white-space: inherit !important;
+                    word-break: normal;
+                }
+            }
         }
     }
 }
@@ -278,8 +256,6 @@
 
         th[data-name="avea_order_partner_id"],
         td[name="avea_order_partner_id"],
-        th[data-name="avea_order_date"],
-        td[name="avea_order_date"],
         th[data-name="avea_order_reference"],
         td[name="avea_order_reference"] {
             display: none !important;
@@ -287,7 +263,6 @@
 
         th[data-name="avea_order_date_label"],
         td[name="avea_order_date_label"] {
-            display: table-cell !important;
             width: 24% !important;
         }
 
@@ -307,7 +282,6 @@
             line-height: 1.35;
             padding-top: 0.55rem;
             padding-bottom: 0.55rem;
-            white-space: pre-line;
         }
 
         td[name="avea_product_display"] {
@@ -324,5 +298,11 @@
             font-weight: 700;
             padding-top: 0.55rem;
         }
+    }
+}
+
+@media (min-width: 768px) {
+    .o_avea_sales_ledger_list .o_list_table td[name="avea_order_date_label"] {
+        white-space: nowrap !important;
     }
 }

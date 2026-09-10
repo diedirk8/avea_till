@@ -16,14 +16,22 @@
                 class="o_avea_sales_ledger_list"
                 js_class="avea_sales_ledger_list"
             >
-                <field name="avea_order_date" string="Date / Time" widget="datetime"/>
-                <field name="avea_order_date_label" string="Date / Time"/>
+                <field name="avea_order_date" column_invisible="True"/>
+                <field
+                    name="avea_order_date_label"
+                    string="Date / Time"
+                    class="o_avea_ledger_date_cell"
+                />
                 <field
                     name="avea_order_reference"
                     string="Order #"
                     class="o_avea_sales_ledger_order_link"
                 />
-                <field name="avea_product_display" string="Product"/>
+                <field
+                    name="avea_product_display"
+                    string="Product"
+                    class="o_avea_ledger_product_cell"
+                />
                 <field name="avea_product_reference" column_invisible="True"/>
                 <field name="product_id" column_invisible="True"/>
                 <field name="qty" string="Qty" decoration-danger="qty &lt; 0"/>
