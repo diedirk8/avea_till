@@ -44,6 +44,12 @@ class PosOrderLine(models.Model):
         index=True,
         readonly=True,
     )
+    avea_product_line_label = fields.Char(
+        string="Product",
+        compute="_compute_avea_product_display",
+        store=True,
+        readonly=True,
+    )
 
     @api.depends("order_id.pos_reference", "order_id.name")
     def _compute_avea_order_reference(self):
@@ -84,6 +90,10 @@ class PosOrderLine(models.Model):
                     name = raw[len(f"[{reference}]") :].strip() or raw
             line.avea_product_reference = reference or False
             line.avea_product_display = name or raw
+            if reference and name:
+                line.avea_product_line_label = f"{reference} · {name}"
+            else:
+                line.avea_product_line_label = name or raw or reference or False
 
     @api.model
     def _avea_sales_ledger_domain(self):

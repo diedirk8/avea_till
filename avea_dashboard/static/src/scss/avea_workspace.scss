@@ -602,42 +602,45 @@
 
             th,
             td {
+                line-height: 1.35;
                 vertical-align: top;
             }
 
             th {
-                line-height: 1.3;
+                font-size: 0.75rem;
                 white-space: normal;
             }
 
+            td {
+                font-size: 0.8125rem;
+            }
+
+            th[data-name="name"],
+            th[data-name="product_name"],
             td[name="name"],
             td[name="product_name"] {
-                line-height: 1.35;
-                overflow-wrap: break-word;
-                white-space: normal;
-                word-break: normal;
+                width: auto;
 
                 .o_field_widget,
                 .o_field_char {
-                    display: block;
+                    display: -webkit-box;
+                    -webkit-box-orient: vertical;
+                    -webkit-line-clamp: 2;
+                    line-clamp: 2;
                     max-width: 100%;
                     min-width: 0;
+                    overflow: hidden;
                     overflow-wrap: break-word;
                     white-space: normal;
                     word-break: normal;
                 }
             }
 
-            th[data-name="name"],
-            th[data-name="product_name"] {
-                width: auto;
-            }
-
             th[data-name="quantity_sold"],
             td[name="quantity_sold"] {
                 text-align: right;
                 white-space: nowrap;
-                width: 4.75rem;
+                width: 3.5rem;
             }
 
             th[data-name="revenue_ex_tax"],
@@ -648,7 +651,7 @@
             td[name="sales_value"] {
                 text-align: right;
                 white-space: nowrap;
-                width: 7rem;
+                width: 5.5rem;
             }
 
             td[name="quantity_sold"] .o_field_widget,
@@ -676,6 +679,7 @@
         .o_list_renderer {
             border: none;
             border-radius: 0;
+            overflow-x: auto;
         }
     }
 
@@ -782,84 +786,24 @@
 
         .o_avea_products_sold_card {
             max-height: none;
-            overflow: visible;
         }
 
         .o_avea_products_sold_list .o_list_table {
-            table-layout: auto;
+            min-width: 16rem;
 
-            thead {
-                display: none;
+            th,
+            td {
+                padding-left: 0.4rem;
+                padding-right: 0.4rem;
             }
 
-            tbody > tr.o_data_row {
-                align-items: baseline;
-                border-bottom: 1px solid var(--o-gray-200, #e9ecef);
-                display: flex;
-                flex-wrap: wrap;
-                gap: 0.3rem 0.75rem;
-                padding: 0.8rem 0.85rem;
-
-                &:last-child {
-                    border-bottom: none;
-                }
-
-                > td {
-                    border: none !important;
-                    display: block;
-                    max-width: 100%;
-                    min-width: 0 !important;
-                    overflow: visible;
-                    overflow-wrap: break-word;
-                    padding: 0 !important;
-                    width: auto !important;
-                    word-break: normal;
-                }
-            }
-
-            td[name="name"],
-            td[name="product_name"] {
-                flex: 1 1 100%;
-                font-size: 0.9375rem;
-                font-weight: 600;
-                line-height: 1.35;
-                order: 1;
-            }
-
-            td[name="quantity_sold"] {
-                flex: 0 0 auto;
-                font-size: 0.8125rem;
-                font-variant-numeric: tabular-nums;
-                font-weight: 700;
-                order: 2;
-
-                &::before {
-                    color: var(--o-gray-600, #6c757d);
-                    content: "Qty ";
-                    font-weight: 600;
-                }
-            }
-
+            th[data-name="revenue_ex_tax"],
             td[name="revenue_ex_tax"],
+            th[data-name="gross_profit"],
+            td[name="gross_profit"],
+            th[data-name="sales_value"],
             td[name="sales_value"] {
-                flex: 0 0 auto;
-                font-size: 0.8125rem;
-                font-weight: 700;
-                margin-left: auto;
-                order: 3;
-            }
-
-            td[name="gross_profit"] {
-                flex: 0 0 auto;
-                font-size: 0.8125rem;
-                font-weight: 700;
-                order: 4;
-
-                &::before {
-                    color: var(--o-gray-600, #6c757d);
-                    content: "Profit ";
-                    font-weight: 600;
-                }
+                width: 4.75rem;
             }
         }
     }

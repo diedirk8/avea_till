@@ -22,8 +22,9 @@
                     string="Order #"
                     class="o_avea_sales_ledger_order_link"
                 />
-                <field name="avea_product_reference" string="Ref"/>
-                <field name="avea_product_display" string="Product"/>
+                <field name="avea_product_line_label" string="Product"/>
+                <field name="avea_product_reference" column_invisible="True"/>
+                <field name="avea_product_display" column_invisible="True"/>
                 <field name="product_id" column_invisible="True"/>
                 <field name="qty" string="Qty" decoration-danger="qty &lt; 0"/>
                 <field name="avea_order_partner_id" string="Customer" optional="show"/>
