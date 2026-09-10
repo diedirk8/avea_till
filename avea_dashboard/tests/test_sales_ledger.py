@@ -200,7 +200,6 @@ class TestAveaSalesLedger(TestPoSCommon):
         line._compute_avea_product_display()
         self.assertEqual(line.avea_product_reference, "00180")
         self.assertEqual(line.avea_product_display, "RC Mini Puppy 4kg")
-        self.assertEqual(line.avea_product_line_label, "00180 · RC Mini Puppy 4kg")
 
     def test_banner_info_reports_count_and_range(self):
         order, _session = self._create_paid_order(

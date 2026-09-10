@@ -167,7 +167,7 @@ class PosSession(models.Model):
         return [
             {
                 "product_id": product.id,
-                "product_name": product.display_name,
+                "product_name": product._avea_plain_name(),
                 "quantity_sold": quantity_sold,
                 "sales_value": sales_value,
             }

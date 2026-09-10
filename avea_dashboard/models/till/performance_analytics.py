@@ -57,12 +57,8 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
 
     @api.model
     def _avea_performance_product_label(self, product):
-        """Readable product label without bracket refs that break on mobile."""
-        reference = (product.default_code or "").strip()
-        name = (product.name or "").strip()
-        if reference and name:
-            return f"{reference} · {name}"
-        return name or product.display_name
+        """Customer-facing product label without internal reference."""
+        return product._avea_plain_name()
 
     @api.model
     def _avea_performance_bucket_key(self, line, *, group_by):

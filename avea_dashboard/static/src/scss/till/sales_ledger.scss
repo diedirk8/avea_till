@@ -118,8 +118,8 @@
             width: 10%;
         }
 
-        th[data-name="avea_product_line_label"],
-        td[name="avea_product_line_label"] {
+        th[data-name="avea_product_display"],
+        td[name="avea_product_display"] {
             width: 42%;
         }
 
@@ -166,7 +166,7 @@
             }
         }
 
-        td[name="avea_product_line_label"] {
+        td[name="avea_product_display"] {
             .o_field_widget,
             .o_field_char {
                 display: -webkit-box;
@@ -251,8 +251,8 @@
             width: 4.25rem;
         }
 
-        th[data-name="avea_product_line_label"],
-        td[name="avea_product_line_label"] {
+        th[data-name="avea_product_display"],
+        td[name="avea_product_display"] {
             width: auto;
         }
 

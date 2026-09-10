@@ -478,7 +478,8 @@ class PosOrder(models.Model):
                 discount = line.discount if line.discount else False
                 lines.append(
                     {
-                        "name": line.full_product_name or line.product_id.display_name,
+                        "name": line.avea_product_display
+                        or line.product_id._avea_plain_name(),
                         "qty": self._avea_receipt_email_format_qty(line.qty),
                         "price_unit": self._avea_receipt_email_format_amount(
                             line.price_unit

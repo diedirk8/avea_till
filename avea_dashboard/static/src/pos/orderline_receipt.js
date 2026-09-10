@@ -31,11 +31,14 @@ patch(Orderline.prototype, {
         if (!aveaPrintShow(company, "avea_print_receipt_show_products", null)) {
             values.price = false;
             values.name = "";
+        } else {
+            const product = this.line.product_id;
+            const plainName = product?.name?.trim();
+            if (plainName) {
+                values.name = plainName;
+            }
         }
-        const product = this.line.product_id;
-        const sku = product?.default_code || product?.barcode || "";
-        values.aveaSkuLabel =
-            aveaPrintShow(company, "avea_print_receipt_show_sku", null) && sku ? sku : false;
+        values.aveaSkuLabel = false;
         return values;
     },
 });

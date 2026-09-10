@@ -26,6 +26,12 @@ class ProductProduct(models.Model):
         readonly=False,
     )
 
+    def _avea_plain_name(self):
+        """Customer-facing product label without internal reference/SKU prefix."""
+        self.ensure_one()
+        name = (self.name or "").strip()
+        return name or (self.display_name or "")
+
     @api.model
     def get_formview_id(self, access_uid=None):
         """Use the Avea compact popup when creating/editing from Receive Stock."""

@@ -59,8 +59,9 @@ class TestAveaBusinessPerformance(TestPoSCommon):
         product = self.product_high_vol
         product.default_code = "00180"
         label = self.Line._avea_performance_product_label(product)
-        self.assertEqual(label, "00180 · Perf High Volume")
+        self.assertEqual(label, "Perf High Volume")
         self.assertNotIn("[", label)
+        self.assertNotIn("00180", label)
 
     def test_balanced_performer_outranks_one_off_high_value(self):
         aggregates = [
