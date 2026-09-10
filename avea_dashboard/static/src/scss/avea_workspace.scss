@@ -790,12 +790,27 @@
         }
 
         .o_avea_products_sold_list .o_list_table {
-            min-width: 16rem;
+            min-width: 0;
+            table-layout: fixed;
+            width: 100%;
 
             th,
             td {
                 padding-left: 0.4rem;
                 padding-right: 0.4rem;
+            }
+
+            th[data-name="name"],
+            th[data-name="product_name"],
+            td[name="name"],
+            td[name="product_name"] {
+                max-width: none !important;
+                width: 58% !important;
+            }
+
+            th[data-name="quantity_sold"],
+            td[name="quantity_sold"] {
+                width: 14% !important;
             }
 
             th[data-name="revenue_ex_tax"],
@@ -804,7 +819,15 @@
             td[name="gross_profit"],
             th[data-name="sales_value"],
             td[name="sales_value"] {
-                width: 4.75rem;
+                width: 28% !important;
+            }
+
+            td[name="name"],
+            td[name="product_name"] {
+                font-size: 0.875rem;
+                line-height: 1.4;
+                padding-top: 0.55rem;
+                padding-bottom: 0.55rem;
             }
         }
     }

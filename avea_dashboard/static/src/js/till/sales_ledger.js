@@ -24,7 +24,11 @@ export class AveaSalesLedgerRenderer extends ListRenderer {
     }
 
     async onCellClicked(record, column, ev, newWindow) {
-        if (column.name === "avea_order_reference" && record.resId) {
+        if (
+            (column.name === "avea_order_reference" ||
+                column.name === "avea_product_display") &&
+            record.resId
+        ) {
             ev.preventDefault();
             ev.stopPropagation();
             const action = await this.orm.call(

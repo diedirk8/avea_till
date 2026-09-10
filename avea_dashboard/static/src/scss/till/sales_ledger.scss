@@ -167,19 +167,30 @@
         }
 
         td[name="avea_product_display"] {
+            max-width: none;
             overflow: visible;
+            text-overflow: clip;
             white-space: normal;
+
+            &,
+            &.o_list_char,
+            &.o_field_cell {
+                overflow: visible !important;
+                text-overflow: clip !important;
+                white-space: normal !important;
+            }
 
             .o_field_widget,
             .o_field_char,
-            .text-truncate {
+            .text-truncate,
+            span {
                 display: block;
                 max-width: 100%;
                 min-width: 0;
-                overflow: visible;
+                overflow: visible !important;
                 overflow-wrap: break-word;
-                text-overflow: clip;
-                white-space: normal;
+                text-overflow: clip !important;
+                white-space: normal !important;
                 word-break: normal;
             }
         }
@@ -229,44 +240,50 @@
     }
 
     .o_avea_sales_ledger_list .o_list_table {
-        min-width: 20rem;
+        min-width: 0;
+        table-layout: fixed;
+        width: 100%;
 
         th,
         td {
             font-size: 0.8125rem;
-            padding-left: 0.4rem;
-            padding-right: 0.4rem;
+            padding-left: 0.45rem;
+            padding-right: 0.45rem;
         }
 
         th[data-name="avea_order_partner_id"],
-        td[name="avea_order_partner_id"] {
-            display: none;
-        }
-
+        td[name="avea_order_partner_id"],
         th[data-name="avea_order_date"],
-        td[name="avea_order_date"] {
-            width: 4.75rem;
-        }
-
+        td[name="avea_order_date"],
         th[data-name="avea_order_reference"],
         td[name="avea_order_reference"] {
-            width: 4.25rem;
+            display: none !important;
         }
 
         th[data-name="avea_product_display"],
         td[name="avea_product_display"] {
-            width: auto;
+            max-width: none !important;
+            width: 72% !important;
         }
 
         th[data-name="qty"],
         td[name="qty"] {
-            width: 2.75rem;
+            width: 28% !important;
         }
 
-        td[name="avea_order_date"] {
-            font-size: 0.6875rem;
-            line-height: 1.25;
-            white-space: normal;
+        td[name="avea_product_display"] {
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1.4;
+            padding-top: 0.55rem;
+            padding-bottom: 0.55rem;
+        }
+
+        td[name="qty"] {
+            font-size: 0.875rem;
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            padding-top: 0.55rem;
         }
     }
 }
