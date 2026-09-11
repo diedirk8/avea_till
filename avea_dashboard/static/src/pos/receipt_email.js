@@ -14,7 +14,19 @@ import { patch } from "@web/core/utils/patch";
 patch(OrderPaymentValidation.prototype, {
     async afterOrderValidation(...args) {
         await super.afterOrderValidation(...args);
-        this._aveaScheduleReceiptEmail();
+        try {
+            this._aveaScheduleReceiptEmail();
+        } catch (error) {
+            console.warn("Avea receipt email could not be scheduled.", error);
+        }
+    },
+
+    _aveaPartnerEmail(partner) {
+        const raw = partner?.email;
+        if (typeof raw !== "string") {
+            return "";
+        }
+        return raw.trim();
     },
 
     _aveaScheduleReceiptEmail() {
@@ -26,7 +38,7 @@ patch(OrderPaymentValidation.prototype, {
             return;
         }
         const partner = order.getPartner();
-        const email = partner?.email?.trim();
+        const email = this._aveaPartnerEmail(partner);
         if (!partner || !email || !isValidEmail(email)) {
             return;
         }
