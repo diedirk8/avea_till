@@ -187,11 +187,6 @@ export class AveaStockCatalogueController extends ListController {
         this.applyFilters();
     }
 
-    async onRecordSaved(record) {
-        await super.onRecordSaved(record);
-        await this.applyFilters({ resetOffset: false });
-    }
-
     /**
      * New Stock Item always opens the Avea product workspace (not an inline row
      * and not the standard Odoo product form).
@@ -215,10 +210,20 @@ export class AveaStockCatalogueController extends ListController {
 
     /**
      * Opening a row uses the Avea Stock Item form, not the standard product form.
+     * While a row is being edited inline, finish that edit before navigating away.
      */
     async openRecord(record, { newWindow } = {}) {
         if (newWindow) {
             return super.openRecord(record, { newWindow });
+        }
+        if (this.editedRecord) {
+            if (this.editedRecord.resId === record.resId) {
+                return;
+            }
+            const canLeave = await this.model.root.leaveEditMode({ validate: true });
+            if (!canLeave) {
+                return;
+            }
         }
         const action = await this.orm.call(
             "product.template",

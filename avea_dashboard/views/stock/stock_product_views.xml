@@ -76,7 +76,7 @@
                     title="Open stock item"
                     class="btn-link"
                 />
-                <field name="name" string="Product"/>
+                <field name="name" string="Product" autocomplete="off"/>
                 <field name="default_code" string="SKU" optional="show"/>
                 <field name="barcode" string="Barcode" optional="show"/>
                 <field name="categ_id" string="Category" optional="show" options="{'no_create': True}"/>
