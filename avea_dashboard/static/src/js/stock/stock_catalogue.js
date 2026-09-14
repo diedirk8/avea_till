@@ -36,6 +36,11 @@ patch(FormController.prototype, {
 export class AveaStockCatalogueController extends ListController {
     static template = "avea_till.StockCatalogueList";
 
+    get className() {
+        const base = this.props.className || "";
+        return `${base} o_avea_workspace o_avea_workspace--stock-catalogue`.trim();
+    }
+
     /**
      * New Stock Item always opens the Avea product workspace (not an inline row
      * and not the standard Odoo product form).

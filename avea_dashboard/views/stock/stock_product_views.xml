@@ -76,7 +76,7 @@
                     title="Open stock item"
                     class="btn-link"
                 />
-                <field name="name" string="Product" readonly="1"/>
+                <field name="name" string="Product"/>
                 <field name="default_code" string="SKU" optional="show"/>
                 <field name="barcode" string="Barcode" optional="show"/>
                 <field name="categ_id" string="Category" optional="show" options="{'no_create': True}"/>
@@ -501,6 +501,7 @@
         <field name="search_view_id" ref="view_avea_stock_product_search"/>
         <field name="context">{
             'avea_stock_workspace': True,
+            'no_breadcrumbs': True,
             'search_default_avea_active': 1,
             'default_sale_ok': True,
             'default_purchase_ok': True,

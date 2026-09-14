@@ -784,49 +784,106 @@
 // Stock catalogue (product list)
 // =============================================================================
 
-.o_avea_stock_catalogue {
-    .o_avea_stock_catalogue_banner {
-        background: transparent;
-        margin: 0.35rem 0 0.85rem;
-        padding: 0.15rem 0 0;
+.o_avea_workspace--stock-catalogue {
+    background-color: var(--o-webclient-background-color, #f8f9fa);
+    min-width: 0;
+
+    .o_avea_workspace_sheet,
+    .o_avea_stock_catalogue_sheet {
+        margin: 0 auto;
+        max-width: 1680px;
+        min-width: 0;
+        padding: 1rem 1.5rem 0.75rem;
+        width: 100%;
     }
 
-    .o_avea_stock_catalogue_banner_intro {
-        max-width: 48rem;
+    .o_avea_stock_catalogue_hero {
+        margin-bottom: 0;
+    }
+
+    .o_avea_workspace_hero_intro {
+        margin-bottom: 0;
     }
 
     .o_avea_workspace_title {
         font-size: 1.7rem;
         letter-spacing: -0.04em;
-        margin: 0;
     }
 
     .o_avea_workspace_section_subtitle {
         color: var(--o-gray-600, #6c757d);
         font-size: 0.9rem;
+        line-height: 1.45;
         margin: 0.35rem 0 0;
+        max-width: 42rem;
     }
 
-    .o_list_button_add {
-        background: var(--avea-info, #01666b);
-        border-color: var(--avea-info, #01666b);
-        font-weight: 700;
+    > .o_control_panel {
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        margin: 0 auto;
+        max-width: 1680px;
+        min-width: 0;
+        padding: 0.35rem 1.5rem 0.85rem;
+        width: 100%;
 
-        &:hover,
-        &:focus {
-            background: #01494d;
-            border-color: #01494d;
+        .o_control_panel_main {
+            align-items: center;
+        }
+
+        .o_control_panel_actions {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .o_searchview {
+            border-radius: 0.45rem;
+            max-width: 100%;
+        }
+
+        .o_list_button_add {
+            background: var(--avea-info, #01666b);
+            border-color: var(--avea-info, #01666b);
+            font-weight: 700;
+
+            &:hover,
+            &:focus {
+                background: #01494d;
+                border-color: #01494d;
+            }
+        }
+
+        .o_list_button_save {
+            font-weight: 700;
         }
     }
 
-    .o_list_renderer {
-        background: #fff;
-        border: 1px solid rgba(16, 24, 40, 0.08);
-        border-radius: 0.7rem;
-        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04);
-        overflow: hidden;
-    }
+    > .o_content {
+        background: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        border-radius: var(--border-radius-lg, 0.5rem);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        margin: 0 auto 1.5rem;
+        max-width: 1680px;
+        min-width: 0;
+        padding: 0 !important;
+        width: calc(100% - 3rem);
 
+        .o_list_renderer {
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            margin: 0;
+            max-width: 100%;
+            min-width: 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+}
+
+.o_avea_stock_catalogue_list {
     .o_list_table {
         --avea-stock-catalogue-row-height: 2.85rem;
 
@@ -845,16 +902,32 @@
         }
 
         .o_data_row {
-            height: var(--avea-stock-catalogue-row-height);
+            height: auto;
+            min-height: var(--avea-stock-catalogue-row-height);
         }
 
-        .o_field_widget input {
+        td[name="name"] .o_field_widget input {
             min-height: 2.1rem;
         }
     }
+}
 
-    .o_searchview {
-        border-radius: 0.45rem;
+@media (max-width: 767.98px) {
+    .o_avea_workspace--stock-catalogue {
+        .o_avea_workspace_sheet,
+        .o_avea_stock_catalogue_sheet {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        > .o_control_panel {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        > .o_content {
+            width: calc(100% - 1.5rem);
+        }
     }
 }
 
