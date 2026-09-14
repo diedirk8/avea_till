@@ -12,6 +12,109 @@
                         </p>
                     </div>
                 </div>
+                <div class="o_avea_stock_catalogue_filters">
+                    <div class="o_avea_workspace_info_item">
+                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_name">
+                            Search Product Name
+                        </label>
+                        <input
+                            id="avea_stock_filter_name"
+                            type="search"
+                            class="o_avea_stock_filter_input form-control"
+                            placeholder="Product name"
+                            t-att-value="filterState.productName"
+                            t-on-input="(ev) => this.onFilterInputChange('productName', ev)"
+                        />
+                    </div>
+                    <div class="o_avea_workspace_info_item">
+                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_sku">
+                            SKU / Reference
+                        </label>
+                        <input
+                            id="avea_stock_filter_sku"
+                            type="search"
+                            class="o_avea_stock_filter_input form-control"
+                            placeholder="SKU or reference"
+                            t-att-value="filterState.sku"
+                            t-on-input="(ev) => this.onFilterInputChange('sku', ev)"
+                        />
+                    </div>
+                    <div class="o_avea_workspace_info_item">
+                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_barcode">
+                            Barcode
+                        </label>
+                        <input
+                            id="avea_stock_filter_barcode"
+                            type="search"
+                            class="o_avea_stock_filter_input form-control"
+                            placeholder="Barcode"
+                            t-att-value="filterState.barcode"
+                            t-on-input="(ev) => this.onFilterInputChange('barcode', ev)"
+                        />
+                    </div>
+                    <div class="o_avea_workspace_info_item">
+                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_supplier">
+                            Supplier
+                        </label>
+                        <select
+                            id="avea_stock_filter_supplier"
+                            class="o_avea_stock_filter_select form-select"
+                            t-att-value="filterState.supplierId"
+                            t-on-change="(ev) => this.onFilterSelectChange('supplierId', ev)"
+                        >
+                            <option value="">All suppliers</option>
+                            <t t-foreach="filterOptions.suppliers" t-as="supplier" t-key="supplier.id">
+                                <option t-att-value="supplier.id" t-esc="supplier.display_name"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="o_avea_workspace_info_item">
+                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_category">
+                            Category
+                        </label>
+                        <select
+                            id="avea_stock_filter_category"
+                            class="o_avea_stock_filter_select form-select"
+                            t-att-value="filterState.categoryId"
+                            t-on-change="(ev) => this.onFilterSelectChange('categoryId', ev)"
+                        >
+                            <option value="">All categories</option>
+                            <t t-foreach="filterOptions.categories" t-as="category" t-key="category.id">
+                                <option t-att-value="category.id" t-esc="category.display_name"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="o_avea_workspace_info_item">
+                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_status">
+                            Stock Status
+                        </label>
+                        <select
+                            id="avea_stock_filter_status"
+                            class="o_avea_stock_filter_select form-select"
+                            t-att-value="filterState.stockStatus"
+                            t-on-change="(ev) => this.onFilterSelectChange('stockStatus', ev)"
+                        >
+                            <t t-foreach="stockStatusOptions" t-as="option" t-key="option.value">
+                                <option t-att-value="option.value" t-esc="option.label"/>
+                            </t>
+                        </select>
+                    </div>
+                    <div class="o_avea_workspace_info_item">
+                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_arrange">
+                            Arrange By
+                        </label>
+                        <select
+                            id="avea_stock_filter_arrange"
+                            class="o_avea_stock_filter_select form-select"
+                            t-att-value="filterState.arrangeBy"
+                            t-on-change="(ev) => this.onFilterSelectChange('arrangeBy', ev)"
+                        >
+                            <t t-foreach="arrangeOptions" t-as="option" t-key="option.value">
+                                <option t-att-value="option.value" t-esc="option.label"/>
+                            </t>
+                        </select>
+                    </div>
+                </div>
             </div>
         </xpath>
         <xpath expr="//button[hasclass('o_list_button_add')]" position="replace">
