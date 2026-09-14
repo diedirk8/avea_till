@@ -121,14 +121,14 @@ export class AveaStockCatalogueController extends ListController {
             this.orm.searchRead(
                 "res.partner",
                 [["supplier_rank", ">", 0]],
-                ["id", "display_name"],
-                { order: "display_name asc", limit: 500 }
+                ["id", "name", "display_name"],
+                { order: "name asc", limit: 500 }
             ),
             this.orm.searchRead(
                 "product.category",
                 [],
-                ["id", "display_name"],
-                { order: "display_name asc", limit: 500 }
+                ["id", "name", "display_name"],
+                { order: "name asc", limit: 500 }
             ),
         ]);
         this.filterOptions.suppliers = suppliers;
