@@ -262,43 +262,13 @@
         }
 
         .o_list_table {
+            @include avea-compact-table-base;
             background: transparent;
             margin-bottom: 0;
         }
 
-        .o_avea_stock_receive_list .o_list_table,
-        .o_avea_stock_return_list .o_list_table {
-            table-layout: auto;
-            width: 100%;
-
-            th,
-            td {
-                max-width: none;
-                vertical-align: middle;
-            }
-
-            th {
-                line-height: 1.3;
-                white-space: normal;
-
-                .text-truncate,
-                .min-w-0,
-                span.d-block {
-                    min-width: 0;
-                    overflow: visible;
-                    text-overflow: clip;
-                    white-space: normal;
-                }
-            }
-        }
-
         .o_list_table thead th {
             border-bottom: 1px solid var(--o-gray-200, #e9ecef);
-            color: var(--o-gray-600, #6c757d);
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            text-transform: none;
         }
 
         th[data-name="discount"],
@@ -797,37 +767,34 @@
         width: 100%;
     }
 
-    .o_avea_stock_catalogue_hero {
-        margin-bottom: 0;
+    .o_avea_stock_catalogue_header {
+        margin-bottom: 0.15rem;
     }
 
-    .o_avea_workspace_hero_intro {
-        margin-bottom: 0;
+    .o_avea_workspace_title,
+    .o_avea_stock_catalogue_title {
+        font-size: 1.45rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+        margin: 0 0 0.25rem;
     }
 
-    .o_avea_workspace_title {
-        font-size: 1.7rem;
-        letter-spacing: -0.04em;
-    }
-
-    .o_avea_workspace_section_subtitle {
+    .o_avea_workspace_section_subtitle,
+    .o_avea_stock_catalogue_lead {
         color: var(--o-gray-600, #6c757d);
         font-size: 0.9rem;
-        line-height: 1.45;
-        margin: 0.35rem 0 0;
+        line-height: 1.4;
+        margin: 0;
         max-width: 42rem;
     }
 
     .o_avea_stock_catalogue_filters {
-        background: var(--o-view-background-color, #fff);
-        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
-        border-radius: var(--border-radius-lg, 0.5rem);
-        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        @include avea-compact-panel;
         display: grid;
-        gap: 0.75rem 0.85rem;
+        gap: 0.65rem 0.75rem;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        margin-top: 1rem;
-        padding: 0.95rem 1.05rem 1.05rem;
+        margin-top: 0.85rem;
 
         .o_avea_workspace_info_item {
             min-width: 0;
@@ -925,29 +892,20 @@
 
 .o_avea_stock_catalogue_list {
     .o_list_table {
-        --avea-stock-catalogue-row-height: 2.85rem;
+        @include avea-compact-table-base;
 
-        th {
-            background: #f8f9fa;
-            color: var(--o-gray-700, #495057);
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 0.01em;
-            white-space: nowrap;
-        }
-
-        td {
-            font-size: 0.875rem;
-            vertical-align: middle;
-        }
-
-        .o_data_row {
-            height: auto;
-            min-height: var(--avea-stock-catalogue-row-height);
+        th[data-name="name"],
+        td[name="name"],
+        th[data-name="categ_id"],
+        td[name="categ_id"],
+        th[data-name="avea_supplier_id"],
+        td[name="avea_supplier_id"] {
+            max-width: 14rem;
         }
 
         td[name="name"] .o_field_widget input {
-            min-height: 2.1rem;
+            min-height: 2rem;
+            white-space: normal;
         }
     }
 }
@@ -978,6 +936,780 @@
 
         > .o_content {
             width: calc(100% - 1.5rem);
+        }
+    }
+}
+
+// =============================================================================
+// Stock Take workspace
+// =============================================================================
+
+// Stock Take is a client action (no .o_content). Scroll the main pane via o_action_manager.
+.o_action_manager.o_avea_stock_take_action_manager {
+    -ms-overflow-style: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: auto !important;
+
+    &::-webkit-scrollbar {
+        display: block !important;
+        height: 12px;
+        width: 12px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgba(73, 80, 87, 0.45);
+        border-radius: 999px;
+    }
+}
+
+.o_action.o_avea_stock_take_action {
+    display: block !important;
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+.o_avea_stock_take_root {
+    width: 100%;
+}
+
+.o_avea_workspace--stock-take {
+    height: auto;
+    min-height: 0;
+
+    .o_avea_stock_take_sheet {
+        margin: 0 auto;
+        max-width: 1280px;
+        padding: 1rem 1.5rem 3rem;
+        width: 100%;
+    }
+
+    .o_avea_stock_take_hero {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: space-between;
+    }
+
+    .o_avea_stock_take_hero_actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .o_avea_stock_take_panel {
+        background: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        border-radius: var(--border-radius-lg, 0.5rem);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        margin-top: 1rem;
+        padding: 1rem 1.1rem 1.15rem;
+    }
+
+    .o_avea_stock_take_mode_grid {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .o_avea_stock_take_mode_card {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.65rem;
+        padding: 0.95rem 1rem;
+        text-align: left;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+        &.is-active {
+            border-color: var(--avea-info, #01666b);
+            box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
+        }
+    }
+
+    .o_avea_stock_take_mode_title {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .o_avea_stock_take_mode_copy {
+        color: var(--o-gray-600, #6c757d);
+        display: block;
+        font-size: 0.875rem;
+    }
+
+    .o_avea_stock_take_filters {
+        display: grid;
+        gap: 0.75rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .o_avea_stock_take_section_hint {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.875rem;
+        margin: -0.15rem 0 0.85rem;
+    }
+
+    .o_avea_stock_take_everything_copy {
+        color: var(--o-gray-600, #6c757d);
+        margin: 0 0 0.5rem;
+    }
+
+    .o_avea_stock_take_everything_count {
+        font-size: 1.35rem;
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_stock_take_start_action,
+    .o_avea_stock_take_panel--start {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: space-between;
+    }
+
+    .o_avea_stock_take_panel--start {
+        background: var(--avea-info-soft, rgba(1, 102, 107, 0.06));
+        border-color: var(--avea-info-border, rgba(1, 102, 107, 0.22));
+        margin-top: 1rem;
+    }
+
+    .o_avea_stock_take_start_actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+
+    .o_avea_stock_take_start_btn {
+        min-width: 12rem;
+    }
+
+    .o_avea_stock_take_ready_copy {
+        color: var(--o-gray-700, #495057);
+        font-size: 1rem;
+    }
+
+    .o_avea_stock_take_selection_layout {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+        margin-top: 1rem;
+    }
+
+    .o_avea_stock_take_products_header {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .o_avea_stock_take_match_count,
+    .o_avea_stock_take_selected_count {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.9rem;
+        margin: 0.2rem 0 0;
+    }
+
+    .o_avea_stock_take_products_table_wrap {
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.5rem;
+        max-height: 18rem;
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-gutter: stable;
+
+        .o_avea_stock_take_table thead th {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+    }
+
+    .o_avea_stock_take_products_scroll_hint {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.8rem;
+        margin: 0 0 0.5rem;
+    }
+
+    .o_avea_stock_take_selection_table {
+        .o_avea_stock_take_col_check {
+            width: 2.5rem;
+        }
+    }
+
+    .o_avea_stock_take_selection_row {
+        cursor: pointer;
+
+        &.is-selected {
+            background: var(--avea-info-soft, rgba(1, 102, 107, 0.06));
+        }
+
+        &:hover {
+            background: rgba(1, 102, 107, 0.04);
+        }
+    }
+
+    .o_avea_stock_take_selected_list {
+        list-style: none;
+        margin: 0.75rem 0 0;
+        padding: 0;
+
+        li {
+            align-items: flex-start;
+            display: flex;
+            gap: 0.45rem;
+            margin-bottom: 0.45rem;
+        }
+    }
+
+    .o_avea_stock_take_selected_tick {
+        color: var(--avea-positive, #008818);
+        font-weight: 700;
+        line-height: 1.35;
+    }
+
+    .o_avea_stock_take_selected_more {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.875rem;
+        margin: 0.35rem 0 0;
+    }
+
+    .o_avea_stock_take_selected_empty,
+    .o_avea_stock_take_products_empty,
+    .o_avea_stock_take_products_loading {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.9rem;
+        padding: 1rem 0;
+    }
+
+    .o_avea_stock_take_clear_btn {
+        margin-top: 0.35rem;
+        padding-left: 0;
+    }
+
+    .o_avea_stock_take_confirm_overlay {
+        align-items: center;
+        background: rgba(16, 24, 40, 0.45);
+        display: flex;
+        inset: 0;
+        justify-content: center;
+        padding: 1rem;
+        position: fixed;
+        z-index: 1050;
+    }
+
+    .o_avea_stock_take_confirm_dialog {
+        background: #fff;
+        border-radius: 0.75rem;
+        box-shadow: 0 12px 40px rgba(16, 24, 40, 0.18);
+        max-width: 28rem;
+        padding: 1.25rem 1.35rem 1.1rem;
+        width: 100%;
+    }
+
+    .o_avea_stock_take_confirm_copy,
+    .o_avea_stock_take_confirm_mode {
+        color: var(--o-gray-700, #495057);
+        margin: 0.75rem 0 0;
+    }
+
+    .o_avea_stock_take_confirm_actions {
+        display: flex;
+        gap: 0.65rem;
+        justify-content: flex-end;
+        margin-top: 1.1rem;
+    }
+
+    .o_avea_stock_take_footer {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        margin-top: 1.25rem;
+    }
+
+    .o_avea_stock_take_preview {
+        color: var(--o-gray-700, #495057);
+        font-size: 0.95rem;
+        margin-right: auto;
+    }
+
+    .o_avea_stock_take_count_layout {
+        align-items: stretch;
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+        margin-top: 1rem;
+    }
+
+    .o_avea_stock_take_panel--entry,
+    .o_avea_stock_take_panel--list {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .o_avea_stock_take_list_header {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: space-between;
+        margin-bottom: 0.35rem;
+
+        .o_avea_workspace_section_title {
+            margin-bottom: 0;
+        }
+    }
+
+    .o_avea_stock_take_list_tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .o_avea_stock_take_list_tab {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 999px;
+        color: var(--o-gray-700, #495057);
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0.28rem 0.7rem;
+
+        &.is-active {
+            background: var(--avea-info-soft, rgba(1, 102, 107, 0.1));
+            border-color: var(--avea-info, #01666b);
+            color: var(--avea-info, #01666b);
+        }
+    }
+
+    .o_avea_stock_take_list_count {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.82rem;
+        margin: 0 0 0.65rem;
+    }
+
+    .o_avea_stock_take_lines_table_wrap {
+        flex: 1;
+        max-height: 32rem;
+        min-height: 12rem;
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+
+        .o_avea_stock_take_table thead th {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+    }
+
+    .o_avea_stock_take_lines_empty {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.9rem;
+        padding: 1rem 0.75rem;
+        text-align: center;
+    }
+
+    .o_avea_stock_take_count_input {
+        font-size: 1.35rem;
+        font-weight: 700;
+        min-height: 3rem;
+        text-align: center;
+    }
+
+    .o_avea_stock_take_product_name {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin: 0 0 0.35rem;
+    }
+
+    .o_avea_stock_take_product_meta,
+    .o_avea_stock_take_row_meta {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.82rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .o_avea_stock_take_table {
+        @include avea-compact-table-base;
+        margin-bottom: 0;
+
+        th {
+            text-transform: none;
+        }
+
+        td,
+        .o_avea_stock_take_row_name {
+            overflow-wrap: anywhere;
+            white-space: normal;
+            word-break: break-word;
+        }
+    }
+
+    .o_avea_stock_take_row {
+        cursor: pointer;
+
+        &.is-active {
+            background: var(--avea-info-soft, rgba(1, 102, 107, 0.08));
+        }
+
+        &.is-counted td:last-child {
+            color: var(--avea-positive, #008818);
+            font-weight: 600;
+        }
+
+        &.is-applied td:last-child {
+            color: var(--avea-info, #01666b);
+            font-weight: 700;
+        }
+    }
+
+    .o_avea_stock_take_summary_cards {
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-top: 1rem;
+    }
+
+    .o_avea_stock_take_summary_card {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.65rem;
+        padding: 0.95rem 1rem;
+
+        strong {
+            display: block;
+            font-size: 1.35rem;
+            margin-top: 0.2rem;
+        }
+    }
+
+    .o_avea_stock_take_summary_label {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .o_avea_stock_take_feedback {
+        font-weight: 700;
+        margin-top: 0.75rem;
+    }
+}
+
+.o_avea_workspace--stock-take-v2 {
+    .o_avea_stock_take_sheet {
+        margin: 0 auto;
+        max-width: 760px;
+        padding: 1rem 1.25rem 2rem;
+    }
+
+    .o_avea_stock_take_compact_header {
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_stock_take_title {
+        font-size: 1.45rem;
+        font-weight: 700;
+        margin: 0 0 0.25rem;
+    }
+
+    .o_avea_stock_take_lead,
+    .o_avea_stock_take_hint,
+    .o_avea_stock_take_progress_text,
+    .o_avea_stock_take_done_hint {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .o_avea_stock_take_section_title {
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 0 0 0.75rem;
+    }
+
+    .o_avea_stock_take_scope_toggle {
+        display: grid;
+        gap: 0.5rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_stock_take_scope_btn {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.5rem;
+        font-weight: 600;
+        padding: 0.7rem 0.85rem;
+        text-align: center;
+
+        &.is-active {
+            background: var(--avea-info-soft, rgba(1, 102, 107, 0.08));
+            border-color: var(--avea-info, #01666b);
+            color: var(--avea-info, #01666b);
+        }
+    }
+
+    .o_avea_stock_take_panel--compact {
+        margin-top: 0.75rem;
+        padding: 0.85rem 1rem;
+    }
+
+    .o_avea_stock_take_filters--compact {
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .o_avea_stock_take_filter_warning {
+        color: var(--o-danger, #dc3545);
+        font-size: 0.85rem;
+        margin: 0.65rem 0 0;
+    }
+
+    .o_avea_stock_take_start_bar {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: space-between;
+        margin-top: 1.25rem;
+    }
+
+    .o_avea_stock_take_start_meta {
+        color: var(--o-gray-700, #495057);
+        font-size: 1rem;
+    }
+
+    .o_avea_stock_take_toolbar {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .o_avea_stock_take_toolbar_main {
+        flex: 1 1 16rem;
+        min-width: 0;
+    }
+
+    .o_avea_stock_take_toolbar_actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .o_avea_stock_take_progress {
+        background: var(--o-gray-200, #e9ecef);
+        border-radius: 999px;
+        height: 0.45rem;
+        margin-top: 0.55rem;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .o_avea_stock_take_progress_bar {
+        background: var(--avea-info, #01666b);
+        border-radius: inherit;
+        height: 100%;
+        transition: width 0.2s ease;
+    }
+
+    .o_avea_stock_take_scan_input {
+        font-size: 1rem;
+    }
+
+    .o_avea_stock_take_count_row {
+        align-items: center;
+        display: grid;
+        gap: 0.65rem;
+        grid-template-columns: minmax(0, 1fr) 5.5rem auto;
+        margin-top: 0.85rem;
+    }
+
+    .o_avea_stock_take_count_product {
+        min-width: 0;
+
+        strong {
+            display: block;
+            line-height: 1.25;
+        }
+    }
+
+    .o_avea_stock_take_count_meta {
+        color: var(--o-gray-600, #6c757d);
+        display: block;
+        font-size: 0.8rem;
+        margin-top: 0.15rem;
+    }
+
+    .o_avea_stock_take_count_input {
+        font-size: 1.1rem;
+        font-weight: 700;
+        min-height: 2.5rem;
+        text-align: center;
+    }
+
+    .o_avea_stock_take_panel--list {
+        max-height: 24rem;
+        overflow-y: auto;
+    }
+
+    .o_avea_stock_take_table--compact {
+        th {
+            font-size: 0.72rem;
+        }
+    }
+
+    .o_avea_stock_take_variance {
+        font-weight: 700;
+    }
+
+    .o_avea_stock_take_loading {
+        color: var(--o-gray-600, #6c757d);
+        padding: 2rem 0;
+        text-align: center;
+    }
+
+    .o_avea_stock_take_pick_header {
+        align-items: flex-start;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: space-between;
+        margin-bottom: 0.65rem;
+    }
+
+    .o_avea_stock_take_pick_meta {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.85rem;
+        margin: 0.2rem 0 0;
+    }
+
+    .o_avea_stock_take_pick_loading,
+    .o_avea_stock_take_pick_empty {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.9rem;
+        padding: 0.75rem 0;
+    }
+
+    .o_avea_stock_take_pick_table_wrap {
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.45rem;
+        max-height: 16rem;
+        overflow-y: auto;
+
+        .o_avea_stock_take_col_check {
+            width: 2.25rem;
+        }
+
+        thead th {
+            background: #f8f9fa;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+    }
+
+    .o_avea_stock_take_pick_row {
+        cursor: pointer;
+
+        &.is-selected {
+            background: var(--avea-info-soft, rgba(1, 102, 107, 0.06));
+        }
+    }
+
+    .o_avea_stock_take_panel--selected {
+        background: var(--avea-info-soft, rgba(1, 102, 107, 0.05));
+        border-color: var(--avea-info-border, rgba(1, 102, 107, 0.22));
+    }
+
+    .o_avea_stock_take_selected_table_wrap {
+        border: 1px solid var(--avea-info-border, rgba(1, 102, 107, 0.18));
+        border-radius: 0.45rem;
+        max-height: 14rem;
+        overflow-y: auto;
+
+        thead th {
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+    }
+
+    .o_avea_stock_take_col_remove {
+        width: 5.5rem;
+    }
+
+    .o_avea_stock_take_row_remove {
+        padding: 0;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .o_avea_workspace--stock-take {
+        .o_avea_stock_take_mode_grid,
+        .o_avea_stock_take_filters,
+        .o_avea_stock_take_summary_cards,
+        .o_avea_stock_take_count_layout,
+        .o_avea_stock_take_selection_layout {
+            grid-template-columns: 1fr;
+        }
+
+        .o_avea_stock_take_hero_actions {
+            width: 100%;
+
+            .btn {
+                flex: 1 1 auto;
+            }
+        }
+
+        .o_avea_stock_take_lines_table_wrap {
+            max-height: 24rem;
+        }
+
+        .o_avea_stock_take_panel--summary {
+            order: 2;
+        }
+
+        .o_avea_stock_take_panel--start {
+            flex-direction: column;
+            align-items: stretch;
+
+            .o_avea_stock_take_start_btn {
+                width: 100%;
+            }
+        }
+    }
+
+    .o_avea_workspace--stock-take-v2 {
+        .o_avea_stock_take_filters--compact,
+        .o_avea_stock_take_count_row {
+            grid-template-columns: 1fr;
+        }
+
+        .o_avea_stock_take_start_bar .btn {
+            width: 100%;
         }
     }
 }

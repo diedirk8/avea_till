@@ -6,6 +6,7 @@ from odoo.tools.float_utils import float_compare, float_round
 
 
 AVEA_RECEIVE_ORIGIN = "Avea Receive Stock"
+AVEA_STOCK_TAKE_ORIGIN = "Avea Stock Take"
 AVEA_SUPPLIER_COST_PRECISION = "Avea Supplier Cost"
 AVEA_PRODUCT_COST_PRECISION = "Product Price"
 
@@ -60,6 +61,45 @@ class AveaStockMixin(models.AbstractModel):
             )
             == 0
         )
+
+    @api.model
+    def _avea_default_stock_location(self, company=None):
+        company = company or self.env.company
+        warehouse = self.env["stock.warehouse"].search(
+            [("company_id", "=", company.id)], limit=1
+        )
+        if not warehouse:
+            raise UserError(_("No warehouse is configured for this company."))
+        return warehouse.lot_stock_id
+
+    @api.model
+    def _avea_apply_inventory_count(self, product, location, counted_qty, origin=None):
+        """Set on-hand quantity through native Odoo inventory adjustment."""
+        Quant = self.env["stock.quant"].sudo()
+        quant = Quant.search(
+            [
+                ("product_id", "=", product.id),
+                ("location_id", "=", location.id),
+            ],
+            limit=1,
+        )
+        inventory_context = {
+            "inventory_mode": True,
+            "inventory_name": origin or AVEA_STOCK_TAKE_ORIGIN,
+        }
+        if quant:
+            quant = quant.with_context(**inventory_context)
+            quant.inventory_quantity = counted_qty
+        else:
+            quant = Quant.with_context(**inventory_context).create(
+                {
+                    "product_id": product.id,
+                    "location_id": location.id,
+                    "inventory_quantity": counted_qty,
+                }
+            )
+        quant.action_apply_inventory()
+        return quant
 
     def _avea_datetime_at_noon(self, date_value):
         if not date_value:

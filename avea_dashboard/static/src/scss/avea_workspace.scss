@@ -597,62 +597,13 @@
     // Embedded product/category lists (Performance, Overview, Session Dashboard).
     .o_avea_products_sold_list {
         .o_list_table {
-            table-layout: fixed;
-            width: 100%;
-
-            th,
-            td {
-                line-height: 1.35;
-                vertical-align: top;
-            }
-
-            th {
-                font-size: 0.75rem;
-                white-space: normal;
-            }
-
-            td {
-                font-size: 0.8125rem;
-            }
+            @include avea-compact-table-base;
 
             th[data-name="name"],
             th[data-name="product_name"],
             td[name="name"],
             td[name="product_name"] {
-                overflow: visible;
-                white-space: normal;
-                width: auto;
-
-                .o_field_widget,
-                .o_field_char,
-                .text-truncate {
-                    display: block;
-                    max-width: 100%;
-                    min-width: 0;
-                    overflow: visible;
-                    overflow-wrap: break-word;
-                    text-overflow: clip;
-                    white-space: normal;
-                    word-break: normal;
-                }
-            }
-
-            th[data-name="quantity_sold"],
-            td[name="quantity_sold"] {
-                text-align: right;
-                white-space: nowrap;
-                width: 3.5rem;
-            }
-
-            th[data-name="revenue_ex_tax"],
-            td[name="revenue_ex_tax"],
-            th[data-name="gross_profit"],
-            td[name="gross_profit"],
-            th[data-name="sales_value"],
-            td[name="sales_value"] {
-                text-align: right;
-                white-space: nowrap;
-                width: 5.5rem;
+                max-width: 14rem;
             }
 
             td[name="quantity_sold"] .o_field_widget,

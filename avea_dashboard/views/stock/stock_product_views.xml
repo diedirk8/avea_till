@@ -61,7 +61,7 @@
                     <button
                         name="action_avea_open_stock_count"
                         type="object"
-                        string="Stock Count"
+                        string="Stock Take"
                         class="btn-secondary"
                         display="always"
                     />
@@ -76,7 +76,7 @@
                     title="Open stock item"
                     class="btn-link"
                 />
-                <field name="name" string="Product" autocomplete="off"/>
+                <field name="name" string="Product"/>
                 <field name="default_code" string="SKU" optional="show"/>
                 <field name="barcode" string="Barcode" optional="show"/>
                 <field name="categ_id" string="Category" optional="show" options="{'no_create': True}"/>
@@ -453,43 +453,6 @@
                 </sheet>
             </form>
         </field>
-    </record>
-
-    <!-- ===================== Stock Count placeholder ===================== -->
-
-    <record id="view_avea_stock_count_placeholder_form" model="ir.ui.view">
-        <field name="name">avea.stock.count.placeholder.form</field>
-        <field name="model">avea.stock.count.placeholder</field>
-        <field name="arch" type="xml">
-            <form string="Stock Count" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock">
-                <sheet class="o_avea_workspace_sheet">
-                    <div class="o_avea_workspace_hero">
-                        <div class="o_avea_workspace_hero_intro">
-                            <span class="o_avea_workspace_eyebrow">Stock</span>
-                            <h1 class="o_avea_workspace_title">Stock Count</h1>
-                            <p class="o_avea_workspace_section_subtitle">
-                                A simple Avea stock-count workflow is next. Inventory stays in Odoo — this screen will just make counting easier.
-                            </p>
-                        </div>
-                    </div>
-                    <div class="o_avea_stock_panel">
-                        <field name="note" nolabel="1" widget="html"/>
-                    </div>
-                    <div class="o_avea_stock_footer o_avea_stock_footer--bar">
-                        <button string="Receive Stock" name="action_open_receive_stock" type="object" class="btn btn-primary"/>
-                        <button string="Back to Stock" special="cancel" class="btn btn-secondary"/>
-                    </div>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
-    <record id="action_avea_stock_count" model="ir.actions.act_window">
-        <field name="name">Stock Count</field>
-        <field name="res_model">avea.stock.count.placeholder</field>
-        <field name="view_mode">form</field>
-        <field name="target">current</field>
-        <field name="view_id" ref="view_avea_stock_count_placeholder_form"/>
     </record>
 
     <!-- ===================== Main Stock Workspace action ===================== -->

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="action_avea_stock_take" model="ir.actions.server">
+        <field name="name">Stock Take</field>
+        <field name="model_id" ref="model_avea_stock_take"/>
+        <field name="state">code</field>
+        <field name="code">action = env['avea.stock.take'].action_open_stock_take()</field>
+    </record>
+
+</odoo>

@@ -56,6 +56,7 @@ class ProductTemplate(models.Model):
         string="Current Stock",
         compute="_compute_avea_stock_qty",
         inverse="_inverse_avea_stock_qty",
+        store=True,
         digits="Product Unit",
     )
     avea_low_stock_qty = fields.Float(
@@ -318,7 +319,13 @@ class ProductTemplate(models.Model):
             return ["!"] + domain
         return domain
 
-    @api.depends("qty_available", "is_storable")
+    @api.depends(
+        "is_storable",
+        "qty_available",
+        "product_variant_ids.qty_available",
+        "product_variant_ids.stock_move_ids.state",
+        "product_variant_ids.stock_move_ids.quantity",
+    )
     def _compute_avea_stock_qty(self):
         for product in self:
             product.avea_stock_qty = product.qty_available if product.is_storable else 0.0
@@ -586,22 +593,11 @@ class ProductTemplate(models.Model):
             "context": context,
         }
 
-    @api.model
     def action_avea_open_receive_stock(self):
         return self.env["avea.stock.receive"].action_open_receive()
 
-    @api.model
     def action_avea_open_stock_count(self):
-        view = self.env.ref("avea_till.view_avea_stock_count_placeholder_form")
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("Stock Count"),
-            "res_model": "avea.stock.count.placeholder",
-            "view_mode": "form",
-            "views": [(view.id, "form")],
-            "view_id": view.id,
-            "target": "current",
-        }
+        return self.env["avea.stock.take"].action_open_stock_take()
 
     @api.model
     def action_avea_new_stock_item(self):

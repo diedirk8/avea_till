@@ -55,13 +55,6 @@ patch(FormController.prototype, {
             await this.discard();
             return false;
         }
-        if (
-            clickParams.special === "cancel" &&
-            resModel === "avea.stock.count.placeholder"
-        ) {
-            await this.discard();
-            return false;
-        }
         return await super.beforeExecuteActionButton(clickParams);
     },
 });

@@ -4,13 +4,11 @@
     <t t-name="avea_till.StockCatalogueList" t-inherit="web.ListView" t-inherit-mode="primary">
         <xpath expr="//Layout" position="before">
             <div class="o_avea_workspace_sheet o_avea_stock_catalogue_sheet">
-                <div class="o_avea_workspace_hero o_avea_stock_catalogue_hero">
-                    <div class="o_avea_workspace_hero_intro">
-                        <h1 class="o_avea_workspace_title">Stock</h1>
-                        <p class="o_avea_workspace_section_subtitle">
-                            See what you sell, what it costs, what you make, and what is on the shelf.
-                        </p>
-                    </div>
+                <div class="o_avea_stock_catalogue_header">
+                    <h1 class="o_avea_stock_catalogue_title">Stock</h1>
+                    <p class="o_avea_stock_catalogue_lead">
+                        See what you sell, what it costs, what you make, and what is on the shelf.
+                    </p>
                 </div>
                 <div class="o_avea_stock_catalogue_filters">
                     <div class="o_avea_workspace_info_item">

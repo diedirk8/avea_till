@@ -1,0 +1,392 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.StockTake">
+        <div class="o_avea_stock_take_root" t-ref="root">
+        <div class="o_avea_workspace o_avea_workspace--stock o_avea_workspace--stock-take o_avea_workspace--stock-take-v2">
+            <div class="o_avea_stock_take_sheet">
+                <t t-if="state.loading and !stockTake">
+                    <div class="o_avea_stock_take_loading">Loading...</div>
+                </t>
+
+                <t t-elif="state.step === 'start'">
+                    <div class="o_avea_stock_take_compact_header">
+                        <h1 class="o_avea_stock_take_title">Stock Take</h1>
+                        <p class="o_avea_stock_take_lead">Count what is on the shelf, review differences, then complete.</p>
+                    </div>
+
+                    <div class="o_avea_stock_take_scope_toggle" role="tablist">
+                        <button
+                            type="button"
+                            t-att-class="'o_avea_stock_take_scope_btn' + (state.form.scope_mode === 'everything' ? ' is-active' : '')"
+                            t-on-click="() => this.onScopeChange('everything')"
+                        >
+                            Full Count
+                        </button>
+                        <button
+                            type="button"
+                            t-att-class="'o_avea_stock_take_scope_btn' + (state.form.scope_mode === 'partial' ? ' is-active' : '')"
+                            t-on-click="() => this.onScopeChange('partial')"
+                        >
+                            Partial Count
+                        </button>
+                    </div>
+
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--search" t-if="isPartial">
+                        <h2 class="o_avea_stock_take_section_title">Find products</h2>
+                        <p class="o_avea_stock_take_hint">Search below, tick items in the results, then search again to add more.</p>
+                        <div class="o_avea_stock_take_filters o_avea_stock_take_filters--compact">
+                            <div class="o_avea_workspace_info_item">
+                                <label class="o_avea_workspace_info_label">Category</label>
+                                <select class="o_avea_stock_filter_select form-select" t-att-value="state.form.filter_category_id" t-on-change="(ev) => this.onFilterSelect('filter_category_id', ev)">
+                                    <option value="">All categories</option>
+                                    <t t-foreach="state.options.categories" t-as="category" t-key="category.id">
+                                        <option t-att-value="category.id" t-esc="category.display_name"/>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <label class="o_avea_workspace_info_label">Supplier</label>
+                                <select class="o_avea_stock_filter_select form-select" t-att-value="state.form.filter_supplier_id" t-on-change="(ev) => this.onFilterSelect('filter_supplier_id', ev)">
+                                    <option value="">All suppliers</option>
+                                    <t t-foreach="state.options.suppliers" t-as="supplier" t-key="supplier.id">
+                                        <option t-att-value="supplier.id" t-esc="supplier.display_name"/>
+                                    </t>
+                                </select>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <label class="o_avea_workspace_info_label">Product name</label>
+                                <input class="o_avea_stock_filter_input form-control" t-att-value="state.form.filter_product_name" t-on-input="(ev) => this.onFilterInput('filter_product_name', ev)" placeholder="Search name"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <label class="o_avea_workspace_info_label">SKU</label>
+                                <input class="o_avea_stock_filter_input form-control" t-att-value="state.form.filter_sku" t-on-input="(ev) => this.onFilterInput('filter_sku', ev)" placeholder="Reference"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <label class="o_avea_workspace_info_label">Stock status</label>
+                                <select class="o_avea_stock_filter_select form-select" t-att-value="state.form.filter_stock_status" t-on-change="(ev) => this.onFilterSelect('filter_stock_status', ev)">
+                                    <t t-foreach="state.options.stock_statuses" t-as="status" t-key="status.value">
+                                        <option t-att-value="status.value" t-esc="status.label"/>
+                                    </t>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="o_avea_stock_take_filter_warning" t-if="!hasPartialFilter">
+                            Enter a search term or filter to see results.
+                        </p>
+                    </div>
+
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--pick" t-if="isPartial and hasPartialFilter">
+                        <div class="o_avea_stock_take_pick_header">
+                            <div>
+                                <h2 class="o_avea_stock_take_section_title">Search results</h2>
+                                <p class="o_avea_stock_take_pick_meta">
+                                    <strong t-esc="visibleSelectedCount"/> of <strong t-esc="state.matchedCount or 0"/> in this search selected
+                                    <t t-if="state.matchedTruncated"> (first 500 shown)</t>
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                class="btn btn-link btn-sm"
+                                t-att-disabled="!state.matchedProducts.length"
+                                t-on-click="onToggleSelectAllVisible"
+                            >
+                                <t t-if="allVisibleSelected">Remove visible</t>
+                                <t t-else="">Add all visible</t>
+                            </button>
+                        </div>
+                        <div class="o_avea_stock_take_pick_loading" t-if="state.productsLoading">Loading products...</div>
+                        <div class="o_avea_stock_take_pick_empty" t-elif="!state.matchedProducts.length">No products match these filters.</div>
+                        <div class="o_avea_stock_take_pick_table_wrap" t-else="">
+                            <table class="o_avea_stock_take_table o_avea_stock_take_table--compact table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="o_avea_stock_take_col_check">
+                                            <input
+                                                type="checkbox"
+                                                t-att-checked="allVisibleSelected ? 'checked' : undefined"
+                                                t-on-change="onToggleSelectAllVisible"
+                                            />
+                                        </th>
+                                        <th>Product</th>
+                                        <th>SKU</th>
+                                        <th class="text-end">On hand</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.matchedProducts" t-as="product" t-key="product.id">
+                                        <tr
+                                            t-att-class="'o_avea_stock_take_pick_row' + (isProductSelected(product.id) ? ' is-selected' : '')"
+                                            t-on-click="() => this.onToggleProduct(product)"
+                                        >
+                                            <td class="o_avea_stock_take_col_check" t-on-click.stop="">
+                                                <input
+                                                    type="checkbox"
+                                                    t-att-checked="isProductSelected(product.id) ? 'checked' : undefined"
+                                                    t-on-change="(ev) => this.onToggleProduct(product, ev)"
+                                                />
+                                            </td>
+                                            <td t-esc="product.name"/>
+                                            <td t-esc="product.default_code or '—'"/>
+                                            <td class="text-end" t-esc="formatQty(product.qty_available)"/>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--selected" t-if="isPartial">
+                        <div class="o_avea_stock_take_pick_header">
+                            <div>
+                                <h2 class="o_avea_stock_take_section_title">Selected products</h2>
+                                <p class="o_avea_stock_take_pick_meta">
+                                    <t t-if="selectedCount">
+                                        <strong t-esc="selectedCount"/> products will be counted
+                                    </t>
+                                    <t t-else="">Nothing selected yet — tick products in the search results above.</t>
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                class="btn btn-link btn-sm"
+                                t-att-disabled="!selectedCount"
+                                t-on-click="onClearSelection"
+                            >
+                                Clear all
+                            </button>
+                        </div>
+                        <div class="o_avea_stock_take_selected_table_wrap" t-if="selectedCount">
+                            <table class="o_avea_stock_take_table o_avea_stock_take_table--compact table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>SKU</th>
+                                        <th class="o_avea_stock_take_col_remove"/>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="selectedProductsList" t-as="product" t-key="product.id">
+                                        <tr>
+                                            <td t-esc="product.name"/>
+                                            <td t-esc="product.default_code or '—'"/>
+                                            <td class="o_avea_stock_take_col_remove text-end">
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-link btn-sm text-danger o_avea_stock_take_row_remove"
+                                                    t-on-click="() => this.onRemoveSelected(product.id)"
+                                                >
+                                                    Remove
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_take_start_bar">
+                        <div class="o_avea_stock_take_start_meta">
+                            <strong t-esc="startCountLabel"/> products to count
+                        </div>
+                        <button
+                            type="button"
+                            class="btn btn-primary o_avea_stock_take_start_btn"
+                            t-att-disabled="!canStartStockTake"
+                            t-on-click="onStartStockTake"
+                        >
+                            Start Count
+                        </button>
+                    </div>
+                </t>
+
+                <t t-elif="state.step === 'counting'">
+                    <div class="o_avea_stock_take_toolbar">
+                        <div class="o_avea_stock_take_toolbar_main">
+                            <h1 class="o_avea_stock_take_title" t-esc="stockTake.scope_label"/>
+                            <p class="o_avea_stock_take_progress_text">
+                                <t t-esc="stockTake.counted_count"/> of <t t-esc="stockTake.line_count"/> counted
+                            </p>
+                            <div class="o_avea_stock_take_progress" aria-hidden="true">
+                                <div class="o_avea_stock_take_progress_bar" t-att-style="'width: ' + progressPercent + '%'"/>
+                            </div>
+                        </div>
+                        <div class="o_avea_stock_take_toolbar_actions">
+                            <button type="button" class="btn btn-link" t-on-click="onContinueLater">Save &amp; Exit</button>
+                            <button type="button" class="btn btn-link text-danger" t-on-click="onRequestCancelStockTake">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact">
+                        <div class="o_avea_stock_take_scan_row">
+                            <input
+                                class="o_avea_stock_filter_input form-control o_avea_stock_take_scan_input"
+                                t-ref="searchInput"
+                                t-att-value="state.search"
+                                t-on-input="onSearchInput"
+                                placeholder="Scan barcode or search product, SKU..."
+                            />
+                        </div>
+
+                        <t t-if="activeLine">
+                            <div class="o_avea_stock_take_count_row">
+                                <div class="o_avea_stock_take_count_product">
+                                    <strong t-esc="activeLine.product_name"/>
+                                    <span class="o_avea_stock_take_count_meta" t-if="activeLine.default_code or activeLine.barcode">
+                                        <t t-if="activeLine.default_code" t-esc="activeLine.default_code"/>
+                                        <t t-if="activeLine.barcode"> · <t t-esc="activeLine.barcode"/></t>
+                                    </span>
+                                </div>
+                                <input
+                                    class="o_avea_stock_take_count_input form-control"
+                                    t-ref="countInput"
+                                    t-att-value="state.countValue"
+                                    t-on-input="onCountInput"
+                                    t-on-keydown="onCountKeydown"
+                                    inputmode="decimal"
+                                    placeholder="Qty"
+                                />
+                                <button type="button" class="btn btn-primary" t-on-click="onConfirmCount">Count</button>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <p class="o_avea_stock_take_done_hint">All products counted. Review and complete when ready.</p>
+                        </t>
+                    </div>
+
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--list">
+                        <table class="o_avea_stock_take_table o_avea_stock_take_table--compact table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Counted</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-if="!filteredLines.length">
+                                    <tr>
+                                        <td colspan="2" class="o_avea_stock_take_lines_empty">No products match your search.</td>
+                                    </tr>
+                                </t>
+                                <t t-foreach="filteredLines" t-as="line" t-key="line.id">
+                                    <tr
+                                        t-att-class="'o_avea_stock_take_row' + (line.id === state.activeLineId ? ' is-active' : '') + (line.is_counted ? ' is-counted' : '')"
+                                        t-on-click="() => this.onSelectLine(line)"
+                                    >
+                                        <td>
+                                            <div class="o_avea_stock_take_row_name" t-esc="line.product_name"/>
+                                            <div class="o_avea_stock_take_row_meta" t-if="line.default_code or line.barcode">
+                                                <t t-if="line.default_code" t-esc="line.default_code"/>
+                                                <t t-if="line.barcode"> · <t t-esc="line.barcode"/></t>
+                                            </div>
+                                        </td>
+                                        <td class="text-end">
+                                            <t t-if="line.is_counted" t-esc="formatQty(line.counted_qty)"/>
+                                            <t t-else="">—</t>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="o_avea_stock_take_footer">
+                        <button
+                            type="button"
+                            class="btn btn-primary"
+                            t-att-disabled="stockTake.remaining_count > 0"
+                            t-on-click="onReview"
+                        >
+                            Review
+                        </button>
+                    </div>
+                </t>
+
+                <t t-elif="state.step === 'review'">
+                    <div class="o_avea_stock_take_toolbar">
+                        <div class="o_avea_stock_take_toolbar_main">
+                            <h1 class="o_avea_stock_take_title">Review</h1>
+                            <p class="o_avea_stock_take_progress_text">
+                                <t t-esc="stockTake.difference_count"/> differences ·
+                                <t t-esc="stockTake.unchanged_count"/> matched
+                            </p>
+                        </div>
+                        <div class="o_avea_stock_take_toolbar_actions">
+                            <button type="button" class="btn btn-link text-danger" t-on-click="onRequestCancelStockTake">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact" t-if="differenceLines.length">
+                        <h2 class="o_avea_stock_take_section_title">Differences</h2>
+                        <table class="o_avea_stock_take_table o_avea_stock_take_table--compact table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-end">Expected</th>
+                                    <th class="text-end">Counted</th>
+                                    <th class="text-end">Variance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="differenceLines" t-as="line" t-key="line.id">
+                                    <tr>
+                                        <td t-esc="line.product_name"/>
+                                        <td class="text-end" t-esc="formatQty(line.expected_qty)"/>
+                                        <td class="text-end" t-esc="formatQty(line.counted_qty)"/>
+                                        <td class="text-end o_avea_stock_take_variance" t-esc="formatQty(line.difference_qty)"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact" t-else="">
+                        <p class="o_avea_stock_take_done_hint">All counted products match the system. You can complete the stock take.</p>
+                    </div>
+
+                    <div class="o_avea_stock_take_footer">
+                        <button type="button" class="btn btn-secondary" t-on-click="onBackToCounting">Back</button>
+                        <button type="button" class="btn btn-primary" t-on-click="onApplyStockTake">Complete</button>
+                    </div>
+                </t>
+
+                <t t-elif="state.step === 'complete'">
+                    <div class="o_avea_stock_take_compact_header">
+                        <h1 class="o_avea_stock_take_title">Stock Take Complete</h1>
+                        <p class="o_avea_stock_take_lead">
+                            <t t-esc="stockTake.counted_count"/> products counted ·
+                            <t t-esc="stockTake.applied_count"/> stock updates applied
+                        </p>
+                    </div>
+                    <div class="o_avea_stock_take_footer">
+                        <button type="button" class="btn btn-secondary" t-on-click="onDone">Back to Stock</button>
+                        <button type="button" class="btn btn-primary" t-on-click="onStartAnother">New Stock Take</button>
+                    </div>
+                </t>
+
+                <div class="o_avea_stock_take_confirm_overlay" t-if="state.showCancelConfirm and stockTake">
+                    <div class="o_avea_stock_take_confirm_dialog" role="dialog" aria-modal="true">
+                        <h2 class="o_avea_stock_take_section_title">Cancel stock take?</h2>
+                        <p class="o_avea_stock_take_confirm_copy">
+                            This stops the current count.
+                            <t t-if="stockTake.counted_count">
+                                <t t-esc="stockTake.counted_count"/> product(s) were already counted.
+                            </t>
+                            No stock changes will be made.
+                        </p>
+                        <div class="o_avea_stock_take_confirm_actions">
+                            <button type="button" class="btn btn-secondary" t-on-click="onDismissCancelConfirm">
+                                <t t-if="state.step === 'review'">Back to Review</t>
+                                <t t-else="">Keep Counting</t>
+                            </button>
+                            <button type="button" class="btn btn-danger" t-on-click="onCancelStockTake">Cancel Stock Take</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    </t>
+
+</templates>

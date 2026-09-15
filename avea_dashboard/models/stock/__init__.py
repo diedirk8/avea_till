@@ -6,5 +6,5 @@ from . import stock_return
 from . import purchase_order_line
 from . import product_template
 from . import product_product
-from . import stock_count
+from . import stock_take
 from . import account_move_line

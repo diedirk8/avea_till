@@ -31,9 +31,9 @@
 
     <menuitem
         id="menu_avea_stock_count"
-        name="Stock Count"
+        name="Stock Take"
         parent="menu_avea_stock"
-        action="action_avea_stock_count"
+        action="action_avea_stock_take"
         sequence="8"
     />
 

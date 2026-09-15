@@ -331,6 +331,7 @@
 
     .o_avea_promotion_combo_list {
         .o_list_table {
+            @include avea-compact-table-base;
             background: transparent;
             margin-bottom: 0;
         }
@@ -339,13 +340,6 @@
             border: 1px solid var(--o-gray-200, #e9ecef);
             border-radius: 0.55rem;
             overflow: hidden;
-        }
-
-        thead th {
-            background: var(--o-gray-100, #f8f9fa);
-            color: var(--o-gray-600, #6c757d);
-            font-size: 0.75rem;
-            font-weight: 700;
         }
 
         .o_field_x2many_list_row_add a {
