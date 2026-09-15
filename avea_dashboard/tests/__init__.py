@@ -8,3 +8,4 @@ from . import test_business_overview
 from . import test_avea_settings_receipt_email
 from . import test_pos_partner_access
 from . import test_avea_settings_printed_receipt
+from . import test_withdraw_cash

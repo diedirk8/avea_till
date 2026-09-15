@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_withdraw_cash_wizard_form" model="ir.ui.view">
+        <field name="name">avea.withdraw.cash.wizard.form</field>
+        <field name="model">avea.withdraw.cash.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Withdraw Cash" class="o_avea_wizard">
+                <field name="company_id" invisible="1"/>
+                <field name="available_journal_ids" invisible="1"/>
+                <group>
+                    <group>
+                        <field
+                            name="cash_journal_id"
+                            options="{'no_create': True, 'no_open': True}"
+                        />
+                        <field name="withdrawal_purpose" widget="radio"/>
+                        <field
+                            name="expense_account_id"
+                            invisible="withdrawal_purpose != 'other_expense'"
+                            required="withdrawal_purpose == 'other_expense'"
+                            options="{'no_create': True, 'no_open': True}"
+                        />
+                    </group>
+                    <group>
+                        <field name="amount"/>
+                        <field name="withdrawal_date"/>
+                        <field
+                            name="reference_name"
+                            placeholder="e.g. John - salary advance"
+                        />
+                        <field name="currency_id" invisible="1"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                    </group>
+                </group>
+                <footer>
+                    <button
+                        name="action_withdraw_cash"
+                        string="Withdraw Cash"
+                        type="object"
+                        class="btn-primary"
+                        data-hotkey="q"
+                    />
+                    <button string="Cancel" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_withdraw_cash_wizard" model="ir.actions.server">
+        <field name="name">Withdraw Cash</field>
+        <field name="model_id" ref="model_avea_withdraw_cash_wizard"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_wizard()</field>
+    </record>
+
+</odoo>

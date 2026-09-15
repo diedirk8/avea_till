@@ -37,6 +37,14 @@
     />
 
     <menuitem
+        id="menu_avea_operations_withdraw_cash"
+        name="Withdraw Cash"
+        parent="menu_avea_operations"
+        action="action_avea_withdraw_cash_wizard"
+        sequence="25"
+    />
+
+    <menuitem
         id="menu_avea_operations_manual_journal"
         name="Manual Journal"
         parent="menu_avea_operations"
