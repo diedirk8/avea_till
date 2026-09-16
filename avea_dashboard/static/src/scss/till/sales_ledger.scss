@@ -79,7 +79,8 @@
     }
 }
 
-.o_avea_sales_ledger_list {
+.o_avea_sales_ledger_list,
+.o_avea_business_transactions_list {
     .o_list_table {
         table-layout: fixed;
         width: 100%;
@@ -185,6 +186,72 @@
             white-space: nowrap;
         }
 
+        th[data-name="transaction_date_label"],
+        td[name="transaction_date_label"] {
+            width: 11%;
+        }
+
+        th[data-name="transaction_time_label"],
+        td[name="transaction_time_label"] {
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            width: 8%;
+        }
+
+        th[data-name="transaction_type"],
+        td[name="transaction_type"] {
+            width: 14%;
+        }
+
+        th[data-name="reference"],
+        td[name="reference"] {
+            width: 24%;
+        }
+
+        th[data-name="amount"],
+        td[name="amount"] {
+            text-align: right;
+            white-space: nowrap;
+            width: 10%;
+        }
+
+        th[data-name="amount"] {
+            text-align: right;
+        }
+
+        td[name="amount"] .o_field_widget {
+            justify-content: flex-end;
+        }
+
+        td[name="transaction_date_label"] {
+            font-size: 0.8125rem;
+            font-variant-numeric: tabular-nums;
+            line-height: 1.35;
+        }
+
+        td[name="reference"] .o_field_widget {
+            color: var(--avea-info, #01666b);
+            cursor: pointer;
+            display: block;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            max-width: 100%;
+            overflow: hidden;
+            text-decoration: none;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            &:hover {
+                color: #01494d;
+                text-decoration: underline;
+            }
+        }
+
+        td[name="amount"] {
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+        }
+
         .o_data_row:not(.o_selected_row) {
             td.o_avea_ledger_wrap_cell.o_list_char,
             td[name="avea_order_date_label"].o_list_char,
@@ -242,7 +309,8 @@
         }
     }
 
-    .o_avea_sales_ledger_list .o_list_table {
+    .o_avea_sales_ledger_list .o_list_table,
+    .o_avea_business_transactions_list .o_list_table {
         min-width: 0;
         table-layout: fixed;
         width: 100%;
@@ -299,10 +367,58 @@
             padding-top: 0.55rem;
         }
     }
+
+    .o_avea_business_transactions_list .o_list_table {
+        th[data-name="transaction_time_label"],
+        td[name="transaction_time_label"] {
+            display: none !important;
+        }
+
+        th[data-name="transaction_date_label"],
+        td[name="transaction_date_label"] {
+            width: 22% !important;
+        }
+
+        th[data-name="transaction_type"],
+        td[name="transaction_type"] {
+            width: 24% !important;
+        }
+
+        th[data-name="reference"],
+        td[name="reference"] {
+            width: 34% !important;
+        }
+
+        th[data-name="amount"],
+        td[name="amount"] {
+            width: 20% !important;
+        }
+
+        td[name="transaction_date_label"] {
+            font-size: 0.75rem;
+            line-height: 1.35;
+            padding-top: 0.55rem;
+            padding-bottom: 0.55rem;
+        }
+
+        td[name="reference"] {
+            font-size: 0.875rem;
+            font-weight: 500;
+            line-height: 1.4;
+            padding-top: 0.55rem;
+            padding-bottom: 0.55rem;
+        }
+
+        td[name="amount"] {
+            font-size: 0.875rem;
+            padding-top: 0.55rem;
+        }
+    }
 }
 
 @media (min-width: 768px) {
-    .o_avea_sales_ledger_list .o_list_table td[name="avea_order_date_label"] {
+    .o_avea_sales_ledger_list .o_list_table td[name="avea_order_date_label"],
+    .o_avea_business_transactions_list .o_list_table td[name="transaction_date_label"] {
         white-space: nowrap !important;
     }
 }

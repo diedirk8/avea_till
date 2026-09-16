@@ -1,0 +1,126 @@
+/* Avea POS Cash Up workspace */
+
+.avea-cash-up-dialog {
+    border: none;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.avea-cash-up-dialog__body {
+    background: #f3f4f6;
+    max-height: calc(100vh - 8rem);
+    overflow: auto;
+    padding: 0 !important;
+}
+
+.avea-cash-up-workspace {
+    color: #1f2937;
+    font-size: 0.9375rem;
+}
+
+.avea-cu-topbar {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.avea-cu-section-title {
+    color: #1f2937;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.avea-cu-kpi-card {
+    background: #fff;
+}
+
+.avea-cu-kpi-card--ok .fs-5 {
+    color: #166534;
+}
+
+.avea-cu-kpi-card--warn .fs-5 {
+    color: #b45309;
+}
+
+.avea-cu-tally-table {
+    font-size: 0.9rem;
+
+    thead th {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    tbody tr.is-muted,
+    tbody tr.text-muted {
+        opacity: 0.75;
+    }
+}
+
+.avea-cu-amount-input {
+    max-width: 9.5rem;
+    min-width: 7.5rem;
+
+    .form-control {
+        font-weight: 600;
+        min-height: 2rem;
+    }
+
+    .input-group-text {
+        background: #f9fafb;
+        color: #6b7280;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+}
+
+.avea-cu-btn-primary {
+    background-color: #c45c26;
+    border-color: #c45c26;
+    min-width: 11rem;
+
+    &:hover:not(:disabled),
+    &:focus:not(:disabled) {
+        background-color: #a74c1f;
+        border-color: #a74c1f;
+    }
+}
+
+.avea-cu-complete-icon {
+    align-items: center;
+    background: #dcfce7;
+    border-radius: 999px;
+    color: #166534;
+    display: flex;
+    font-size: 1.5rem;
+    font-weight: 700;
+    height: 3rem;
+    justify-content: center;
+    width: 3rem;
+}
+
+.avea-cu-variance-card .form-control:focus {
+    border-color: #c45c26;
+    box-shadow: 0 0 0 0.2rem rgba(196, 92, 38, 0.15);
+}
+
+.o_dialog .modal-dialog.modal-xl {
+    max-width: calc(100vw - 2rem);
+}
+
+@media (min-width: 74rem) {
+    .o_dialog .modal-dialog.modal-xl {
+        max-width: 72rem;
+    }
+}
+
+@media (max-width: 991px) {
+    .avea-cu-amount-input {
+        max-width: 100%;
+        width: 100%;
+    }
+}

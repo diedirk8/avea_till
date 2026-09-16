@@ -3,7 +3,10 @@
 
     <t t-name="avea_till.PaymentScreenBody">
         <div class="payment-screen screen avea-payment-screen d-flex flex-column h-100 overflow-hidden">
-            <div class="avea-payment-body">
+            <div t-if="!currentOrder" class="avea-payment-body d-flex align-items-center justify-content-center h-100">
+                <span>Loading payment...</span>
+            </div>
+            <div t-else="" class="avea-payment-body">
                 <aside class="avea-payment-left">
                     <button
                         class="avea-info-card avea-customer-card"
@@ -100,7 +103,7 @@
                         </div>
                     </div>
 
-                    <div t-if="paymentLines.length or hasAveaLoyaltyApplied" class="avea-remaining-block" t-att-class="{ 'is-settled': paymentIsSettled }">
+                    <div t-if="(paymentLines and paymentLines.length) or hasAveaLoyaltyApplied" class="avea-remaining-block" t-att-class="{ 'is-settled': paymentIsSettled }">
                         <span class="avea-remaining-label" t-esc="paymentStatusLabel"/>
                         <span class="avea-remaining-amount">
                             <PriceFormatter price="paymentStatusAmount"/>
@@ -111,7 +114,7 @@
                     <div class="avea-pay-grid">
                         <t t-foreach="availablePaymentMethods" t-as="paymentMethod" t-key="paymentMethod.id">
                             <div
-                                t-if="!(this.pos.cashier._role === 'minimal' and paymentMethod.type === 'pay_later')"
+                                t-if="!(this.pos.cashier?._role === 'minimal' and paymentMethod.type === 'pay_later')"
                                 role="button"
                                 t-att-class="paymentMethodCardClass(paymentMethod)"
                                 t-on-click="() => this.clickPaymentMethod(paymentMethod)"
@@ -126,7 +129,7 @@
                         </t>
                     </div>
 
-                    <div t-if="paymentLines.length or hasAveaLoyaltyApplied" class="avea-done-payments">
+                    <div t-if="(paymentLines and paymentLines.length) or hasAveaLoyaltyApplied" class="avea-done-payments">
                         <div class="avea-done-heading">Payments</div>
                         <div t-if="hasAveaLoyaltyApplied" class="paymentline d-flex align-items-center rounded-3">
                             <div class="payment-infos d-flex align-items-center justify-content-between flex-grow-1 text-truncate">
@@ -146,7 +149,7 @@
                             </button>
                         </div>
                         <PaymentScreenPaymentLines
-                            t-if="paymentLines.length"
+                            t-if="paymentLines and paymentLines.length"
                             paymentLines="paymentLines"
                             deleteLine.bind="deletePaymentLine"
                             sendForceDone.bind="sendForceDone"
@@ -174,9 +177,9 @@
                                     <div class="avea-receipt-product">
                                         <span class="avea-receipt-name" t-esc="line.getFullProductName()"/>
                                         <span class="avea-receipt-meta">
-                                            <t t-esc="line.getQuantityStr().qtyStr"/>
+                                            <t t-esc="saleSummaryLineQuantity(line)"/>
                                             ×
-                                            <t t-esc="line.currencyDisplayPriceUnit"/>
+                                            <t t-esc="saleSummaryLineUnitPrice(line)"/>
                                             <t t-if="line.getDiscount()">
                                                 <span class="avea-receipt-disc">
                                                     -<t t-esc="line.getDiscount()"/>%
@@ -184,7 +187,7 @@
                                             </t>
                                         </span>
                                     </div>
-                                    <span class="avea-receipt-line-total" t-esc="line.currencyDisplayPrice"/>
+                                    <span class="avea-receipt-line-total" t-esc="saleSummaryLineTotal(line)"/>
                                 </div>
                             </t>
                         </div>

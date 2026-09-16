@@ -28,9 +28,24 @@
                     <group>
                         <field name="till_journal_id"/>
                         <field name="safe_journal_id"/>
-                        <field name="user_id"/>
-                        <field name="state"/>
+                            <field name="user_id"/>
+                            <field name="state"/>
+                            <field name="variance_reason"/>
                     </group>
+                    <group string="Total Payments">
+                        <field name="total_payments_expected"/>
+                        <field name="total_payments_counted"/>
+                        <field name="total_payments_difference"/>
+                    </group>
+                    <field name="payment_line_ids" readonly="1">
+                        <list>
+                            <field name="payment_kind"/>
+                            <field name="expected"/>
+                            <field name="counted"/>
+                            <field name="difference"/>
+                            <field name="currency_id" column_invisible="True"/>
+                        </list>
+                    </field>
                 </sheet>
             </form>
         </field>
@@ -49,6 +64,13 @@
                 <field name="cash_to_bag" string="Cash to Safe"/>
                 <field name="difference"/>
                 <field name="currency_id" column_invisible="True"/>
+                <button
+                    name="action_reprint_receipt"
+                    type="object"
+                    icon="fa-print"
+                    title="Reprint"
+                    class="btn btn-link p-0"
+                />
             </list>
         </field>
     </record>

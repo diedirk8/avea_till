@@ -1,9 +1,49 @@
 /** @odoo-module **/
 
+import { formatFloat } from "@web/core/utils/numbers";
 import { _t } from "@web/core/l10n/translation";
+
+/**
+ * Format loyalty points for customer-facing display only.
+ * Does not alter stored/calculated point balances.
+ */
+export function formatLoyaltyPointsForDisplay(points) {
+    const value = Number(points);
+    if (!Number.isFinite(value) || value === 0) {
+        return "0";
+    }
+    const rounded = Math.round(value * 100) / 100;
+    if (Math.abs(rounded - Math.round(rounded)) < Number.EPSILON) {
+        return String(Math.round(rounded));
+    }
+    return formatFloat(rounded, { digits: [69, 2] });
+}
 
 export function isAveaCreditEnabled(pos) {
     return Boolean(pos.config.avea_credit_enabled);
+}
+
+export function isAveaExchangeOrder(order) {
+    return Boolean(order?.avea_is_exchange);
+}
+
+export function isAveaPureRefundOrder(order) {
+    return Boolean(order?.isRefund && !isAveaExchangeOrder(order));
+}
+
+export function getAveaExchangeReturnTotal(order) {
+    if (!isAveaExchangeOrder(order)) {
+        return 0;
+    }
+    return (order.lines || [])
+        .filter((line) => line.refunded_orderline_id)
+        .reduce((sum, line) => {
+            const raw =
+                line.prices?.total_included ??
+                (typeof line.getPriceWithTax === "function" ? line.getPriceWithTax() : null) ??
+                Math.abs((line.price_unit || 0) * (line.qty || 0));
+            return sum + Math.abs(Number(raw) || 0);
+        }, 0);
 }
 
 export function getPosOperator(pos) {
@@ -50,9 +90,11 @@ export function getStoreCreditPaymentMethod(pos) {
     if (!isAveaCreditEnabled(pos)) {
         return null;
     }
-    const fromConfig = pos.config.payment_method_ids.find((pm) =>
-        isStoreCreditPaymentMethod(pm)
-    );
+    const configured = pos.config?.payment_method_ids;
+    const fromConfig =
+        configured && typeof configured.find === "function"
+            ? configured.find((pm) => isStoreCreditPaymentMethod(pm))
+            : null;
     if (fromConfig) {
         return fromConfig;
     }
@@ -97,13 +139,16 @@ export function isStoreCreditPaymentAvailable(pos, paymentMethod, order) {
     if (!partner) {
         return false;
     }
-    if (order?.isRefund) {
+    if (isAveaPureRefundOrder(order) || isAveaExchangeOrder(order)) {
         return true;
     }
     return getPartnerStoreCreditBalance(partner) > 0;
 }
 
 export function getMaxStoreCreditRefundTotal(order, pos) {
+    if (isAveaExchangeOrder(order)) {
+        return getAveaExchangeReturnTotal(order);
+    }
     const refundTotal = Math.abs(order.totalDue ?? order.priceIncl ?? 0);
     const otherPayments = order.payment_ids
         .filter(
@@ -133,8 +178,22 @@ export function getStoreCreditRemainingBalance(order, pos) {
     }
     const startingBalance = getPartnerStoreCreditBalance(partner);
     const used = getStoreCreditUsedOnOrder(order, pos);
-    if (order.isRefund) {
+    if (isAveaPureRefundOrder(order)) {
         return startingBalance + used;
+    }
+    if (isAveaExchangeOrder(order)) {
+        let balance = startingBalance;
+        for (const payment of order.payment_ids.filter(
+            (line) => isStoreCreditPaymentMethod(line.payment_method_id) && !line.is_change
+        )) {
+            const amount = payment.getAmount();
+            if (amount < 0) {
+                balance += Math.abs(amount);
+            } else {
+                balance -= amount;
+            }
+        }
+        return balance;
     }
     return Math.max(0, startingBalance - used);
 }
@@ -161,7 +220,7 @@ export function validateStoreCreditPaymentAmount(pos, order, paymentLine) {
     if (amount <= 0) {
         return null;
     }
-    if (order.isRefund) {
+    if (paymentLine.getAmount() < 0) {
         const maxRefund = getMaxStoreCreditRefundTotal(order, pos);
         const otherPayments = order.payment_ids.filter(
             (payment) =>

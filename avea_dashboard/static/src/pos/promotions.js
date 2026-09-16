@@ -10,7 +10,8 @@ const NON_PROMO_PROGRAM_TYPES = new Set(["loyalty", "ewallet", "gift_card"]);
 
 patch(PaymentScreen.prototype, {
     get aveaAppliedPromotions() {
-        const lines = this.currentOrder._get_reward_lines?.() || [];
+        const rewardLines = this.currentOrder?._get_reward_lines?.();
+        const lines = Array.isArray(rewardLines) ? rewardLines : [];
         return lines.filter((line) => {
             const programType = line.reward_id?.program_id?.program_type;
             return programType && !NON_PROMO_PROGRAM_TYPES.has(programType);

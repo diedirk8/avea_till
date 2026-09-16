@@ -5,10 +5,14 @@ import { patch } from "@web/core/utils/patch";
 
 patch(Navbar.prototype, {
     get showIssueStoreCreditMenu() {
-        return this.pos.canIssueStoreCredit();
+        return typeof this.pos.canIssueStoreCredit === "function"
+            ? this.pos.canIssueStoreCredit()
+            : false;
     },
     get showCashUpMenu() {
-        return this.pos.canCashUpOwnTill();
+        return typeof this.pos.canCashUpOwnTill === "function"
+            ? this.pos.canCashUpOwnTill()
+            : false;
     },
     issueStoreCredit() {
         this.pos.issueStoreCredit();

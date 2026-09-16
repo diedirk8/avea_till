@@ -66,6 +66,16 @@ class PosSession(models.Model):
         self.ensure_one()
         return self.env["pos.order"].search(self._avea_paid_order_domain())
 
+    def get_avea_transaction_count(self):
+        """Completed paid orders in this POS session."""
+        self.ensure_one()
+        return len(self.get_avea_paid_orders())
+
+    def get_avea_cash_up_preview(self):
+        """POS Cash Up preview for the current session."""
+        self.ensure_one()
+        return self.env["avea.cash.up"].pos_get_cash_up_preview(self.id)
+
     @api.model
     def _avea_net_cash_from_payments(self, payments):
         """Cash applied to the sale: tender minus change given back."""
@@ -204,6 +214,65 @@ class PosSession(models.Model):
         """Payment and order totals for the full POS session."""
         self.ensure_one()
         return self._avea_sales_summary_from_orders(self.get_avea_paid_orders())
+
+    @api.model
+    def _avea_payment_kind_labels(self):
+        return [
+            ("cash", _("Cash")),
+            ("card", _("Card")),
+            ("eft", _("EFT")),
+            ("store_credit", _("Store Credit")),
+            ("other", _("Other")),
+        ]
+
+    def get_avea_payment_reconciliation_expected(self):
+        """Authoritative POS payment totals grouped by Avea tender kind.
+
+        Payment-method Expected values are transaction payments only and
+        exclude Opening Cash. Cash drawer reconciliation (Opening + payments)
+        stays on cash_register_balance_* for the existing Cash Up cash section.
+        """
+        self.ensure_one()
+        currency = self.currency_id
+        kind_totals = {kind: 0.0 for kind, _label in self._avea_payment_kind_labels()}
+        orders = self.get_avea_paid_orders()
+        for payment in orders.payment_ids:
+            method = payment.payment_method_id
+            kind = method._avea_tender_kind()
+            if payment.is_change:
+                if kind == "cash":
+                    kind_totals["cash"] -= abs(payment.amount)
+                continue
+            kind_totals[kind] += payment.amount
+        for kind in kind_totals:
+            kind_totals[kind] = currency.round(kind_totals[kind])
+
+        opening = self.cash_register_balance_start or 0.0
+        self.invalidate_recordset(["cash_register_balance_end"])
+        cash_register_expected = self.cash_register_balance_end or 0.0
+
+        lines = []
+        for sequence, (kind, label) in enumerate(self._avea_payment_kind_labels()):
+            expected = kind_totals[kind]
+            lines.append(
+                {
+                    "kind": kind,
+                    "label": label,
+                    "expected": expected,
+                    "sequence": sequence,
+                    "is_editable": kind != "cash",
+                    "is_visible": True,
+                }
+            )
+        total_expected = currency.round(sum(kind_totals.values()))
+        return {
+            "lines": lines,
+            "total_expected": total_expected,
+            "opening_cash": opening,
+            "cash_register_expected": cash_register_expected,
+            "cash_payments_expected": kind_totals["cash"],
+            "transaction_count": self.get_avea_transaction_count(),
+        }
 
     def get_avea_activity_metrics(self):
         """Operational counts for the full POS session."""

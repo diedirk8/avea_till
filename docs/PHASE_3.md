@@ -37,7 +37,7 @@ Do not rename existing technical till identifiers unless specifically required.
 |----------|--------|
 | **P0 — Bugs / UX** | Completed. Session Dashboard / Cash Ledger in `0a8d782c3cdeb08fcf591fa68f3aa711290753ae`; Customer Credit Dashboard mobile and Issue Credit in `19.0.2.27.0`. |
 | **P1 — Improvements** | Completed on `develop` (`19.0.2.28.0`) — Business Overview landing page and Avea navigation. **Not in production.** |
-| **P2 — Major Features** | Partially implemented. Account Balances (`19.0.2.59.0`), Cash Up, Transfer Money, and Operational Expense are on `develop`. Remaining P2 items are specified only. |
+| **P2 — Major Features** | Partially implemented. Account Balances (`19.0.2.59.0`), Cash Up (including payment-method reconciliation in `19.0.3.9.79`), Transfer Money, and Operational Expense are on `develop`. Remaining P2 items are specified only. |
 | **P3 — Future** | Open-session **Correct Payment Method** is implemented in `19.0.2.60.0` and eligibility-hardened in `19.0.3.8.3`. The modern Avea POS payment screen is implemented in `19.0.2.61.0` and refined through `19.0.2.70.0`. Remaining P3 items stay specified only. |
 
 ---
@@ -264,10 +264,21 @@ Cash Up should:
 - Calculate the **Difference**
 - Calculate **Cash to Safe** as the cash above Opening Cash that should physically be removed from the till
 - Clearly tell the cashier the amount that remains as Opening Cash and the amount that goes into the Safe
-- Produce a clean, thermal-printer-friendly printed **Cash-Up Summary** to accompany the cash transfer
+- Reconcile **all relevant payment methods** (Cash, Card, EFT, Store Credit, Other) with Expected / Counted / Difference columns sourced from authoritative `pos.payment` session data — not a parallel ledger
+- Require a **Reason for Variance** when any payment method or total does not balance; no reason is required when everything balances
+- Produce a clean, thermal-printer-friendly printed **Cash-Up Summary** to accompany the cash transfer, including the payment reconciliation and variance reason when applicable
 - Preserve Odoo's native POS session closing and cash-difference accounting integrity
 - Support multiple tills without mixing till accountability
 - Remain country- and currency-agnostic
+
+**Payment-method reconciliation (`19.0.3.9.79`):**
+
+- **Expected** per method comes from paid-session `pos.payment` lines (including refunds, exchanges, and Correct Payment adjustments), classified via `_avea_tender_kind()` on each payment method
+- **Cash** Expected in the payment summary uses the native cash register balance (`cash_register_balance_end`) so it stays aligned with physical **Counted Cash**
+- **Card / EFT** Counted values are entered from the terminal / verified batch totals
+- Opposing Cash and Card variances surface payment-method misclassification (e.g. a card sale recorded as cash)
+- Loyalty points and loyalty discounts are **not** payment methods and are excluded
+- **Label Printing** remains the next major build after this Cash Up refinement
 
 The intended physical workflow is:
 

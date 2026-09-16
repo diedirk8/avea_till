@@ -1,19 +1,24 @@
 /** @odoo-module **/
 
 import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
+import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
-import { formatFloat } from "@web/core/utils/numbers";
+import { formatLoyaltyPointsForDisplay } from "./store_credit";
 import { onWillUnmount, useState } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import {
+    buildAveaPaymentMethodList,
     getPaymentMethodVisualKind,
+    materializeConfigPaymentMethods,
+    normalizePaymentMethodSource,
     paymentMethodButtonClass,
     paymentMethodIconClass,
 } from "./payment_method_visual";
 
 patch(PaymentScreen.prototype, {
     setup() {
+        materializeConfigPaymentMethods(usePos());
         super.setup(...arguments);
         this._aveaStoreCreditLastAmount = null;
         this.aveaClock = useState({ now: new Date() });
@@ -83,9 +88,11 @@ patch(PaymentScreen.prototype, {
 
 
     isPaymentMethodOnOrder(paymentMethod) {
-        return this.paymentLines.some(
-            (line) => line.payment_method_id?.id === paymentMethod?.id
-        );
+        const lines = this.currentOrder?.payment_ids;
+        if (!lines || typeof lines.some !== "function") {
+            return false;
+        }
+        return lines.some((line) => line.payment_method_id?.id === paymentMethod?.id);
     },
 
     /**
@@ -94,10 +101,10 @@ patch(PaymentScreen.prototype, {
      * a cash line is only created when an amount is actually entered.
      */
     _aveaKeyboardFallbackPaymentMethod() {
+        const methods = this._aveaPaymentMethodSource();
         return (
-            this.payment_methods_from_config.find(
-                (method) => method.type === "cash" || method.is_cash_count
-            ) || this.payment_methods_from_config[0]
+            methods.find((method) => method.type === "cash" || method.is_cash_count) ||
+            methods[0]
         );
     },
 
@@ -126,37 +133,43 @@ patch(PaymentScreen.prototype, {
         };
         const decimal = this.env.services.localization.decimalPoint;
         extraClass[decimal] = "avea-key avea-key-decimal";
-        return super.getNumpadButtons().map((button) => ({
+        const buttons = super.getNumpadButtons?.() ?? [];
+        return buttons.map((button) => ({
             ...button,
             class: `${button.class || ""} ${extraClass[button.value] || "avea-key"}`.trim(),
             text: button.value === "Backspace" ? "✕" : button.text,
         }));
     },
 
-    get availablePaymentMethods() {
-        const methods = [...this.pos.config.payment_method_ids];
-        const storeCredit = this.pos.getStoreCreditPaymentMethod();
-        if (storeCredit && !methods.some((method) => method.id === storeCredit.id)) {
-            methods.push(storeCredit);
+    _aveaPaymentMethodSource() {
+        if (Array.isArray(this.payment_methods_from_config)) {
+            return this.payment_methods_from_config;
         }
-        const kindOrder = { card: 0, cash: 1, eft: 2, store_credit: 3, other: 4 };
-        return methods.sort((a, b) => {
-            const ka = getPaymentMethodVisualKind(a);
-            const kb = getPaymentMethodVisualKind(b);
-            const byKind = (kindOrder[ka] ?? 4) - (kindOrder[kb] ?? 4);
-            if (byKind !== 0) {
-                return byKind;
-            }
-            return (a.sequence || 0) - (b.sequence || 0);
-        });
+        return normalizePaymentMethodSource(this.pos.config?.payment_method_ids);
+    },
+
+    getAveaPaymentMethods() {
+        try {
+            const storeCredit = this.pos.isAveaCreditEnabled?.()
+                ? this.pos.getStoreCreditPaymentMethod?.()
+                : null;
+            return buildAveaPaymentMethodList(this._aveaPaymentMethodSource(), storeCredit);
+        } catch (error) {
+            console.error("Avea payment methods unavailable:", error);
+            return buildAveaPaymentMethodList(this._aveaPaymentMethodSource(), null);
+        }
+    },
+
+    get availablePaymentMethods() {
+        return this.getAveaPaymentMethods();
     },
 
     get showPartnerStoreCredit() {
-        return this.currentOrder.getPartner() && this.pos.isAveaCreditEnabled();
+        return this.currentOrder?.getPartner() && this.pos.isAveaCreditEnabled();
     },
 
     get partnerStoreCreditBalance() {
-        const partner = this.currentOrder.getPartner();
+        const partner = this.currentOrder?.getPartner();
         if (!partner) {
             return 0;
         }
@@ -164,11 +177,11 @@ patch(PaymentScreen.prototype, {
     },
 
     get partnerDisplayName() {
-        return this.currentOrder.getPartner()?.name || _t("Walk-in Customer");
+        return this.currentOrder?.getPartner()?.name || _t("Walk-in Customer");
     },
 
     get partnerLoyaltyPointsLabel() {
-        const partner = this.currentOrder.getPartner();
+        const partner = this.currentOrder?.getPartner();
         if (!partner || typeof this.pos.getLoyaltyCards !== "function") {
             return "—";
         }
@@ -183,16 +196,16 @@ patch(PaymentScreen.prototype, {
         }
         const points = cards.reduce((sum, card) => {
             const balance = Number(card.points) || 0;
-            const spent = (this.currentOrder._get_reward_lines?.() || [])
+            const spent = (this.currentOrder?._get_reward_lines?.() || [])
                 .filter((line) => line.coupon_id?.id === card.id)
                 .reduce((spentSum, line) => spentSum + (Number(line.points_cost) || 0), 0);
             return sum + Math.max(0, balance - spent);
         }, 0);
-        return _t("%s pts", formatFloat(points, { digits: [69, 2] }));
+        return _t("%s pts", formatLoyaltyPointsForDisplay(points));
     },
 
     get partnerAvailableCreditLabel() {
-        const partner = this.currentOrder.getPartner();
+        const partner = this.currentOrder?.getPartner();
         if (!partner || !this.pos.isAveaCreditEnabled?.()) {
             return "—";
         }
@@ -212,7 +225,7 @@ patch(PaymentScreen.prototype, {
     },
 
     get aveaLoyaltyRewardLines() {
-        const lines = this.currentOrder._get_reward_lines?.() || [];
+        const lines = this.currentOrder?._get_reward_lines?.() || [];
         return lines.filter(
             (line) => line.reward_id?.program_id?.program_type === "loyalty"
         );
@@ -223,10 +236,14 @@ patch(PaymentScreen.prototype, {
     },
 
     get canUseLoyaltyPoints() {
-        if (this.currentOrder.isRefund || this.hasAveaLoyaltyApplied) {
+        const order = this.currentOrder;
+        if (!order) {
             return false;
         }
-        if (!this.currentOrder.getPartner()) {
+        if ((order.isRefund && !order.isExchange) || this.hasAveaLoyaltyApplied) {
+            return false;
+        }
+        if (!order.getPartner()) {
             return false;
         }
         return this._aveaLoyaltyClaimableRewards().length > 0;
@@ -293,19 +310,55 @@ patch(PaymentScreen.prototype, {
     },
 
     get orderTotalDisplay() {
-        return this.env.utils.formatCurrency(this.currentOrder.totalDue);
+        const order = this.currentOrder;
+        if (!order) {
+            return "";
+        }
+        return this.env.utils.formatCurrency(order.totalDue);
     },
 
     get canValidatePayment() {
-        return this.currentOrder.canBeValidated() && !this.currentOrder.isRefundInProcess();
+        const order = this.currentOrder;
+        if (!order) {
+            return false;
+        }
+        return order.canBeValidated() && !order.isRefundInProcess();
     },
 
     get saleSummaryLines() {
-        return (this.currentOrder.lines || []).filter((line) => !line.combo_parent_id);
+        const lines = this.currentOrder?.lines;
+        if (!lines || typeof lines.filter !== "function") {
+            return [];
+        }
+        return lines.filter((line) => !line.combo_parent_id);
+    },
+
+    saleSummaryLineQuantity(line) {
+        try {
+            return line?.getQuantityStr?.()?.qtyStr ?? "";
+        } catch {
+            return "";
+        }
+    },
+
+    saleSummaryLineUnitPrice(line) {
+        try {
+            return line?.currencyDisplayPriceUnit ?? "";
+        } catch {
+            return "";
+        }
+    },
+
+    saleSummaryLineTotal(line) {
+        try {
+            return line?.currencyDisplayPrice ?? "";
+        } catch {
+            return "";
+        }
     },
 
     get saleDiscountTotal() {
-        return this.currentOrder.getTotalDiscount?.() || 0;
+        return this.currentOrder?.getTotalDiscount?.() || 0;
     },
 
     get saleDiscountDisplay() {
@@ -316,25 +369,34 @@ patch(PaymentScreen.prototype, {
     },
 
     get showSaleSubtotal() {
+        const order = this.currentOrder;
+        if (!order?.currency) {
+            return false;
+        }
         return (
-            this.pos.config.iface_tax_included !== "total" &&
-            !this.currentOrder.currency.isZero(this.currentOrder.amountTaxes)
+            this.pos.config?.iface_tax_included !== "total" &&
+            !order.currency.isZero(order.amountTaxes)
         );
     },
 
     get saleSubtotalDisplay() {
-        return this.env.utils.formatCurrency(this.currentOrder.priceExcl);
+        const order = this.currentOrder;
+        if (!order) {
+            return "";
+        }
+        return this.env.utils.formatCurrency(order.priceExcl);
     },
 
     get paymentIsSettled() {
-        return this.currentOrder.orderHasZeroRemaining;
+        return Boolean(this.currentOrder?.orderHasZeroRemaining);
     },
 
     get paymentShowsChange() {
-        return (
-            this.currentOrder.orderHasZeroRemaining &&
-            !this.currentOrder.currency.isZero(this.currentOrder.change)
-        );
+        const order = this.currentOrder;
+        if (!order?.currency) {
+            return false;
+        }
+        return order.orderHasZeroRemaining && !order.currency.isZero(order.change);
     },
 
     get paymentStatusLabel() {
@@ -342,8 +404,12 @@ patch(PaymentScreen.prototype, {
     },
 
     get paymentStatusAmount() {
+        const order = this.currentOrder;
+        if (!order) {
+            return "";
+        }
         return this.env.utils.formatCurrency(
-            this.paymentShowsChange ? this.currentOrder.change : this.currentOrder.remainingDue
+            this.paymentShowsChange ? order.change : order.remainingDue
         );
     },
 
@@ -414,11 +480,46 @@ patch(PaymentScreen.prototype, {
         return this.addNewPaymentLine(paymentMethod);
     },
 
-    async onMounted() {
-        super.onMounted(...arguments);
-        await this._aveaRefreshCurrentPartnerStoreCredit();
-        await this._aveaEnsurePartnerLoyaltyCards();
-        this._aveaSetupRefundStoreCredit();
+    onMounted() {
+        this._aveaPaymentScreenOnMounted();
+        void this._aveaPaymentScreenMounted();
+    },
+
+    _aveaPaymentScreenOnMounted() {
+        const order = this.pos.getOrder();
+        if (!order) {
+            return;
+        }
+        const configuredMethods = this._aveaPaymentMethodSource();
+        const configuredIds = configuredMethods.map((method) => method.id);
+        for (const payment of order.payment_ids) {
+            const pmid = payment.payment_method_id?.id;
+            if (pmid && !configuredIds.includes(pmid)) {
+                payment.delete({ backend: true });
+            }
+        }
+        if (configuredMethods.length === 1 && this.paymentLines.length === 0) {
+            this.addNewPaymentLine(configuredMethods[0]);
+        }
+    },
+
+    async _aveaPaymentScreenMounted() {
+        const order = this.currentOrder;
+        if (!order) {
+            return;
+        }
+        try {
+            if (this.pos.isAveaCreditEnabled()) {
+                await this._aveaRefreshCurrentPartnerStoreCredit();
+            }
+            if (!order.isRefund || order.isExchange) {
+                await this._aveaEnsurePartnerLoyaltyCards();
+            }
+            this._aveaSetupRefundStoreCredit();
+            this._aveaSetupExchangeStoreCredit();
+        } catch (error) {
+            console.error("Avea PaymentScreen setup failed:", error);
+        }
     },
 
     async _aveaEnsurePartnerLoyaltyCards() {
@@ -441,7 +542,9 @@ patch(PaymentScreen.prototype, {
                 // Loyalty cards are display-only here; missing data shows "—".
             }
         }
-        this.pos.updateRewards?.();
+        if (!this.currentOrder?.isRefund || this.currentOrder?.isExchange) {
+            this.pos.updateRewards?.();
+        }
     },
 
     async _aveaRefreshCurrentPartnerStoreCredit() {
@@ -452,9 +555,40 @@ patch(PaymentScreen.prototype, {
         await this.pos.refreshPartnerStoreCreditBalance(partner.id);
     },
 
+    _aveaSetupExchangeStoreCredit() {
+        const order = this.currentOrder;
+        if (!order.isExchange || !this.pos.isAveaCreditEnabled()) {
+            return;
+        }
+        const returnTotal = order.getAveaExchangeReturnTotal();
+        const originalStoreCreditPaid = this.pos.getOriginalStoreCreditPaid(order);
+        if (returnTotal <= 0 || originalStoreCreditPaid <= 0) {
+            return;
+        }
+        const storeCreditMethod = this.pos.getStoreCreditPaymentMethod();
+        if (!storeCreditMethod) {
+            return;
+        }
+        const hasStoreCreditLine = order.payment_ids.some((payment) =>
+            this.pos.isStoreCreditPaymentMethod(payment.payment_method_id)
+        );
+        if (hasStoreCreditLine) {
+            return;
+        }
+        const storeCreditAmount = Math.min(originalStoreCreditPaid, returnTotal);
+        if (storeCreditAmount <= 0) {
+            return;
+        }
+        const result = order.addPaymentline(storeCreditMethod);
+        if (result.status) {
+            result.data.setAmount(-storeCreditAmount);
+            this.numberBuffer.set((-storeCreditAmount).toString());
+        }
+    },
+
     _aveaSetupRefundStoreCredit() {
         const order = this.currentOrder;
-        if (!order.isRefund || !this.pos.isAveaCreditEnabled()) {
+        if (!order.isRefund || order.isExchange || !this.pos.isAveaCreditEnabled()) {
             return;
         }
         const originalStoreCreditPaid = this.pos.getOriginalStoreCreditPaid(order);
@@ -497,6 +631,7 @@ patch(PaymentScreen.prototype, {
             }
             if (
                 !this.currentOrder.isRefund &&
+                !this.currentOrder.isExchange &&
                 !this.pos.isStoreCreditPaymentAvailable(paymentMethod, this.currentOrder)
             ) {
                 this.dialog.add(AlertDialog, {
@@ -514,7 +649,8 @@ patch(PaymentScreen.prototype, {
         // (Card here) when the cashier types with no selected method.
         // Create Cash first so that path stays the same except for
         // which unpaid method receives the typed amount.
-        if (this.paymentLines.every((line) => line.paid)) {
+        const paymentLines = this.currentOrder?.payment_ids;
+        if (paymentLines && typeof paymentLines.every === "function" && paymentLines.every((line) => line.paid)) {
             const fallback = this._aveaKeyboardFallbackPaymentMethod();
             if (fallback) {
                 this.currentOrder.addPaymentline(fallback);
@@ -542,7 +678,7 @@ patch(PaymentScreen.prototype, {
         if (
             line &&
             this.pos.isStoreCreditPaymentMethod(line.payment_method_id) &&
-            this.currentOrder.isRefund &&
+            (this.currentOrder.isRefund || this.currentOrder.isExchange) &&
             this.pos.getOriginalStoreCreditPaid(this.currentOrder) > 0
         ) {
             this.dialog.add(AlertDialog, {

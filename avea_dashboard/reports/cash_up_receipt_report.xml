@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="report_avea_cash_up_receipt_document">
+        <t t-set="receipt" t-value="doc.get_receipt_payload()"/>
+        <div class="pos-receipt avea-cash-up-receipt">
+            <div class="pos-receipt-contact text-center">
+                <img
+                    t-if="receipt.get('company_logo_url')"
+                    t-att-src="receipt['company_logo_url']"
+                    class="pos-receipt-logo"
+                    style="max-height: 80px; max-width: 100%;"
+                />
+                <div class="fw-bolder" t-esc="receipt['company']"/>
+            </div>
+            <div class="pos-receipt-center-align fw-bolder pt-2">
+                CASH UP
+            </div>
+            <div class="pos-receipt-order-data text-center">
+                <div t-esc="receipt['date']"/>
+            </div>
+            <div class="pos-receipt-center-align">----------------</div>
+            <div>
+                Till
+                <span class="pos-receipt-right-align" t-esc="receipt['till']"/>
+            </div>
+            <div>
+                Session
+                <span class="pos-receipt-right-align" t-esc="receipt['session']"/>
+            </div>
+            <div>
+                Cashier
+                <span class="pos-receipt-right-align" t-esc="receipt['cashier']"/>
+            </div>
+            <div>
+                Transactions
+                <span class="pos-receipt-right-align" t-esc="receipt['transaction_count']"/>
+            </div>
+
+            <t t-if="not receipt['has_variance']">
+                <div class="pos-receipt-center-align pt-1">----------------</div>
+                <div class="pos-receipt-center-align fw-bolder">
+                    CASH SUMMARY
+                </div>
+                <div class="pos-receipt-center-align">----------------</div>
+                <div class="fw-bolder">
+                    Cash to Safe
+                    <span class="pos-receipt-right-align" t-esc="receipt['cash_to_bag']"/>
+                </div>
+                <div>
+                    Float Remaining
+                    <span class="pos-receipt-right-align" t-esc="receipt['remaining_cash']"/>
+                </div>
+                <div class="pos-receipt-center-align pt-2">
+                    All amounts reconciled
+                </div>
+                <div class="pos-receipt-center-align">
+                    Thank you
+                </div>
+            </t>
+            <t t-else="">
+                <div class="pos-receipt-center-align pt-1">----------------</div>
+                <div class="pos-receipt-center-align fw-bolder">
+                    PAYMENT RECONCILIATION
+                </div>
+                <div class="pos-receipt-center-align">----------------</div>
+                <div class="avea-cu-receipt-table">
+                    <div class="avea-cu-receipt-table__head fw-bolder">
+                        <span>Payment</span>
+                        <span class="text-end">Expected</span>
+                        <span class="text-end">Counted</span>
+                        <span class="text-end">Diff</span>
+                    </div>
+                    <t t-foreach="receipt['active_payment_lines']" t-as="line">
+                        <div class="avea-cu-receipt-table__row">
+                            <span t-esc="line['label']"/>
+                            <span class="text-end" t-esc="line['expected']"/>
+                            <span class="text-end" t-esc="line['counted']"/>
+                            <t t-if="line['difference_amount']">
+                                <span class="text-end avea-cu-receipt-diff" t-esc="line['difference']"/>
+                            </t>
+                            <t t-else="">
+                                <span class="text-end" t-esc="line['difference']"/>
+                            </t>
+                        </div>
+                    </t>
+                    <div class="avea-cu-receipt-table__row avea-cu-receipt-table__total fw-bolder">
+                        <span>Total Payments</span>
+                        <span class="text-end" t-esc="receipt['total_payments_expected']"/>
+                        <span class="text-end" t-esc="receipt['total_payments_counted']"/>
+                        <t t-if="receipt['total_payments_difference_amount']">
+                            <span class="text-end avea-cu-receipt-diff" t-esc="receipt['total_payments_difference']"/>
+                        </t>
+                        <t t-else="">
+                            <span class="text-end" t-esc="receipt['total_payments_difference']"/>
+                        </t>
+                    </div>
+                </div>
+                <div class="pos-receipt-center-align pt-1">----------------</div>
+                <div class="pos-receipt-center-align fw-bolder">
+                    CASH
+                </div>
+                <div class="pos-receipt-center-align">----------------</div>
+                <div class="fw-bolder">
+                    Cash to Safe
+                    <span class="pos-receipt-right-align" t-esc="receipt['cash_to_bag']"/>
+                </div>
+                <div>
+                    Float Remaining
+                    <span class="pos-receipt-right-align" t-esc="receipt['remaining_cash']"/>
+                </div>
+                <div class="avea-cu-receipt-variance pt-1">
+                    <div class="fw-bolder">
+                        Variance:
+                        <span class="avea-cu-receipt-diff" t-esc="receipt['variance_label']"/>
+                    </div>
+                    <div t-if="receipt.get('variance_reason')">
+                        Reason:
+                        <span t-esc="receipt['variance_reason']"/>
+                    </div>
+                </div>
+            </t>
+
+            <div class="pos-receipt-center-align pt-2">----------------</div>
+            <div>Cashier Signature: _______________</div>
+            <div class="pt-1">Manager Signature: _______________</div>
+        </div>
+    </template>
+
+    <template id="report_avea_cash_up_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <div class="article o_report_layout">
+                    <t t-call="avea_till.report_avea_cash_up_receipt_document"/>
+                </div>
+            </t>
+            <script type="text/javascript">
+                window.addEventListener("load", function () {
+                    window.setTimeout(function () {
+                        window.focus();
+                        window.print();
+                    }, 300);
+                });
+            </script>
+        </t>
+    </template>
+
+    <record id="action_report_avea_cash_up_receipt" model="ir.actions.report">
+        <field name="name">Cash Up Receipt</field>
+        <field name="model">avea.cash.up</field>
+        <field name="report_type">qweb-html</field>
+        <field name="report_name">avea_till.report_avea_cash_up_receipt</field>
+        <field name="print_report_name">'Cash Up Receipt - %s' % (object.name)</field>
+    </record>
+
+</odoo>

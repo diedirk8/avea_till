@@ -1,0 +1,47 @@
+// Business Overview → Transactions — Sales Ledger presentation + frozen header.
+
+.o_avea_workspace--business-transactions {
+    .o_avea_workspace_subtitle {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.4;
+        margin: 0.3rem 0 0;
+        min-width: 0;
+    }
+
+    > .o_content {
+        .o_list_renderer {
+            max-height: calc(100vh - 17rem);
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-gutter: stable;
+
+            .o_list_table {
+                thead {
+                    background-color: var(--o-gray-100, #f8f9fa);
+                }
+
+                thead th {
+                    background-color: var(--o-gray-100, #f8f9fa);
+                    box-shadow: 0 1px 0 var(--border-color, var(--o-gray-300, #dee2e6));
+                    position: sticky;
+                    top: 0;
+                    z-index: 2;
+                }
+            }
+        }
+    }
+}
+
+@media (max-width: 991.98px) {
+    .o_avea_workspace--business-transactions > .o_content .o_list_renderer {
+        max-height: calc(100vh - 18rem);
+    }
+}
+
+@media (max-width: 767.98px) {
+    .o_avea_workspace--business-transactions > .o_content .o_list_renderer {
+        max-height: calc(100vh - 19rem);
+    }
+}

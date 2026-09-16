@@ -198,3 +198,49 @@
         }
     }
 }
+
+.pos-receipt.avea-cash-up-receipt,
+.article .avea-cash-up-receipt {
+    font-size: 13px;
+    line-height: 1.35;
+    max-width: 320px;
+    margin: 0 auto;
+
+    .avea-cu-receipt-diff {
+        color: #b91c1c;
+        font-weight: 700;
+    }
+
+    .avea-cu-receipt-table {
+        font-size: 12px;
+
+        &__head,
+        &__row {
+            display: grid;
+            gap: 0.15rem 0.35rem;
+            grid-template-columns: 1.1fr 1fr 1fr 0.85fr;
+        }
+
+        &__head {
+            border-bottom: 1px dashed #ccc;
+            margin-bottom: 0.2rem;
+            padding-bottom: 0.15rem;
+        }
+
+        &__row + &__row {
+            margin-top: 0.1rem;
+        }
+
+        &__total {
+            border-top: 1px dashed #ccc;
+            margin-top: 0.25rem;
+            padding-top: 0.2rem;
+        }
+    }
+
+    .avea-cu-receipt-variance {
+        border-top: 1px dashed #ccc;
+        margin-top: 0.35rem;
+        padding-top: 0.25rem;
+    }
+}

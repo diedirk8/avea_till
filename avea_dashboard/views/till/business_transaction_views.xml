@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_business_transaction_list" model="ir.ui.view">
+        <field name="name">avea.business.transaction.list</field>
+        <field name="model">avea.business.transaction</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list
+                string="Transactions"
+                create="false"
+                edit="false"
+                delete="false"
+                import="false"
+                default_order="transaction_datetime desc, id desc"
+                class="o_avea_sales_ledger_list o_avea_business_transactions_list"
+                js_class="avea_business_transactions_list"
+            >
+                <field name="transaction_datetime" column_invisible="True"/>
+                <field name="transaction_date" column_invisible="True"/>
+                <field name="transaction_date_label" string="Date"/>
+                <field name="transaction_time_label" string="Time"/>
+                <field name="transaction_type" string="Type" widget="badge"/>
+                <field name="reference" string="Reference"/>
+                <field name="amount" string="Amount"/>
+                <field name="payment_method_id" string="Payment Method" optional="show"/>
+                <field name="journal_id" string="Account" optional="hide"/>
+                <field name="user_id" string="User" optional="hide"/>
+                <field name="res_model" column_invisible="True"/>
+                <field name="res_id" column_invisible="True"/>
+                <field name="search_text" column_invisible="True"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_business_transaction_search" model="ir.ui.view">
+        <field name="name">avea.business.transaction.search</field>
+        <field name="model">avea.business.transaction</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <search string="Transactions">
+                <field
+                    name="search_text"
+                    string="Reference / Order / Invoice"
+                    filter_domain="['|', ('reference', 'ilike', self), ('search_text', 'ilike', self)]"
+                />
+                <field name="transaction_type"/>
+                <field name="payment_method_id"/>
+                <field name="journal_id"/>
+                <field name="user_id"/>
+                <separator/>
+                <filter string="Today" name="avea_tx_today" domain="[('transaction_date', '=', context_today().strftime('%Y-%m-%d'))]"/>
+                <filter string="Last 7 Days" name="avea_tx_last_7" domain="[('transaction_date', '&gt;=', (context_today() - relativedelta(days=6)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Last 30 Days" name="avea_tx_last_30" domain="[('transaction_date', '&gt;=', (context_today() - relativedelta(days=29)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter string="POS Sales" name="avea_tx_pos_sale" domain="[('transaction_type', '=', 'pos_sale')]"/>
+                <filter string="POS Refunds" name="avea_tx_pos_refund" domain="[('transaction_type', '=', 'pos_refund')]"/>
+                <filter string="Expenses" name="avea_tx_expense" domain="[('transaction_type', '=', 'expense')]"/>
+                <filter string="Supplier Payments" name="avea_tx_supplier" domain="[('transaction_type', '=', 'supplier_payment')]"/>
+                <filter string="Customer Payments" name="avea_tx_customer" domain="[('transaction_type', '=', 'customer_payment')]"/>
+                <filter string="Cash Withdrawals" name="avea_tx_withdrawal" domain="[('transaction_type', '=', 'cash_withdrawal')]"/>
+                <filter string="Cash Transfers" name="avea_tx_transfer" domain="[('transaction_type', '=', 'cash_transfer')]"/>
+                <filter string="Cash Ups" name="avea_tx_cash_up" domain="[('transaction_type', '=', 'cash_up')]"/>
+                <filter string="Store Credit" name="avea_tx_store_credit" domain="[('transaction_type', '=', 'store_credit')]"/>
+                <filter string="Manual Journals" name="avea_tx_manual" domain="[('transaction_type', '=', 'manual_journal')]"/>
+                <filter string="Date" name="filter_transaction_date" date="transaction_date"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_avea_business_transactions_window" model="ir.actions.act_window">
+        <field name="name">Transactions</field>
+        <field name="res_model">avea.business.transaction</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_avea_business_transaction_list"/>
+        <field name="search_view_id" ref="view_avea_business_transaction_search"/>
+        <field name="domain">[]</field>
+        <field name="context">{
+            'avea_business_transactions': True,
+            'limit': 100,
+            'create': False,
+            'delete': False,
+            'edit': False
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No transactions yet
+            </p>
+            <p>
+                A chronological history of business transactions across POS, operations, store credit and till activity.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_avea_business_transactions" model="ir.actions.server">
+        <field name="name">Transactions</field>
+        <field name="model_id" ref="model_avea_business_transaction"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_avea_open_business_transactions()</field>
+    </record>
+
+    <record id="action_avea_business_transactions_view_list" model="ir.actions.act_window.view">
+        <field name="sequence">1</field>
+        <field name="view_mode">list</field>
+        <field name="view_id" ref="view_avea_business_transaction_list"/>
+        <field name="act_window_id" ref="action_avea_business_transactions_window"/>
+    </record>
+
+</odoo>

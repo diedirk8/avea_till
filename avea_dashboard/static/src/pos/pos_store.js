@@ -9,12 +9,15 @@ import {
     canIssueStoreCredit,
     formatStoreCreditAmount,
     getAvailableStoreCreditForOrder,
+    getAveaExchangeReturnTotal,
     getOriginalStoreCreditPaid,
     getPartnerStoreCreditBalance,
     getStoreCreditPaymentMethod,
     getStoreCreditRemainingBalance,
     getStoreCreditUsedOnOrder,
     isAveaCreditEnabled,
+    isAveaExchangeOrder,
+    isAveaPureRefundOrder,
     isStoreCreditPaymentAvailable,
     isStoreCreditPaymentMethod,
     validateStoreCreditPaymentAmount,
@@ -47,6 +50,15 @@ patch(PosStore.prototype, {
     },
     getOriginalStoreCreditPaid(order) {
         return getOriginalStoreCreditPaid(order, this);
+    },
+    isAveaExchangeOrder(order) {
+        return isAveaExchangeOrder(order);
+    },
+    isAveaPureRefundOrder(order) {
+        return isAveaPureRefundOrder(order);
+    },
+    getAveaExchangeReturnTotal(order) {
+        return getAveaExchangeReturnTotal(order);
     },
     getStoreCreditRemainingBalance(order) {
         return getStoreCreditRemainingBalance(order, this);

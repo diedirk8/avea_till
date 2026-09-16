@@ -10,9 +10,65 @@ from .till_movement import CASH_REFUND_REASON, CASH_SALE_REASON
 class PosOrder(models.Model):
     _inherit = "pos.order"
 
+    avea_is_exchange = fields.Boolean(
+        string="Exchange",
+        default=False,
+        readonly=True,
+        help="POS exchange: returned items and replacements in one net transaction.",
+    )
     avea_can_correct_payment = fields.Boolean(
         compute="_compute_avea_can_correct_payment",
     )
+
+    def _avea_exchange_return_total(self):
+        self.ensure_one()
+        return sum(
+            abs(line.price_subtotal_incl)
+            for line in self.lines.filtered("refunded_orderline_id")
+        )
+
+    @api.model
+    def _process_order(self, order, existing_order):
+        """Persist POS flags that are readonly on the client payload."""
+        exchange_flag = bool(order.get("avea_is_exchange"))
+        refund_flag = bool(order.get("is_refund"))
+        order_id = super()._process_order(order, existing_order)
+        pos_order = self.browse(order_id)
+        vals = {}
+        if exchange_flag:
+            vals["avea_is_exchange"] = True
+        if refund_flag:
+            vals["is_refund"] = True
+        if vals:
+            pos_order.sudo().write(vals)
+        return order_id
+
+    def _compute_prices(self):
+        super()._compute_prices()
+        exchange_orders = self.filtered("avea_is_exchange")
+        if not exchange_orders:
+            return
+        AccountTax = self.env["account.tax"]
+        for order in exchange_orders:
+            base_lines = order.lines._prepare_tax_base_line_values()
+            AccountTax._add_tax_details_in_base_lines(base_lines, order.company_id)
+            AccountTax._round_base_lines_tax_details(base_lines, order.company_id)
+            cash_rounding = None
+            if (
+                order.config_id.cash_rounding
+                and not order.config_id.only_round_cash_method
+                and order.config_id.rounding_method
+            ):
+                cash_rounding = order.config_id.rounding_method
+            tax_totals = AccountTax._get_tax_totals_summary(
+                base_lines=base_lines,
+                currency=order.currency_id,
+                company=order.company_id,
+                cash_rounding=cash_rounding,
+            )
+            order.amount_tax = tax_totals["tax_amount_currency"]
+            order.amount_total = tax_totals["total_amount_currency"]
+            order.amount_difference = order.amount_paid - order.amount_total
 
     def action_pos_order_paid(self):
         result = super().action_pos_order_paid()
@@ -102,7 +158,7 @@ class PosOrder(models.Model):
             amount = abs(net_cash)
             if order.currency_id.compare_amounts(amount, 0.0) <= 0:
                 continue
-            if order.is_refund or net_cash < 0:
+            if net_cash < 0 or (order.is_refund and not order.avea_is_exchange):
                 movement_type = "out"
                 reason = CASH_REFUND_REASON
             else:
@@ -166,8 +222,9 @@ class PosOrder(models.Model):
             fields_list = list(fields_list)
         # When a concrete field list exists, keep our flag in it. When empty,
         # read([]) already includes computed fields such as this one.
-        if fields_list and "avea_can_correct_payment" not in fields_list:
-            fields_list.append("avea_can_correct_payment")
+        for field_name in ("avea_can_correct_payment", "avea_is_exchange"):
+            if fields_list and field_name not in fields_list:
+                fields_list.append(field_name)
         return fields_list
 
     @api.model

@@ -14,9 +14,11 @@ from . import pos_config
 from . import payment_correction_wizard
 from . import business_overview
 from . import business_performance
+from . import business_transaction
 from . import performance_analytics
 from . import session_dashboard
 from . import till_dashboard
 from . import res_company
 from . import res_config_settings
 from . import cash_up
+from . import cash_up_payment_line

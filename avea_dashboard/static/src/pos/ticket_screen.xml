@@ -2,10 +2,13 @@
 <templates id="template" xml:space="preserve">
 
     <t t-name="point_of_sale.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('control-buttons')]" position="attributes">
+            <attribute name="class" add="avea-ticket-control-buttons flex-wrap" separator=" "/>
+        </xpath>
         <xpath expr="//InvoiceButton" position="before">
             <button
                 t-if="showCorrectPaymentMethod"
-                class="control-button btn btn-secondary btn-lg lh-lg flex-grow-1 flex-shrink-1"
+                class="control-button btn btn-secondary btn-sm avea-ticket-action-btn flex-grow-1 flex-shrink-1"
                 t-on-click="() => this.openCorrectPaymentMethod()"
             >
                 <i class="fa fa-exchange me-1"/> Correct Payment
@@ -14,11 +17,29 @@
         <xpath expr="//button[hasclass('load-order-button')]" position="before">
             <button
                 t-if="showCorrectPaymentMethod"
-                class="control-button btn btn-secondary btn-lg lh-lg flex-grow-1 flex-shrink-1"
+                class="control-button btn btn-secondary btn-sm avea-ticket-action-btn flex-grow-1 flex-shrink-1"
                 t-on-click="() => this.openCorrectPaymentMethod()"
             >
                 <i class="fa fa-exchange me-1"/> Correct Payment
             </button>
+        </xpath>
+        <xpath expr="//ActionpadWidget" position="replace">
+            <div class="avea-ticket-refund-actions d-flex gap-1">
+                <button
+                    class="btn btn-primary btn-sm avea-ticket-action-btn flex-fill py-2"
+                    t-att-disabled="!getHasItemsToRefund()"
+                    t-on-click="() => this.onDoRefund()"
+                >
+                    Refund
+                </button>
+                <button
+                    t-if="showExchangeButton"
+                    class="btn btn-primary btn-sm avea-ticket-action-btn flex-fill py-2"
+                    t-on-click="() => this.onExchange()"
+                >
+                    Exchange
+                </button>
+            </div>
         </xpath>
     </t>
 

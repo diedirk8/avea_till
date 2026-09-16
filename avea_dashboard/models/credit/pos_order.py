@@ -55,7 +55,7 @@ class PosOrder(models.Model):
                 amount = abs(payment.amount)
                 if order.currency_id.compare_amounts(amount, 0.0) <= 0:
                     continue
-                if order.is_refund or order.amount_total < 0:
+                if payment.amount < 0:
                     Ledger.create_pos_refund_credit(
                         partner=partner,
                         amount=amount,

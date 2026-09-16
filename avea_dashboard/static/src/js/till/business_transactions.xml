@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.BusinessTransactionsList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_workspace_sheet o_avea_sales_ledger_sheet o_avea_business_transactions_sheet">
+                <div class="o_avea_workspace_hero">
+                    <div class="o_avea_workspace_hero_intro">
+                        <span class="o_avea_workspace_eyebrow">Business Overview</span>
+                        <h1 class="o_avea_workspace_title">Transactions</h1>
+                        <p class="o_avea_workspace_subtitle">Chronological history of business transactions</p>
+                    </div>
+                    <div class="o_avea_period_selector">
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('all')"
+                            t-on-click="() => this.onFilterClick('all')"
+                        >
+                            All
+                        </button>
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('today')"
+                            t-on-click="() => this.onFilterClick('today')"
+                        >
+                            Today
+                        </button>
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('last_7')"
+                            t-on-click="() => this.onFilterClick('last_7')"
+                        >
+                            Last 7 Days
+                        </button>
+                        <button
+                            type="button"
+                            t-att-class="this._filterButtonClass('last_30')"
+                            t-on-click="() => this.onFilterClick('last_30')"
+                        >
+                            Last 30 Days
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div
+                t-if="env.config.pagerProps.total > 0"
+                class="o_avea_sales_ledger_pager o_avea_business_transactions_pager o_cp_pager text-nowrap"
+            >
+                <Pager t-props="env.config.pagerProps"/>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

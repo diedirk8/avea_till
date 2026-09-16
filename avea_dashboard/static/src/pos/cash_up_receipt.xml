@@ -10,59 +10,109 @@
             <div class="pos-receipt-order-data text-center">
                 <div t-esc="props.receipt.date"/>
             </div>
-            <div class="pt-2">
-                <div>
-                    Company
-                    <span class="pos-receipt-right-align" t-esc="props.receipt.company"/>
-                </div>
-                <div>
-                    Till
-                    <span class="pos-receipt-right-align" t-esc="props.receipt.till"/>
-                </div>
-                <div>
-                    Session
-                    <span class="pos-receipt-right-align" t-esc="props.receipt.session"/>
-                </div>
-                <div>
-                    Cashier
-                    <span class="pos-receipt-right-align" t-esc="props.receipt.cashier"/>
-                </div>
-            </div>
-            <div class="pt-3">
-                <div>
-                    Opening Cash
-                    <span class="pos-receipt-right-align" t-esc="props.receipt.opening_cash"/>
-                </div>
-                <div>
-                    Expected Cash
-                    <span class="pos-receipt-right-align" t-esc="props.receipt.expected_cash"/>
-                </div>
-                <div>
-                    Counted Cash
-                    <span class="pos-receipt-right-align" t-esc="props.receipt.counted_cash"/>
-                </div>
-                <div>
-                    Difference
-                    <span class="pos-receipt-right-align" t-esc="props.receipt.difference"/>
-                </div>
-            </div>
-            <br/>
             <div class="pos-receipt-center-align">----------------</div>
-            <div class="pos-receipt-center-align fw-bolder">
-                CASH TO SAFE
+            <div>
+                Till
+                <span class="pos-receipt-right-align" t-esc="props.receipt.till"/>
             </div>
-            <div class="pos-receipt-center-align fw-bolder">
-                <t t-esc="props.receipt.cash_to_bag"/>
+            <div>
+                Session
+                <span class="pos-receipt-right-align" t-esc="props.receipt.session"/>
             </div>
-            <div class="pos-receipt-center-align">----------------</div>
-            <div class="pt-2">
-                Opening Cash Remaining
-                <span class="pos-receipt-right-align" t-esc="props.receipt.remaining_cash"/>
+            <div>
+                Cashier
+                <span class="pos-receipt-right-align" t-esc="props.receipt.cashier"/>
             </div>
-            <br/>
+            <div>
+                Transactions
+                <span class="pos-receipt-right-align" t-esc="props.receipt.transaction_count"/>
+            </div>
+
+            <t t-if="!hasVariance">
+                <div class="pos-receipt-center-align pt-1">----------------</div>
+                <div class="pos-receipt-center-align fw-bolder">
+                    CASH SUMMARY
+                </div>
+                <div class="pos-receipt-center-align">----------------</div>
+                <div class="fw-bolder">
+                    Cash to Safe
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.cash_to_bag"/>
+                </div>
+                <div>
+                    Float Remaining
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.remaining_cash"/>
+                </div>
+                <div class="pos-receipt-center-align pt-2">
+                    All amounts reconciled
+                </div>
+                <div class="pos-receipt-center-align">
+                    Thank you
+                </div>
+            </t>
+            <t t-else="">
+                <div class="pos-receipt-center-align pt-1">----------------</div>
+                <div class="pos-receipt-center-align fw-bolder">
+                    PAYMENT RECONCILIATION
+                </div>
+                <div class="pos-receipt-center-align">----------------</div>
+                <div class="avea-cu-receipt-table">
+                    <div class="avea-cu-receipt-table__head fw-bolder">
+                        <span>Payment</span>
+                        <span class="text-end">Expected</span>
+                        <span class="text-end">Counted</span>
+                        <span class="text-end">Diff</span>
+                    </div>
+                    <t t-foreach="activePaymentLines" t-as="line" t-key="line.kind">
+                        <div class="avea-cu-receipt-table__row">
+                            <span t-esc="line.label"/>
+                            <span class="text-end" t-esc="line.expected"/>
+                            <span class="text-end" t-esc="line.counted"/>
+                            <span
+                                class="text-end"
+                                t-att-class="isNonZeroDifference(line.difference_amount) ? 'avea-cu-receipt-diff' : ''"
+                                t-esc="line.difference"
+                            />
+                        </div>
+                    </t>
+                    <div class="avea-cu-receipt-table__row avea-cu-receipt-table__total fw-bolder">
+                        <span>Total Payments</span>
+                        <span class="text-end" t-esc="props.receipt.total_payments_expected"/>
+                        <span class="text-end" t-esc="props.receipt.total_payments_counted"/>
+                        <span
+                            class="text-end"
+                            t-att-class="isNonZeroDifference(props.receipt.total_payments_difference_amount) ? 'avea-cu-receipt-diff' : ''"
+                            t-esc="props.receipt.total_payments_difference"
+                        />
+                    </div>
+                </div>
+                <div class="pos-receipt-center-align pt-1">----------------</div>
+                <div class="pos-receipt-center-align fw-bolder">
+                    CASH
+                </div>
+                <div class="pos-receipt-center-align">----------------</div>
+                <div class="fw-bolder">
+                    Cash to Safe
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.cash_to_bag"/>
+                </div>
+                <div>
+                    Float Remaining
+                    <span class="pos-receipt-right-align" t-esc="props.receipt.remaining_cash"/>
+                </div>
+                <div class="avea-cu-receipt-variance pt-1">
+                    <div class="fw-bolder">
+                        Variance:
+                        <span class="avea-cu-receipt-diff" t-esc="varianceLabel"/>
+                    </div>
+                    <div t-if="props.receipt.variance_reason">
+                        Reason:
+                        <span t-esc="props.receipt.variance_reason"/>
+                    </div>
+                </div>
+            </t>
+
+            <div class="pos-receipt-center-align pt-2">----------------</div>
             <div>Cashier Signature: _______________</div>
-            <br/>
-            <div>Manager Signature: _______________</div>
+            <div class="pt-1">Manager Signature: _______________</div>
         </div>
     </t>
 

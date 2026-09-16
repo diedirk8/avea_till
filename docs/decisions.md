@@ -332,3 +332,55 @@ When OFF, no automatic email is sent.
 ### Tests
 
 Cover setting ON/OFF, HTML email without attachments, configurable content toggles (hide products, custom greeting/subject), conditional balances, preview sample data, automatic sending without blocking POS sync, customer with/without email, no customer, business sender identity, duplicate-send guard, and no invoice on POS.
+
+---
+
+# ADR-012
+
+## Business Overview → Transactions
+
+Status
+
+Accepted
+
+Reason
+
+Business owners need one read-only money movement history across POS, operations, store credit and till activity — without duplicating financial data or changing accounting logic.
+
+Decision
+
+### Workspace
+
+- Add **Transactions** under **Business Overview** (same Avea workspace shell as Overview, Performance and Sales Ledger).
+- Read-only chronological **history list** ordered **newest first**.
+- Columns: Date, Time, Type, Reference, Amount.
+- Payment method / account / user are optional context on the row, not separate transactions.
+- Clicking a row opens the underlying authoritative record.
+- No money-in/out columns, no totals, no financial summaries.
+
+### Authoritative sources (one row per business transaction)
+
+| Type | Source model | Notes |
+|------|----------------|-------|
+| POS Sale / Refund | `pos.order` | One row per paid order; payment method shown as context |
+| Store Credit | `avea.credit.ledger.entry` | Posted entries not linked to a POS order |
+| Expense | `account.bank.statement.line` | Avea operational expense payment |
+| Cash Withdrawal | `account.bank.statement.line` | Avea Withdraw Cash |
+| Cash Transfer | `account.bank.statement.line` | Outbound leg only (one row per transfer) |
+| Supplier / Customer Payment | `account.payment` | Non-POS account payments |
+| Till Cash In / Out | `avea.till.movement` | Manual till movements only |
+| Cash Up | `avea.cash.up` | One row per confirmed cash up |
+| Manual Journal | `account.move` | Avea manual journal entries |
+
+Do **not** also list `pos.payment`, cash-sale till movements, POS-linked store-credit lines, or both legs of a transfer.
+
+### Implementation
+
+- Unified read model: `avea.business.transaction` SQL view (`_auto = False`).
+- Do **not** duplicate amounts into a new financial table or calculate summaries.
+- Search: reference, order or invoice text via `search_text`.
+- Filters: date, transaction type, payment method, account/journal, user.
+
+### Tests
+
+Cover one-row-per-POS-order, no payment duplication, reference search, open-source navigation, and cash withdrawal visibility.

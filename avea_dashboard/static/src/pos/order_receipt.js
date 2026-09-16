@@ -5,6 +5,7 @@ import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/
 import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { patch } from "@web/core/utils/patch";
 import {
+    formatLoyaltyPointsForDisplay,
     formatStoreCreditAmount,
     getStoreCreditRemainingBalance,
     getStoreCreditUsedOnOrder,
@@ -106,7 +107,7 @@ patch(OrderReceipt.prototype, {
             .filter((card) => card.program_id?.program_type === "loyalty" && card.points)
             .map((card) => ({
                 label: card.program_id?.name || "Loyalty",
-                value: card.points,
+                value: formatLoyaltyPointsForDisplay(card.points),
             }));
     },
 

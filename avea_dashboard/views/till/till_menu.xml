@@ -25,6 +25,14 @@
     />
 
     <menuitem
+        id="menu_avea_business_transactions"
+        name="Transactions"
+        parent="menu_avea_business_section"
+        action="action_avea_business_transactions"
+        sequence="15"
+    />
+
+    <menuitem
         id="menu_avea_till"
         name="Sessions"
         parent="menu_avea_root"

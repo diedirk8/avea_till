@@ -5,7 +5,11 @@ from . import test_stock_take
 from . import test_sales_ledger
 from . import test_business_performance
 from . import test_business_overview
+from . import test_business_transactions
 from . import test_avea_settings_receipt_email
 from . import test_pos_partner_access
 from . import test_avea_settings_printed_receipt
 from . import test_withdraw_cash
+from . import test_pos_exchange
+from . import test_loyalty_points_display
+from . import test_cash_up

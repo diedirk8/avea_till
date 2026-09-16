@@ -2,106 +2,255 @@
 <templates id="template" xml:space="preserve">
 
     <t t-name="avea_till.CashUpPopup">
-        <Dialog title="dialogTitle" size="'md'">
+        <Dialog
+            title="dialogTitle"
+            size="'xl'"
+            contentClass="'avea-cash-up-dialog'"
+            bodyClass="'avea-cash-up-dialog__body'"
+            withBodyPadding="false"
+        >
             <t t-if="state.phase === 'complete' and state.result">
-                <div class="text-center mb-3">
-                    <div class="fw-bolder fs-3">Cash Up Complete</div>
-                    <div class="mt-2">Till closed successfully.</div>
-                </div>
-                <div class="d-flex justify-content-between fw-bolder fs-4 pt-2">
-                    <span>Cash to Safe</span>
-                    <span t-esc="state.result.receipt.cash_to_bag"/>
-                </div>
-                <div class="d-flex justify-content-between pt-2">
-                    <span>Opening Cash Remaining</span>
-                    <span t-esc="state.result.receipt.remaining_cash"/>
-                </div>
-                <t t-if="state.printError">
-                    <div class="alert alert-warning mt-3 mb-0" role="alert">
-                        <t t-esc="state.printError"/>
+                <div class="avea-cash-up-workspace p-4">
+                    <div class="text-center mb-4">
+                        <div class="avea-cu-complete-icon mx-auto mb-3">✓</div>
+                        <h2 class="h4 fw-bold mb-1">Cash Up Complete</h2>
+                        <p class="text-muted mb-0">Till closed successfully.</p>
                     </div>
-                </t>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between fw-bold fs-5 mb-2">
+                                <span>Cash to Safe</span>
+                                <span t-esc="state.result.receipt.cash_to_bag"/>
+                            </div>
+                            <div class="d-flex justify-content-between text-muted">
+                                <span>Opening Cash Remaining</span>
+                                <span t-esc="state.result.receipt.remaining_cash"/>
+                            </div>
+                        </div>
+                    </div>
+                    <t t-if="state.printError">
+                        <div class="alert alert-warning mt-3 mb-0" role="alert">
+                            <t t-esc="state.printError"/>
+                        </div>
+                    </t>
+                </div>
             </t>
             <t t-elif="state.preview">
-                <div class="mb-2">
-                    <div class="d-flex justify-content-between">
-                        <span>Till</span>
-                        <span class="fw-bold" t-esc="state.preview.till"/>
+                <div class="avea-cash-up-workspace">
+                    <div class="avea-cu-topbar px-4 pt-4 pb-3">
+                        <div class="row g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <div class="text-muted small text-uppercase fw-semibold mb-1">Till</div>
+                                <div class="fw-semibold" t-esc="state.preview.till"/>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="text-muted small text-uppercase fw-semibold mb-1">Session</div>
+                                <div class="fw-semibold" t-esc="state.preview.session"/>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="text-muted small text-uppercase fw-semibold mb-1">Cashier</div>
+                                <div class="fw-semibold" t-esc="cashierName"/>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="text-muted small text-uppercase fw-semibold mb-1">Date</div>
+                                <div class="fw-semibold" t-esc="formatSessionDate(state.preview.date)"/>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Session</span>
-                        <span t-esc="state.preview.session"/>
+
+                    <div class="px-4 pb-3">
+                        <div class="row g-2 g-lg-3">
+                            <div class="col-6 col-lg">
+                                <div class="card avea-cu-kpi-card h-100 border-0 shadow-sm">
+                                    <div class="card-body py-3 px-3">
+                                        <div class="text-muted small text-uppercase fw-semibold mb-1">Transactions</div>
+                                        <div class="fs-5 fw-bold mb-0" t-esc="transactionCount"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-lg">
+                                <div class="card avea-cu-kpi-card h-100 border-0 shadow-sm">
+                                    <div class="card-body py-3 px-3">
+                                        <div class="text-muted small text-uppercase fw-semibold mb-1">Total Payments</div>
+                                        <div class="fs-5 fw-bold mb-0" t-esc="formatAmount(totalPaymentsCounted)"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-lg">
+                                <div class="card avea-cu-kpi-card h-100 border-0 shadow-sm">
+                                    <div class="card-body py-3 px-3">
+                                        <div class="text-muted small text-uppercase fw-semibold mb-1">Counted Cash</div>
+                                        <div class="fs-5 fw-bold mb-0" t-esc="formatAmount(countedValue)"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-lg">
+                                <div class="card avea-cu-kpi-card h-100 border-0 shadow-sm">
+                                    <div class="card-body py-3 px-3">
+                                        <div class="text-muted small text-uppercase fw-semibold mb-1">Opening Cash</div>
+                                        <div class="fs-5 fw-bold mb-0" t-esc="state.preview.opening_cash"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 col-lg">
+                                <div class="card avea-cu-kpi-card h-100 border-0 shadow-sm" t-att-class="hasVariance ? 'avea-cu-kpi-card--warn' : 'avea-cu-kpi-card--ok'">
+                                    <div class="card-body py-3 px-3">
+                                        <div class="text-muted small text-uppercase fw-semibold mb-1">Total Variance</div>
+                                        <div class="fs-5 fw-bold mb-0" t-att-class="varianceClass(totalPaymentsDifference)" t-esc="formatAmount(totalPaymentsDifference)"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Cashier</span>
-                        <span t-esc="cashierName"/>
+
+                    <div class="px-4 pb-4">
+                        <div class="row g-3">
+                            <div class="col-lg-7">
+                                <div class="card border-0 shadow-sm h-100">
+                                    <div class="card-header bg-white border-bottom py-3">
+                                        <h2 class="avea-cu-section-title">Payment Reconciliation</h2>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle mb-0 avea-cu-tally-table">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th class="ps-3">Payment Method</th>
+                                                        <th class="text-end" style="min-width: 8.5rem;">Counted</th>
+                                                        <th class="text-end">Expected</th>
+                                                        <th class="text-end pe-3">Difference</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <t t-foreach="tallyLines" t-as="line" t-key="line.kind">
+                                                        <tr t-att-class="rowClass(line)">
+                                                            <td class="ps-3">
+                                                                <div class="fw-semibold" t-esc="line.label"/>
+                                                                <div
+                                                                    t-if="line.kind === 'cash' and state.preview.cash_payments_expected"
+                                                                    class="small text-muted"
+                                                                >
+                                                                    Net cash payments:
+                                                                    <t t-esc="state.preview.cash_payments_expected"/>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <div class="input-group input-group-sm avea-cu-amount-input ms-auto">
+                                                                    <span t-if="currencyBefore" class="input-group-text" t-esc="currencySymbol"/>
+                                                                    <input
+                                                                        type="text"
+                                                                        class="form-control text-end"
+                                                                        t-att-value="countedInputValue(line)"
+                                                                        t-on-input="(ev) => this.onCountedInput(line, ev)"
+                                                                        t-att-placeholder="line.expected"
+                                                                    />
+                                                                    <span t-if="!currencyBefore" class="input-group-text" t-esc="currencySymbol"/>
+                                                                </div>
+                                                            </td>
+                                                            <td class="text-end fw-semibold" t-esc="line.expected"/>
+                                                            <td class="text-end pe-3 fw-semibold" t-att-class="varianceClass(paymentDifference(line))" t-esc="formatAmount(paymentDifference(line))"/>
+                                                        </tr>
+                                                    </t>
+                                                </tbody>
+                                                <tfoot class="table-light">
+                                                    <tr class="fw-bold">
+                                                        <td class="ps-3">Total Payments</td>
+                                                        <td class="text-end" t-esc="formatAmount(totalPaymentsCounted)"/>
+                                                        <td class="text-end" t-esc="state.preview.total_payments_expected"/>
+                                                        <td class="text-end pe-3" t-att-class="varianceClass(totalPaymentsDifference)" t-esc="formatAmount(totalPaymentsDifference)"/>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-5 d-flex flex-column gap-3">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white border-bottom py-3">
+                                        <h2 class="avea-cu-section-title">Cash Reconciliation</h2>
+                                    </div>
+                                    <div class="card-body py-3">
+                                        <div class="d-flex justify-content-between py-2 border-bottom">
+                                            <span class="text-muted">Opening Cash</span>
+                                            <span class="fw-semibold" t-esc="state.preview.opening_cash"/>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-2 border-bottom">
+                                            <span class="text-muted">Expected Cash</span>
+                                            <span class="fw-semibold" t-esc="state.preview.expected_cash"/>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-2 border-bottom">
+                                            <span class="text-muted">Counted Cash</span>
+                                            <span class="fw-semibold" t-esc="formatAmount(countedValue)"/>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-2 border-bottom">
+                                            <span class="text-muted">Cash Difference</span>
+                                            <span class="fw-semibold" t-att-class="varianceClass(difference)" t-esc="formatAmount(difference)"/>
+                                        </div>
+                                        <div class="d-flex justify-content-between py-2 border-bottom">
+                                            <span class="fw-semibold">Cash to Safe</span>
+                                            <span class="fw-bold text-primary" t-esc="formatAmount(cashToSafe)"/>
+                                        </div>
+                                        <div class="d-flex justify-content-between pt-2">
+                                            <span class="text-muted small">Opening Cash Remaining</span>
+                                            <span class="text-muted" t-esc="formatAmount(remainingCash)"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white border-bottom py-3">
+                                        <h2 class="avea-cu-section-title">Payment Summary</h2>
+                                    </div>
+                                    <div class="card-body py-3">
+                                        <t t-foreach="paymentSummaryLines" t-as="item" t-key="item.kind">
+                                            <div class="d-flex justify-content-between py-1" t-att-class="item.amount_value ? '' : 'text-muted'">
+                                                <span t-esc="item.label"/>
+                                                <span class="fw-semibold" t-esc="item.amount_value ? item.amount : '—'"/>
+                                            </div>
+                                        </t>
+                                        <div class="d-flex justify-content-between pt-2 mt-2 border-top fw-bold">
+                                            <span>Total Payments</span>
+                                            <span t-esc="state.preview.total_payments_expected"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div t-if="hasVariance" class="card border-warning shadow-sm avea-cu-variance-card">
+                                    <div class="card-header bg-warning-subtle border-warning py-3">
+                                        <h2 class="h6 text-uppercase fw-bold mb-0">Reason for Variance</h2>
+                                    </div>
+                                    <div class="card-body py-3">
+                                        <textarea
+                                            class="form-control"
+                                            rows="3"
+                                            placeholder="Explain the payment or cash variance"
+                                            t-model="state.varianceReason"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Date</span>
-                        <span t-esc="state.preview.date"/>
-                    </div>
-                </div>
-                <div class="mb-2 pt-2 border-top">
-                    <div class="d-flex justify-content-between">
-                        <span>Opening Cash</span>
-                        <span t-esc="state.preview.opening_cash"/>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Expected Cash</span>
-                        <span t-esc="state.preview.expected_cash"/>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Counted Cash</label>
-                    <Input
-                        tModel="[state, 'counted']"
-                        icon="{type: 'string', value: pos.currency.symbol}"
-                        iconOnLeftSide="pos.currency.position === 'before'"
-                        isValid.bind="env.utils.isValidFloat"
-                        autofocus="true"
-                    />
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span>Difference</span>
-                    <span t-esc="formatAmount(difference)"/>
-                </div>
-                <div class="d-flex justify-content-between fw-bolder fs-4 pt-2">
-                    <span>Cash to Safe</span>
-                    <span t-esc="formatAmount(cashToSafe)"/>
                 </div>
             </t>
             <t t-set-slot="footer">
-                <div class="d-flex gap-2 w-100" t-if="state.phase === 'complete'">
-                    <button
-                        class="btn btn-secondary btn-lg"
-                        t-on-click="reprint"
-                        t-att-disabled="state.busy"
-                    >
+                <div class="d-flex gap-2 w-100 justify-content-end" t-if="state.phase === 'complete'">
+                    <button class="btn btn-secondary btn-lg" t-on-click="reprint" t-att-disabled="state.busy">
                         Reprint
                     </button>
-                    <button
-                        class="btn btn-primary btn-lg flex-grow-1"
-                        t-on-click="done"
-                        t-att-disabled="state.busy"
-                    >
+                    <button class="btn btn-primary btn-lg avea-cu-btn-primary" t-on-click="done" t-att-disabled="state.busy">
                         Done
                     </button>
                 </div>
-                <div class="d-flex gap-2 w-100" t-else="">
-                    <button
-                        class="btn btn-primary btn-lg flex-grow-1"
-                        t-on-click="confirm"
-                        t-att-disabled="state.loading or state.busy or !state.preview"
-                    >
+                <div class="d-flex gap-2 w-100 justify-content-end" t-else="">
+                    <button class="btn btn-secondary btn-lg" t-on-click="props.close" t-att-disabled="state.busy">
+                        Cancel
+                    </button>
+                    <button class="btn btn-primary btn-lg avea-cu-btn-primary" t-on-click="confirm" t-att-disabled="!canConfirm">
                         <t t-if="state.busy">Closing till…</t>
                         <t t-else="">Confirm Cash Up</t>
-                    </button>
-                    <button
-                        class="btn btn-secondary btn-lg"
-                        t-on-click="props.close"
-                        t-att-disabled="state.busy"
-                    >
-                        Cancel
                     </button>
                 </div>
             </t>

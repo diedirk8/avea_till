@@ -143,3 +143,59 @@ class TestAveaWithdrawCash(TransactionCase):
     def test_amount_must_be_positive(self):
         with self.assertRaises(ValidationError):
             self._create_wizard(amount=0.0)
+
+    def test_withdrawal_appears_once_in_business_transactions(self):
+        wizard = self._create_wizard(
+            withdrawal_purpose="owner_drawing",
+            reference_name="Safe withdrawal test",
+            amount=75.0,
+        )
+        wizard.action_withdraw_cash()
+        statement_line = self.env["account.bank.statement.line"].search(
+            [
+                ("journal_id", "=", self.cash_journal.id),
+                ("payment_ref", "=", "Safe withdrawal test"),
+            ],
+            limit=1,
+        )
+        self.assertTrue(statement_line)
+        self.env.flush_all()
+        rows = self.env["avea.business.transaction"].search(
+            [
+                ("res_model", "=", "account.bank.statement.line"),
+                ("res_id", "=", statement_line.id),
+            ]
+        )
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row.transaction_type, "cash_withdrawal")
+        self.assertAlmostEqual(row.amount, 75.0, places=2)
+        self.assertEqual(row.reference, "Safe withdrawal test")
+        self.assertLess(
+            abs((row.transaction_datetime - statement_line.create_date).total_seconds()),
+            1,
+        )
+
+    def test_all_posted_withdrawals_appear_once_in_business_transactions(self):
+        withdrawal_lines = self.env["account.bank.statement.line"].sudo().search(
+            [
+                ("journal_id", "in", self.company._avea_expense_journals().ids),
+                ("move_id.narration", "ilike", "Recorded from Avea. Withdrawn"),
+            ]
+        )
+        self.assertTrue(withdrawal_lines)
+        for line in withdrawal_lines:
+            if line.move_id.state != "posted":
+                continue
+            rows = self.env["avea.business.transaction"].search(
+                [
+                    ("res_model", "=", "account.bank.statement.line"),
+                    ("res_id", "=", line.id),
+                ]
+            )
+            self.assertEqual(
+                len(rows),
+                1,
+                f"Expected one business transaction for withdrawal line {line.id}",
+            )
+            self.assertEqual(rows.transaction_type, "cash_withdrawal")
