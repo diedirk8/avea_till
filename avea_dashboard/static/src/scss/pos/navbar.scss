@@ -33,8 +33,9 @@
 
 .pos .avea-topheader-brand-group {
     align-items: center;
+    flex: 1 1 auto;
     gap: 0.55rem;
-    max-width: 46%;
+    max-width: 58%;
     min-width: 0;
 }
 
@@ -79,9 +80,9 @@
     border-radius: 8px;
     display: flex;
     flex: 1 1 auto;
-    max-width: 13rem;
+    max-width: min(24rem, 40vw);
     min-height: 2rem;
-    min-width: 0;
+    min-width: 16rem;
     padding: 0.12rem;
 }
 
