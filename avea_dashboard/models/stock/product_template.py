@@ -39,6 +39,16 @@ class ProductTemplate(models.Model):
         inverse="_inverse_avea_margin_percent",
         digits=(16, 2),
     )
+    avea_cost_incl_tax = fields.Float(
+        string="Cost INCL Tax",
+        compute="_compute_avea_pricing",
+        digits="Product Price",
+    )
+    avea_profit_incl_tax = fields.Float(
+        string="Profit INCL Tax",
+        compute="_compute_avea_pricing",
+        digits="Product Price",
+    )
 
     # ---- Stock status ----
     avea_stock_status = fields.Selection(
@@ -170,6 +180,12 @@ class ProductTemplate(models.Model):
             retail_ex or 0.0, currency
         )["total_included"]
 
+    def _avea_cost_incl_tax_from_ex(self, cost_ex):
+        """Convert purchasing cost EX tax → INC tax using the product's sales taxes."""
+        self.ensure_one()
+        mixin = self.env["avea.stock.mixin"]
+        return mixin._avea_round_product_cost(self._avea_retail_inc_vat_from_ex(cost_ex))
+
     def _avea_pricing_tuple(self):
         """Return (cost_ex, retail_inc, retail_ex, markup%, margin%)."""
         self.ensure_one()
@@ -187,11 +203,17 @@ class ProductTemplate(models.Model):
         "taxes_id.price_include",
     )
     def _compute_avea_pricing(self):
+        mixin = self.env["avea.stock.mixin"]
         for product in self:
-            _cost, _inc, retail_ex, markup, margin = product._avea_pricing_tuple()
+            cost, retail_inc, retail_ex, markup, margin = product._avea_pricing_tuple()
+            cost_incl = product._avea_cost_incl_tax_from_ex(cost)
             product.avea_retail_ex_vat = retail_ex
             product.avea_markup_percent = markup
             product.avea_margin_percent = margin
+            product.avea_cost_incl_tax = cost_incl
+            product.avea_profit_incl_tax = mixin._avea_round_product_cost(
+                (retail_inc or 0.0) - cost_incl
+            )
 
     def _avea_apply_retail_ex(self, retail_ex):
         """Set list_price (INC VAT) from an EX-VAT retail target."""

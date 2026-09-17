@@ -34,7 +34,7 @@
                                 <i class="fa fa-file-text-o" title="Supplier invoice" aria-hidden="true"/>
                                 Supplier invoice
                             </h2>
-                            <div class="o_avea_workspace_info_grid o_avea_stock_side_grid">
+                            <div class="o_avea_workspace_info_grid o_avea_stock_side_grid o_avea_stock_supplier_grid">
                                 <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span o_avea_stock_check_row">
                                     <field name="add_new_supplier" nolabel="1"/>
                                     <span class="o_avea_workspace_info_label">Add a new supplier</span>
@@ -175,6 +175,7 @@
                             </div>
                         </div>
 
+                        <div class="o_avea_stock_layout_bottom">
                         <div class="o_avea_stock_panel o_avea_stock_panel--totals">
                             <h2 class="o_avea_workspace_section_title">
                                 <i class="fa fa-calculator" title="Totals" aria-hidden="true"/>
@@ -267,6 +268,7 @@
                                     <span>If paid, a payment will be recorded against the vendor bill after receiving stock.</span>
                                 </div>
                             </div>
+                        </div>
                         </div>
                     </div>
 

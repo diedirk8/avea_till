@@ -158,6 +158,184 @@
             padding: 0.35rem 0.7rem;
         }
 
+        .o_field_avea_promotion_product_picker {
+            width: 100%;
+
+            .o_avea_promotion_product_picker {
+                display: flex;
+                flex-direction: column;
+                gap: 0.65rem;
+                width: 100%;
+            }
+
+            .o_avea_promotion_product_search {
+                background: #fff;
+                border: 1px solid var(--o-gray-300, #dee2e6);
+                border-radius: var(--avea-promotion-input-radius);
+                min-height: 2.35rem;
+                padding: 0.28rem 0.7rem;
+                width: 100%;
+
+                &:focus-within {
+                    border-color: var(--avea-info, #01666b);
+                    box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
+                }
+
+                .o_field_many2many_selection,
+                .o-autocomplete,
+                .o-autocomplete--input-container {
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    min-width: 0;
+                    padding: 0 !important;
+                    width: 100%;
+                }
+
+                .o_input,
+                input,
+                .o-autocomplete--input {
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                    font-size: 0.84rem;
+                    min-height: 1.65rem !important;
+                    outline: none !important;
+                    padding: 0 !important;
+                    width: 100%;
+                }
+            }
+
+            .o_avea_promotion_product_selected_label {
+                color: var(--o-gray-600, #6c757d);
+                font-size: 0.74rem;
+                font-weight: 700;
+                letter-spacing: 0.02em;
+                margin: 0;
+            }
+
+            .o_avea_promotion_product_selected_list {
+                border: 1px solid rgba(16, 24, 40, 0.08);
+                border-radius: 0.45rem;
+                list-style: none;
+                margin: 0.35rem 0 0;
+                overflow: hidden;
+                padding: 0;
+            }
+
+            .o_avea_promotion_product_selected_row {
+                align-items: flex-start;
+                background: #fff;
+                border-bottom: 1px solid rgba(16, 24, 40, 0.07);
+                display: flex;
+                gap: 0.45rem;
+                justify-content: space-between;
+                min-height: 2.15rem;
+                padding: 0.48rem 0.55rem 0.48rem 0.65rem;
+
+                &:last-child {
+                    border-bottom: none;
+                }
+            }
+
+            .o_avea_promotion_product_selected_main {
+                display: flex;
+                flex: 1 1 auto;
+                flex-wrap: wrap;
+                gap: 0.45rem 0.75rem;
+                min-width: 0;
+            }
+
+            .o_avea_promotion_product_selected_text {
+                display: flex;
+                flex: 1 1 12rem;
+                flex-wrap: wrap;
+                gap: 0.35rem 0.55rem;
+                line-height: 1.35;
+                min-width: 0;
+            }
+
+            .o_avea_promotion_product_metrics {
+                align-items: flex-end;
+                display: flex;
+                flex: 1 1 auto;
+                flex-wrap: wrap;
+                gap: 0.35rem 0.65rem;
+                justify-content: flex-end;
+                min-width: 0;
+            }
+
+            .o_avea_promotion_product_metric {
+                display: flex;
+                flex-direction: column;
+                gap: 0.05rem;
+                line-height: 1.15;
+                min-width: 4rem;
+                text-align: right;
+            }
+
+            .o_avea_promotion_product_metric--markup {
+                min-width: 3.25rem;
+            }
+
+            .o_avea_promotion_product_metric_label {
+                color: var(--o-gray-700, #495057);
+                font-size: 0.68rem;
+                font-weight: 700;
+                line-height: 1.1;
+                white-space: nowrap;
+            }
+
+            .o_avea_promotion_product_metric_hint {
+                color: var(--o-gray-500, #adb5bd);
+                font-size: 0.6rem;
+                font-weight: 600;
+                letter-spacing: 0.01em;
+                line-height: 1.1;
+                margin-bottom: 0.12rem;
+                white-space: nowrap;
+            }
+
+            .o_avea_promotion_product_metric_value {
+                color: var(--o-gray-900, #212529);
+                font-size: 0.8rem;
+                font-variant-numeric: tabular-nums;
+                font-weight: 600;
+            }
+
+            .o_avea_promotion_product_code {
+                color: var(--o-gray-600, #6c757d);
+                flex: 0 0 auto;
+                font-size: 0.78rem;
+                font-variant-numeric: tabular-nums;
+                font-weight: 700;
+            }
+
+            .o_avea_promotion_product_name {
+                color: var(--o-gray-900, #212529);
+                flex: 1 1 auto;
+                font-size: 0.82rem;
+                font-weight: 500;
+                min-width: 0;
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .o_avea_promotion_product_remove {
+                color: var(--o-gray-500, #adb5bd);
+                flex: 0 0 auto;
+                line-height: 1;
+                min-height: 1.5rem;
+                min-width: 1.5rem;
+                padding: 0.15rem;
+
+                &:hover,
+                &:focus {
+                    color: var(--o-danger, #dc3545);
+                }
+            }
+        }
+
         // Many2many tags: style only the outer tags container like a normal Avea input.
         .o_field_many2many_tags {
             width: 100%;
@@ -613,5 +791,21 @@
     .o_avea_workspace--promotion .o_avea_promotion_fields--pair,
     .o_avea_workspace--promotion .o_avea_promotion_deal_settings {
         grid-template-columns: 1fr;
+    }
+
+    .o_avea_workspace--promotion .o_field_avea_promotion_product_picker {
+        .o_avea_promotion_product_selected_main {
+            flex-direction: column;
+        }
+
+        .o_avea_promotion_product_metrics {
+            justify-content: flex-start;
+            width: 100%;
+        }
+
+        .o_avea_promotion_product_metric {
+            min-width: 0;
+            text-align: left;
+        }
     }
 }

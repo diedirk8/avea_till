@@ -29,13 +29,14 @@
     }
 
     .o_avea_workspace_title {
-        font-size: 1.7rem;
+        font-size: 1.55rem;
         letter-spacing: -0.04em;
     }
 
     .o_avea_workspace_section_subtitle {
         color: var(--o-gray-600, #6c757d);
-        font-size: 0.9rem;
+        font-size: 0.84rem;
+        line-height: 1.45;
         margin: 0.35rem 0 0;
         max-width: 42rem;
     }
@@ -44,7 +45,7 @@
         align-items: center;
         color: var(--o-gray-900, #212529);
         display: flex;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         font-weight: 700;
         gap: 0.5rem;
         letter-spacing: 0;
@@ -74,7 +75,7 @@
     }
 
     .o_avea_workspace_info_label {
-        font-size: 0.78rem;
+        font-size: 0.74rem;
         font-weight: 600;
     }
 
@@ -84,36 +85,200 @@
     }
 
     .o_avea_stock_layout {
-        align-items: stretch;
-        display: grid;
-        gap: 0.85rem 1rem;
-        grid-template-areas:
-            "supplier products"
-            "totals products"
-            "payment products";
-        grid-template-columns: minmax(17.5rem, 0.34fr) minmax(0, 0.66fr);
-        grid-template-rows: auto auto 1fr;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
         min-height: 0;
     }
 
+    .o_avea_stock_layout_bottom {
+        align-items: start;
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: minmax(0, 1.15fr) minmax(16rem, 0.85fr);
+    }
+
     .o_avea_stock_panel--supplier {
-        grid-area: supplier;
+        flex: 0 0 auto;
+    }
+
+    .o_avea_stock_panel--supplier .o_avea_stock_supplier_grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+
+        .o_avea_stock_side_grid_span:not(.o_avea_stock_check_row):not(.o_avea_stock_upload) {
+            grid-column: span 2;
+        }
+
+        .o_avea_stock_check_row,
+        .o_avea_stock_upload {
+            grid-column: 1 / -1;
+        }
     }
 
     .o_avea_stock_panel--products {
         display: flex;
         flex-direction: column;
-        grid-area: products;
-        min-height: 22rem;
+        flex: 1 1 auto;
+        min-height: 18rem;
     }
 
-    .o_avea_stock_panel--totals {
-        grid-area: totals;
-    }
-
+    .o_avea_stock_panel--totals,
     .o_avea_stock_panel--payment {
-        align-self: start;
-        grid-area: payment;
+        min-width: 0;
+    }
+
+    .o_avea_stock_capture {
+        --avea-stock-section-accent: var(--avea-info, #01666b);
+        --avea-stock-section-body-pad: 0.95rem 1.05rem 1.05rem;
+        --avea-stock-section-header-pad-x: 1.05rem;
+        --avea-stock-section-header-pad-y: 0.72rem;
+
+        .o_avea_stock_layout {
+            gap: 1rem;
+        }
+
+        .o_avea_stock_panel--supplier,
+        .o_avea_stock_panel--products,
+        .o_avea_stock_panel--totals,
+        .o_avea_stock_panel--payment {
+            overflow: hidden;
+            padding: 0;
+        }
+
+        .o_avea_stock_panel > .o_avea_workspace_section_title {
+            align-items: center;
+            border-bottom: 1px solid rgba(16, 24, 40, 0.08);
+            color: var(--o-gray-700, #495057);
+            display: flex;
+            font-size: 0.78rem;
+            font-weight: 700;
+            gap: 0.5rem;
+            letter-spacing: 0.045em;
+            line-height: 1.2;
+            margin: 0;
+            padding: var(--avea-stock-section-header-pad-y) var(--avea-stock-section-header-pad-x)
+                var(--avea-stock-section-header-pad-y) 1.2rem;
+            position: relative;
+            text-transform: uppercase;
+
+            .fa {
+                font-size: 0.88rem;
+                opacity: 0.9;
+            }
+
+            &::before {
+                border-radius: 2px;
+                content: "";
+                height: 1rem;
+                left: calc(var(--avea-stock-section-header-pad-x) - 0.38rem);
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 3px;
+            }
+        }
+
+        .o_avea_stock_panel--supplier > .o_avea_workspace_section_title {
+            background: linear-gradient(
+                180deg,
+                rgba(16, 24, 40, 0.04) 0%,
+                rgba(16, 24, 40, 0.018) 100%
+            );
+
+            &::before {
+                background: rgba(16, 24, 40, 0.24);
+            }
+        }
+
+        .o_avea_stock_panel--totals > .o_avea_workspace_section_title {
+            background: linear-gradient(
+                180deg,
+                rgba(16, 24, 40, 0.032) 0%,
+                rgba(16, 24, 40, 0.014) 100%
+            );
+
+            &::before {
+                background: rgba(16, 24, 40, 0.3);
+            }
+        }
+
+        .o_avea_stock_panel--payment > .o_avea_workspace_section_title {
+            background: linear-gradient(
+                180deg,
+                rgba(1, 102, 107, 0.045) 0%,
+                rgba(1, 102, 107, 0.02) 100%
+            );
+
+            &::before {
+                background: rgba(1, 102, 107, 0.5);
+            }
+        }
+
+        .o_avea_stock_products_heading {
+            background: linear-gradient(
+                180deg,
+                rgba(1, 102, 107, 0.09) 0%,
+                rgba(1, 102, 107, 0.045) 100%
+            );
+            border-bottom: 1px solid rgba(1, 102, 107, 0.14);
+            margin-bottom: 0;
+            padding: 0.82rem var(--avea-stock-section-header-pad-x) 0.82rem 1.2rem;
+            position: relative;
+
+            &::before {
+                background: var(--avea-stock-section-accent);
+                border-radius: 2px;
+                content: "";
+                height: 1.2rem;
+                left: calc(var(--avea-stock-section-header-pad-x) - 0.38rem);
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 3px;
+            }
+
+            .o_avea_workspace_section_title {
+                color: var(--o-gray-900, #212529);
+                font-size: 0.98rem;
+                font-weight: 700;
+                letter-spacing: -0.02em;
+                margin: 0;
+                text-transform: none;
+
+                .fa {
+                    font-size: 1rem;
+                }
+            }
+        }
+
+        .o_avea_stock_panel--products {
+            border-color: rgba(1, 102, 107, 0.16);
+            box-shadow:
+                0 1px 2px rgba(16, 24, 40, 0.05),
+                0 2px 10px rgba(1, 102, 107, 0.07);
+
+            .o_avea_stock_list_surface {
+                padding: 0.65rem var(--avea-stock-section-header-pad-x) 0;
+            }
+
+            .o_avea_stock_products_footer {
+                margin-left: var(--avea-stock-section-header-pad-x);
+                margin-right: var(--avea-stock-section-header-pad-x);
+                padding-bottom: 1.05rem;
+            }
+        }
+
+        .o_avea_stock_panel--supplier > .o_avea_stock_supplier_grid {
+            padding: var(--avea-stock-section-body-pad);
+        }
+
+        .o_avea_stock_panel--totals > .o_avea_stock_totals {
+            padding: 0.9rem var(--avea-stock-section-header-pad-x) 1.05rem;
+        }
+
+        .o_avea_stock_panel--payment > .o_avea_stock_payment {
+            padding: 0.9rem var(--avea-stock-section-header-pad-x) 1.05rem;
+        }
     }
 
     .o_avea_stock_panel {
@@ -134,8 +299,9 @@
             border-radius: var(--avea-stock-input-radius);
             box-shadow: none;
             color: var(--o-gray-900, #212529);
-            min-height: 2.35rem;
-            padding: 0.35rem 0.7rem;
+            font-size: 0.84rem;
+            min-height: 2.2rem;
+            padding: 0.3rem 0.65rem;
         }
 
         .o_field_widget input:not([type="checkbox"]):focus,
@@ -271,14 +437,149 @@
             border-bottom: 1px solid var(--o-gray-200, #e9ecef);
         }
 
-        th[data-name="discount"],
-        td[name="discount"] {
-            width: 6.25rem;
-        }
+        .o_avea_stock_receive_list .o_list_table {
+            font-size: 0.8125rem;
+            min-width: 42rem;
+            table-layout: fixed;
+            width: 100%;
 
-        th[data-name="price_unit_discounted"],
-        td[name="price_unit_discounted"] {
-            width: 8.5rem;
+            th,
+            td {
+                font-size: 0.8125rem;
+                line-height: 1.35;
+                max-width: none;
+                padding-left: 0.4rem;
+                padding-right: 0.4rem;
+                vertical-align: middle;
+            }
+
+            thead th {
+                font-size: 0.72rem;
+                font-weight: 700;
+                line-height: 1.3;
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+                white-space: normal;
+            }
+
+            .o_data_row {
+                min-height: 2.5rem;
+            }
+
+            th[data-name="product_id"],
+            td[name="product_id"] {
+                width: 42%;
+            }
+
+            td[name="product_id"] .o_field_widget,
+            td[name="product_id"] .o_field_many2one,
+            td[name="product_id"] .o_input_dropdown,
+            td[name="product_id"] .text-truncate,
+            td[name="product_id"] span {
+                display: -webkit-box !important;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                line-clamp: 2;
+                line-height: 1.35;
+                max-height: calc(1.35em * 2 + 0.1rem);
+                overflow: hidden !important;
+                overflow-wrap: anywhere;
+                text-overflow: ellipsis !important;
+                white-space: normal !important;
+                word-break: break-word;
+            }
+
+            th[data-name="quantity"],
+            td[name="quantity"] {
+                text-align: right;
+                width: 4.25rem;
+            }
+
+            th[data-name="price_unit"],
+            td[name="price_unit"] {
+                text-align: right;
+                width: 6rem;
+            }
+
+            th[data-name="discount"],
+            td[name="discount"] {
+                text-align: right;
+                width: 4.75rem;
+            }
+
+            th[data-name="price_unit_discounted"],
+            td[name="price_unit_discounted"] {
+                text-align: right;
+                width: 6.5rem;
+            }
+
+            th.o_list_button,
+            td.o_list_button {
+                max-width: 3.25rem;
+                min-width: 3.25rem;
+                padding-left: 0.2rem;
+                padding-right: 0.2rem;
+                text-align: center;
+                width: 3.25rem !important;
+            }
+
+            td.o_list_button .btn-link {
+                font-size: 0.75rem;
+                padding-left: 0.1rem;
+                padding-right: 0.1rem;
+                white-space: nowrap;
+            }
+
+            th.o_list_controller,
+            td.o_list_controller {
+                max-width: 2rem;
+                min-width: 2rem;
+                padding-left: 0.15rem;
+                padding-right: 0.15rem;
+                width: 2rem !important;
+            }
+
+            th[data-name="price_subtotal"],
+            td[name="price_subtotal"] {
+                font-variant-numeric: tabular-nums;
+                font-weight: 700;
+                min-width: 6.75rem;
+                position: sticky;
+                right: 0;
+                text-align: right;
+                width: 6.75rem;
+                z-index: 1;
+            }
+
+            thead th[data-name="price_subtotal"] {
+                background: var(--o-gray-100, #f8f9fa);
+                z-index: 2;
+            }
+
+            td[name="price_subtotal"] {
+                background: var(--o-view-background-color, #fff);
+                box-shadow: -6px 0 8px rgba(16, 24, 40, 0.05);
+            }
+
+            tr.o_data_row:hover td[name="price_subtotal"] {
+                background: var(--o-gray-100, #f8f9fa);
+            }
+
+            th[data-name="quantity"],
+            td[name="quantity"],
+            th[data-name="price_unit"],
+            td[name="price_unit"],
+            th[data-name="discount"],
+            td[name="discount"],
+            th[data-name="price_unit_discounted"],
+            td[name="price_unit_discounted"],
+            th[data-name="price_subtotal"],
+            td[name="price_subtotal"] {
+                .o_field_widget {
+                    justify-content: flex-end;
+                    white-space: nowrap !important;
+                }
+            }
         }
 
         .o_field_x2many_list_row_add a {
@@ -357,12 +658,14 @@
     }
 
     .o_avea_stock_products_footer {
-        align-items: center;
+        align-items: flex-start;
         border-top: 1px solid var(--o-gray-200, #e9ecef);
         color: var(--o-gray-600, #6c757d);
         display: flex;
-        font-size: 0.8rem;
+        flex-wrap: wrap;
+        font-size: 0.76rem;
         font-weight: 600;
+        gap: 0.45rem 0.75rem;
         justify-content: space-between;
         margin-top: auto;
         padding-top: 0.75rem;
@@ -713,26 +1016,52 @@
 
 @media (max-width: 991.98px) {
     .o_avea_workspace--stock {
-        .o_avea_stock_layout {
-            grid-template-areas:
-                "supplier"
-                "products"
-                "totals"
-                "payment";
-            grid-template-columns: minmax(0, 1fr);
-            grid-template-rows: none;
+        .o_avea_stock_panel--supplier .o_avea_stock_supplier_grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
-        .o_avea_stock_panel--products {
-            min-height: 16rem;
+        .o_avea_stock_layout_bottom {
+            grid-template-columns: minmax(0, 1fr);
         }
     }
 }
 
 @media (max-width: 767.98px) {
     .o_avea_workspace--stock {
-        .o_avea_stock_side_grid {
+        .o_avea_workspace_sheet {
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+
+        .o_avea_stock_side_grid,
+        .o_avea_stock_panel--supplier .o_avea_stock_supplier_grid {
             grid-template-columns: minmax(0, 1fr);
+
+            .o_avea_stock_side_grid_span:not(.o_avea_stock_check_row):not(.o_avea_stock_upload) {
+                grid-column: 1 / -1;
+            }
+        }
+
+        .o_avea_stock_products_heading {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .o_avea_stock_new_product_btn {
+            width: 100%;
+        }
+
+        .o_avea_stock_products_footer {
+            flex-direction: column;
+        }
+
+        .o_avea_stock_list_surface .o_avea_stock_receive_list .o_list_table {
+            min-width: 34rem;
+
+            th[data-name="product_id"],
+            td[name="product_id"] {
+                width: 38%;
+            }
         }
 
         .o_avea_stock_footer .btn-primary,
@@ -2206,8 +2535,11 @@
 
     .o_avea_stock_products_cost_hint {
         color: var(--o-gray-600, #6c757d);
-        font-size: 0.78rem;
-        margin: 0.45rem 0 0;
+        flex: 1 1 14rem;
+        font-size: 0.74rem;
+        line-height: 1.4;
+        margin: 0;
+        min-width: 0;
     }
 }
 
