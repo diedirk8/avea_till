@@ -1,6 +1,14 @@
+import base64
+import logging
+
+from markupsafe import escape
+
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
+from odoo.tools import formataddr
 from odoo.tools.misc import formatLang
+
+_logger = logging.getLogger(__name__)
 
 
 class AveaCashUp(models.Model):
@@ -551,6 +559,7 @@ class AveaCashUp(models.Model):
 
         self.env["avea.till.movement"]._sync_cash_difference_from_statement_lines(session)
         reconciliation["variance_reason"] = (variance_reason or "").strip()
+        self._avea_schedule_register_closure_report_email(cash_up.id, session.id)
         return {
             "successful": True,
             "cash_up_id": cash_up.id,
@@ -561,6 +570,295 @@ class AveaCashUp(models.Model):
                 reconciliation,
             ),
         }
+
+    @api.model
+    def _avea_schedule_register_closure_report_email(self, cash_up_id, session_id):
+        if not cash_up_id or not session_id:
+            return
+        registry = self.env.registry
+        dbname = self.env.cr.dbname
+
+        def _send_after_commit():
+            try:
+                with registry.cursor() as cr:
+                    env = api.Environment(cr, api.SUPERUSER_ID, {})
+                    cash_up = env["avea.cash.up"].browse(cash_up_id).exists()
+                    session = env["pos.session"].browse(session_id).exists()
+                    if cash_up and session:
+                        cash_up._send_register_closure_report_email(session)
+                    cr.commit()
+            except Exception:
+                _logger.exception(
+                    "Failed to email register closure report for session %s",
+                    session_id,
+                )
+
+        self.env.cr.postcommit.add(_send_after_commit)
+
+    def _avea_register_closure_report_date_label(self):
+        self.ensure_one()
+        if self.cash_up_date:
+            local_dt = fields.Datetime.context_timestamp(self, self.cash_up_date)
+            return fields.Date.to_string(local_dt.date())
+        return fields.Date.to_string(fields.Date.context_today(self))
+
+    def _avea_register_closure_report_subject(self, session):
+        self.ensure_one()
+        session_name = session.name or str(session.id)
+        return _("Register Closure Report - %s - %s") % (
+            session_name,
+            self._avea_register_closure_report_date_label(),
+        )
+
+    def _avea_register_closure_report_sale_summary(self, session):
+        self.ensure_one()
+        report = self.env["report.point_of_sale.report_saledetails"]
+        details = report.get_sale_details(
+            False,
+            False,
+            session.config_id.ids,
+            session.ids,
+        )
+        payments_per_method = []
+        for payment in details.get("payments_per_method") or []:
+            payments_per_method.append(
+                {
+                    "name": payment.get("name") or _("Payment"),
+                    "total": payment.get("total") or 0.0,
+                }
+            )
+        return {
+            "order_count": details.get("nbr_orders") or 0,
+            "total_sales": details.get("total_paid") or 0.0,
+            "payments_per_method": payments_per_method,
+        }
+
+    def _avea_register_closure_report_body_html(self, session):
+        self.ensure_one()
+        company = session.company_id
+        currency = session.currency_id
+        till_name = session.config_id.name or _("POS")
+        session_name = session.name or str(session.id)
+        cashier = self.cashier_name or self.user_id.display_name or _("Unknown")
+        report_date = self._avea_register_closure_report_date_label()
+        sale_summary = self._avea_register_closure_report_sale_summary(session)
+        accent = (company.avea_receipt_email_accent_color or "#c45c26").strip() or "#c45c26"
+
+        def money(value):
+            return formatLang(self.env, value or 0.0, currency_obj=currency)
+
+        kind_labels = self._avea_payment_kind_label_map()
+        payment_rows = ""
+        for line in self.payment_line_ids.sorted("sequence"):
+            label = kind_labels.get(line.payment_kind, line.payment_kind)
+            payment_rows += (
+                "<tr>"
+                f"<td style='padding:8px 10px;border-bottom:1px solid #eef0f3;'>{escape(label)}</td>"
+                f"<td style='padding:8px 10px;border-bottom:1px solid #eef0f3;text-align:right;'>{escape(money(line.expected))}</td>"
+                f"<td style='padding:8px 10px;border-bottom:1px solid #eef0f3;text-align:right;'>{escape(money(line.counted))}</td>"
+                f"<td style='padding:8px 10px;border-bottom:1px solid #eef0f3;text-align:right;'>{escape(money(line.difference))}</td>"
+                "</tr>"
+            )
+
+        variance_block = ""
+        if self.has_variance:
+            variance_lines = [
+                "<p style='margin:0 0 8px 0;font-weight:600;color:#9a3412;'>"
+                + escape(_("Cash up discrepancy noticed"))
+                + "</p>",
+                "<ul style='margin:0;padding-left:18px;color:#7c2d12;'>",
+            ]
+            if currency.compare_amounts(self.difference, 0.0) != 0:
+                variance_lines.append(
+                    "<li>"
+                    + escape(_("Cash variance: %s") % money(self.difference))
+                    + "</li>"
+                )
+            if currency.compare_amounts(self.total_payments_difference, 0.0) != 0:
+                variance_lines.append(
+                    "<li>"
+                    + escape(
+                        _("Total payment variance: %s") % money(self.total_payments_difference)
+                    )
+                    + "</li>"
+                )
+            if self.variance_reason:
+                variance_lines.append(
+                    "<li>"
+                    + escape(_("Reason: %s") % self.variance_reason)
+                    + "</li>"
+                )
+            variance_lines.append("</ul>")
+            variance_block = (
+                "<div style='margin:18px 0;padding:14px 16px;background:#fff7ed;"
+                "border:1px solid #fdba74;border-radius:8px;'>"
+                + "".join(variance_lines)
+                + "</div>"
+            )
+        else:
+            variance_block = (
+                "<div style='margin:18px 0;padding:14px 16px;background:#f0fdf4;"
+                "border:1px solid #86efac;border-radius:8px;color:#166534;'>"
+                + escape(_("Cash up completed with no discrepancies recorded."))
+                + "</div>"
+            )
+
+        return f"""
+<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.5;max-width:640px;">
+  <div style="border-bottom:3px solid {escape(accent)};padding-bottom:12px;margin-bottom:18px;">
+    <div style="font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:#6b7280;">
+      {escape(company.name)}
+    </div>
+    <h1 style="margin:6px 0 0 0;font-size:22px;line-height:1.25;color:#111827;">
+      {escape(_("Register Closure Report"))}
+    </h1>
+    <p style="margin:8px 0 0 0;color:#6b7280;">
+      {escape(_("Session"))} <strong>{escape(session_name)}</strong>
+      &nbsp;·&nbsp; {escape(report_date)}
+    </p>
+  </div>
+
+  <p style="margin:0 0 16px 0;">
+    {escape(_("The full Sales Details (Z) report for this session is attached as a PDF."))}
+  </p>
+
+  <table style="width:100%;border-collapse:collapse;margin:0 0 18px 0;">
+    <tr>
+      <td style="width:50%;padding:10px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px 0 0 8px;">
+        <div style="font-size:12px;color:#6b7280;">{escape(_("Till"))}</div>
+        <div style="font-weight:600;">{escape(till_name)}</div>
+      </td>
+      <td style="width:50%;padding:10px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-left:none;border-radius:0 8px 8px 0;">
+        <div style="font-size:12px;color:#6b7280;">{escape(_("Cashier"))}</div>
+        <div style="font-weight:600;">{escape(cashier)}</div>
+      </td>
+    </tr>
+  </table>
+
+  <h2 style="margin:0 0 10px 0;font-size:16px;color:#111827;">{escape(_("Session summary"))}</h2>
+  <table style="width:100%;border-collapse:collapse;margin:0 0 18px 0;">
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Transactions"))}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;font-weight:600;">{self.transaction_count}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Total sales"))}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;font-weight:600;">{escape(money(sale_summary["total_sales"]))}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Orders"))}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;font-weight:600;">{sale_summary["order_count"]}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Opening cash"))}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;">{escape(money(self.opening_cash))}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Expected cash in till"))}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;">{escape(money(self.expected_cash))}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Counted cash"))}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;">{escape(money(self.counted_cash))}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Cash to safe"))}</td>
+      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;font-weight:600;">{escape(money(self.cash_to_bag))}</td>
+    </tr>
+    <tr>
+      <td style="padding:8px 0;">{escape(_("Remaining in till"))}</td>
+      <td style="padding:8px 0;text-align:right;">{escape(money(self.remaining_cash))}</td>
+    </tr>
+  </table>
+
+  {variance_block}
+
+  <h2 style="margin:0 0 10px 0;font-size:16px;color:#111827;">{escape(_("Payment reconciliation"))}</h2>
+  <table style="width:100%;border-collapse:collapse;margin:0 0 18px 0;">
+    <thead>
+      <tr>
+        <th style="padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;color:#6b7280;">{escape(_("Method"))}</th>
+        <th style="padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e5e7eb;text-align:right;font-size:12px;color:#6b7280;">{escape(_("Expected"))}</th>
+        <th style="padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e5e7eb;text-align:right;font-size:12px;color:#6b7280;">{escape(_("Counted"))}</th>
+        <th style="padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e5e7eb;text-align:right;font-size:12px;color:#6b7280;">{escape(_("Difference"))}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {payment_rows}
+    </tbody>
+  </table>
+
+  <p style="margin:0;color:#6b7280;font-size:12px;">
+    {escape(_("This is an automated register closure notification from Avea POS."))}
+  </p>
+</div>
+"""
+
+    def _send_register_closure_report_email(self, session):
+        self.ensure_one()
+        session.ensure_one()
+        company = session.company_id
+        recipients = company._avea_register_closure_report_recipients()
+        if not recipients:
+            return False
+
+        sender_email = company._avea_receipt_email_sender_email()
+        if not sender_email:
+            _logger.warning(
+                "Skipping register closure report for session %s: no sender email configured.",
+                session.id,
+            )
+            return False
+
+        report = self.env.ref("point_of_sale.sale_details_report")
+        report_data = {
+            "date_start": False,
+            "date_stop": False,
+            "config_ids": session.config_id.ids,
+            "session_ids": session.ids,
+        }
+        pdf_content, _report_format = report._render_qweb_pdf(
+            "point_of_sale.sale_details_report",
+            res_ids=session.ids,
+            data=report_data,
+        )
+        if not pdf_content:
+            _logger.warning(
+                "Register closure report for session %s rendered empty PDF.",
+                session.id,
+            )
+            return False
+
+        session_name = session.name or str(session.id)
+        attachment = self.env["ir.attachment"].create(
+            {
+                "name": _("Register closure - %s.pdf") % session_name,
+                "type": "binary",
+                "datas": base64.b64encode(pdf_content),
+                "mimetype": "application/pdf",
+                "res_model": "pos.session",
+                "res_id": session.id,
+            }
+        )
+        sender_name = company._avea_receipt_email_business_name()
+        mail = self.env["mail.mail"].sudo().create(
+            {
+                "subject": self._avea_register_closure_report_subject(session),
+                "body_html": self._avea_register_closure_report_body_html(session),
+                "email_from": formataddr((sender_name, sender_email)),
+                "email_to": ", ".join(recipients),
+                "reply_to": company._avea_receipt_email_reply_to(),
+                "attachment_ids": [(4, attachment.id)],
+                "auto_delete": True,
+            }
+        )
+        mail.send()
+        _logger.info(
+            "Register closure report emailed for session %s to %s",
+            session.id,
+            ", ".join(recipients),
+        )
+        return True
 
     @api.model
     def _avea_post_safe_drop(self, session, till_journal, safe_journal, amounts):

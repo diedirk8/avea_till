@@ -1,3 +1,5 @@
+import re
+
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
 from odoo.tools import email_normalize
@@ -49,6 +51,11 @@ class ResCompany(models.Model):
         string="Receipt Sender Email",
         default=lambda self: self.env.company.email,
         help="Business email address used to send Avea receipts.",
+    )
+    avea_register_closure_report_email = fields.Char(
+        string="Register Closure Report Email",
+        help="Email address(es) that receive Odoo's Sales Details (Z) report "
+        "after each POS Cash Up. Separate multiple addresses with commas.",
     )
     avea_expense_journal_ids = fields.Many2many(
         "account.journal",
@@ -114,6 +121,26 @@ class ResCompany(models.Model):
         if journal.id in self._avea_pos_till_cash_journal_ids():
             return False
         return True
+
+    def _avea_register_closure_report_recipients(self):
+        self.ensure_one()
+        recipients = []
+        for part in re.split(r"[;,]+", (self.avea_register_closure_report_email or "").strip()):
+            email = email_normalize(part.strip())
+            if email:
+                recipients.append(email)
+        return recipients
+
+    @api.constrains("avea_register_closure_report_email")
+    def _check_avea_register_closure_report_email(self):
+        for company in self:
+            raw = (company.avea_register_closure_report_email or "").strip()
+            if not raw:
+                continue
+            if not company._avea_register_closure_report_recipients():
+                raise ValidationError(
+                    _("Enter a valid email address for the register closure report.")
+                )
 
     @api.constrains("avea_receipt_sender_email")
     def _check_avea_receipt_sender_email(self):

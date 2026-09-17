@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import Command, fields
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
 from odoo.addons.point_of_sale.tests.common import TestPoSCommon
 
@@ -652,3 +652,96 @@ class TestAveaCashUpPaymentReconciliation(TestPoSCommon):
         self.assertEqual(session.get_avea_transaction_count(), 3)
         self.assertEqual(preview["transaction_count"], 3)
         self.assertIsInstance(preview["transaction_count"], int)
+
+
+@tagged("post_install", "-at_install", "avea_till")
+class TestAveaRegisterClosureReportEmail(TestAveaCashUpPaymentReconciliation):
+    def test_register_closure_report_recipients_parsing(self):
+        self.company.avea_register_closure_report_email = (
+            "owner@example.com; manager@example.com"
+        )
+        recipients = self.company._avea_register_closure_report_recipients()
+        self.assertEqual(
+            recipients,
+            ["owner@example.com", "manager@example.com"],
+        )
+
+    def test_register_closure_report_invalid_email_raises(self):
+        with self.assertRaises(ValidationError):
+            self.company.avea_register_closure_report_email = "not-an-email"
+
+    def test_register_closure_report_email_not_sent_when_blank(self):
+        self.company.avea_register_closure_report_email = False
+        session = self._open_session(1000.0)
+        cash_up = self._create_stored_cash_up(
+            session,
+            self.CashUp._avea_amounts(session, 1000.0),
+            self._reconciliation(session, 1000.0),
+        )
+        before = self.env["mail.mail"].search_count([])
+        sent = cash_up._send_register_closure_report_email(session)
+        self.assertFalse(sent)
+        self.assertEqual(self.env["mail.mail"].search_count([]), before)
+
+    def test_register_closure_report_email_sent_with_pdf(self):
+        self.company.write(
+            {
+                "avea_register_closure_report_email": "zreport@example.com",
+                "avea_receipt_sender_email": "sender@example.com",
+            }
+        )
+        session = self._open_session(1000.0)
+        self._sync_order(
+            session,
+            lines=[(self.product, 1)],
+            payments=[(self.cash_pm1, self.product.lst_price)],
+            uuid="cash-up-z-report",
+        )
+        amounts = self.CashUp._avea_amounts(session, session.cash_register_balance_end)
+        reconciliation = self._reconciliation(session, amounts["counted"])
+        cash_up = self._create_stored_cash_up(session, amounts, reconciliation)
+        sent = cash_up._send_register_closure_report_email(session)
+        self.assertTrue(sent)
+        mail = self.env["mail.mail"].search(
+            [("email_to", "ilike", "zreport@example.com")],
+            order="id desc",
+            limit=1,
+        )
+        self.assertTrue(mail)
+        self.assertIn("Register Closure Report", mail.subject)
+        self.assertIn(session.name, mail.subject)
+        self.assertIn("Total sales", mail.body_html or "")
+        self.assertIn("Payment reconciliation", mail.body_html or "")
+        self.assertTrue(mail.attachment_ids)
+        self.assertTrue(mail.attachment_ids[0].name.lower().endswith(".pdf"))
+
+    def test_register_closure_report_email_shows_variance_notice(self):
+        self.company.write(
+            {
+                "avea_register_closure_report_email": "zreport@example.com",
+                "avea_receipt_sender_email": "sender@example.com",
+            }
+        )
+        session = self._open_session(1000.0)
+        self._sync_order(
+            session,
+            lines=[(self.product, 1)],
+            payments=[(self.cash_pm1, self.product.lst_price)],
+            uuid="cash-up-z-report-variance",
+        )
+        amounts = self.CashUp._avea_amounts(session, 1900.0)
+        reconciliation = self._reconciliation(session, 1900.0)
+        cash_up = self._create_stored_cash_up(
+            session,
+            amounts,
+            reconciliation,
+            variance_reason="Short cash",
+        )
+        cash_up._send_register_closure_report_email(session)
+        mail = self.env["mail.mail"].search(
+            [("email_to", "ilike", "zreport@example.com")],
+            order="id desc",
+            limit=1,
+        )
+        self.assertIn("Cash up discrepancy noticed", mail.body_html or "")
+        self.assertIn("Short cash", mail.body_html or "")

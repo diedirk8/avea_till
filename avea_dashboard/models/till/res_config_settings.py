@@ -24,6 +24,11 @@ class ResConfigSettings(models.TransientModel):
             "('name', 'not ilike', 'store credit')]"
         ),
     )
+    avea_register_closure_report_email = fields.Char(
+        related="company_id.avea_register_closure_report_email",
+        readonly=False,
+        string="Register Closure Report Email",
+    )
     avea_expense_journal_ids = fields.Many2many(
         related="company_id.avea_expense_journal_ids",
         readonly=False,
