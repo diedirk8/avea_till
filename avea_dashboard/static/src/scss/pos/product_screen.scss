@@ -1,0 +1,553 @@
+/* Avea POS product selling screen */
+
+.avea-product-screen {
+    --avea-sell-bg: #f3f4f6;
+    --avea-sell-card: #ffffff;
+    --avea-sell-line: #e5e7eb;
+    --avea-sell-text: #111827;
+    --avea-sell-muted: #6b7280;
+    --avea-sell-accent: #0f766e;
+    --avea-sell-accent-hover: #0d655e;
+    --avea-sell-radius: 10px;
+    --avea-brand: #c45c26;
+    --avea-fw-body: 400;
+    --avea-fw-medium: 500;
+    --avea-fw-heading: 600;
+    --avea-fw-emphasis: 700;
+    --avea-fw-total: 800;
+
+    background: var(--avea-sell-bg);
+    font-weight: var(--avea-fw-body);
+    gap: 0.65rem;
+    padding: 0.65rem;
+}
+
+.avea-products-pane,
+.avea-sale-pane {
+    background: var(--avea-sell-card);
+    border: 1px solid var(--avea-sell-line);
+    border-radius: var(--avea-sell-radius);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    min-height: 0;
+}
+
+.avea-products-pane {
+    flex: 1 1 58%;
+    max-width: 58%;
+}
+
+.avea-sale-pane {
+    flex: 0 0 42%;
+    max-width: 42%;
+}
+
+.avea-products-toolbar {
+    border-bottom: 1px solid var(--avea-sell-line);
+    padding: 0.55rem 0.9rem 0.55rem;
+}
+
+.avea-product-tabs {
+    border-bottom: 1px solid var(--avea-sell-line);
+    display: flex;
+    gap: 0.15rem;
+    margin: 0 -0.9rem 0.65rem;
+    overflow-x: auto;
+    padding: 0 0.9rem;
+}
+
+.avea-product-tab {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--avea-sell-muted);
+    flex-shrink: 0;
+    font-size: 0.86rem;
+    font-weight: var(--avea-fw-medium);
+    padding: 0.5rem 0.7rem;
+}
+
+.avea-product-tab--active {
+    border-bottom-color: var(--avea-sell-accent);
+    color: var(--avea-sell-accent);
+    font-weight: var(--avea-fw-heading);
+}
+
+.avea-product-tab:hover {
+    color: var(--avea-sell-text);
+}
+
+.avea-products-search-row {
+    align-items: stretch;
+    display: flex;
+    gap: 0.55rem;
+    margin-bottom: 0.65rem;
+}
+
+.avea-products-search {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.avea-scan-btn {
+    align-items: center;
+    border-color: var(--avea-sell-line);
+    display: inline-flex;
+    flex-shrink: 0;
+    font-size: 0.84rem;
+    font-weight: var(--avea-fw-medium);
+    white-space: nowrap;
+}
+
+.avea-products-body {
+    min-height: 0;
+    padding: 0 0.35rem 0.55rem;
+}
+
+.avea-products-meta {
+    color: var(--avea-sell-muted);
+    font-size: 0.86rem;
+    padding: 0.55rem 0.55rem 0.35rem;
+}
+
+.avea-product-table {
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.avea-product-table thead th {
+    background: #f9fafb;
+    border-bottom: 1px solid var(--avea-sell-line);
+    color: var(--avea-sell-muted);
+    font-size: 0.76rem;
+    font-weight: var(--avea-fw-medium);
+    letter-spacing: 0.01em;
+    padding: 0.5rem 0.65rem;
+    text-transform: none;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.avea-product-row {
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+}
+
+.avea-product-row:hover,
+.avea-product-row:focus-visible {
+    background: #f8fafc;
+}
+
+.avea-product-row td {
+    border-bottom: 1px solid #f1f5f9;
+    padding: 0.65rem;
+    vertical-align: middle;
+}
+
+.avea-col-fav {
+    width: 2.25rem;
+}
+
+.avea-col-product {
+    width: auto;
+}
+
+.avea-col-sku {
+    width: 5.5rem;
+}
+
+.avea-col-price {
+    width: 6.5rem;
+}
+
+.avea-col-stock {
+    width: 7.5rem;
+}
+
+.avea-product-cell {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+    min-width: 0;
+}
+
+.avea-product-thumb {
+    border-radius: 6px;
+    flex-shrink: 0;
+    height: 2.5rem;
+    object-fit: cover;
+    width: 2.5rem;
+}
+
+.avea-product-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.avea-product-name {
+    color: var(--avea-sell-text);
+    font-size: 0.9rem;
+    font-weight: var(--avea-fw-medium);
+    line-height: 1.3;
+}
+
+.avea-product-category {
+    color: var(--avea-sell-muted);
+    font-size: 0.78rem;
+}
+
+.avea-product-price {
+    color: var(--avea-sell-text);
+    font-size: 0.9rem;
+    font-weight: var(--avea-fw-heading);
+}
+
+.avea-stock-label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.78rem;
+    font-weight: var(--avea-fw-medium);
+    gap: 0.1rem;
+}
+
+.avea-stock-in {
+    color: #15803d;
+}
+
+.avea-stock-low {
+    color: #c2410c;
+}
+
+.avea-stock-out {
+    color: #b91c1c;
+}
+
+.avea-stock-none {
+    color: var(--avea-sell-muted);
+}
+
+.avea-fav-btn {
+    color: #9ca3af;
+}
+
+.avea-product-grid-wrap {
+    padding: 0.35rem 0.55rem;
+}
+
+.avea-product-grid {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+}
+
+.avea-grid-tile-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.avea-grid-meta {
+    color: var(--avea-sell-muted);
+    display: flex;
+    flex-direction: column;
+    font-size: 0.74rem;
+    gap: 0.1rem;
+    padding: 0 0.15rem 0.25rem;
+}
+
+.avea-grid-price {
+    color: var(--avea-sell-text);
+    font-size: 0.82rem;
+    font-weight: var(--avea-fw-heading);
+}
+
+.avea-products-pagination {
+    align-items: center;
+    border-top: 1px solid var(--avea-sell-line);
+    color: var(--avea-sell-muted);
+    display: flex;
+    font-size: 0.82rem;
+    justify-content: space-between;
+    margin-top: 0.25rem;
+    padding: 0.55rem 0.65rem;
+}
+
+.avea-pagination-pages {
+    align-items: center;
+    display: flex;
+    gap: 0.35rem;
+}
+
+.avea-page-btn {
+    color: var(--avea-sell-text);
+    font-weight: var(--avea-fw-medium);
+    min-width: 2rem;
+    text-decoration: none;
+}
+
+.avea-page-indicator {
+    color: var(--avea-sell-muted);
+    font-weight: var(--avea-fw-medium);
+    padding: 0 0.35rem;
+}
+
+.avea-sale-header {
+    align-items: center;
+    border-bottom: 1px solid var(--avea-sell-line);
+    display: flex;
+    justify-content: space-between;
+    padding: 0.85rem 0.95rem 0.7rem;
+}
+
+.avea-sale-title {
+    color: var(--avea-sell-text);
+    font-size: 1rem;
+    font-weight: var(--avea-fw-heading);
+    margin: 0;
+}
+
+.avea-sale-ref {
+    color: var(--avea-sell-muted);
+    display: block;
+    font-size: 0.82rem;
+    margin-top: 0.1rem;
+}
+
+.avea-sale-more {
+    color: var(--avea-sell-muted);
+}
+
+.avea-customer-card {
+    align-items: center;
+    background: #f9fafb;
+    border: 1px solid var(--avea-sell-line);
+    border-radius: 8px;
+    display: flex;
+    gap: 0.65rem;
+    margin: 0.75rem 0.85rem 0.55rem;
+    padding: 0.7rem 0.8rem;
+    text-align: left;
+    width: calc(100% - 1.7rem);
+}
+
+.avea-customer-icon {
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--avea-sell-line);
+    border-radius: 999px;
+    color: var(--avea-sell-muted);
+    display: inline-flex;
+    height: 2rem;
+    justify-content: center;
+    width: 2rem;
+}
+
+.avea-customer-copy {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.avea-customer-label {
+    color: var(--avea-sell-text);
+    font-size: 0.9rem;
+    font-weight: var(--avea-fw-medium);
+}
+
+.avea-customer-hint {
+    color: var(--avea-sell-muted);
+    font-size: 0.78rem;
+}
+
+.avea-customer-chevron {
+    color: #9ca3af;
+}
+
+.avea-sale-lines {
+    margin: 0 0.55rem;
+    min-height: 0;
+}
+
+.avea-sale-lines .order-container {
+    padding-right: 0.15rem;
+}
+
+.avea-sale-lines .order-summary {
+    border-bottom: none;
+    border-top: 1px solid var(--avea-sell-line);
+    margin-top: 0.25rem;
+    padding-top: 0.65rem;
+}
+
+.avea-sale-lines .orderline .product-name,
+.avea-sale-lines .orderline .product-price,
+.avea-sale-lines .orderline .price {
+    font-weight: var(--avea-fw-medium);
+}
+
+.avea-sale-lines .order-summary .subtotal,
+.avea-sale-lines .order-summary .tax {
+    font-weight: var(--avea-fw-medium);
+}
+
+.avea-sale-lines .order-summary .total {
+    color: var(--avea-sell-text);
+    font-size: 1.45rem;
+    font-weight: var(--avea-fw-total);
+}
+
+.avea-sale-actions {
+    display: grid;
+    gap: 0.45rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 0.55rem 0.85rem 0.35rem;
+}
+
+.avea-sale-action-btn {
+    border-color: var(--avea-sell-line);
+    font-size: 0.78rem;
+    font-weight: var(--avea-fw-medium);
+    padding: 0.45rem 0.35rem;
+}
+
+.avea-sale-action-clear {
+    color: #b91c1c;
+}
+
+.avea-sale-pads {
+    padding: 0.35rem 0.85rem 0.55rem;
+}
+
+.avea-sale-pads .actionpad .pay {
+    background: var(--avea-sell-accent);
+    border-color: var(--avea-sell-accent);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: var(--avea-fw-emphasis);
+    min-height: 3rem;
+}
+
+.avea-sale-pads .actionpad .pay:hover {
+    background: var(--avea-sell-accent-hover);
+    border-color: var(--avea-sell-accent-hover);
+}
+
+.avea-sale-secondary-actions {
+    display: grid;
+    gap: 0.55rem;
+    grid-template-columns: 1fr 1fr;
+    padding: 0 0.85rem 0.85rem;
+}
+
+.avea-hold-btn,
+.avea-park-btn {
+    border-color: var(--avea-sell-line);
+    font-size: 0.84rem;
+    font-weight: var(--avea-fw-medium);
+}
+
+.avea-category-nav {
+    margin-top: 0.15rem;
+    min-width: 0;
+}
+
+.avea-category-scroll {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+    overflow-x: auto;
+    padding: 0.15rem 0.1rem 0.35rem;
+    scrollbar-width: thin;
+}
+
+.avea-category-scroll::-webkit-scrollbar {
+    height: 4px;
+}
+
+.avea-category-scroll::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 999px;
+}
+
+.avea-category-pill {
+    background: #f8fafc;
+    border: 1px solid #e8ecf0;
+    border-radius: 999px;
+    color: #4b5563;
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    font-weight: var(--avea-fw-medium);
+    line-height: 1.2;
+    padding: 0.3rem 0.72rem;
+    white-space: nowrap;
+}
+
+.avea-category-pill:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    color: #111827;
+}
+
+.avea-category-pill--active {
+    background: #374151;
+    border-color: #374151;
+    color: #fff;
+    font-weight: var(--avea-fw-heading);
+}
+
+.avea-category-pill--active:hover {
+    background: #1f2937;
+    border-color: #1f2937;
+    color: #fff;
+}
+
+.avea-category-pill--parent {
+    background: #fff;
+}
+
+@media (max-width: 1199.98px) {
+    .avea-products-pane {
+        flex-basis: 54%;
+        max-width: 54%;
+    }
+
+    .avea-sale-pane {
+        flex-basis: 46%;
+        max-width: 46%;
+    }
+
+    .avea-col-sku,
+    .avea-col-stock {
+        display: none;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .avea-product-screen {
+        flex-direction: column;
+        padding: 0.35rem;
+    }
+
+    .avea-products-pane,
+    .avea-sale-pane {
+        flex: 1 1 auto;
+        max-width: 100%;
+    }
+
+    .avea-sale-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .avea-product-screen .switchpane {
+        background: #fff;
+        border-top: 1px solid var(--avea-sell-line);
+        flex-shrink: 0;
+    }
+}

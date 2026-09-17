@@ -6,6 +6,53 @@ from odoo.fields import Command
 class PosConfig(models.Model):
     _inherit = "pos.config"
 
+    avea_product_layout = fields.Selection(
+        selection=[
+            ("list", "List"),
+            ("grid", "Grid"),
+        ],
+        string="Product Layout",
+        default="list",
+        help="How products are displayed on the POS selling screen.",
+    )
+    avea_show_product_code = fields.Boolean(
+        string="Show Product Code / SKU",
+        default=True,
+        help="Display the internal reference on the POS product list or grid.",
+    )
+    avea_show_stock_quantity = fields.Boolean(
+        string="Show Stock Quantity",
+        default=True,
+        help="Display on-hand quantity for storable products in the POS.",
+    )
+    avea_show_stock_status = fields.Boolean(
+        string="Show Stock Status",
+        default=True,
+        help="Display stock status labels such as In stock or Low stock in the POS.",
+    )
+    avea_products_per_page = fields.Selection(
+        selection=[
+            ("10", "10"),
+            ("20", "20"),
+            ("30", "30"),
+            ("50", "50"),
+        ],
+        string="Products per Page",
+        default="50",
+        help="Number of products shown per page on the POS selling screen.",
+    )
+    avea_nav_category_ids = fields.Many2many(
+        "pos.category",
+        "pos_config_avea_nav_category_rel",
+        "config_id",
+        "category_id",
+        string="Category Navigation",
+        help=(
+            "Categories shown in the POS category bar. "
+            "Leave empty to show all root categories."
+        ),
+    )
+
     avea_needs_dedicated_cash_journal = fields.Boolean(
         compute="_compute_avea_needs_dedicated_cash_journal",
         help="Technical flag: this POS shares its cash payment method, "

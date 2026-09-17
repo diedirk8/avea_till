@@ -151,4 +151,35 @@ patch(PosStore.prototype, {
             this.refreshPartnerStoreCreditBalance(partner.id);
         }
     },
+
+    filterExcludedProducts(products) {
+        const filteredList = [];
+        const excludedProductIds = new Set(this.getExcludedProductIds());
+        const availableCateg = new Set(
+            (this.config.iface_available_categ_ids || []).map((c) => c.id)
+        );
+        const perPage = parseInt(this.config.avea_products_per_page || "10", 10);
+        const maxProducts = Math.max(100, (Number.isFinite(perPage) ? perPage : 10) * 25);
+
+        for (const p of products) {
+            if (filteredList.length >= maxProducts) {
+                break;
+            }
+
+            if (excludedProductIds.has(p.id) || !p.canBeDisplayed) {
+                continue;
+            }
+
+            if (
+                availableCateg.size &&
+                !this.config._pos_special_display_products_ids?.includes(p.id) &&
+                !p.pos_categ_ids.some((c) => availableCateg.has(c.id))
+            ) {
+                continue;
+            }
+
+            filteredList.push(p);
+        }
+        return filteredList;
+    },
 });

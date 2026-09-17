@@ -745,3 +745,8 @@ class ProductTemplate(models.Model):
             if pos_categ:
                 vals = dict(vals, pos_categ_ids=[(6, 0, pos_categ.ids)])
         return super().write(vals)
+
+    @api.model
+    def _load_pos_data_fields(self, config):
+        fields_list = super()._load_pos_data_fields(config)
+        return fields_list + ["avea_stock_qty", "avea_stock_status"]

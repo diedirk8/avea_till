@@ -37,6 +37,30 @@ class ResConfigSettings(models.TransientModel):
     pos_avea_needs_dedicated_cash_journal = fields.Boolean(
         related="pos_config_id.avea_needs_dedicated_cash_journal",
     )
+    pos_avea_product_layout = fields.Selection(
+        related="pos_config_id.avea_product_layout",
+        readonly=False,
+    )
+    pos_avea_show_product_code = fields.Boolean(
+        related="pos_config_id.avea_show_product_code",
+        readonly=False,
+    )
+    pos_avea_show_stock_quantity = fields.Boolean(
+        related="pos_config_id.avea_show_stock_quantity",
+        readonly=False,
+    )
+    pos_avea_show_stock_status = fields.Boolean(
+        related="pos_config_id.avea_show_stock_status",
+        readonly=False,
+    )
+    pos_avea_products_per_page = fields.Selection(
+        related="pos_config_id.avea_products_per_page",
+        readonly=False,
+    )
+    pos_avea_nav_category_ids = fields.Many2many(
+        related="pos_config_id.avea_nav_category_ids",
+        readonly=False,
+    )
 
     def action_avea_ensure_dedicated_cash_journal(self):
         self.ensure_one()

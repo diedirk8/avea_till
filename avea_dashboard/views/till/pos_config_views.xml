@@ -1,5 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <record id="pos_config_view_form_avea_product_view" model="ir.ui.view">
+        <field name="name">pos.config.form.avea.product.view</field>
+        <field name="model">pos.config</field>
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@id='other_devices']" position="before">
+                <setting
+                    string="Product View"
+                    help="Control how products appear on the POS selling screen."
+                >
+                    <div class="content-group">
+                        <div class="row mt16">
+                            <label for="avea_product_layout" class="col-lg-3 o_light_label"/>
+                            <field name="avea_product_layout" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="show_product_images" class="col-lg-3 o_light_label"/>
+                            <div class="col-lg-9">
+                                <field name="show_product_images"/>
+                                <label for="show_product_images" string="Show product images" class="fw-normal ms-1"/>
+                            </div>
+                        </div>
+                        <div class="row mt16">
+                            <label for="avea_show_product_code" class="col-lg-3 o_light_label"/>
+                            <field name="avea_show_product_code" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="avea_show_stock_quantity" class="col-lg-3 o_light_label"/>
+                            <field name="avea_show_stock_quantity" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="avea_show_stock_status" class="col-lg-3 o_light_label"/>
+                            <field name="avea_show_stock_status" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="avea_products_per_page" class="col-lg-3 o_light_label"/>
+                            <field name="avea_products_per_page" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="avea_nav_category_ids" class="col-lg-3 o_light_label" string="Category navigation"/>
+                            <field
+                                name="avea_nav_category_ids"
+                                class="col-lg-9"
+                                widget="many2many_tags"
+                                placeholder="All root categories"
+                            />
+                        </div>
+                        <p class="text-muted mt-2 mb-0">
+                            Leave category navigation empty to show all root categories.
+                        </p>
+                    </div>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+
     <record id="res_config_settings_view_form_avea_till_cash" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.avea.till.cash</field>
         <field name="model">res.config.settings</field>
@@ -24,6 +80,57 @@
                     />
                     <div class="text-muted" invisible="not pos_has_active_session">
                         Close the session on this till before creating its cash journal.
+                    </div>
+                </setting>
+            </xpath>
+            <xpath expr="//setting[@id='payment_methods_new']" position="after">
+                <setting
+                    id="avea_pos_product_view"
+                    string="Product View"
+                    help="Control how products appear on the POS selling screen."
+                    invisible="is_kiosk_mode"
+                >
+                    <div class="content-group">
+                        <div class="row mt16">
+                            <label for="pos_avea_product_layout" class="col-lg-3 o_light_label"/>
+                            <field name="pos_avea_product_layout" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="pos_show_product_images" class="col-lg-3 o_light_label"/>
+                            <div class="col-lg-9">
+                                <field name="pos_show_product_images"/>
+                                <label for="pos_show_product_images" string="Show product images" class="fw-normal ms-1"/>
+                            </div>
+                        </div>
+                        <div class="row mt16">
+                            <label for="pos_avea_show_product_code" class="col-lg-3 o_light_label"/>
+                            <field name="pos_avea_show_product_code" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="pos_avea_show_stock_quantity" class="col-lg-3 o_light_label"/>
+                            <field name="pos_avea_show_stock_quantity" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="pos_avea_show_stock_status" class="col-lg-3 o_light_label"/>
+                            <field name="pos_avea_show_stock_status" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="pos_avea_products_per_page" class="col-lg-3 o_light_label"/>
+                            <field name="pos_avea_products_per_page" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="pos_avea_nav_category_ids" class="col-lg-3 o_light_label" string="Category navigation"/>
+                            <field
+                                name="pos_avea_nav_category_ids"
+                                class="col-lg-9"
+                                widget="many2many_tags"
+                                placeholder="All root categories"
+                            />
+                        </div>
+                        <p class="text-muted mt-2 mb-0">
+                            Leave category navigation empty to show all root categories.
+                            Select specific categories to control the pills shown on the POS selling screen.
+                        </p>
                     </div>
                 </setting>
             </xpath>

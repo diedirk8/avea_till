@@ -1,173 +1,340 @@
-/* Avea POS header — quiet retail chrome. */
+/* Avea POS — light application header */
 
-.pos .pos-topheader {
-    background: #fff;
-    border-bottom: 1px solid #e5e7eb;
-    min-height: 3.2rem;
-    padding: 0.3rem 0.85rem;
+.pos .avea-pos-topheader {
+    --avea-header-bg: #ffffff;
+    --avea-header-border: #e8eaed;
+    --avea-header-text: #1f2937;
+    --avea-header-muted: #6b7280;
+    --avea-header-surface: #f5f6f8;
+    --avea-header-surface-hover: #eef0f3;
+    --avea-brand: #c45c26;
+    --avea-brand-soft: rgba(196, 92, 38, 0.1);
+    --avea-online: #16a34a;
+
+    background: var(--avea-header-bg) !important;
+    border-bottom: 1px solid var(--avea-header-border) !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    color: var(--avea-header-text);
+    flex-shrink: 0;
+    height: 3.75rem;
+    max-height: 3.75rem;
+    min-height: 3.75rem;
+}
+
+.pos .avea-pos-topheader .lock-screen {
+    display: none !important;
+}
+
+.pos .avea-topheader-bar {
+    gap: 0.65rem;
+    height: 100%;
+    padding: 0 0.85rem;
+}
+
+.pos .avea-topheader-brand-group {
+    align-items: center;
+    gap: 0.55rem;
+    max-width: 46%;
+    min-width: 0;
 }
 
 .pos .avea-pos-brand {
     align-items: center;
     display: flex;
     flex-shrink: 0;
-    gap: 0.5rem;
-    margin-right: 0.85rem;
+    gap: 0.45rem;
 }
 
 .pos .avea-pos-mark {
     align-items: center;
-    background: #c45c26;
-    border-radius: 6px;
+    background: var(--avea-brand);
+    border-radius: 7px;
+    box-shadow: 0 1px 2px rgba(196, 92, 38, 0.22);
     color: #fff;
     display: inline-flex;
-    font-size: 0.95rem;
-    font-weight: 700;
-    height: 1.75rem;
+    font-size: 0.72rem;
+    height: 1.65rem;
     justify-content: center;
-    line-height: 1;
-    width: 1.75rem;
+    width: 1.65rem;
 }
 
 .pos .avea-pos-wordmark {
-    color: #1f2937;
-    font-size: 0.98rem;
+    color: var(--avea-header-text);
+    font-size: 0.92rem;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    line-height: 1;
     white-space: nowrap;
 }
 
-.pos .navbar-menu {
-    gap: 0.1rem;
+.pos .avea-pos-wordmark-accent {
+    color: var(--avea-brand);
 }
 
-.pos .navbar-menu .register-label,
-.pos .navbar-menu .orders-button {
-    background: transparent !important;
-    border: none !important;
-    border-radius: 0;
-    box-shadow: none !important;
-    color: #6b7280;
-    font-size: 0.92rem;
-    font-weight: 500;
-    min-height: 2.5rem;
-    padding: 0.3rem 0.8rem;
-}
-
-.pos .navbar-menu .register-label.active,
-.pos .navbar-menu .orders-button.active {
-    background: transparent !important;
-    box-shadow: none !important;
-    color: #111827;
-    font-weight: 600;
-    position: relative;
-}
-
-.pos .navbar-menu .register-label.active::after,
-.pos .navbar-menu .orders-button.active::after {
-    background: #111827;
-    border-radius: 0;
-    bottom: 0.05rem;
-    content: "";
-    height: 2px;
-    left: 0.75rem;
-    position: absolute;
-    right: 0.75rem;
-}
-
-.pos .avea-nav-label {
+/* Session / order tabs — integrated segmented strip */
+.pos .avea-topheader-session {
     align-items: center;
-    display: inline-flex;
-    gap: 0.35rem;
+    background: var(--avea-header-surface);
+    border: 1px solid var(--avea-header-border);
+    border-radius: 8px;
+    display: flex;
+    flex: 1 1 auto;
+    max-width: 13rem;
+    min-height: 2rem;
+    min-width: 0;
+    padding: 0.12rem;
 }
 
-.pos .navbar-separator {
-    display: none;
+.pos .avea-topheader-session > div {
+    align-items: center;
+    display: flex;
+    min-width: 0;
+    width: 100%;
 }
 
-.pos .floating-order-container .btn {
-    background: #f3f4f6 !important;
-    border: none !important;
+.pos .avea-topheader-session .overflow-hidden {
+    padding-bottom: 0 !important;
+    padding-top: 0 !important;
+}
+
+.pos .avea-topheader-session .list-container-items {
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 0.15rem;
+    min-height: 0;
+}
+
+.pos .avea-topheader-session .list-plus-btn,
+.pos .avea-topheader-session .list-plus-btn.btn-lg {
+    align-items: center;
+    background: #fff !important;
+    border: 1px solid var(--avea-header-border) !important;
     border-radius: 6px !important;
-    color: #4b5563 !important;
-    font-size: 0.8rem;
+    box-shadow: none !important;
+    color: var(--avea-brand) !important;
+    display: inline-flex;
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    height: 1.65rem;
+    justify-content: center;
+    margin: 0 !important;
+    min-height: 1.65rem;
+    padding: 0;
+    width: 1.65rem;
+}
+
+.pos .avea-topheader-session .list-plus-btn:hover {
+    background: var(--avea-brand-soft) !important;
+    border-color: rgba(196, 92, 38, 0.25) !important;
+    color: var(--avea-brand) !important;
+}
+
+.pos .avea-topheader-session .btn.fa-caret-down {
+    background: #fff !important;
+    border: 1px solid var(--avea-header-border) !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    color: var(--avea-header-muted) !important;
+    font-size: 0.72rem;
+    height: 1.65rem;
+    margin: 0 0 0 0.15rem !important;
+    min-height: 1.65rem;
+    padding: 0;
+    width: 1.65rem;
+}
+
+.pos .avea-topheader-session .floating-order-container .btn,
+.pos .avea-topheader-session .floating-order-container .btn.btn-lg {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 6px !important;
+    box-shadow: none !important;
+    color: var(--avea-header-muted) !important;
+    font-size: 0.72rem;
+    font-weight: 500;
+    line-height: 1;
+    margin: 0 !important;
+    min-height: 1.65rem;
+    min-width: 2.4rem !important;
+    padding: 0.15rem 0.45rem;
+}
+
+.pos .avea-topheader-session .floating-order-container .btn:hover {
+    background: #fff !important;
+    border-color: var(--avea-header-border) !important;
+    color: var(--avea-header-text) !important;
+}
+
+.pos .avea-topheader-session .floating-order-container .btn.active {
+    background: #fff !important;
+    border-color: rgba(196, 92, 38, 0.35) !important;
+    box-shadow: 0 0 0 1px rgba(196, 92, 38, 0.12) !important;
+    color: var(--avea-brand) !important;
     font-weight: 600;
-    min-height: 1.6rem;
-    min-width: auto !important;
-    padding: 0.12rem 0.6rem;
 }
 
-.pos .floating-order-container .btn.active {
-    background: #e5e7eb !important;
-    color: #111827 !important;
+/* Context selectors */
+.pos .avea-topheader-meta {
+    gap: 0.5rem;
+    justify-content: flex-start;
+    overflow: hidden;
+    padding-left: 0.15rem;
 }
 
-.pos .avea-header-icon {
+.pos .avea-header-selector {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 1;
+    gap: 0.08rem;
+    max-width: 11rem;
+    min-width: 0;
+    padding: 0.1rem 0.15rem;
+}
+
+.pos .avea-header-selector-label {
+    color: var(--avea-header-muted);
+    font-size: 0.62rem;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.pos .avea-header-selector-value {
+    align-items: center;
+    color: var(--avea-header-text);
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 500;
+    gap: 0.28rem;
+    line-height: 1.15;
+    min-width: 0;
+}
+
+.pos .avea-header-selector-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pos .avea-header-selector-caret {
+    color: #9ca3af;
+    flex-shrink: 0;
+    font-size: 0.58rem;
+}
+
+/* Right-side actions */
+.pos .avea-topheader-actions {
+    gap: 0.55rem;
+    margin-left: auto;
+}
+
+.pos .avea-header-status {
+    align-items: center;
+    color: var(--avea-header-muted);
+    display: inline-flex;
+    font-size: 0.76rem;
+    font-weight: 500;
+    gap: 0.28rem;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.pos .avea-header-status--online {
+    color: #374151;
+}
+
+.pos .avea-header-online-dot {
+    background: var(--avea-online);
+    border-radius: 50%;
+    flex-shrink: 0;
+    height: 0.42rem;
+    width: 0.42rem;
+}
+
+.pos .avea-header-status-count {
+    color: #b45309;
+    font-weight: 600;
+}
+
+.pos .avea-header-datetime {
+    border-left: 1px solid var(--avea-header-border);
+    color: var(--avea-header-muted);
+    font-size: 0.76rem;
+    font-weight: 400;
+    line-height: 1;
+    padding-left: 0.55rem;
+    white-space: nowrap;
+}
+
+.pos .avea-header-icon-btn {
     align-items: center;
     background: transparent;
-    border: none;
-    border-radius: 6px;
-    color: #6b7280;
+    border: 1px solid var(--avea-header-border);
+    border-radius: 7px;
+    color: var(--avea-header-muted);
     display: inline-flex;
-    height: 2.25rem;
-    justify-content: center;
-    width: 2.25rem;
-}
-
-.pos .avea-header-icon:hover {
-    background: #f3f4f6;
-    color: #111827;
-}
-
-.pos .status-buttons .cashier-name {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    max-width: none;
-    padding: 0.15rem;
-}
-
-.pos .status-buttons .cashier-name .avatar {
-    border-radius: 50% !important;
+    font-size: 0.78rem;
     height: 1.85rem;
-    object-fit: cover;
+    justify-content: center;
+    padding: 0;
+    transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
     width: 1.85rem;
 }
 
-.pos .status-buttons > .o-dropdown > button,
-.pos .status-buttons .dropdown-toggle {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    color: #6b7280;
+.pos .avea-header-icon-btn:hover {
+    background: var(--avea-header-surface);
+    border-color: #d8dce2;
+    color: var(--avea-header-text);
 }
 
-.pos .status-buttons .lock-screen {
-    display: none;
-}
-
-.pos .status-buttons {
+.pos .avea-menu-btn {
     align-items: center;
+    background: var(--avea-header-surface) !important;
+    border: 1px solid var(--avea-header-border) !important;
+    border-radius: 7px !important;
+    box-shadow: none !important;
+    color: var(--avea-header-text) !important;
+    display: inline-flex;
+    font-size: 0.78rem;
+    font-weight: 500;
+    gap: 0.3rem;
+    line-height: 1;
+    min-height: 1.85rem;
+    padding: 0.28rem 0.62rem;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
 }
 
-.pos .status-buttons .avea-header-lock {
-    order: 20;
+.pos .avea-menu-btn:hover {
+    background: var(--avea-header-surface-hover) !important;
+    border-color: #d8dce2 !important;
+    color: var(--avea-header-text) !important;
 }
 
-.pos .status-buttons .cashier-name {
-    order: 21;
-}
+@media (max-width: 991.98px) {
+    .pos .avea-topheader-meta {
+        display: none !important;
+    }
 
-.pos .status-buttons > .o-dropdown {
-    order: 22;
+    .pos .avea-header-datetime {
+        border-left: none;
+        display: none;
+        padding-left: 0;
+    }
+
+    .pos .avea-topheader-brand-group {
+        max-width: 62%;
+    }
 }
 
 @media (max-width: 767.98px) {
-    .pos .avea-pos-wordmark {
+    .pos .avea-pos-wordmark,
+    .pos .avea-menu-label {
         display: none;
     }
 
-    .pos .avea-pos-brand {
-        margin-right: 0.35rem;
+    .pos .avea-topheader-bar {
+        padding: 0 0.55rem;
     }
 }
