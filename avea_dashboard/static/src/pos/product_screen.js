@@ -168,20 +168,28 @@ patch(ProductScreen.prototype, {
         return (this.pos.config.avea_product_layout || "list") === "list";
     },
 
+    _aveaConfigFlag(field, defaultValue = true) {
+        const value = this.pos.config?.[field];
+        if (value === undefined || value === null) {
+            return defaultValue;
+        }
+        return Boolean(value);
+    },
+
     get aveaShowProductImages() {
-        return Boolean(this.pos.config.show_product_images);
+        return this._aveaConfigFlag("show_product_images", true);
     },
 
     get aveaShowProductCode() {
-        return Boolean(this.pos.config.avea_show_product_code);
+        return this._aveaConfigFlag("avea_show_product_code", true);
     },
 
     get aveaShowStockQuantity() {
-        return Boolean(this.pos.config.avea_show_stock_quantity);
+        return this._aveaConfigFlag("avea_show_stock_quantity", true);
     },
 
     get aveaShowStockStatus() {
-        return Boolean(this.pos.config.avea_show_stock_status);
+        return this._aveaConfigFlag("avea_show_stock_status", true);
     },
 
     get aveaAllProducts() {

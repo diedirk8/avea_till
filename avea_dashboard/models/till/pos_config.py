@@ -41,6 +41,21 @@ class PosConfig(models.Model):
         default="50",
         help="Number of products shown per page on the POS selling screen.",
     )
+    @api.model
+    def _load_pos_data_fields(self, config):
+        fields_list = super()._load_pos_data_fields(config)
+        avea_fields = [
+            "avea_product_layout",
+            "avea_show_product_code",
+            "avea_show_stock_quantity",
+            "avea_show_stock_status",
+            "avea_products_per_page",
+            "avea_nav_category_ids",
+        ]
+        if fields_list:
+            return fields_list + [field for field in avea_fields if field not in fields_list]
+        return fields_list
+
     avea_nav_category_ids = fields.Many2many(
         "pos.category",
         "pos_config_avea_nav_category_rel",

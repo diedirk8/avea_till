@@ -24,3 +24,14 @@ class TestPosProductViewSettings(TestPoSCommon):
 
     def test_pos_config_has_nav_category_field(self):
         self.assertIn("avea_nav_category_ids", self.config._fields)
+
+    def test_pos_config_load_fields_include_product_view_settings(self):
+        fields_list = self.env["pos.config"]._load_pos_data_fields(self.config)
+        if fields_list:
+            for field in (
+                "avea_show_product_code",
+                "avea_show_stock_quantity",
+                "avea_show_stock_status",
+                "avea_product_layout",
+            ):
+                self.assertIn(field, fields_list)

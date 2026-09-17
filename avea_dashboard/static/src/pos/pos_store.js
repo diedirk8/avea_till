@@ -23,7 +23,36 @@ import {
     validateStoreCreditPaymentAmount,
 } from "./store_credit";
 
+const AVEA_POS_CONFIG_DEFAULTS = {
+    avea_product_layout: "list",
+    avea_show_product_code: true,
+    avea_show_stock_quantity: true,
+    avea_show_stock_status: true,
+    avea_products_per_page: "50",
+};
+
 patch(PosStore.prototype, {
+    async processServerData() {
+        await super.processServerData(...arguments);
+        this._aveaNormalizePosConfig();
+    },
+
+    _aveaNormalizePosConfig() {
+        const config = this.config;
+        if (!config) {
+            return;
+        }
+        const updates = {};
+        for (const [field, defaultValue] of Object.entries(AVEA_POS_CONFIG_DEFAULTS)) {
+            if (config[field] === undefined) {
+                updates[field] = defaultValue;
+            }
+        }
+        if (Object.keys(updates).length) {
+            config.update(updates);
+        }
+    },
+
     isAveaCreditEnabled() {
         return isAveaCreditEnabled(this);
     },
