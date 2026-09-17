@@ -109,22 +109,6 @@
                                                         class="avea-product-category"
                                                         t-esc="getProductCategoryLabel(product)"
                                                     />
-                                                    <span
-                                                        t-if="aveaShowProductCode and getProductCode(product)"
-                                                        class="avea-product-sku"
-                                                        t-esc="getProductCode(product)"
-                                                    />
-                                                    <span
-                                                        t-if="aveaShouldShowStock(product)"
-                                                        class="avea-product-stock-meta"
-                                                        t-att-class="getStockStatusClass(product)"
-                                                    >
-                                                        <t t-if="aveaShowStockQuantity and product.is_storable" t-esc="getStockQuantityLabel(product)"/>
-                                                        <t t-if="aveaShowStockStatus and product.is_storable">
-                                                            <t t-if="aveaShowStockQuantity and product.is_storable"> · </t>
-                                                            <t t-esc="getStockStatusLabel(product)"/>
-                                                        </t>
-                                                    </span>
                                                 </div>
                                             </div>
                                         </td>
