@@ -1,7 +1,7 @@
 # Avea SaaS Platform Architecture
 
 **Status:** Authoritative technical reference  
-**Version:** 1.0  
+**Version:** 1.1  
 **Last updated:** 2026-09-18  
 **Audience:** Developers, product owners, operators  
 
@@ -53,6 +53,7 @@ Avea is a **customer-facing retail product**. Odoo Community is the **business e
 3. **One database per customer** — strongest isolation fit for Odoo Community SaaS (**Planned**; **Implemented** only as single-tenant Pets Empire today).
 4. **Do not duplicate business logic** — extend Odoo models; create Avea models only when a workspace genuinely requires it (ADR-003).
 5. **Entitlements live outside Odoo; enforcement lives inside Odoo** — control plane is source of truth for plans; tenant DB uses groups and config flags.
+6. **Import and export are platform capabilities** — not feature-local shortcuts. Data moves through Avea-defined formats into/out of Odoo primitives (see §21).
 
 ---
 
@@ -596,7 +597,7 @@ No automated per-tenant backup is documented in the repository. Pets Empire reli
 
 ### Customer data export (**Planned** — regulatory)
 
-On cancellation: offer export (products CSV, partners, POS orders) before archive. Implementation **Future**; architecture reserves control plane `export_job`.
+On cancellation: offer owner-facing CSV export (products, customers, sales, transactions — see §21.4) before archive, plus control plane PostgreSQL/filestore dump. Implementation **Future**; architecture reserves `avea.export.job` (tenant) and `export_job` (control plane).
 
 ---
 
@@ -829,10 +830,211 @@ Installed as POS transitive dependencies. Uses Odoo cloud services for partner a
 | Promotions UX | Avea `avea.promotion` | Wraps `loyalty.program` |
 | Signup, billing, plans | Control plane | Not Odoo's domain |
 | Menu / branding | Avea module | Product identity |
+| Import / export jobs | Avea `avea.import.*` / `avea.export.*` (**Planned**) | Platform capability; Odoo stores data |
+| CSV / file templates | Avea-defined schemas | Product-owned interchange format |
 
 ---
 
-## 21. What is already implemented
+## 21. Import and export (platform capability)
+
+Import and export are **platform-wide Avea capabilities**. They are not owned by Customer Centre, Stock Workspace, or any single feature menu. Every workspace may *surface* import/export actions, but the **engine, formats, job model, and permissions** are shared.
+
+**Status today:** **Not implemented** as an Avea product surface. Odoo's generic `base_import` is available in Community but is **not** part of Avea's SaaS template strategy and must not be exposed to retail users (see §18).
+
+### 21.1 Strategic goals
+
+| Goal | Detail |
+|------|--------|
+| **Onboarding** | New tenants bring products, customers, and opening stock from spreadsheets or prior systems |
+| **Migration** | Legitimate business data moves from tools like ShakeYourTail (see `docs/PHASE_5.md`) without parallel databases |
+| **Operations** | Owners periodically bulk-update catalogue or customer lists |
+| **Compliance & offboarding** | Tenants export their data; Avea exports on cancellation before archive |
+| **Support** | Operators assist with validated imports under audit |
+
+### 21.2 Architectural placement
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  AVEA UI (Planned)                                               │
+│  Settings → Data  OR  top-level "Import / Export" workspace    │
+│  + contextual actions in Stock, Customers, Reports             │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────┐
+│  AVEA IMPORT/EXPORT ENGINE (Planned — tenant Odoo)               │
+│  avea.import.job / avea.export.job                               │
+│  Validation → preview → apply (import) / generate (export)       │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ writes / reads
+┌────────────────────────────▼────────────────────────────────────┐
+│  ODOO PRIMITIVES (source of truth — Implemented)                 │
+│  product.template, res.partner, stock.quant / stock take,        │
+│  pos.order, avea.business.transaction, account.move, …           │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  CONTROL PLANE (Planned — tenant lifecycle export only)          │
+│  Full DB archive on cancellation; not day-to-day business export │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Decision (do not casually change):** Business import/export runs **inside the tenant Odoo DB** via Avea jobs. Full-database export on tenant deletion is a **control plane** operator action (PostgreSQL dump + filestore), separate from owner-facing CSV exports.
+
+### 21.3 Import domains (Future product roadmap)
+
+| Domain | Target Odoo primitive | Avea entry point (Planned) | Priority |
+|--------|----------------------|----------------------------|----------|
+| **Products** | `product.template` (+ `product.supplierinfo`) | Stock → Import Products; onboarding | P1 |
+| **Customers** | `res.partner` (customer_rank) | Customers → Import; onboarding | P1 |
+| **Opening stock** | `avea.stock.take` → apply inventory adjustment | Stock → Import Opening Stock; onboarding | P1 |
+| **Suppliers** | `res.partner` (supplier_rank) | Stock → Import Suppliers | P2 |
+| **Categories / brands** | `product.category`, `product.tag` | Stock → Import (embedded or separate) | P2 |
+| **Opening balances / accounting** | `account.move` (opening entry) | Money / Accounting (**Future**, Phase 5) | P3 |
+| **Promotions** | `avea.promotion` / `loyalty.program` | Promotions | P3 |
+
+#### Product import — field mapping (Planned)
+
+Imports write **underlying Odoo fields**, not Avea computed columns. The Stock Workspace displays computed Avea pricing fields (`avea_markup_percent`, `avea_margin_percent`, etc.) but imports must set:
+
+| CSV column (Avea format) | Odoo field | Notes |
+|--------------------------|------------|-------|
+| `sku` | `default_code` | **Primary match key** for updates |
+| `barcode` | `barcode` | Secondary match key |
+| `name` | `name` | Required on create |
+| `cost_ex_vat` | `standard_price` | ADR-008: cost is EX tax |
+| `retail_inc_vat` | `list_price` | ADR-008: retail is INC tax |
+| `sales_tax` | `taxes_id` | Resolve by name or rate — country-specific |
+| `category` | `categ_id` | Match by name or create (**Open decision**) |
+| `sell_on_pos` | `available_in_pos` | Boolean |
+| `track_stock` | `is_storable` / tracking flags | Maps to Odoo stock settings |
+| `supplier_name` | `seller_ids` via `avea_supplier_id` | Optional |
+| `import_ref` | `avea_import_ref` | **Design-now field** — see §21.8 |
+
+#### Customer import — field mapping (Planned)
+
+| CSV column | Odoo field | Notes |
+|------------|------------|-------|
+| `email` | `email` | Primary match key when present |
+| `phone` | `phone` / `mobile` | Secondary match key |
+| `name` | `name` | Required on create |
+| `street`, `city`, `zip` | address fields | Optional |
+| `import_ref` | `avea_import_ref` | **Design-now field** |
+
+#### Opening stock import (Planned)
+
+Opening stock **must not** write quantities directly to a custom table. It must use the same authoritative path as Stock Take (**Implemented**):
+
+1. Create `avea.stock.take` in `review` mode with scope `partial` or `everything`.
+2. Populate `avea.stock.take.line` with `counted_qty` from CSV (`sku` / `barcode` match).
+3. User previews variances (or onboarding skips review with explicit confirmation).
+4. Apply via existing stock take apply logic → Odoo inventory adjustment.
+
+This reuses `avea.stock.take` / `avea.stock.take.line` and avoids a second stock-correction code path (ADR-003).
+
+### 21.4 Export domains (Future product roadmap)
+
+Exports produce **Avea-branded CSV/XLSX** (and PDF where a report already exists). Prefer **Avea read models and workspaces** over raw Odoo technical exports.
+
+| Domain | Source | Avea entry point (Planned) | Format | Priority |
+|--------|--------|----------------------------|--------|----------|
+| **Products** | `product.template` | Stock → Export | CSV/XLSX | P1 |
+| **Customers** | `res.partner` | Customers → Export | CSV/XLSX | P1 |
+| **Sales / POS orders** | `pos.order` | Sessions / Reports | CSV/XLSX | P1 |
+| **Transactions** | `avea.business.transaction` (**Implemented** view) | Business Overview → Export | CSV/XLSX | P1 |
+| **Stock on hand** | `product.template` + `qty_available` | Stock → Export | CSV/XLSX | P1 |
+| **Stock movements** | `stock.move` / receive records | Stock → Export | CSV/XLSX | P2 |
+| **Store credit ledger** | `avea.credit.ledger.entry` | Customer Credit → Export | CSV/XLSX | P2 |
+| **Cash ups** | `avea.cash.up` | Sessions → Export | CSV/XLSX | P2 |
+| **Accounting / GL** | `account.move.line` | Money / Accounting (**Future**) | CSV/XLSX | P3 |
+| **Full business backup** | Tenant DB | Settings → Data (owner request) | ZIP of CSVs | P2 |
+| **Tenant archive** | PostgreSQL + filestore | Control plane on cancellation | Operator dump | P1 (ops) |
+
+**Decision:** Transaction exports for owners use `avea.business.transaction` (ADR-012), not duplicated exports of `pos.payment`, `account.bank.statement.line`, and till movements separately.
+
+### 21.5 Planned job model (not yet built)
+
+| Model | Purpose |
+|-------|---------|
+| `avea.import.job` | Uploaded file, type (`product`, `customer`, `opening_stock`, …), state (`draft`, `validated`, `applied`, `failed`), error log, row counts |
+| `avea.import.job.line` | Per-row validation result, match action (`create`, `update`, `skip`, `error`) |
+| `avea.export.job` | Requested export type, filters (date range, category), state, output `ir.attachment` |
+
+Shared infrastructure (**Planned**):
+
+- File upload → `ir.attachment` linked to job
+- Async processing for large files (Odoo `queue_job` **Open decision** vs cron chunks)
+- Owner notification on completion (mail / bus)
+- Audit: `create_uid`, `applied_at`, downloadable error report
+
+### 21.6 Permissions and entitlements
+
+| Capability | Default role | Paid tier (**Planned**) |
+|------------|--------------|-------------------------|
+| Export products/customers/sales | Owner, Manager | Free (read own data) |
+| Import products/customers | Owner | Free (with row limits **Open decision**) |
+| Import opening stock | Owner | Free at onboarding only vs always — **Open decision** |
+| Export accounting | Owner | Paid / accounting add-on |
+| Support-initiated import | Avea operator | Internal only |
+
+Enforce via Avea groups (e.g. `group_avea_data_import`, `group_avea_data_export`) plus optional `ir.config_parameter` row limits for Free tier.
+
+### 21.7 UX placement (Planned)
+
+Import/export is **not** buried inside Customer Centre alone.
+
+| Surface | Import | Export |
+|---------|--------|--------|
+| **Settings → Data** | All types, history, templates download | All types, job history |
+| **Stock Workspace** | Products, opening stock | Products, stock on hand |
+| **Customer Centre** | Customers | Customers |
+| **Business Overview / Transactions** | — | Transactions, sales summaries |
+| **Onboarding wizard** | Simplified product + opening stock + customers | — |
+
+### 21.8 Design now to avoid future rework
+
+The following should be respected **in current and near-term feature work** even before the import/export engine is built. One optional minimal code addition is flagged.
+
+| # | Design rule | Rationale | Action now |
+|---|-------------|-----------|------------|
+| DN-1 | **SKU (`default_code`) is the canonical product match key** | Stable across import, export, POS, stock | Already true in Stock Workspace — do not introduce parallel product codes |
+| DN-2 | **Email / phone are canonical customer match keys** | Import deduplication | Use in Customer Centre list columns |
+| DN-3 | **Imports write Odoo base fields, not Avea computed fields** | `avea_markup_percent` etc. are derived (ADR-008) | Document in Stock/import specs; validation in future job |
+| DN-4 | **Opening stock uses `avea.stock.take` apply path** | Single stock correction mechanism | Do not add a separate "opening balance" quantity table |
+| DN-5 | **Exports use Avea read models where they exist** | Consistent owner-facing columns | `avea.business.transaction` for money history |
+| DN-6 | **Do not expose Odoo `base_import` or raw list Export in SaaS** | UX and terminology leak | Suppress with menu/security strategy (§17) |
+| DN-7 | **Add `avea_import_ref` on `product.template` and `res.partner`** | Stable external ID for re-import and migrations (ShakeYourTail, etc.) | **Recommended minimal field now** — optional Char, indexed; no import UI yet |
+| DN-8 | **CSV templates are versioned** | `avea.import.format.version` in template header row | Define when first import ships |
+| DN-9 | **No parallel staging tables for business entities** | ADR-003 | Job lines are validation metadata only, not a second product catalogue |
+| DN-10 | **Control plane full export ≠ owner CSV export** | Different audiences and formats | Keep architectures separate (§11, §13) |
+
+#### Optional minimal implementation (recommended, not required for next sprint)
+
+Adding `avea_import_ref` (Char, indexed, copy=False) to `product.template` and `res.partner` is ~30 lines and prevents painful deduplication logic later. **No import UI required yet.** If deferred, imports must rely on SKU/email only and migration from systems without SKUs becomes harder.
+
+### 21.9 Relationship to other roadmap items
+
+| Roadmap item | Import/export dependency |
+|--------------|-------------------------|
+| **UX suppression** | Must hide Odoo native import/export on list views |
+| **Settings consolidation** | "Data" section hosts platform import/export hub |
+| **Onboarding** | First import of products, customers, opening stock |
+| **Customer Centre** | Customer import/export actions link to shared engine |
+| **SaaS cancellation** | Control plane archive complements owner CSV export |
+
+### 21.10 Phased delivery
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| **0 — Design hooks** | DN-1–DN-7; optional `avea_import_ref` fields | **Planned** |
+| **1 — Export MVP** | Products, customers, transactions CSV | **Future** |
+| **2 — Import MVP** | Products, customers with preview/validate | **Future** |
+| **3 — Opening stock import** | Via stock take apply | **Future** |
+| **4 — Accounting export** | With Phase 5 Money workspace | **Future** |
+| **5 — Support tooling** | Operator import on behalf of tenant | **Future** |
+
+---
+
+## 22. What is already implemented
 
 | Area | Evidence |
 |------|----------|
@@ -849,7 +1051,7 @@ Installed as POS transitive dependencies. Uses Odoo cloud services for partner a
 
 ---
 
-## 22. What still needs to be built
+## 23. What still needs to be built
 
 ### Platform (SaaS)
 
@@ -866,16 +1068,27 @@ Installed as POS transitive dependencies. Uses Odoo cloud services for partner a
 | Upgrade fan-out tooling | P1 |
 | Billing integration | P1 |
 | Support admin / impersonation | P1 |
-| Customer data export | P2 |
+| Tenant archive export (control plane) | P1 |
 | Multi-location provisioning | P2 |
+
+### Import / export platform (see §21)
+
+| Component | Priority |
+|-----------|----------|
+| Design hooks (`avea_import_ref`, DN-1–DN-7) | P1 |
+| Export MVP (products, customers, transactions) | P2 |
+| Import MVP (products, customers, preview) | P2 |
+| Opening stock import (via stock take) | P2 |
+| Settings → Data hub UI | P2 |
+| Accounting export | P3 (with Phase 5) |
 
 ### Product layer (pre-SaaS polish)
 
-See §23 and the implementation roadmap communicated separately.
+See §24 and the implementation roadmap communicated separately.
 
 ---
 
-## 23. Pre-SaaS product layer completion
+## 24. Pre-SaaS product layer completion
 
 Before or in parallel with first external tenant, these Avea product gaps identified in the feasibility audit should be addressed. **None are implemented as complete product surfaces today.**
 
@@ -885,17 +1098,23 @@ Before or in parallel with first external tenant, these Avea product gaps identi
 | **Settings consolidation** | Email/printed receipt in Avea; cash/journal/POS settings still in Odoo Settings | All owner settings in Avea Settings |
 | **Odoo UX suppression** | All Odoo root menus visible | Avea-only navigation for standard users |
 | **Customer onboarding** | None | First-login wizard: business → till → product → open POS |
+| **Import / export** | Not implemented (Odoo native import hidden in SaaS) | Platform capability under Settings → Data (§21) |
 
 Recommended implementation order is documented in project planning discussions; architectural dependency is:
 
 1. **UX suppression** first (otherwise onboarding and settings work is undermined by Odoo leakage)
-2. **Settings consolidation** (onboarding will configure settings)
-3. **Onboarding wizard** (depends on settings surface)
+2. **Settings consolidation** (onboarding will configure settings; includes **Data** section shell for future import/export)
+3. **Onboarding wizard** (depends on settings surface; optional import steps wired later to §21 engine)
 4. **Customer Centre** (can parallel after suppression; not blocking first POS sale)
+5. **Import / export engine** (after Customer Centre shell and Settings → Data exist; export before import)
+
+#### Import / export vs Customer Centre
+
+Customer Centre will expose **customer** import/export actions only. The shared engine, job history, CSV templates, and Settings → Data hub are **platform-owned** (§21). Do not implement customer CSV logic only inside Customer Centre.
 
 ---
 
-## 24. Scaling strategy
+## 25. Scaling strategy
 
 ### Capacity model (based on current server)
 
@@ -927,7 +1146,7 @@ Recommended implementation order is documented in project planning discussions; 
 
 ---
 
-## 25. Known risks and open architectural questions
+## 26. Known risks and open architectural questions
 
 ### Known risks
 
@@ -956,10 +1175,14 @@ Recommended implementation order is documented in project planning discussions; 
 | 8 | Country templates at launch | ZA only vs multi-country |
 | 9 | Auth: password reset owner | Odoo native vs control plane |
 | 10 | Free tier seat limit | 1 vs 2 users |
+| 11 | Free tier import row limits | Unlimited vs capped per job |
+| 12 | Opening stock import timing | Onboarding only vs always available |
+| 13 | Async import processing | Cron chunks vs `queue_job` / external worker |
+| 14 | Category/tag on product import | Auto-create vs reject unknown |
 
 ---
 
-## 26. Decisions that should not be casually changed
+## 27. Decisions that should not be casually changed
 
 | # | Decision | Rationale |
 |---|----------|-----------|
@@ -973,10 +1196,14 @@ Recommended implementation order is documented in project planning discussions; 
 | D8 | Customers sign up at avea.com, not Odoo `/web/signup` | Product brand |
 | D9 | Feature namespaces `avea.till.*`, `avea.credit.*` unchanged | Production data in `avea_till_*` tables |
 | D10 | Complete product layer (suppression, settings, onboarding) before marketing SaaS broadly | First customer must not see Odoo |
+| D11 | Import/export is a platform capability, not a Customer Centre feature | Shared engine, formats, and permissions; avoids duplicate CSV logic |
+| D12 | Opening stock import uses `avea.stock.take` apply path | ADR-003: no parallel stock tables |
+| D13 | Owner exports use Avea read models (`avea.business.transaction`) where available | ADR-012: consistent owner-facing transaction history |
+| D14 | Do not expose Odoo `base_import` to SaaS retail users | UX suppression and product positioning |
 
 ---
 
-## 27. Related documents
+## 28. Related documents
 
 | Document | Purpose |
 |----------|---------|
@@ -986,11 +1213,13 @@ Recommended implementation order is documented in project planning discussions; 
 | `docs/deployment.md` | Module upgrade process |
 | `docs/project-structure.md` | Code organisation |
 | `docs/PHASE_5.md` | Future accounting / grooming (not first SaaS launch) |
+| `docs/decisions.md` | ADR-013 — Import/export platform capability |
 
 ---
 
-## 28. Revision history
+## 29. Revision history
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-09-18 | Avea engineering | Initial authoritative SaaS platform architecture from feasibility audit |
+| 1.1 | 2026-09-18 | Avea engineering | §21 Import/export platform capability; design-now rules; roadmap integration |

@@ -384,3 +384,30 @@ Do **not** also list `pos.payment`, cash-sale till movements, POS-linked store-c
 ### Tests
 
 Cover one-row-per-POS-order, no payment duplication, reference search, open-source navigation, and cash withdrawal visibility.
+
+---
+
+# ADR-013
+
+## Import and export are platform capabilities
+
+Status
+
+Accepted
+
+Reason
+
+Import and export are needed across products, customers, opening stock, sales, transactions, and (later) accounting — not only in Customer Centre. Building CSV logic per feature would duplicate validation, permissions, job history, and formats.
+
+Decision
+
+- Treat import/export as a **platform-wide Avea capability** with shared models (`avea.import.job`, `avea.export.job` — when built), CSV templates, and a **Settings → Data** hub.
+- Feature workspaces (Stock, Customers, Business Overview) expose **contextual actions** that delegate to the shared engine.
+- **Imports write Odoo primitives** (`product.template`, `res.partner`, stock take apply path) — not Avea computed fields or parallel staging catalogues (ADR-003, ADR-008).
+- **Opening stock import** uses the existing `avea.stock.take` apply flow, not a separate quantity table.
+- **Owner-facing transaction export** uses `avea.business.transaction` (ADR-012), not raw `account.move.line` exports.
+- **Do not expose** Odoo `base_import` or generic list Export to SaaS retail users.
+- **Canonical match keys:** SKU (`default_code`) for products; email/phone for customers; optional `avea_import_ref` on `product.template` and `res.partner` for external system IDs (recommended design-now field).
+- **Control plane full-database archive** on tenant cancellation is separate from owner CSV export.
+
+See `docs/architecture/saas-platform.md` §21 for full strategy and phased delivery.
