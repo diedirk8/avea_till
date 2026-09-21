@@ -1,0 +1,18 @@
+/* Avea backend chrome */
+
+:root {
+    --avea-brand: #c45c26;
+    --avea-brand-soft: rgba(196, 92, 38, 0.12);
+    --avea-header-border: #e8eaed;
+    --avea-header-text: #1f2937;
+}
+
+.o_avea_login_brand {
+    color: var(--avea-brand);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.o_database_list .card-body .border-bottom {
+    border-color: var(--avea-header-border) !important;
+}

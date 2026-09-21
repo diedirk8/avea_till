@@ -138,6 +138,22 @@ class PosConfig(models.Model):
             limit=1,
         )
 
+    @api.model
+    def action_avea_open_pos(self):
+        """Launch the existing Avea POS from Avea navigation."""
+        configs = self.search(
+            [("company_id", "in", self.env.companies.ids)],
+            order="id",
+        )
+        if not configs:
+            raise UserError(
+                _("No till is set up yet. Ask an owner to configure Point of Sale.")
+            )
+        preferred = configs.filtered(
+            lambda config: config.current_session_id.user_id == self.env.user
+        )
+        return (preferred[:1] or configs[:1]).open_ui()
+
     def action_avea_ensure_dedicated_cash_journal(self):
         self.ensure_one()
         if self.current_session_id:

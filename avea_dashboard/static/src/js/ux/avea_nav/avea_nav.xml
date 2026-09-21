@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.AveaNav">
+        <div class="o_avea_shell" t-ref="root">
+            <aside
+                class="o_avea_sidebar"
+                t-att-class="{ 'o_avea_sidebar_collapsed': state.collapsed, 'o_avea_sidebar_mobile_open': state.mobileOpen }"
+                aria-label="Avea navigation"
+            >
+                <div class="o_avea_sidebar_header">
+                    <a
+                        href="/odoo"
+                        class="o_avea_sidebar_brand"
+                        t-on-click.prevent="onBrandClick"
+                        title="Avea"
+                    >
+                        <span class="o_avea_sidebar_brand_full">Avea</span>
+                        <span class="o_avea_sidebar_brand_short">A</span>
+                    </a>
+                </div>
+
+                <div class="o_avea_sidebar_body">
+                    <button
+                        t-if="sellAction"
+                        type="button"
+                        class="o_avea_sidebar_sell"
+                        t-on-click="onSellClick"
+                    >
+                        <span class="o_avea_sidebar_sell_label" t-esc="sellAction.label"/>
+                    </button>
+
+                    <nav class="o_avea_sidebar_nav" aria-label="Main">
+                        <button
+                            t-if="homeItem"
+                            type="button"
+                            class="o_avea_sidebar_link o_avea_sidebar_home"
+                            t-att-class="{ 'o_avea_sidebar_link_active': isHomeActive() }"
+                            t-on-click="onHomeClick"
+                            t-esc="homeItem.label"
+                        />
+
+                        <t t-foreach="sections" t-as="section" t-key="section.id">
+                            <div
+                                class="o_avea_sidebar_section"
+                                t-att-class="{ 'o_avea_sidebar_section_active': isSectionActive(section) }"
+                            >
+                                <button
+                                    type="button"
+                                    class="o_avea_sidebar_section_toggle"
+                                    t-att-class="{ 'o_avea_sidebar_section_toggle_open': isSectionExpanded(section) }"
+                                    t-on-click="() => this.toggleSection(section)"
+                                >
+                                    <span t-esc="section.label"/>
+                                    <i class="o_avea_sidebar_chevron" aria-hidden="true"/>
+                                </button>
+
+                                <div
+                                    t-if="isSectionExpanded(section)"
+                                    class="o_avea_sidebar_section_items"
+                                >
+                                    <t t-foreach="section.items" t-as="item" t-key="item_index">
+                                        <t t-if="isLinkItem(item)">
+                                            <button
+                                                type="button"
+                                                class="o_avea_sidebar_link"
+                                                t-att-class="{ 'o_avea_sidebar_link_active': isItemActive(item) }"
+                                                t-on-click="() => this.onSectionItemClick(section, item)"
+                                                t-esc="item.label"
+                                            />
+                                        </t>
+                                        <t t-if="isGroupItem(item)">
+                                            <div class="o_avea_sidebar_group">
+                                                <button
+                                                    type="button"
+                                                    class="o_avea_sidebar_group_toggle"
+                                                    t-att-class="{ 'o_avea_sidebar_group_toggle_open': isGroupExpanded(groupKey(item)) }"
+                                                    t-on-click="() => this.toggleGroup(groupKey(item))"
+                                                >
+                                                    <span t-esc="item.label"/>
+                                                    <i class="o_avea_sidebar_chevron" aria-hidden="true"/>
+                                                </button>
+                                                <div
+                                                    t-if="isGroupExpanded(groupKey(item))"
+                                                    class="o_avea_sidebar_group_items"
+                                                >
+                                                    <t t-foreach="item.items" t-as="nested" t-key="nested.menu_xmlid">
+                                                        <button
+                                                            type="button"
+                                                            class="o_avea_sidebar_link o_avea_sidebar_link_nested"
+                                                            t-att-class="{ 'o_avea_sidebar_link_active': isItemActive(nested) }"
+                                                            t-on-click="() => this.onNestedItemClick(section, item, nested)"
+                                                            t-esc="nested.label"
+                                                        />
+                                                    </t>
+                                                </div>
+                                            </div>
+                                        </t>
+                                    </t>
+                                </div>
+                            </div>
+                        </t>
+                    </nav>
+                </div>
+
+                <div t-if="settingsNav" class="o_avea_sidebar_footer">
+                    <div class="o_avea_sidebar_footer_divider"/>
+                    <div
+                        class="o_avea_sidebar_settings"
+                        t-att-class="{ 'o_avea_sidebar_settings_active': isSettingsActive() }"
+                    >
+                        <button
+                            type="button"
+                            class="o_avea_sidebar_section_toggle o_avea_sidebar_settings_toggle"
+                            t-att-class="{ 'o_avea_sidebar_section_toggle_open': state.settingsOpen }"
+                            t-on-click="toggleSettings"
+                        >
+                            <span t-esc="settingsNav.label"/>
+                            <i class="o_avea_sidebar_chevron" aria-hidden="true"/>
+                        </button>
+                        <div t-if="state.settingsOpen" class="o_avea_sidebar_section_items">
+                            <t t-foreach="settingsNav.items" t-as="item" t-key="item.menu_xmlid">
+                                <button
+                                    type="button"
+                                    class="o_avea_sidebar_link"
+                                    t-att-class="{ 'o_avea_sidebar_link_active': isItemActive(item) }"
+                                    t-on-click="() => this.onSettingsItemClick(item)"
+                                    t-esc="item.label"
+                                />
+                            </t>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="o_avea_sidebar_collapse_btn d-none d-lg-flex"
+                        t-on-click="toggleCollapsed"
+                        t-att-title="state.collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                        t-att-aria-label="state.collapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+                    >
+                        <i
+                            class="o_avea_sidebar_collapse_icon"
+                            t-att-class="state.collapsed ? 'o_avea_sidebar_collapse_icon_expand' : 'o_avea_sidebar_collapse_icon_collapse'"
+                            aria-hidden="true"
+                        />
+                    </button>
+                </div>
+            </aside>
+
+            <header class="o_avea_topbar">
+                <button
+                    type="button"
+                    class="o_avea_topbar_menu_btn d-lg-none"
+                    t-on-click="toggleMobile"
+                    aria-label="Open menu"
+                >
+                    <span class="o_avea_topbar_menu_bar"/>
+                    <span class="o_avea_topbar_menu_bar"/>
+                </button>
+
+                <button
+                    t-if="sellAction"
+                    type="button"
+                    class="o_avea_topbar_sell d-lg-none"
+                    t-on-click="onSellClick"
+                    t-esc="sellAction.label"
+                />
+
+                <div class="o_avea_topbar_company" t-esc="companyName"/>
+
+                <div
+                    class="o_avea_user_menu"
+                    t-att-class="{ 'o_avea_user_menu_open': state.userMenuOpen }"
+                >
+                    <button
+                        type="button"
+                        class="o_avea_user_menu_trigger"
+                        t-on-click="toggleUserMenu"
+                        t-att-aria-expanded="state.userMenuOpen ? 'true' : 'false'"
+                        aria-haspopup="true"
+                    >
+                        <span class="o_avea_user_menu_avatar" t-esc="userInitials"/>
+                        <span class="o_avea_user_menu_name d-none d-md-inline" t-esc="userName"/>
+                    </button>
+
+                    <div
+                        t-if="state.userMenuOpen"
+                        class="o_avea_user_menu_panel"
+                        t-on-click.stop="onUserMenuPanelClick"
+                    >
+                        <div class="o_avea_user_menu_header">
+                            <span class="o_avea_user_menu_header_avatar" t-esc="userInitials"/>
+                            <span class="o_avea_user_menu_header_name" t-esc="userName"/>
+                        </div>
+
+                        <t t-if="hasMultipleCompanies">
+                            <div class="o_avea_user_menu_section_label">Company</div>
+                            <t t-foreach="companies" t-as="company" t-key="company.id">
+                                <button
+                                    type="button"
+                                    class="o_avea_user_menu_item"
+                                    t-att-class="{ 'o_avea_user_menu_company_active': isActiveCompany(company) }"
+                                    t-on-click="() => this.onSwitchCompany(company.id)"
+                                    t-esc="company.name"
+                                />
+                            </t>
+                            <div class="o_avea_user_menu_divider"/>
+                        </t>
+
+                        <button
+                            type="button"
+                            class="o_avea_user_menu_item o_avea_user_menu_logout"
+                            t-on-click="onLogout"
+                        >
+                            Log out
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <t t-if="state.mobileOpen">
+                <div class="o_avea_sidebar_backdrop d-lg-none" t-on-click="closeMobile"/>
+            </t>
+        </div>
+    </t>
+
+</templates>

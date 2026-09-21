@@ -1,3 +1,4 @@
+from . import controllers
 from . import models
 from . import report
 from .models.till import till_dashboard  # register avea.till.dashboard
@@ -10,6 +11,7 @@ def post_init_hook(env):
     _avea_credit_assign_default_groups(env)
     _avea_cash_up_assign_default_groups(env)
     _avea_correct_payment_assign_default_groups(env)
+    env["res.users"]._avea_assign_default_roles()
 
 
 def _avea_credit_assign_default_groups(env):

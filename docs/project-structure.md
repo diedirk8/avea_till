@@ -65,6 +65,7 @@ Feature (e.g. credit/)
 | Customer Credit | `avea.credit.*` | Store credit foundation (placeholders) |
 | Operations | `avea.operational.*` / `avea.money.*` | Account balances, operational expense, money transfer |
 | Stock | `avea.stock.*` + `product.template` extensions | Stock Workspace catalogue, New/Edit Stock Item, Receive Stock, Return Stock |
+| UX / product shell | role groups + `ir.ui.menu` / `ir.http` | Owner/Manager/Cashier profiles, Odoo menu suppression, Sell, Avea chrome |
 
 ### Adding a new feature
 

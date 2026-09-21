@@ -1,7 +1,7 @@
 # Avea SaaS Platform Architecture
 
 **Status:** Authoritative technical reference  
-**Version:** 1.1  
+**Version:** 1.2  
 **Last updated:** 2026-09-18  
 **Audience:** Developers, product owners, operators  
 
@@ -85,7 +85,7 @@ Avea is a **customer-facing retail product**. Odoo Community is the **business e
 | POS branding | Avea POS navbar, receipts, payment screen | **Implemented** |
 | Customer Centre | — | **Planned** |
 | Onboarding | — | **Planned** |
-| Menu / UX suppression | — | **Planned** |
+| Menu / UX suppression | Owner/Manager/Cashier roles; Odoo roots hidden for Avea users; Sell; `/web` → Avea Dashboard | **Implemented** (Step 1) |
 
 ### Avea module facts (**Implemented**)
 
@@ -93,12 +93,12 @@ Avea is a **customer-facing retail product**. Odoo Community is the **business e
 |------|-------|
 | Repository folder | `avea_dashboard/` |
 | Technical module name (DB) | `avea_till` (ADR-004 rename to `avea_dashboard` accepted; DB record not yet aligned everywhere) |
-| Version | `19.0.3.9.132` |
+| Version | `19.0.3.10.0` |
 | License | LGPL-3 |
 | Declared `depends` | `point_of_sale`, `pos_hr`, `pos_loyalty`, `account`, `contacts`, `mail`, `purchase_stock` |
 | Transitive Community deps | 37 modules (verified on `petsempire_dev`) |
 | `application` | `True` — appears as "Avea Dashboard" app |
-| Tests | 138 test methods across 16 test files |
+| Tests | 145 test methods across 17 test files |
 
 ### Odoo Enterprise separation (**Implemented** — not in use)
 
@@ -376,6 +376,9 @@ wkhtmltopdf loads report assets via HTTP from `report.url` or `web.base.url`. In
 
 | Group | XML ID | Purpose |
 |-------|--------|---------|
+| Cashier | `avea_till.group_avea_cashier` | Role profile: POS + own till |
+| Manager | `avea_till.group_avea_manager` | Role profile: full Avea nav |
+| Owner | `avea_till.group_avea_owner` | Role profile: implies Manager; no `group_system` |
 | Cash Up User | `avea_till.group_avea_cash_up_user` | Cash up own till |
 | Cash Up Manager | `avea_till.group_avea_cash_up_manager` | Cash up any till |
 | Credit Manager | `avea_till.group_avea_credit_manager` | Issue store credit |
@@ -383,13 +386,17 @@ wkhtmltopdf loads report assets via HTTP from `report.url` or `web.base.url`. In
 
 **Implemented** Odoo groups in use: `point_of_sale.group_pos_user`, `group_pos_manager`, `base.group_user`, `base.group_system`.
 
-### Planned role profiles (**Planned**)
+### Role profiles (**Implemented** — Step 1)
 
-| Avea role | Odoo groups | Menus visible |
-|-----------|-------------|---------------|
-| Owner | POS manager + all Avea groups + restricted admin | Full Avea nav; no Odoo Apps/Settings |
-| Manager | POS manager + Avea operational groups | Avea nav; no system settings |
-| Cashier | POS user + cash up user | POS + limited Avea (sessions own till) |
+Roles compose the capability groups above. They do not replace them.
+
+| Avea role | Odoo / Avea groups | Menus visible |
+|-----------|--------------------|---------------|
+| Owner | Implies Manager (POS manager + all Avea capabilities). No `base.group_system` | Full Avea nav including Sell; no Odoo Apps/Settings |
+| Manager | Implies Cashier + POS manager + operational Avea groups | Full Avea nav including Sell; no Odoo Apps/Settings |
+| Cashier | POS user + stock user + cash up user | Sell + Sessions (own till) |
+
+Settings administrators (`base.group_system`) keep the full Odoo backend so operators can still reach underlying functionality. Standard Avea users never receive `group_system`.
 
 ### Entitlement enforcement (**Planned**)
 
@@ -405,7 +412,7 @@ Control plane entitlement revoked
   → deactivate promotions (soft)
 ```
 
-**Do not rely on groups alone** without hiding Odoo Settings — a user with `base.group_system` can self-assign groups. **Planned:** standard users never receive `group_system`.
+**Do not rely on groups alone** without hiding Odoo Settings — a user with `base.group_system` can self-assign groups. Standard Avea users never receive `group_system`. Settings administrators keep Odoo Settings for operations.
 
 ---
 
@@ -717,39 +724,38 @@ Outbound mail today uses Odoo `ir.mail_server` configuration per instance (**Imp
 |---------|----------|
 | POS | "Avea POS" wordmark (`static/src/pos/navbar.xml`) |
 | Backend app | "Avea Dashboard" (`views/menu.xml`) |
+| Backend chrome | Avea title, favicon, login mark, navbar colour (`views/ux/branding.xml`, `static/src/scss/ux/avea_backend.scss`) |
 | Reports | `avea_report_branding.xml`, `avea_report_layout.xml` |
 | Receipts | Avea email and print templates |
 
-### Odoo UX still exposed (**Implemented** — problem for SaaS)
+### Odoo UX suppression (**Implemented** — Step 1)
 
-Root menus visible to a regular non-admin user on `petsempire_dev` (verified via Odoo shell):
+Normal Avea users (Owner / Manager / Cashier, without `base.group_system`) see only the Avea Dashboard app. Non-Avea root menus stay installed and reachable by Settings administrators and by direct URL/RPC; they are filtered out of `ir.ui.menu._visible_menu_ids`.
 
-| Menu | Status |
-|------|--------|
-| Discuss | Exposed |
-| Contacts | Exposed |
-| Sales | Exposed |
-| Dashboards (spreadsheet) | Exposed |
-| Point of Sale (backend) | Exposed |
-| Accounting (+ om_* menus) | Exposed |
-| Avea Dashboard | Avea |
-| Purchase | Exposed |
-| Inventory | Exposed |
-| Employees | Exposed |
-| Link Tracker | Exposed |
-| Apps | Exposed |
-| Settings | Exposed |
-| Tests | Exposed |
+`/web` and `/odoo` use the user's Avea home action (Business Overview for Manager/Owner, Session Dashboard for Cashier). **Sell** launches the existing Avea POS.
 
-**No menu suppression module exists.** MuK theme (`muk_web_theme`) reskins backend but does not hide menus. MuK is installed on Pets Empire but is **not** an Avea dependency.
+### Avea native navigation (**Implemented** — Step 1 nav, ADR-015)
 
-### Suppression strategy (**Planned**)
+The Odoo `NavBar` is replaced by an **AveaNav** sidebar shell for product-shell users:
 
-1. Define Avea role → allowed `ir.ui.menu` XML IDs.
-2. Deactivate or `groups`-restrict all non-Avea root menus for `base.group_user`.
-3. Remove `sale`, `purchase`, `hr` modules from SaaS template if not needed (reduces leakage).
-4. Custom redirect: `/web` → Avea Dashboard action for standard users.
-5. Ongoing: patch systray, breadcrumbs, error messages that say "Odoo".
+| Pattern | Purpose |
+|---------|---------|
+| Left sidebar | Modern SaaS layout; default expanded, optional pin/collapse |
+| Standalone Home | Business Overview (Manager/Owner) or Today's Session (Cashier) |
+| Accordion sections | Business, Sessions, Stock, Customers, Money — nested groups where needed |
+| Sell CTA | Full-width primary button at top of sidebar |
+| Settings footer | Separated at bottom of sidebar, not a business area |
+| Minimal top bar | Company name + Avea user menu (no Odoo systray); page-level sub-nav stays in content |
+| Mobile drawer | Hamburger opens the same sidebar structure |
+| Server-driven payload | `session.avea_nav` from `avea.nav.mixin`, filtered by role rank and menu visibility |
+
+**Cashier:** Home + Sell only. **Manager/Owner:** Home, Sell, accordion sections, and Settings footer. Existing menu XML IDs and routes are unchanged. POS still uses Odoo POS chrome when Sell opens.
+
+MuK (`muk_web_theme`) may still be installed on Pets Empire. It is **not** an Avea dependency and is not the Avea theme.
+
+### Remaining branding leaks (**Planned**)
+
+Systray, some breadcrumbs, POS chrome, and error messages that say "Odoo" are not fully rewritten. Settings, onboarding, and Customer Centre are later steps.
 
 ---
 
@@ -1038,16 +1044,18 @@ Adding `avea_import_ref` (Char, indexed, copy=False) to `product.template` and `
 
 | Area | Evidence |
 |------|----------|
-| Avea retail product (POS, till, stock, credit, promotions, operations) | `avea_dashboard/` v`19.0.3.9.132`, 138 tests |
+| Avea retail product (POS, till, stock, credit, promotions, operations) | `avea_dashboard/` v`19.0.3.11.0` |
 | Odoo 19 Community engine | Docker image, 0 Enterprise modules |
 | Single-tenant production (Pets Empire) | `petsempire` DB, 1 company, 1 POS |
 | Post-install automation | `post_init_hook` in `__init__.py` |
-| Avea security groups | `security/till/`, `security/credit/` |
+| Avea security groups | `security/till/`, `security/credit/`, `security/ux/` |
 | Partial Avea Settings | Email receipt, printed receipt (ADR-011) |
 | POS branding | `navbar.xml`, receipt templates |
+| Backend product shell | Roles, menu suppression, Sell, `/web` redirect, Avea chrome (ADR-014) |
+| Avea native navigation | AveaNav section + sub-nav, role-filtered `session.avea_nav` (ADR-015) |
 | Business reporting | Overview, performance, transactions (ADR-010, ADR-012) |
 | Dev/prod Docker deployment | `docs/development-environment.md` |
-| Architecture ADRs | `docs/decisions.md` ADR-001 through ADR-012 |
+| Architecture ADRs | `docs/decisions.md` ADR-001 through ADR-014 |
 
 ---
 
@@ -1061,7 +1069,7 @@ Adding `avea_import_ref` (Char, indexed, copy=False) to `product.template` and `
 | Template database | P0 |
 | Provisioning worker | P0 |
 | Subdomain routing + `dbfilter` | P0 |
-| Menu / UX suppression | P0 |
+| Menu / UX suppression | P0 — **Implemented** Step 1 (roles, hide Odoo roots, AveaNav, Sell, `/web` redirect) |
 | Onboarding wizard | P0 |
 | Automated backups per tenant | P0 |
 | Signup UI (avea.com) | P0 |
@@ -1096,13 +1104,13 @@ Before or in parallel with first external tenant, these Avea product gaps identi
 |------|---------------|--------|
 | **Customer Centre** | `res.partner` extensions for credit; Odoo Contacts app exposed | Avea Customers workspace |
 | **Settings consolidation** | Email/printed receipt in Avea; cash/journal/POS settings still in Odoo Settings | All owner settings in Avea Settings |
-| **Odoo UX suppression** | All Odoo root menus visible | Avea-only navigation for standard users |
+| **Odoo UX suppression** | AveaNav for Owner/Manager/Cashier; Settings admins keep Odoo apps | Remaining: POS chrome, deeper "Odoo" string leaks; SaaS template without Sales/Dashboards |
 | **Customer onboarding** | None | First-login wizard: business → till → product → open POS |
 | **Import / export** | Not implemented (Odoo native import hidden in SaaS) | Platform capability under Settings → Data (§21) |
 
 Recommended implementation order is documented in project planning discussions; architectural dependency is:
 
-1. **UX suppression** first (otherwise onboarding and settings work is undermined by Odoo leakage)
+1. **UX suppression** — **Implemented** Step 1. Do not reopen except to hide remaining leaks.
 2. **Settings consolidation** (onboarding will configure settings; includes **Data** section shell for future import/export)
 3. **Onboarding wizard** (depends on settings surface; optional import steps wired later to §21 engine)
 4. **Customer Centre** (can parallel after suppression; not blocking first POS sale)
@@ -1171,7 +1179,7 @@ Customer Centre will expose **customer** import/export actions only. The shared 
 | 4 | Email verification on signup | Required vs optional for MVP |
 | 5 | Custom domains | `shop.customer.com` vs subdomain only |
 | 6 | Odoo IAP / partner autocomplete | Enable vs disable per tenant |
-| 7 | MuK theme on SaaS | Include vs pure Avea styling |
+| 7 | MuK theme on SaaS | **Decided (ADR-014):** Avea own chrome; do not depend on MuK |
 | 8 | Country templates at launch | ZA only vs multi-country |
 | 9 | Auth: password reset owner | Odoo native vs control plane |
 | 10 | Free tier seat limit | 1 vs 2 users |
@@ -1200,6 +1208,7 @@ Customer Centre will expose **customer** import/export actions only. The shared 
 | D12 | Opening stock import uses `avea.stock.take` apply path | ADR-003: no parallel stock tables |
 | D13 | Owner exports use Avea read models (`avea.business.transaction`) where available | ADR-012: consistent owner-facing transaction history |
 | D14 | Do not expose Odoo `base_import` to SaaS retail users | UX suppression and product positioning |
+| D15 | Avea chrome is first-party; do not depend on MuK as the Avea theme | ADR-014; Pets Empire may still have MuK installed |
 
 ---
 
@@ -1208,12 +1217,14 @@ Customer Centre will expose **customer** import/export actions only. The shared 
 | Document | Purpose |
 |----------|---------|
 | `docs/vision.md` | Product philosophy |
-| `docs/decisions.md` | ADR-001 – ADR-012 |
+| `docs/decisions.md` | ADR-001 – ADR-015 |
 | `docs/development-environment.md` | Current Docker deployment (note Enterprise correction pending) |
 | `docs/deployment.md` | Module upgrade process |
 | `docs/project-structure.md` | Code organisation |
 | `docs/PHASE_5.md` | Future accounting / grooming (not first SaaS launch) |
 | `docs/decisions.md` | ADR-013 — Import/export platform capability |
+| `docs/decisions.md` | ADR-014 — Avea product shell (roles, menu suppression, identity) |
+| `docs/decisions.md` | ADR-015 — Avea native navigation (section + contextual sub-nav) |
 
 ---
 
@@ -1223,3 +1234,5 @@ Customer Centre will expose **customer** import/export actions only. The shared 
 |---------|------|--------|---------|
 | 1.0 | 2026-09-18 | Avea engineering | Initial authoritative SaaS platform architecture from feasibility audit |
 | 1.1 | 2026-09-18 | Avea engineering | §21 Import/export platform capability; design-now rules; roadmap integration |
+| 1.2 | 2026-09-18 | Avea engineering | Step 1 UX suppression: roles, menu hide, Sell, `/web` redirect, Avea chrome (ADR-014) |
+| 1.3 | 2026-09-18 | Avea engineering | AveaNav: section + sub-nav, role-filtered `session.avea_nav` (ADR-015) |

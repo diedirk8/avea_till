@@ -6,6 +6,7 @@
         name="Stock"
         parent="menu_avea_root"
         action="action_avea_stock_workspace"
+        groups="avea_till.group_avea_manager"
         sequence="14"
     />
 
@@ -18,6 +19,7 @@
         name="Products"
         parent="menu_avea_stock"
         action="action_avea_stock_workspace"
+        groups="avea_till.group_avea_manager"
         sequence="1"
     />
 
@@ -26,6 +28,7 @@
         name="Receive Stock"
         parent="menu_avea_stock"
         action="action_avea_stock_receive"
+        groups="avea_till.group_avea_manager"
         sequence="5"
     />
 
@@ -34,6 +37,7 @@
         name="Stock Take"
         parent="menu_avea_stock"
         action="action_avea_stock_take"
+        groups="avea_till.group_avea_manager"
         sequence="8"
     />
 
@@ -42,6 +46,7 @@
         name="Return Stock"
         parent="menu_avea_stock"
         action="action_avea_stock_return"
+        groups="avea_till.group_avea_manager"
         sequence="10"
     />
 

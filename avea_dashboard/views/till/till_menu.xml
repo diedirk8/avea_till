@@ -5,6 +5,7 @@
         id="menu_avea_business_section"
         name="Business Overview"
         parent="menu_avea_root"
+        groups="avea_till.group_avea_manager"
         sequence="5"
     />
 
@@ -13,6 +14,7 @@
         name="Overview"
         parent="menu_avea_business_section"
         action="action_avea_business_overview"
+        groups="avea_till.group_avea_manager"
         sequence="5"
     />
 
@@ -21,6 +23,7 @@
         name="Performance"
         parent="menu_avea_business_section"
         action="action_avea_business_performance"
+        groups="avea_till.group_avea_manager"
         sequence="10"
     />
 
@@ -29,7 +32,24 @@
         name="Transactions"
         parent="menu_avea_business_section"
         action="action_avea_business_transactions"
+        groups="avea_till.group_avea_manager"
         sequence="15"
+    />
+
+    <record id="action_avea_pos_sell" model="ir.actions.server">
+        <field name="name">Sell</field>
+        <field name="model_id" ref="point_of_sale.model_pos_config"/>
+        <field name="state">code</field>
+        <field name="code">action = env["pos.config"].action_avea_open_pos()</field>
+    </record>
+
+    <menuitem
+        id="menu_avea_pos_sell"
+        name="Sell"
+        parent="menu_avea_root"
+        action="action_avea_pos_sell"
+        groups="avea_till.group_avea_cashier"
+        sequence="6"
     />
 
     <menuitem
@@ -37,6 +57,7 @@
         name="Sessions"
         parent="menu_avea_root"
         action="action_avea_session_dashboard"
+        groups="avea_till.group_avea_cashier"
         sequence="10"
     />
 
@@ -49,6 +70,7 @@
         name="Session Dashboard"
         parent="menu_avea_till"
         action="action_avea_session_dashboard"
+        groups="avea_till.group_avea_cashier"
         sequence="5"
     />
 
@@ -57,6 +79,7 @@
         name="Sales Ledger"
         parent="menu_avea_till"
         action="action_avea_sales_ledger"
+        groups="avea_till.group_avea_manager"
         sequence="10"
     />
 
@@ -68,6 +91,7 @@
         id="menu_avea_settings"
         name="Settings"
         parent="menu_avea_root"
+        groups="avea_till.group_avea_manager"
         sequence="90"
     />
 
@@ -76,6 +100,7 @@
         name="Email Receipt"
         parent="menu_avea_settings"
         action="action_avea_settings"
+        groups="avea_till.group_avea_manager"
         sequence="10"
     />
 
@@ -84,6 +109,7 @@
         name="Printed Receipt"
         parent="menu_avea_settings"
         action="action_avea_printed_receipt_settings"
+        groups="avea_till.group_avea_manager"
         sequence="20"
     />
 
@@ -100,6 +126,7 @@
         id="menu_avea_configuration"
         name="Configuration"
         parent="menu_avea_till"
+        groups="avea_till.group_avea_manager"
         sequence="99"
     />
 

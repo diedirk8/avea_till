@@ -8,6 +8,9 @@ import { patch } from "@web/core/utils/patch";
 patch(Navbar.prototype, {
     setup() {
         super.setup(...arguments);
+        if (typeof document !== "undefined") {
+            document.title = "Avea POS";
+        }
         this.state.aveaNow = Date.now();
         this._aveaClockTimer = setInterval(() => {
             this.state.aveaNow = Date.now();
