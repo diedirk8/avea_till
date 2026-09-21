@@ -1,6 +1,7 @@
 """Performance analytics for Avea Business Performance workspace.
 
-Ranking methodology is defined in ADR-010 (docs/decisions.md).
+Ranking methodology and gross-profit cost basis are defined in ADR-010
+(docs/decisions.md).
 """
 import math
 
@@ -34,18 +35,29 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
         )
 
     @api.model
-    def _avea_performance_unit_cost(self, product):
-        template = product.product_tmpl_id
-        return template._avea_get_cost_ex_tax() if template else 0.0
+    def _avea_performance_ensure_line_costs(self, lines):
+        """Ensure Odoo has computed historical POS line costs before reporting."""
+        for order in lines.order_id:
+            pending = order.lines.filtered(
+                lambda line: line.product_id and not line.is_total_cost_computed
+            )
+            if pending:
+                order._compute_total_cost_in_real_time()
 
     @api.model
     def _avea_performance_line_metrics(self, line):
-        """Return revenue, cost, gross profit and unit counts for one POS line."""
+        """Return revenue, cost, gross profit and unit counts for one POS line.
+
+        Cost of goods sold comes from Odoo's ``pos.order.line.total_cost`` — the
+        cost of the stock sold at transaction time (from stock moves / AVCO).
+        ``avea_cost_ex_tax`` is not used here; it remains for Stock and pricing.
+        Gross profit follows native POS ``margin`` (revenue ex tax minus COGS).
+        """
+        self._avea_performance_ensure_line_costs(line)
         qty = float(line.qty or 0.0)
         revenue_ex_tax = float(line.price_subtotal or 0.0)
-        unit_cost = self._avea_performance_unit_cost(line.product_id)
-        cost_total = unit_cost * qty
-        gross_profit = revenue_ex_tax - cost_total
+        cost_total = float(line.total_cost or 0.0)
+        gross_profit = float(line.margin or 0.0)
         units_positive = qty if qty > 0 else 0.0
         return {
             "qty": qty,
@@ -148,6 +160,7 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
     def _avea_performance_rankings(self, orders):
         """Return four ranked lists for the selected paid POS orders."""
         lines = self._avea_performance_lines_for_orders(orders)
+        self._avea_performance_ensure_line_costs(lines)
         product_aggs = self._avea_performance_aggregate(lines, group_by="product")
         category_aggs = self._avea_performance_aggregate(lines, group_by="category")
         return {

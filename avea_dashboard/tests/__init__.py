@@ -5,6 +5,7 @@ from . import test_product_pricing_tax
 from . import test_stock_take
 from . import test_sales_ledger
 from . import test_business_performance
+from . import test_performance_profit_cogs
 from . import test_business_overview
 from . import test_business_transactions
 from . import test_avea_settings_receipt_email

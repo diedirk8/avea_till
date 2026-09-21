@@ -243,8 +243,9 @@ Performance is a **separate workspace** under Business Overview. Business Overvi
 - Native `pos.order.line` rows from **paid** POS orders in the selected reporting period (`reporting_period.py` windows, same as Business Overview).
 - Same line filter as Sales Ledger: real products only, exclude service/combo parent lines, include refunds as negative quantities/amounts.
 - **Revenue EX tax** = Σ `price_subtotal` (already net of line discounts and promotions).
-- **Unit cost** = `product.template._avea_get_cost_ex_tax()` (Avea commercial cost, falling back to `standard_price`).
-- **Gross profit** = Σ (`price_subtotal` − unit cost × qty) per line.
+- **Cost of goods sold** = Σ `pos.order.line.total_cost` — Odoo's historical cost of the stock sold (from stock moves / AVCO at transaction time). This is stored on each POS line when the order is processed; later changes to `avea_cost_ex_tax` or `standard_price` do not rewrite past sales.
+- **Gross profit** = Σ `pos.order.line.margin` (equivalently revenue ex tax minus COGS per line, with Odoo's refund sign handling). Simple owner view: **Sales − Cost of goods sold = Gross Profit**.
+- **`avea_cost_ex_tax` is not used for profit reporting.** It remains the Avea purchasing/commercial cost for Stock, Receive Stock, and pricing screens.
 - **Categories** aggregate underlying sale lines — never average product margins.
 
 ### Top Performing (products and categories)
