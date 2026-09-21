@@ -124,6 +124,75 @@ class AveaBusinessOverview(models.TransientModel):
         compute="_compute_metrics",
         currency_field="currency_id",
     )
+    sales_ex_tax = fields.Monetary(
+        string="Sales",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    cost_of_goods_sold = fields.Monetary(
+        string="Cost of Goods Sold",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    gross_profit = fields.Monetary(
+        string="Gross Profit",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    gross_margin_percent = fields.Float(
+        string="Gross Margin %",
+        compute="_compute_metrics",
+        digits=(16, 1),
+    )
+    discounts_given = fields.Monetary(
+        string="Discounts Given",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    previous_sales_ex_tax = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    previous_cost_of_goods_sold = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    previous_gross_profit = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    previous_discounts_given = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    sales_ex_tax_change_display = fields.Char(
+        compute="_compute_metrics",
+    )
+    sales_ex_tax_change_tone = fields.Selection(
+        [("up", "Up"), ("down", "Down"), ("flat", "Flat")],
+        compute="_compute_metrics",
+    )
+    cost_of_goods_sold_change_display = fields.Char(
+        compute="_compute_metrics",
+    )
+    cost_of_goods_sold_change_tone = fields.Selection(
+        [("up", "Up"), ("down", "Down"), ("flat", "Flat")],
+        compute="_compute_metrics",
+    )
+    gross_profit_change_display = fields.Char(
+        compute="_compute_metrics",
+    )
+    gross_profit_change_tone = fields.Selection(
+        [("up", "Up"), ("down", "Down"), ("flat", "Flat")],
+        compute="_compute_metrics",
+    )
+    discounts_given_change_display = fields.Char(
+        compute="_compute_metrics",
+    )
+    discounts_given_change_tone = fields.Selection(
+        [("up", "Up"), ("down", "Down"), ("flat", "Flat")],
+        compute="_compute_metrics",
+    )
     previous_sales = fields.Monetary(
         string="Previous Period",
         compute="_compute_metrics",
@@ -518,6 +587,15 @@ class AveaBusinessOverview(models.TransientModel):
         else:
             tone = "down"
         return display, tone, delta
+
+    def _currency_delta_display(self, delta):
+        currency = self.env.company.currency_id
+        if currency.is_zero(delta):
+            return _("—"), "flat"
+        formatted = self._format_money(abs(delta))
+        if delta > 0:
+            return f"+{formatted}", "up"
+        return f"-{formatted}", "down"
 
     def _local_order_datetime(self, order):
         if not order.date_order:
@@ -918,7 +996,23 @@ class AveaBusinessOverview(models.TransientModel):
             previous_orders = overview._paid_orders_between(*windows["data_previous"])
             sales = Session._avea_sales_summary_from_orders(current_orders)
             previous_sales = Session._avea_sales_summary_from_orders(previous_orders)
+            financial = Session._avea_financial_summary_from_orders(current_orders)
+            previous_financial = Session._avea_financial_summary_from_orders(
+                previous_orders
+            )
             activity = Session._avea_activity_from_orders(current_orders)
+            sales_ex_tax_delta = overview._currency_delta_display(
+                financial["revenue_ex_tax"] - previous_financial["revenue_ex_tax"]
+            )
+            cogs_delta = overview._currency_delta_display(
+                financial["cost_total"] - previous_financial["cost_total"]
+            )
+            gp_delta = overview._currency_delta_display(
+                financial["gross_profit"] - previous_financial["gross_profit"]
+            )
+            discounts_delta = overview._currency_delta_display(
+                financial["discounts_given"] - previous_financial["discounts_given"]
+            )
             cash = overview._cash_activity_between(*windows["data_current"])
             change_display, tone, delta = overview._change_display(
                 sales["total_sales"],
@@ -975,6 +1069,23 @@ class AveaBusinessOverview(models.TransientModel):
                     ),
                     "show_through_today": windows["show_through_today"],
                     "total_sales": sales["total_sales"],
+                    "sales_ex_tax": financial["revenue_ex_tax"],
+                    "cost_of_goods_sold": financial["cost_total"],
+                    "gross_profit": financial["gross_profit"],
+                    "gross_margin_percent": financial["gross_margin_percent"],
+                    "discounts_given": financial["discounts_given"],
+                    "previous_sales_ex_tax": previous_financial["revenue_ex_tax"],
+                    "previous_cost_of_goods_sold": previous_financial["cost_total"],
+                    "previous_gross_profit": previous_financial["gross_profit"],
+                    "previous_discounts_given": previous_financial["discounts_given"],
+                    "sales_ex_tax_change_display": sales_ex_tax_delta[0],
+                    "sales_ex_tax_change_tone": sales_ex_tax_delta[1],
+                    "cost_of_goods_sold_change_display": cogs_delta[0],
+                    "cost_of_goods_sold_change_tone": cogs_delta[1],
+                    "gross_profit_change_display": gp_delta[0],
+                    "gross_profit_change_tone": gp_delta[1],
+                    "discounts_given_change_display": discounts_delta[0],
+                    "discounts_given_change_tone": discounts_delta[1],
                     "order_count": sales["order_count"],
                     "average_order_value": sales["average_order_value"],
                     "previous_sales": previous_sales["total_sales"],

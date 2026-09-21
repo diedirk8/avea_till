@@ -128,10 +128,9 @@ class PosSession(models.Model):
     def _avea_activity_from_orders(self, orders):
         """Operational counts for a paid POS order recordset."""
         lines = orders.lines
-        discount_total = 0.0
-        for line in lines:
-            if line.discount:
-                discount_total += line.qty * line.price_unit * (line.discount / 100.0)
+        financial = self.env["pos.order.line"]._avea_performance_financial_summary(
+            orders
+        )
 
         refund_orders = orders.filtered(
             lambda order: order.is_refund
@@ -140,10 +139,15 @@ class PosSession(models.Model):
         return {
             "order_count": len(orders),
             "items_sold": sum(lines.mapped("qty")),
-            "discount_total": discount_total,
+            "discount_total": financial["discounts_given"],
             "refund_count": len(refund_orders),
             "refund_amount": abs(sum(refund_orders.mapped("amount_total"))),
         }
+
+    @api.model
+    def _avea_financial_summary_from_orders(self, orders):
+        """Sales, COGS, gross profit and discounts for paid POS orders."""
+        return self.env["pos.order.line"]._avea_performance_financial_summary(orders)
 
     @api.model
     def _avea_products_from_orders(self, orders, limit=None):

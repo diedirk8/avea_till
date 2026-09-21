@@ -8,6 +8,12 @@ from odoo.tools.misc import format_date, format_time
 class PosOrderLine(models.Model):
     _inherit = ["pos.order.line", "avea.performance.analytics.mixin"]
 
+    avea_retail_unit_ex_tax = fields.Float(
+        string="Retail unit EX tax at sale",
+        digits="Product Price",
+        copy=False,
+        help="Catalog retail price (EX tax) captured when the sale line was created.",
+    )
     avea_order_date = fields.Datetime(
         string="Sale date",
         related="order_id.date_order",
@@ -100,6 +106,49 @@ class PosOrderLine(models.Model):
                     name = raw[len(f"[{reference}]") :].strip() or raw
             line.avea_product_reference = reference or False
             line.avea_product_display = name or raw
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        Product = self.env["product.product"]
+        for vals in vals_list:
+            if vals.get("avea_retail_unit_ex_tax") or not vals.get("product_id"):
+                continue
+            product = Product.browse(vals["product_id"])
+            if not product or product.type in ("service", "combo"):
+                continue
+            template = product.product_tmpl_id
+            if template:
+                _, _, retail_ex, _, _ = template._avea_pricing_tuple()
+                vals["avea_retail_unit_ex_tax"] = retail_ex
+        return super().create(vals_list)
+
+    def _avea_sale_time_retail_unit_ex_tax(self):
+        """Normal retail EX tax at sale time (stored), with legacy fallbacks."""
+        self.ensure_one()
+        if self.avea_retail_unit_ex_tax:
+            return float(self.avea_retail_unit_ex_tax)
+        if self.discount:
+            return float(self.price_unit or 0.0)
+        qty = float(self.qty or 0.0)
+        if qty:
+            return abs(float(self.price_subtotal or 0.0) / qty)
+        return float(self.price_unit or 0.0)
+
+    def _avea_discount_given_ex_tax(self):
+        """Signed discount EX tax: positive when less than normal retail was charged."""
+        self.ensure_one()
+        if self.avea_combo_program_id or self.is_reward_line:
+            return -float(self.price_subtotal or 0.0)
+        if (
+            not self.product_id
+            or self.product_id.type in ("service", "combo")
+            or self.combo_line_ids
+        ):
+            return 0.0
+        retail_ex = self._avea_sale_time_retail_unit_ex_tax()
+        normal = retail_ex * float(self.qty or 0.0)
+        actual = float(self.price_subtotal or 0.0)
+        return normal - actual
 
     @api.model
     def _avea_sales_ledger_domain(self):

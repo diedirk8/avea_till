@@ -256,6 +256,62 @@
 
                     <div class="o_avea_workspace_block">
                         <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Profit</h2>
+                            <span class="o_avea_workspace_section_meta">Excluding tax</span>
+                        </div>
+                        <div class="o_avea_workspace_kpi_grid">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--primary">
+                                <span class="o_avea_workspace_kpi_label">Sales</span>
+                                <field name="sales_ex_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span class="o_avea_workspace_kpi_subvalue">
+                                    <field name="sales_ex_tax_change_display" nolabel="1" readonly="1"/>
+                                    <span> vs previous period</span>
+                                </span>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card">
+                                <span class="o_avea_workspace_kpi_label">Cost of Goods Sold</span>
+                                <field name="cost_of_goods_sold" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span class="o_avea_workspace_kpi_subvalue">
+                                    <field name="cost_of_goods_sold_change_display" nolabel="1" readonly="1"/>
+                                    <span> vs previous period</span>
+                                </span>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
+                                <span class="o_avea_workspace_kpi_label">Gross Profit</span>
+                                <field name="gross_profit" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span class="o_avea_workspace_kpi_subvalue">
+                                    <field name="gross_profit_change_display" nolabel="1" readonly="1"/>
+                                    <span> vs previous period</span>
+                                </span>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card">
+                                <span class="o_avea_workspace_kpi_label">Discounts Given</span>
+                                <field name="discounts_given" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span class="o_avea_workspace_kpi_subvalue">
+                                    <field name="discounts_given_change_display" nolabel="1" readonly="1"/>
+                                    <span> vs previous period</span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_avea_pulse_metrics">
+                            <div class="o_avea_pulse_metric">
+                                <span class="o_avea_pulse_metric_label">Transactions</span>
+                                <field name="order_count" nolabel="1" readonly="1" class="o_avea_pulse_metric_value"/>
+                            </div>
+                            <div class="o_avea_pulse_metric">
+                                <span class="o_avea_pulse_metric_label">Average Sale</span>
+                                <field name="average_order_value" nolabel="1" widget="monetary" readonly="1" class="o_avea_pulse_metric_value"/>
+                            </div>
+                            <div class="o_avea_pulse_metric">
+                                <span class="o_avea_pulse_metric_label">Gross Margin</span>
+                                <field name="gross_margin_percent" nolabel="1" readonly="1" class="o_avea_pulse_metric_value"/>
+                                <span>%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">Items and refunds</h2>
                         </div>
                         <div class="o_avea_workspace_kpi_grid">

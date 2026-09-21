@@ -146,6 +146,47 @@
 
                     <div class="o_avea_workspace_block">
                         <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Period summary</h2>
+                            <span class="o_avea_workspace_section_meta">
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </span>
+                        </div>
+                        <div class="o_avea_workspace_kpi_grid">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--primary">
+                                <span class="o_avea_workspace_kpi_label">Sales</span>
+                                <field name="sales_ex_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span class="o_avea_workspace_kpi_subvalue">
+                                    <field name="sales_ex_tax_change_display" nolabel="1" readonly="1"/>
+                                </span>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card">
+                                <span class="o_avea_workspace_kpi_label">Cost of Goods Sold</span>
+                                <field name="cost_of_goods_sold" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
+                                <span class="o_avea_workspace_kpi_label">Gross Profit</span>
+                                <field name="gross_profit" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span class="o_avea_workspace_kpi_subvalue">
+                                    <field name="gross_profit_change_display" nolabel="1" readonly="1"/>
+                                </span>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card">
+                                <span class="o_avea_workspace_kpi_label">Discounts Given</span>
+                                <field name="discounts_given" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span class="o_avea_workspace_kpi_subvalue">
+                                    <field name="discounts_given_change_display" nolabel="1" readonly="1"/>
+                                </span>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact">
+                                <span class="o_avea_workspace_kpi_label">Gross Margin</span>
+                                <field name="gross_margin_percent" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span>%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_block_heading">
                             <h2 class="o_avea_workspace_section_title">What is performing best?</h2>
                             <span class="o_avea_workspace_section_meta">
                                 <field name="period_range_display" nolabel="1" readonly="1"/>
@@ -217,7 +258,7 @@
                                 <div class="o_avea_workspace_block_heading">
                                     <div class="o_avea_overview_visual_heading">
                                         <h2 class="o_avea_workspace_section_title">Most Profitable Products</h2>
-                                        <p class="o_avea_workspace_section_subtitle">Actual profit after Avea cost and discounts</p>
+                                        <p class="o_avea_workspace_section_subtitle">Actual profit after product cost</p>
                                     </div>
                                 </div>
                                 <div class="o_avea_session_products_empty" invisible="show_profit_products">
@@ -228,8 +269,11 @@
                                         <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
                                             <field name="name" string="Product"/>
                                             <field name="quantity_sold" string="Qty"/>
-                                            <field name="revenue_ex_tax" string="Revenue EX Tax" widget="monetary"/>
+                                            <field name="revenue_ex_tax" string="Sales" widget="monetary"/>
+                                            <field name="cost_total" string="COGS" widget="monetary"/>
                                             <field name="gross_profit" string="Gross Profit" widget="monetary"/>
+                                            <field name="gross_margin_percent" string="Margin %"/>
+                                            <field name="discount_given" string="Discounts" widget="monetary"/>
                                             <field name="rank" column_invisible="True"/>
                                             <field name="section" column_invisible="True"/>
                                             <field name="currency_id" column_invisible="True"/>
@@ -254,8 +298,11 @@
                                         <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
                                             <field name="name" string="Category"/>
                                             <field name="quantity_sold" string="Qty"/>
-                                            <field name="revenue_ex_tax" string="Revenue EX Tax" widget="monetary"/>
+                                            <field name="revenue_ex_tax" string="Sales" widget="monetary"/>
+                                            <field name="cost_total" string="COGS" widget="monetary"/>
                                             <field name="gross_profit" string="Gross Profit" widget="monetary"/>
+                                            <field name="gross_margin_percent" string="Margin %"/>
+                                            <field name="discount_given" string="Discounts" widget="monetary"/>
                                             <field name="rank" column_invisible="True"/>
                                             <field name="section" column_invisible="True"/>
                                             <field name="currency_id" column_invisible="True"/>

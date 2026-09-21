@@ -2,7 +2,7 @@ from datetime import datetime, time
 from zoneinfo import ZoneInfo
 
 from odoo import _, api, fields, models
-from odoo.tools.misc import format_date
+from odoo.tools.misc import formatLang, format_date
 
 from .reporting_period import (
     PERIOD_CUSTOM,
@@ -71,6 +71,21 @@ class AveaBusinessPerformanceLine(models.TransientModel):
         currency_field="currency_id",
         readonly=True,
     )
+    cost_total = fields.Monetary(
+        string="COGS",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    discount_given = fields.Monetary(
+        string="Discounts Given",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    gross_margin_percent = fields.Float(
+        string="Gross Margin %",
+        digits=(16, 1),
+        readonly=True,
+    )
 
 
 class AveaBusinessPerformance(models.TransientModel):
@@ -109,6 +124,56 @@ class AveaBusinessPerformance(models.TransientModel):
     currency_id = fields.Many2one(
         "res.currency",
         default=lambda self: self.env.company.currency_id,
+    )
+    sales_ex_tax = fields.Monetary(
+        string="Sales",
+        compute="_compute_financial_summary",
+        currency_field="currency_id",
+    )
+    cost_of_goods_sold = fields.Monetary(
+        string="Cost of Goods Sold",
+        compute="_compute_financial_summary",
+        currency_field="currency_id",
+    )
+    gross_profit = fields.Monetary(
+        string="Gross Profit",
+        compute="_compute_financial_summary",
+        currency_field="currency_id",
+    )
+    gross_margin_percent = fields.Float(
+        string="Gross Margin %",
+        compute="_compute_financial_summary",
+        digits=(16, 1),
+    )
+    discounts_given = fields.Monetary(
+        string="Discounts Given",
+        compute="_compute_financial_summary",
+        currency_field="currency_id",
+    )
+    previous_sales_ex_tax = fields.Monetary(
+        compute="_compute_financial_summary",
+        currency_field="currency_id",
+    )
+    previous_cost_of_goods_sold = fields.Monetary(
+        compute="_compute_financial_summary",
+        currency_field="currency_id",
+    )
+    previous_gross_profit = fields.Monetary(
+        compute="_compute_financial_summary",
+        currency_field="currency_id",
+    )
+    previous_discounts_given = fields.Monetary(
+        compute="_compute_financial_summary",
+        currency_field="currency_id",
+    )
+    sales_ex_tax_change_display = fields.Char(
+        compute="_compute_financial_summary",
+    )
+    gross_profit_change_display = fields.Char(
+        compute="_compute_financial_summary",
+    )
+    discounts_given_change_display = fields.Char(
+        compute="_compute_financial_summary",
     )
 
     line_ids = fields.One2many(
@@ -172,6 +237,43 @@ class AveaBusinessPerformance(models.TransientModel):
             dashboard.show_top_categories = bool(dashboard.top_category_line_ids)
             dashboard.show_profit_products = bool(dashboard.profit_product_line_ids)
             dashboard.show_profit_categories = bool(dashboard.profit_category_line_ids)
+
+    def _currency_delta_display(self, delta):
+        currency = self.env.company.currency_id
+        if currency.is_zero(delta):
+            return _("—")
+        formatted = formatLang(self.env, abs(delta), currency_obj=currency)
+        if delta > 0:
+            return f"+{formatted}"
+        return f"-{formatted}"
+
+    @api.depends("period", "date_from", "date_to")
+    def _compute_financial_summary(self):
+        Session = self.env["pos.session"]
+        for dashboard in self:
+            windows = dashboard._period_windows(dashboard.period or PERIOD_TODAY)
+            current_orders = dashboard._paid_orders_between(*windows["data_current"])
+            previous_orders = dashboard._paid_orders_between(*windows["data_previous"])
+            financial = Session._avea_financial_summary_from_orders(current_orders)
+            previous = Session._avea_financial_summary_from_orders(previous_orders)
+            dashboard.sales_ex_tax = financial["revenue_ex_tax"]
+            dashboard.cost_of_goods_sold = financial["cost_total"]
+            dashboard.gross_profit = financial["gross_profit"]
+            dashboard.gross_margin_percent = financial["gross_margin_percent"]
+            dashboard.discounts_given = financial["discounts_given"]
+            dashboard.previous_sales_ex_tax = previous["revenue_ex_tax"]
+            dashboard.previous_cost_of_goods_sold = previous["cost_total"]
+            dashboard.previous_gross_profit = previous["gross_profit"]
+            dashboard.previous_discounts_given = previous["discounts_given"]
+            dashboard.sales_ex_tax_change_display = dashboard._currency_delta_display(
+                financial["revenue_ex_tax"] - previous["revenue_ex_tax"]
+            )
+            dashboard.gross_profit_change_display = dashboard._currency_delta_display(
+                financial["gross_profit"] - previous["gross_profit"]
+            )
+            dashboard.discounts_given_change_display = dashboard._currency_delta_display(
+                financial["discounts_given"] - previous["discounts_given"]
+            )
 
     @api.depends("period", "date_from", "date_to")
     def _compute_period_labels(self):
@@ -350,7 +452,10 @@ class AveaBusinessPerformance(models.TransientModel):
                         "name": row["label"],
                         "quantity_sold": row["units_positive"],
                         "revenue_ex_tax": row["revenue_ex_tax"],
+                        "cost_total": row["cost_total"],
                         "gross_profit": row["gross_profit"],
+                        "discount_given": row["discount_given"],
+                        "gross_margin_percent": row["gross_margin_percent"],
                     }
                     if kind == "product":
                         vals["product_id"] = row["record_id"]

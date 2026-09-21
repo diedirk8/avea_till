@@ -236,17 +236,37 @@ Business owners need commercially meaningful answers — not naive “top seller
 
 Decision
 
-Performance is a **separate workspace** under Business Overview. Business Overview itself stays unchanged.
+Performance is a **separate workspace** under Business Overview. Both workspaces share one reporting engine (`avea.performance.analytics.mixin` on `pos.order.line`).
 
 ### Data source
 
 - Native `pos.order.line` rows from **paid** POS orders in the selected reporting period (`reporting_period.py` windows, same as Business Overview).
 - Same line filter as Sales Ledger: real products only, exclude service/combo parent lines, include refunds as negative quantities/amounts.
 - **Revenue EX tax** = Σ `price_subtotal` (already net of line discounts and promotions).
-- **Cost of goods sold** = Σ `pos.order.line.total_cost` — Odoo's historical cost of the stock sold (from stock moves / AVCO at transaction time). This is stored on each POS line when the order is processed; later changes to `avea_cost_ex_tax` or `standard_price` do not rewrite past sales.
-- **Gross profit** = Σ `pos.order.line.margin` (equivalently revenue ex tax minus COGS per line, with Odoo's refund sign handling). Simple owner view: **Sales − Cost of goods sold = Gross Profit**.
+- **Cost of goods sold** = Σ `pos.order.line.total_cost` — Odoo’s historical cost of the stock sold (from stock moves / AVCO at transaction time). This is stored on each POS line when the order is processed; later changes to `avea_cost_ex_tax` or `standard_price` do not rewrite past sales.
+- **Gross profit** = Σ `pos.order.line.margin` (equivalently revenue ex tax minus COGS per line, with Odoo’s refund sign handling). Simple owner view: **Sales − Cost of goods sold = Gross Profit**.
 - **`avea_cost_ex_tax` is not used for profit reporting.** It remains the Avea purchasing/commercial cost for Stock, Receive Stock, and pricing screens.
 - **Categories** aggregate underlying sale lines — never average product margins.
+
+### Business Overview profit summary
+
+Business Overview shows a simple **Profit** block (EX tax): Sales, Cost of Goods Sold, Gross Profit, Discounts Given, plus Transactions, Average Sale, and Gross Margin %. Period comparisons use the same comparison windows as sales (`reporting_period.py`) and show currency deltas vs the previous period (not unsupported trend percentages).
+
+### Discounts Given
+
+**Business meaning:** how much below normal retail the business sold products for in the period.
+
+- **Normal retail (EX tax)** is captured on each product line at sale time in `pos.order.line.avea_retail_unit_ex_tax` (from the product’s catalog retail / Avea pricing tuple). Later retail price changes do not rewrite historical discounts.
+- **Product lines:** `discount_given = (avea_retail_unit_ex_tax × qty) − price_subtotal` (signed; refunds reverse naturally).
+- **Manual % discounts:** `price_unit` is the pre-discount shelf price; the same formula applies.
+- **Promotions / loyalty reward lines:** `discount_given = −price_subtotal` (EX tax).
+- **Avea Combo Price lines** (`avea_combo_program_id`): `discount_given = −price_subtotal` on the combo discount line; component lines stay at full retail.
+- Discounts Given is informational — revenue is already net in `price_subtotal`; discounts do not reduce COGS.
+- Legacy lines without `avea_retail_unit_ex_tax` fall back to `price_unit` when a line discount % was used, otherwise no phantom discount is inferred.
+
+### Period comparisons
+
+Both Business Overview and Business Performance compare the selected period with the paired comparison window from `reporting_period.py` (today vs yesterday, WTD vs prior week, MTD vs prior month, etc.). Display actual currency change for Sales, Gross Profit, and Discounts Given.
 
 ### Top Performing (products and categories)
 
@@ -271,7 +291,8 @@ Only rows with positive gross profit in the period qualify.
 ### Presentation
 
 - Reuse Avea workspace shell, hero, period selector, and card styling from Business Overview.
-- Show supporting columns: Qty, Revenue EX Tax; add Gross Profit on profitability tables.
+- **Period summary** KPI row: Sales, COGS, Gross Profit, Discounts Given, Gross Margin %.
+- **Profitability tables:** Qty, Sales, COGS, Gross Profit, Gross Margin %, Discounts Given (by product and category).
 - Limit each list to eight rows (same practical limit as Business Overview top products).
 
 ---
@@ -412,3 +433,64 @@ Decision
 - **Control plane full-database archive** on tenant cancellation is separate from owner CSV export.
 
 See `docs/architecture/saas-platform.md` §21 for full strategy and phased delivery.
+
+---
+
+# ADR-014
+
+## Avea product shell: roles, menu suppression, and identity
+
+Status
+
+Accepted
+
+Reason
+
+Normal users must experience Avea, not Odoo. Capability groups already control what a user can do. Role profiles compose those capabilities for navigation and home. Odoo apps stay installed; they are hidden from the product shell.
+
+Decision
+
+- Add Avea role profiles as one privilege with implied capabilities:
+  - **Cashier** → POS user + stock user (so POS catalogue loads) + cash up own till
+  - **Manager** → Cashier + POS manager + cash-up manager + credit manager + correct payment
+  - **Owner** → Manager (no `base.group_system`)
+- Hide non-Avea root menus from users who have an Avea role and are not Settings administrators. Do not deactivate the menus or remove model access.
+- `/web` and `/odoo` open the Avea Dashboard for those users (Business Overview for Manager/Owner, Session Dashboard for Cashier).
+- **Sell** in Avea navigation launches the existing Avea POS (`pos.config.open_ui`). Barcode scanning and POS screens are unchanged.
+- Avea supplies its own backend chrome (title, favicon, login mark, navbar colour). Do not depend on MuK (`muk_web_*`) as the Avea theme.
+- Existing POS administrators on upgrade are assigned Manager so operational Avea menus remain. Owner is never assigned automatically.
+
+Settings consolidation, onboarding, and Customer Centre remain later steps.
+
+---
+
+# ADR-015
+
+## Avea native navigation (modern sidebar shell)
+
+Status
+
+Accepted
+
+Reason
+
+The horizontal Odoo navbar exposed too many modules, used faded styling that looked disabled, and still leaked the Odoo app switcher. Avea needs a modern SaaS-style sidebar: spacious, grouped, and fast — not a dense ERP icon rail.
+
+Decision
+
+- Replace the Odoo `NavBar` with a first-party **AveaNav** sidebar shell for users in the product shell (`session.avea_product_shell`).
+- **Layout:** fixed left sidebar (default expanded, optional pin/collapse) + minimal top bar (company name + Avea user menu only). Odoo systray chrome (purple avatar, messaging, company switcher) is suppressed for product-shell users. Contextual sub-navigation stays inside screens (e.g. Business Overview tabs).
+- **User menu:** orange initials avatar, user name, optional company switcher (multi-company only), and log out. No Odoo `UserMenu` / systray widgets.
+- **Brand shell:** `avea_product_shell.scss` recolours interactive Odoo purple to Avea orange and unifies search bar styling. Semantic status colours (error, warning, success) are not overridden.
+- **Sell** is a full-width primary CTA at the top of the sidebar. It opens the existing POS entry (`menu_avea_pos_sell`).
+- **Home** is a standalone sidebar item (Business Overview for Manager/Owner; Today's Session for Cashier). It is not nested under Business.
+- **Server-driven structure** in `avea.nav.mixin` (`_avea_nav_structure()`), exposed on `session.avea_nav`. Items are filtered by Avea role rank and by `_visible_menu_ids()` so capability groups still apply.
+- **Accordion sections** (Manager/Owner): Business (Performance, Transactions), Sessions, Stock, Customers (with Store Credit and Reports groups), Money (with Record group).
+- **Settings** is separated at the bottom of the sidebar — not grouped with business areas.
+- **Cashier** sees Home + Sell only (no accordion sections).
+- **Owner** matches Manager navigation today (no extra Owner-only items yet).
+- **Mobile:** hamburger in the top bar opens the same sidebar as a slide-over drawer.
+- Existing menu XML IDs, actions, and routes are unchanged. Screen content (Business Overview, POS, etc.) is not redesigned in this step.
+- POS still uses Odoo POS chrome when Sell opens; a dedicated POS shell is a later step.
+
+See `docs/architecture/saas-platform.md` §17 (Avea native navigation).
