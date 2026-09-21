@@ -2,6 +2,7 @@ import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools.float_utils import float_compare, float_is_zero
 from odoo.tools.misc import format_date, format_time
 
 
@@ -134,6 +135,16 @@ class PosOrderLine(models.Model):
             return abs(float(self.price_subtotal or 0.0) / qty)
         return float(self.price_unit or 0.0)
 
+    def _avea_sale_time_retail_unit_inc_tax(self):
+        """Normal retail INC tax at sale time (from stored EX retail)."""
+        self.ensure_one()
+        template = self.product_id.product_tmpl_id
+        if not template:
+            return 0.0
+        return template._avea_retail_inc_vat_from_ex(
+            self._avea_sale_time_retail_unit_ex_tax()
+        )
+
     def _avea_discount_given_ex_tax(self):
         """Signed discount EX tax: positive when less than normal retail was charged."""
         self.ensure_one()
@@ -146,13 +157,28 @@ class PosOrderLine(models.Model):
         ):
             return 0.0
         qty = float(self.qty or 0.0)
-        retail_ex = self._avea_sale_time_retail_unit_ex_tax()
-        normal = retail_ex * qty
+        if not qty:
+            return 0.0
+        currency = self.order_id.currency_id or self.env.company.currency_id
         actual = float(self.price_subtotal or 0.0)
         # Some refund lines keep a positive subtotal while qty is negative.
         if qty < 0.0 and actual > 0.0:
             actual = -actual
-        return normal - actual
+        # No line discount % and customer paid shelf INC tax (or more): not a discount.
+        # This avoids EX-tax / tax-inclusive conversion penny gaps on full-price sales.
+        if not self.discount:
+            retail_unit_inc = self._avea_sale_time_retail_unit_inc_tax()
+            shelf_inc = currency.round(retail_unit_inc * abs(qty))
+            actual_inc = currency.round(abs(float(self.price_subtotal_incl or 0.0)))
+            if float_compare(
+                actual_inc, shelf_inc, precision_rounding=currency.rounding
+            ) >= 0:
+                return 0.0
+        retail_ex = self._avea_sale_time_retail_unit_ex_tax()
+        gap = currency.round((retail_ex * qty) - actual)
+        if float_is_zero(gap, precision_rounding=currency.rounding):
+            return 0.0
+        return gap
 
     @api.model
     def _avea_sales_ledger_domain(self):

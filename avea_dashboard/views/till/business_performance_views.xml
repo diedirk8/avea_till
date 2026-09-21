@@ -157,6 +157,7 @@
                                 <field name="sales_ex_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
                                     <field name="sales_ex_tax_change_display" nolabel="1" readonly="1"/>
+                                    <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
                             <div class="o_avea_workspace_kpi_card">
@@ -168,6 +169,7 @@
                                 <field name="gross_profit" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
                                     <field name="gross_profit_change_display" nolabel="1" readonly="1"/>
+                                    <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
                             <div class="o_avea_workspace_kpi_card">
@@ -175,6 +177,7 @@
                                 <field name="discounts_given" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
                                     <field name="discounts_given_change_display" nolabel="1" readonly="1"/>
+                                    <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
                             <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact">

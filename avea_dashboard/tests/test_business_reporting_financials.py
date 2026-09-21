@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
+from datetime import date
+
 from odoo.tests import tagged
 from odoo.addons.point_of_sale.tests.common import TestPoSCommon
+
+from odoo.addons.avea_till.models.till.reporting_period import resolve_reporting_period
 
 
 @tagged("post_install", "-at_install", "avea_till")
@@ -159,6 +163,72 @@ class TestAveaBusinessReportingFinancials(TestPoSCommon):
         financial = self._financial(order)
         self.assertAlmostEqual(financial["revenue_ex_tax"], 120.0, places=2)
         self.assertAlmostEqual(financial["discounts_given"], 30.0, places=2)
+
+    def test_comparison_labels_from_reporting_period(self):
+        today = date(2026, 9, 21)
+        cases = {
+            "today": "Yesterday",
+            "wtd": "Last Week",
+            "mtd": "Last Month",
+            "ytd": "Last Year",
+        }
+        for period, expected in cases.items():
+            reporting = resolve_reporting_period(period, today)
+            self.assertEqual(reporting.comparison_label, expected)
+
+    def test_overview_comparison_label_matches_period(self):
+        overview = self.env["avea.business.overview"].create({"period": "mtd"})
+        self.assertEqual(overview.comparison_label, "Last Month")
+
+    def test_tax_inclusive_ex_rounding_has_no_phantom_discount(self):
+        """EX-tax POS subtotal 1c below captured retail on a full shelf-INC sale → R0.00."""
+        tax = self.env["account.tax"].create(
+            {
+                "name": "QA VAT 15%",
+                "amount": 15.0,
+                "amount_type": "percent",
+                "type_tax_use": "sale",
+                "price_include": True,
+            }
+        )
+        product = self.create_product("Report VAT Shelf", self.categ_basic, 115.0, 50.0)
+        product.product_tmpl_id.write({"taxes_id": [(6, 0, tax.ids)], "list_price": 115.0})
+        order, _session = self._create_paid_order(
+            lines=[
+                {
+                    "product": product,
+                    "quantity": 1,
+                    "price_unit": 115.0,
+                    "price_subtotal": 99.99,
+                    "price_subtotal_incl": 115.0,
+                }
+            ],
+            payments=[(self.cash_pm1, 115.0)],
+            uuid="report-vat-penny-gap",
+        )
+        line = order.lines[0]
+        line.write({"avea_retail_unit_ex_tax": 100.0})
+        self.assertAlmostEqual(line._avea_discount_given_ex_tax(), 0.0, places=2)
+        financial = self._financial(order)
+        self.assertAlmostEqual(financial["discounts_given"], 0.0, places=2)
+
+    def test_real_one_cent_discount_is_retained(self):
+        """A genuine R0.01 markdown below shelf must still count."""
+        product = self.create_product("Report Penny Off", self.categ_basic, 100.0, 40.0)
+        order, _session = self._create_paid_order(
+            lines=[
+                {
+                    "product": product,
+                    "quantity": 1,
+                    "price_unit": 99.99,
+                    "price_subtotal": 99.99,
+                    "price_subtotal_incl": 99.99,
+                }
+            ],
+            uuid="report-penny-off",
+        )
+        line = order.lines[0]
+        self.assertAlmostEqual(line._avea_discount_given_ex_tax(), 0.01, places=2)
 
     def test_refund_line_positive_subtotal_does_not_inflate_discounts(self):
         """Refund lines with qty < 0 and positive subtotal do not distort discounts."""

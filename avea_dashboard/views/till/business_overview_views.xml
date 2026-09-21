@@ -192,17 +192,17 @@
                             </div>
                             <div class="o_avea_pulse_change o_avea_pulse_change--up" invisible="sales_change_tone != 'up'">
                                 <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_pulse_change_pct"/>
-                                <span class="o_avea_pulse_change_label">vs previous period</span>
+                                <span class="o_avea_pulse_change_label">vs </span><field name="comparison_label" nolabel="1" readonly="1" class="o_avea_pulse_change_label"/>
                                 <field name="sales_vs_previous_display" nolabel="1" readonly="1" class="o_avea_pulse_change_vs"/>
                             </div>
                             <div class="o_avea_pulse_change o_avea_pulse_change--down" invisible="sales_change_tone != 'down'">
                                 <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_pulse_change_pct"/>
-                                <span class="o_avea_pulse_change_label">vs previous period</span>
+                                <span class="o_avea_pulse_change_label">vs </span><field name="comparison_label" nolabel="1" readonly="1" class="o_avea_pulse_change_label"/>
                                 <field name="sales_vs_previous_display" nolabel="1" readonly="1" class="o_avea_pulse_change_vs"/>
                             </div>
                             <div class="o_avea_pulse_change o_avea_pulse_change--flat" invisible="sales_change_tone != 'flat'">
                                 <field name="sales_change_display" nolabel="1" readonly="1" class="o_avea_pulse_change_pct"/>
-                                <span class="o_avea_pulse_change_label">vs previous period</span>
+                                <span class="o_avea_pulse_change_label">vs </span><field name="comparison_label" nolabel="1" readonly="1" class="o_avea_pulse_change_label"/>
                                 <field name="sales_vs_previous_display" nolabel="1" readonly="1" class="o_avea_pulse_change_vs"/>
                             </div>
                         </div>
@@ -265,7 +265,7 @@
                                 <field name="sales_ex_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
                                     <field name="sales_ex_tax_change_display" nolabel="1" readonly="1"/>
-                                    <span> vs previous period</span>
+                                    <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
                             <div class="o_avea_workspace_kpi_card">
@@ -273,7 +273,7 @@
                                 <field name="cost_of_goods_sold" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
                                     <field name="cost_of_goods_sold_change_display" nolabel="1" readonly="1"/>
-                                    <span> vs previous period</span>
+                                    <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
                             <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
@@ -281,7 +281,7 @@
                                 <field name="gross_profit" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
                                     <field name="gross_profit_change_display" nolabel="1" readonly="1"/>
-                                    <span> vs previous period</span>
+                                    <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
                             <div class="o_avea_workspace_kpi_card">
@@ -289,7 +289,7 @@
                                 <field name="discounts_given" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
                                     <field name="discounts_given_change_display" nolabel="1" readonly="1"/>
-                                    <span> vs previous period</span>
+                                    <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
                         </div>

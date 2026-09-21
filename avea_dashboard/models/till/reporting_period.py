@@ -43,12 +43,12 @@ PERIOD_LABELS = {
 
 COMPARISON_LABELS = {
     PERIOD_TODAY: "Yesterday",
-    PERIOD_WTD: "Previous week to date",
-    PERIOD_MTD: "Previous month to date",
-    PERIOD_LAST_7: "Previous 7 days",
-    PERIOD_LAST_30: "Previous 30 days",
-    PERIOD_YTD: "Previous year to date",
-    PERIOD_CUSTOM: "Previous period",
+    PERIOD_WTD: "Last Week",
+    PERIOD_MTD: "Last Month",
+    PERIOD_LAST_7: "Previous 7 Days",
+    PERIOD_LAST_30: "Previous 30 Days",
+    PERIOD_YTD: "Last Year",
+    PERIOD_CUSTOM: "Previous Period",
 }
 
 # ISO week: Monday is the first day. Matches the WTD examples (Tue 1 Sep 2026
