@@ -160,6 +160,17 @@ class TestAveaBusinessReportingFinancials(TestPoSCommon):
         self.assertAlmostEqual(financial["revenue_ex_tax"], 120.0, places=2)
         self.assertAlmostEqual(financial["discounts_given"], 30.0, places=2)
 
+    def test_refund_line_positive_subtotal_does_not_inflate_discounts(self):
+        """Refund lines with qty < 0 and positive subtotal do not distort discounts."""
+        product = self.create_product("Report Refund Sign", self.categ_basic, 7.0, 3.0)
+        order, _session = self._create_paid_order(
+            lines=[(product, 3)],
+            uuid="report-refund-sign-sale",
+        )
+        line = order.lines[0]
+        line.write({"qty": -3.0, "price_subtotal": 21.0, "price_subtotal_incl": 21.0})
+        self.assertAlmostEqual(line._avea_discount_given_ex_tax(), 0.0, places=2)
+
     def test_avea_cost_unchanged_for_stock(self):
         """I) Reporting does not alter avea_cost_ex_tax."""
         product = self.create_product("Report Stock", self.categ_basic, 200.0, 50.0)

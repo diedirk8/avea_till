@@ -101,14 +101,24 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
         }
 
     @api.model
+    def _avea_performance_revenue_lines_for_orders(self, orders):
+        """Product sale lines plus Avea Combo Price discount lines (negative revenue)."""
+        product_lines = self._avea_performance_lines_for_orders(orders)
+        if not orders:
+            return product_lines
+        combo_lines = orders.lines.filtered("avea_combo_program_id")
+        return product_lines | combo_lines
+
+    @api.model
     def _avea_performance_financial_summary(self, orders):
         """Period totals for Sales, COGS, Gross Profit and Discounts Given."""
         product_lines = self._avea_performance_lines_for_orders(orders)
+        revenue_lines = self._avea_performance_revenue_lines_for_orders(orders)
         self._avea_performance_ensure_line_costs(product_lines)
         discount_lines = self._avea_performance_discount_lines_for_orders(orders)
-        revenue_ex_tax = sum(product_lines.mapped("price_subtotal"))
+        revenue_ex_tax = sum(revenue_lines.mapped("price_subtotal"))
         cost_total = sum(product_lines.mapped("total_cost"))
-        gross_profit = sum(product_lines.mapped("margin"))
+        gross_profit = sum(revenue_lines.mapped("margin"))
         discounts_given = sum(
             self._avea_performance_discount_given(line) for line in discount_lines
         )

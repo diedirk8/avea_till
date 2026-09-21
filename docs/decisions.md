@@ -260,7 +260,8 @@ Business Overview shows a simple **Profit** block (EX tax): Sales, Cost of Goods
 - **Product lines:** `discount_given = (avea_retail_unit_ex_tax × qty) − price_subtotal` (signed; refunds reverse naturally).
 - **Manual % discounts:** `price_unit` is the pre-discount shelf price; the same formula applies.
 - **Promotions / loyalty reward lines:** `discount_given = −price_subtotal` (EX tax).
-- **Avea Combo Price lines** (`avea_combo_program_id`): `discount_given = −price_subtotal` on the combo discount line; component lines stay at full retail.
+- **Avea Combo Price lines** (`avea_combo_program_id`): `discount_given = −price_subtotal` on the combo discount line; component lines stay at full retail. **Sales and gross profit** include combo discount lines (negative `price_subtotal`) so net customer spend is reported correctly.
+- **Refund lines** with `qty < 0` and a positive `price_subtotal` are normalised before discount calculation so legacy POS refund rows do not distort Discounts Given.
 - Discounts Given is informational — revenue is already net in `price_subtotal`; discounts do not reduce COGS.
 - Legacy lines without `avea_retail_unit_ex_tax` fall back to `price_unit` when a line discount % was used, otherwise no phantom discount is inferred.
 

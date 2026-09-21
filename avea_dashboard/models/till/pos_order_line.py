@@ -145,9 +145,13 @@ class PosOrderLine(models.Model):
             or self.combo_line_ids
         ):
             return 0.0
+        qty = float(self.qty or 0.0)
         retail_ex = self._avea_sale_time_retail_unit_ex_tax()
-        normal = retail_ex * float(self.qty or 0.0)
+        normal = retail_ex * qty
         actual = float(self.price_subtotal or 0.0)
+        # Some refund lines keep a positive subtotal while qty is negative.
+        if qty < 0.0 and actual > 0.0:
+            actual = -actual
         return normal - actual
 
     @api.model
