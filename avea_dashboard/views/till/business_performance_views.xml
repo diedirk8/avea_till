@@ -152,7 +152,8 @@
                             </span>
                         </div>
                         <div class="o_avea_workspace_kpi_grid">
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--primary">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--primary o_avea_workspace_kpi_card--clickable">
+                                <button name="action_open_profit_report" type="object" class="o_avea_kpi_drilldown_hitarea" title="Open Profit Report"/>
                                 <span class="o_avea_workspace_kpi_label">Sales</span>
                                 <field name="sales_ex_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
@@ -160,11 +161,13 @@
                                     <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
-                            <div class="o_avea_workspace_kpi_card">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--clickable">
+                                <button name="action_open_profit_report" type="object" class="o_avea_kpi_drilldown_hitarea" title="Open Profit Report"/>
                                 <span class="o_avea_workspace_kpi_label">Cost of Goods Sold</span>
                                 <field name="cost_of_goods_sold" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                             </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive o_avea_workspace_kpi_card--clickable">
+                                <button name="action_open_profit_report" type="object" class="o_avea_kpi_drilldown_hitarea" title="Open Profit Report"/>
                                 <span class="o_avea_workspace_kpi_label">Gross Profit</span>
                                 <field name="gross_profit" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
@@ -172,7 +175,8 @@
                                     <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
-                            <div class="o_avea_workspace_kpi_card">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--clickable">
+                                <button name="action_open_discount_report" type="object" class="o_avea_kpi_drilldown_hitarea" title="Open Discount Report"/>
                                 <span class="o_avea_workspace_kpi_label">Discounts Given</span>
                                 <field name="discounts_given" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span class="o_avea_workspace_kpi_subvalue">
@@ -180,7 +184,8 @@
                                     <span> vs </span><field name="comparison_label" nolabel="1" readonly="1"/>
                                 </span>
                             </div>
-                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact o_avea_workspace_kpi_card--clickable">
+                                <button name="action_open_profit_report" type="object" class="o_avea_kpi_drilldown_hitarea" title="Open Profit Report"/>
                                 <span class="o_avea_workspace_kpi_label">Gross Margin</span>
                                 <field name="gross_margin_percent" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 <span>%</span>

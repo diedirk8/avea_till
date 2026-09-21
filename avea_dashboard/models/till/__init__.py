@@ -6,6 +6,8 @@ from . import pos_order
 from . import pos_receipt_email
 from . import ir_mail_server
 from . import performance_analytics
+from . import reporting_workspace
+from . import financial_reports
 from . import pos_order_line
 from . import pos_payment_method
 from . import till_movement

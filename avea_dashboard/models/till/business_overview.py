@@ -64,6 +64,7 @@ class AveaBusinessOverviewProductLine(models.TransientModel):
 class AveaBusinessOverview(models.TransientModel):
     _name = "avea.business.overview"
     _description = "Business Overview"
+    _inherit = ["avea.reporting.workspace.mixin"]
     _rec_name = "period_label"
 
     period = fields.Selection(
@@ -457,66 +458,44 @@ class AveaBusinessOverview(models.TransientModel):
             date_to=self.date_to,
         )
 
-    def _timezone(self):
-        tzname = self.env.user.tz or self.env.context.get("tz") or "UTC"
-        try:
-            return ZoneInfo(tzname)
-        except Exception:
-            return ZoneInfo("UTC")
-
-    def _utc_bounds(self, day_from, day_to):
-        tz = self._timezone()
-        start_local = datetime.combine(day_from, time.min, tzinfo=tz)
-        end_local = datetime.combine(
-            day_to,
-            time.max.replace(microsecond=0),
-            tzinfo=tz,
+    def action_open_profit_report(self):
+        self.ensure_one()
+        return self.env["avea.profit.report"].action_open_for_workspace(
+            period=self.period,
+            date_from=self.date_from,
+            date_to=self.date_to,
+            source_model=self._name,
         )
-        return (
-            start_local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None),
-            end_local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None),
+
+    def action_open_discount_report(self):
+        self.ensure_one()
+        return self.env["avea.discount.report"].action_open_for_workspace(
+            period=self.period,
+            date_from=self.date_from,
+            date_to=self.date_to,
+            source_model=self._name,
         )
 
     @api.model
     def _normalize_custom_dates(self, date_from=None, date_to=None):
-        today = fields.Date.context_today(self)
-        start = date_from or today.replace(day=1)
-        end = date_to or today
-        if start > end:
-            start, end = end, start
-        return start, end
+        return self._reporting_normalize_custom_dates(date_from, date_to)
 
     def _reporting_period(self, period=None):
         self.ensure_one()
-        today = fields.Date.context_today(self)
+        windows = self._period_windows(period or self.period or PERIOD_TODAY)
         return resolve_reporting_period(
             period=period or self.period or PERIOD_TODAY,
-            today=today,
+            today=windows["today"],
             custom_from=self.date_from,
             custom_to=self.date_to,
         )
 
     def _period_windows(self, period):
-        """Adapter around the reporting-period source of truth."""
-        reporting = resolve_reporting_period(
-            period=period,
-            today=fields.Date.context_today(self),
-            custom_from=self.date_from,
-            custom_to=self.date_to,
+        return self._reporting_period_windows(
+            period,
+            date_from=self.date_from,
+            date_to=self.date_to,
         )
-        current = reporting.current
-        previous = reporting.comparison
-        return {
-            "display_current": current,
-            "data_current": current,
-            "display_previous": previous,
-            "data_previous": previous,
-            "labels": (_(reporting.label), _(reporting.comparison_label)),
-            "show_through_today": False,
-            "today": reporting.today,
-            "elapsed_days": reporting.elapsed_days,
-            "key": reporting.key,
-        }
 
     def _chart_period_days(self, period, windows):
         """Charts use the same inclusive dates as the selected reporting period."""
@@ -527,34 +506,13 @@ class AveaBusinessOverview(models.TransientModel):
         return day_from == day_to
 
     def _format_day_range(self, day_from, day_to):
-        """Readable date range in the user's language, e.g. 18–25 August 2026."""
-        if day_from == day_to:
-            return format_date(self.env, day_from, date_format="d MMMM y")
-        end = format_date(self.env, day_to, date_format="d MMMM y")
-        same_month = day_from.month == day_to.month and day_from.year == day_to.year
-        if same_month:
-            start_day = format_date(self.env, day_from, date_format="d")
-            return f"{start_day}–{end}"
-        if day_from.year == day_to.year:
-            start = format_date(self.env, day_from, date_format="d MMMM")
-            return f"{start}–{end}"
-        start = format_date(self.env, day_from, date_format="d MMMM y")
-        return f"{start}–{end}"
+        return self._reporting_format_day_range(day_from, day_to)
 
     def _paid_orders_between(self, day_from, day_to):
-        start, end = self._utc_bounds(day_from, day_to)
-        Session = self.env["pos.session"]
-        return self.env["pos.order"].search(
-            [
-                ("company_id", "=", self.env.company.id),
-                ("state", "in", Session._avea_paid_order_states()),
-                ("date_order", ">=", start),
-                ("date_order", "<=", end),
-            ]
-        )
+        return self._reporting_paid_orders_between(day_from, day_to)
 
     def _cash_activity_between(self, day_from, day_to):
-        start, end = self._utc_bounds(day_from, day_to)
+        start, end = self._reporting_utc_bounds(day_from, day_to)
         Movement = self.env["avea.till.movement"]
         domain = [
             ("session_id.company_id", "=", self.env.company.id),
@@ -601,7 +559,7 @@ class AveaBusinessOverview(models.TransientModel):
         if not order.date_order:
             return False
         return order.date_order.replace(tzinfo=ZoneInfo("UTC")).astimezone(
-            self._timezone()
+            self._reporting_timezone()
         )
 
     def _format_hour_range(self, hour):
@@ -996,9 +954,11 @@ class AveaBusinessOverview(models.TransientModel):
             previous_orders = overview._paid_orders_between(*windows["data_previous"])
             sales = Session._avea_sales_summary_from_orders(current_orders)
             previous_sales = Session._avea_sales_summary_from_orders(previous_orders)
-            financial = Session._avea_financial_summary_from_orders(current_orders)
-            previous_financial = Session._avea_financial_summary_from_orders(
-                previous_orders
+            financial = overview._reporting_financial_summary_for_period(
+                orders=current_orders
+            )
+            previous_financial = overview._reporting_financial_summary_for_period(
+                orders=previous_orders
             )
             activity = Session._avea_activity_from_orders(current_orders)
             sales_ex_tax_delta = overview._currency_delta_display(

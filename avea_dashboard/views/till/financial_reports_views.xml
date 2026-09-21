@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_profit_report_form" model="ir.ui.view">
+        <field name="name">avea.profit.report.form</field>
+        <field name="model">avea.profit.report</field>
+        <field name="arch" type="xml">
+            <form string="Profit Report" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="period" invisible="1"/>
+                    <field name="date_from" invisible="1"/>
+                    <field name="date_to" invisible="1"/>
+                    <field name="source_model" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <button
+                                name="action_back"
+                                type="object"
+                                string="Back"
+                                class="btn btn-link o_avea_report_back_btn"
+                            />
+                            <span class="o_avea_workspace_eyebrow">How did we get to this number?</span>
+                            <h1 class="o_avea_workspace_title">Profit Report</h1>
+                            <div class="o_avea_period_range">
+                                <field name="period_label" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_period_range">
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                            <p class="o_avea_tax_note">Excluding tax</p>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--report_summary">
+                            <div class="o_avea_workspace_kpi_card">
+                                <span class="o_avea_workspace_kpi_label">Sales</span>
+                                <field name="sales_ex_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card">
+                                <span class="o_avea_workspace_kpi_label">Cost of Goods Sold</span>
+                                <field name="cost_of_goods_sold" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
+                                <span class="o_avea_workspace_kpi_label">Gross Profit</span>
+                                <field name="gross_profit" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact">
+                                <span class="o_avea_workspace_kpi_label">Gross Margin</span>
+                                <field name="gross_margin_percent" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                <span>%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Transactions</h2>
+                        </div>
+                        <div class="o_avea_workspace_ledger_card o_avea_products_sold_card">
+                            <field name="line_ids" nolabel="1" readonly="1">
+                                <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                    <field name="order_date_label" string="Date / Time"/>
+                                    <field name="order_reference" string="Receipt"/>
+                                    <field name="product_display" string="Product"/>
+                                    <field name="quantity" string="Qty"/>
+                                    <field name="sales" string="Sales" widget="monetary" sum="Sales"/>
+                                    <field name="cost_total" string="COGS" widget="monetary" sum="COGS"/>
+                                    <field name="gross_profit" string="Gross Profit" widget="monetary" sum="Gross Profit"/>
+                                    <field name="gross_margin_percent" string="Margin %"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="pos_line_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_discount_report_form" model="ir.ui.view">
+        <field name="name">avea.discount.report.form</field>
+        <field name="model">avea.discount.report</field>
+        <field name="arch" type="xml">
+            <form string="Discount Report" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="period" invisible="1"/>
+                    <field name="date_from" invisible="1"/>
+                    <field name="date_to" invisible="1"/>
+                    <field name="source_model" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <button
+                                name="action_back"
+                                type="object"
+                                string="Back"
+                                class="btn btn-link o_avea_report_back_btn"
+                            />
+                            <span class="o_avea_workspace_eyebrow">How did we get to this number?</span>
+                            <h1 class="o_avea_workspace_title">Discount Report</h1>
+                            <div class="o_avea_period_range">
+                                <field name="period_label" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_period_range">
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                            <p class="o_avea_tax_note">Excluding tax</p>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block">
+                        <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--report_summary">
+                            <div class="o_avea_workspace_kpi_card">
+                                <span class="o_avea_workspace_kpi_label">Total Discounts Given</span>
+                                <field name="discounts_given" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_workspace_block--last">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Discounts</h2>
+                        </div>
+                        <div class="o_avea_workspace_ledger_card o_avea_products_sold_card">
+                            <field name="line_ids" nolabel="1" readonly="1">
+                                <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                    <field name="order_date_label" string="Date / Time"/>
+                                    <field name="order_reference" string="Receipt"/>
+                                    <field name="product_display" string="Product"/>
+                                    <field name="retail_unit_ex_tax" string="Retail Price" widget="monetary"/>
+                                    <field name="actual_unit_ex_tax" string="Actual Price" widget="monetary"/>
+                                    <field name="quantity" string="Qty"/>
+                                    <field name="discount_amount" string="Discount" widget="monetary" sum="Discounts Given"/>
+                                    <field name="discount_reason" string="Reason"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="pos_line_id" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

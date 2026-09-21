@@ -336,6 +336,37 @@
         padding: 1.25rem 1.35rem 1.3rem;
     }
 
+    .o_avea_workspace_kpi_card--clickable {
+        position: relative;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--avea-nav-brand, #c45c26);
+            box-shadow: 0 0.15rem 0.65rem rgba(31, 41, 55, 0.08);
+        }
+    }
+
+    .o_avea_kpi_drilldown_hitarea {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+    }
+
+    .o_avea_report_back_btn {
+        align-self: flex-start;
+        margin: 0 0 0.35rem;
+        padding: 0;
+    }
+
+    .o_avea_workspace_kpi_grid--report_summary {
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    }
+
     .o_avea_workspace_kpi_card--compact {
         min-height: 6.75rem;
 

@@ -7,6 +7,10 @@ access_avea_business_overview,access.avea.business.overview,model_avea_business_
 access_avea_business_overview_product_line,access.avea.business.overview.product.line,model_avea_business_overview_product_line,,1,1,1,1
 access_avea_business_performance,access.avea.business.performance,model_avea_business_performance,,1,1,1,1
 access_avea_business_performance_line,access.avea.business.performance.line,model_avea_business_performance_line,,1,1,1,1
+access_avea_profit_report,access.avea.profit.report,model_avea_profit_report,,1,1,1,1
+access_avea_profit_report_line,access.avea.profit.report.line,model_avea_profit_report_line,,1,1,1,1
+access_avea_discount_report,access.avea.discount.report,model_avea_discount_report,,1,1,1,1
+access_avea_discount_report_line,access.avea.discount.report.line,model_avea_discount_report_line,,1,1,1,1
 access_avea_business_transaction,access.avea.business.transaction,model_avea_business_transaction,,1,0,0,0
 access_avea_business_settings,access.avea.business.settings,model_avea_business_settings,,1,1,1,1
 access_avea_printed_receipt_settings,access.avea.printed.receipt.settings,model_avea_printed_receipt_settings,,1,1,1,1

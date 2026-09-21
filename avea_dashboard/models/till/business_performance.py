@@ -1,8 +1,5 @@
-from datetime import datetime, time
-from zoneinfo import ZoneInfo
-
 from odoo import _, api, fields, models
-from odoo.tools.misc import formatLang, format_date
+from odoo.tools.misc import formatLang
 
 from .reporting_period import (
     PERIOD_CUSTOM,
@@ -13,7 +10,6 @@ from .reporting_period import (
     PERIOD_WTD,
     PERIOD_YTD,
     normalize_period_key,
-    resolve_reporting_period,
 )
 
 
@@ -91,6 +87,7 @@ class AveaBusinessPerformanceLine(models.TransientModel):
 class AveaBusinessPerformance(models.TransientModel):
     _name = "avea.business.performance"
     _description = "Business Performance"
+    _inherit = ["avea.reporting.workspace.mixin"]
     _rec_name = "period_label"
 
     period = fields.Selection(
@@ -249,13 +246,13 @@ class AveaBusinessPerformance(models.TransientModel):
 
     @api.depends("period", "date_from", "date_to")
     def _compute_financial_summary(self):
-        Session = self.env["pos.session"]
         for dashboard in self:
-            windows = dashboard._period_windows(dashboard.period or PERIOD_TODAY)
+            period = dashboard.period or PERIOD_TODAY
+            windows = dashboard._period_windows(period)
             current_orders = dashboard._paid_orders_between(*windows["data_current"])
             previous_orders = dashboard._paid_orders_between(*windows["data_previous"])
-            financial = Session._avea_financial_summary_from_orders(current_orders)
-            previous = Session._avea_financial_summary_from_orders(previous_orders)
+            financial = dashboard._reporting_financial_summary_for_period(orders=current_orders)
+            previous = dashboard._reporting_financial_summary_for_period(orders=previous_orders)
             dashboard.sales_ex_tax = financial["revenue_ex_tax"]
             dashboard.cost_of_goods_sold = financial["cost_total"]
             dashboard.gross_profit = financial["gross_profit"]
@@ -346,6 +343,24 @@ class AveaBusinessPerformance(models.TransientModel):
     def action_open_overview(self):
         return self.env["avea.business.overview"].action_open_business_overview()
 
+    def action_open_profit_report(self):
+        self.ensure_one()
+        return self.env["avea.profit.report"].action_open_for_workspace(
+            period=self.period,
+            date_from=self.date_from,
+            date_to=self.date_to,
+            source_model=self._name,
+        )
+
+    def action_open_discount_report(self):
+        self.ensure_one()
+        return self.env["avea.discount.report"].action_open_for_workspace(
+            period=self.period,
+            date_from=self.date_from,
+            date_to=self.date_to,
+            source_model=self._name,
+        )
+
     def action_refresh(self):
         self.ensure_one()
         return self.action_open_business_performance(
@@ -354,77 +369,22 @@ class AveaBusinessPerformance(models.TransientModel):
             date_to=self.date_to,
         )
 
-    def _timezone(self):
-        tzname = self.env.user.tz or self.env.context.get("tz") or "UTC"
-        try:
-            return ZoneInfo(tzname)
-        except Exception:
-            return ZoneInfo("UTC")
+    def _period_windows(self, period):
+        return self._reporting_period_windows(
+            period,
+            date_from=self.date_from,
+            date_to=self.date_to,
+        )
 
-    def _utc_bounds(self, day_from, day_to):
-        tz = self._timezone()
-        start_local = datetime.combine(day_from, time.min, tzinfo=tz)
-        end_local = datetime.combine(
-            day_to,
-            time.max.replace(microsecond=0),
-            tzinfo=tz,
-        )
-        return (
-            start_local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None),
-            end_local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None),
-        )
+    def _format_day_range(self, day_from, day_to):
+        return self._reporting_format_day_range(day_from, day_to)
+
+    def _paid_orders_between(self, day_from, day_to):
+        return self._reporting_paid_orders_between(day_from, day_to)
 
     @api.model
     def _normalize_custom_dates(self, date_from=None, date_to=None):
-        today = fields.Date.context_today(self)
-        start = date_from or today.replace(day=1)
-        end = date_to or today
-        if start > end:
-            start, end = end, start
-        return start, end
-
-    def _period_windows(self, period):
-        reporting = resolve_reporting_period(
-            period=period,
-            today=fields.Date.context_today(self),
-            custom_from=self.date_from,
-            custom_to=self.date_to,
-        )
-        current = reporting.current
-        previous = reporting.comparison
-        return {
-            "display_current": current,
-            "data_current": current,
-            "display_previous": previous,
-            "data_previous": previous,
-            "labels": (_(reporting.label), _(reporting.comparison_label)),
-        }
-
-    def _format_day_range(self, day_from, day_to):
-        if day_from == day_to:
-            return format_date(self.env, day_from, date_format="d MMMM y")
-        end = format_date(self.env, day_to, date_format="d MMMM y")
-        same_month = day_from.month == day_to.month and day_from.year == day_to.year
-        if same_month:
-            start_day = format_date(self.env, day_from, date_format="d")
-            return f"{start_day}–{end}"
-        if day_from.year == day_to.year:
-            start = format_date(self.env, day_from, date_format="d MMMM")
-            return f"{start}–{end}"
-        start = format_date(self.env, day_from, date_format="d MMMM y")
-        return f"{start}–{end}"
-
-    def _paid_orders_between(self, day_from, day_to):
-        start, end = self._utc_bounds(day_from, day_to)
-        Session = self.env["pos.session"]
-        return self.env["pos.order"].search(
-            [
-                ("company_id", "=", self.env.company.id),
-                ("state", "in", Session._avea_paid_order_states()),
-                ("date_order", ">=", start),
-                ("date_order", "<=", end),
-            ]
-        )
+        return self._reporting_normalize_custom_dates(date_from, date_to)
 
     def _populate_rankings(self):
         Line = self.env["avea.business.performance.line"]

@@ -6,6 +6,7 @@ Ranking methodology and gross-profit cost basis are defined in ADR-010
 import math
 
 from odoo import _, api, models
+from odoo.tools.float_utils import float_is_zero
 
 PERFORMANCE_RANK_LIMIT = 8
 
@@ -131,6 +132,103 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
                 float(revenue_ex_tax or 0.0), float(gross_profit or 0.0)
             ),
         }
+
+    @api.model
+    def _avea_discount_reason_label(self, line):
+        """Best-effort discount reason from POS line data; neutral when unknown."""
+        Program = self.env["loyalty.program"]
+        if line.avea_combo_program_id:
+            program = Program.browse(line.avea_combo_program_id).exists()
+            if program and program.avea_is_combo:
+                return _("Combo Price")
+            if program:
+                return _("Promotion")
+        if line.is_reward_line or line.reward_id:
+            return _("Promotion")
+        if float(line.discount or 0.0):
+            return _("Manual discount")
+        if getattr(line, "price_type", False) == "manual":
+            return _("Price override")
+        return _("Other")
+
+    @api.model
+    def _avea_profit_report_rows(self, orders):
+        """Line-level profit rows that reconcile to the financial summary."""
+        revenue_lines = self._avea_performance_revenue_lines_for_orders(orders)
+        self._avea_performance_ensure_line_costs(revenue_lines)
+        rows = []
+        for line in revenue_lines.sorted(
+            key=lambda record: (record.avea_order_date or record.create_date, record.id),
+            reverse=True,
+        ):
+            metrics = self._avea_performance_line_metrics(line)
+            rows.append(
+                {
+                    "pos_line_id": line.id,
+                    "order_reference": line.avea_order_reference
+                    or line.order_id._avea_till_display_reference()
+                    or line.order_id.name,
+                    "order_date_label": line.avea_order_date_label,
+                    "product_display": line.avea_product_display
+                    or line.full_product_name
+                    or line.product_id.display_name,
+                    "quantity": metrics["qty"],
+                    "sales": metrics["revenue_ex_tax"],
+                    "cost_total": metrics["cost_total"],
+                    "gross_profit": metrics["gross_profit"],
+                    "gross_margin_percent": metrics["gross_margin_percent"],
+                }
+            )
+        return rows
+
+    @api.model
+    def _avea_discount_report_rows(self, orders):
+        """Discount rows that reconcile to Discounts Given for the period."""
+        discount_lines = self._avea_performance_discount_lines_for_orders(orders)
+        currency = self.env.company.currency_id
+        rows = []
+        for line in discount_lines.sorted(
+            key=lambda record: (record.avea_order_date or record.create_date, record.id),
+            reverse=True,
+        ):
+            discount_amount = self._avea_performance_discount_given(line)
+            if float_is_zero(discount_amount, precision_rounding=currency.rounding):
+                continue
+            qty = float(line.qty or 0.0)
+            retail_unit = line._avea_sale_time_retail_unit_ex_tax()
+            actual_unit = (
+                float(line.price_subtotal or 0.0) / qty if qty else 0.0
+            )
+            rows.append(
+                {
+                    "pos_line_id": line.id,
+                    "order_reference": line.avea_order_reference
+                    or line.order_id._avea_till_display_reference()
+                    or line.order_id.name,
+                    "order_date_label": line.avea_order_date_label,
+                    "product_display": line.avea_product_display
+                    or line.full_product_name
+                    or line.product_id.display_name,
+                    "quantity": qty,
+                    "retail_unit_ex_tax": retail_unit,
+                    "actual_unit_ex_tax": actual_unit,
+                    "discount_amount": discount_amount,
+                    "discount_reason": self._avea_discount_reason_label(line),
+                }
+            )
+        return rows
+
+    @api.model
+    def _avea_profit_report_data(self, orders):
+        summary = self._avea_performance_financial_summary(orders)
+        rows = self._avea_profit_report_rows(orders)
+        return {"summary": summary, "rows": rows}
+
+    @api.model
+    def _avea_discount_report_data(self, orders):
+        summary = self._avea_performance_financial_summary(orders)
+        rows = self._avea_discount_report_rows(orders)
+        return {"summary": summary, "rows": rows}
 
     @api.model
     def _avea_performance_product_label(self, product):
