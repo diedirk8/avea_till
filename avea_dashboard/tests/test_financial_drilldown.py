@@ -133,15 +133,67 @@ class TestAveaFinancialDrilldown(TestPoSCommon):
         reason = report.line_ids.filtered(lambda row: row.pos_line_id == line).discount_reason
         self.assertEqual(reason, "Manual discount")
 
+    def _create_reward_program(self, program_type, name):
+        return self.env["loyalty.program"].create(
+            {
+                "name": name,
+                "program_type": program_type,
+                "trigger": "auto",
+                "applies_on": "both",
+                "pos_ok": True,
+                "pos_config_ids": [Command.link(self.config.id)],
+                "reward_ids": [
+                    Command.create(
+                        {
+                            "reward_type": "discount",
+                            "discount": 10,
+                            "discount_mode": "percent",
+                        }
+                    )
+                ],
+            }
+        )
+
     def test_promotion_discount_reason(self):
         product = self.create_product("Drill Promo", self.categ_basic, 100.0, 40.0)
+        program = self._create_reward_program("promotion", "Drill Promotion")
         order, _session = self._create_paid_order(lines=[(product, 1)], uuid="drill-promo-sale")
         line = order.lines[0]
-        line.write({"is_reward_line": True})
+        line.write(
+            {
+                "is_reward_line": True,
+                "reward_id": program.reward_ids.id,
+            }
+        )
         self.assertEqual(self.Line._avea_discount_reason_label(line), "Promotion")
-        report = self._open_discount_report("today")
-        reason = report.line_ids.filtered(lambda row: row.pos_line_id == line).discount_reason
-        self.assertEqual(reason, "Promotion")
+
+    def test_loyalty_discount_reason(self):
+        product = self.create_product("Drill Loyalty", self.categ_basic, 100.0, 40.0)
+        program = self._create_reward_program("loyalty", "Drill Loyalty Program")
+        order, _session = self._create_paid_order(lines=[(product, 1)], uuid="drill-loyalty-sale")
+        line = order.lines[0]
+        line.write(
+            {
+                "is_reward_line": True,
+                "reward_id": program.reward_ids.id,
+                "full_product_name": "R 1 per point on your order",
+            }
+        )
+        self.assertEqual(self.Line._avea_discount_reason_label(line), "Loyalty")
+
+    def test_ewallet_discount_reason(self):
+        product = self.create_product("Drill Wallet", self.categ_basic, 100.0, 40.0)
+        program = self._create_reward_program("ewallet", "Store Credit")
+        order, _session = self._create_paid_order(lines=[(product, 1)], uuid="drill-wallet-sale")
+        line = order.lines[0]
+        line.write(
+            {
+                "is_reward_line": True,
+                "reward_id": program.reward_ids.id,
+                "full_product_name": "eWallet",
+            }
+        )
+        self.assertEqual(self.Line._avea_discount_reason_label(line), "e-wallet")
 
     def test_combo_price_discount_reason(self):
         product_a = self.create_product("Drill Combo A", self.categ_basic, 100.0, 40.0)

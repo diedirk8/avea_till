@@ -143,7 +143,17 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
                 return _("Combo Price")
             if program:
                 return _("Promotion")
-        if line.is_reward_line or line.reward_id:
+        reward_program = line.reward_id.program_id if line.reward_id else False
+        if reward_program:
+            program_type = reward_program.program_type or ""
+            if program_type == "loyalty":
+                return _("Loyalty")
+            if program_type == "ewallet":
+                return _("e-wallet")
+            if program_type == "gift_card":
+                return _("Gift card")
+            return _("Promotion")
+        if line.is_reward_line:
             return _("Promotion")
         if float(line.discount or 0.0):
             return _("Manual discount")
