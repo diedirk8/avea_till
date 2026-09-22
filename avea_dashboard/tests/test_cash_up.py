@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from unittest.mock import patch
+
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
@@ -178,6 +180,51 @@ class TestAveaCashUpPaymentReconciliation(TestPoSCommon):
         self.assertEqual(kinds["cash"], self.product.lst_price)
         self.assertEqual(expected["cash_register_expected"], 100.0 + self.product.lst_price)
         self.assertEqual(expected["transaction_count"], 3)
+
+    def test_negative_store_credit_counted_reconciles(self):
+        """Issued Store Credit is a negative payment total and must cash up cleanly."""
+        issued = 64.0
+        self.assertEqual(
+            self.CashUp._avea_normalize_counted_payments({"store_credit": -issued}),
+            {"store_credit": -issued},
+        )
+        session = self._open_session(1000.0)
+        self._sync_order(
+            session,
+            lines=[(self.product, 1)],
+            payments=[(self.cash_pm1, self.product.lst_price)],
+            uuid="cash-up-sc-sale",
+        )
+        base = session.get_avea_payment_reconciliation_expected()
+        for line in base["lines"]:
+            if line["kind"] == "store_credit":
+                line["expected"] = -issued
+        base["total_expected"] = sum(line["expected"] for line in base["lines"])
+        with patch.object(
+            type(session),
+            "get_avea_payment_reconciliation_expected",
+            return_value=base,
+        ):
+            reconciliation = self._reconciliation(
+                session,
+                session.cash_register_balance_end,
+                {"store_credit": -issued},
+            )
+        store_credit = next(
+            line for line in reconciliation["lines"] if line["kind"] == "store_credit"
+        )
+        self.assertEqual(store_credit["difference"], 0.0)
+        self.assertEqual(reconciliation["total_difference"], 0.0)
+        self.CashUp._avea_validate_variance_reason(
+            reconciliation,
+            False,
+            session.currency_id,
+            cash_difference=0.0,
+        )
+
+    def test_other_payment_kinds_still_reject_negative_counts(self):
+        with self.assertRaises(UserError):
+            self.CashUp._avea_normalize_counted_payments({"card": -10.0})
 
     def test_refund_reduces_payment_expected(self):
         session = self._open_session(0.0)

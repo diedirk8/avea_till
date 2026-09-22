@@ -320,7 +320,8 @@ class AveaCashUp(models.Model):
             if value in (None, ""):
                 continue
             amount = float(value)
-            if amount < 0:
+            # Store Credit issuance (e.g. exchange credit) is a negative payment total.
+            if amount < 0 and key != "store_credit":
                 raise UserError(
                     _("Counted amounts cannot be negative (%(method)s).", method=key)
                 )
