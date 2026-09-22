@@ -351,6 +351,8 @@ class PosSession(models.Model):
         correct_xmlid = "avea_till.group_avea_correct_payment"
         for user_data in response.get("res.users", []):
             user = self.env["res.users"].browse(user_data["id"])
+            home_action = user._avea_home_action() if user._avea_uses_product_shell() else False
+            user_data["avea_backend_action_id"] = home_action.id if home_action else False
             can_cash_up = user.has_group(cash_up_xmlid)
             can_correct = user.has_group(correct_xmlid)
             user_data["can_cash_up_own_till"] = can_cash_up

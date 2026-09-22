@@ -32,6 +32,31 @@ const AVEA_POS_CONFIG_DEFAULTS = {
 };
 
 patch(PosStore.prototype, {
+    _aveaBackendActionId() {
+        const candidates = [this.user, this.cashier, this.getCashier?.()];
+        for (const operator of candidates) {
+            if (!operator) {
+                continue;
+            }
+            const actionId =
+                operator.avea_backend_action_id ??
+                operator.raw?.avea_backend_action_id;
+            if (actionId) {
+                return actionId;
+            }
+        }
+        return false;
+    },
+
+    redirectToBackend() {
+        const aveaActionId = this._aveaBackendActionId();
+        if (aveaActionId) {
+            window.location = `/odoo/action-${aveaActionId}`;
+            return;
+        }
+        return super.redirectToBackend(...arguments);
+    },
+
     async processServerData() {
         await super.processServerData(...arguments);
         this._aveaNormalizePosConfig();
