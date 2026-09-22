@@ -134,6 +134,18 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
         }
 
     @api.model
+    def _avea_discount_pricelist_reason(self, line):
+        """Pricelist name when the order used a non-default POS pricelist."""
+        order = line.order_id
+        if not order or not order.pricelist_id:
+            return False
+        baseline = order.config_id.pricelist_id if order.config_id else False
+        if baseline and order.pricelist_id.id == baseline.id:
+            return False
+        name = (order.pricelist_id.name or order.pricelist_id.display_name or "").strip()
+        return name or False
+
+    @api.model
     def _avea_discount_reason_label(self, line):
         """Best-effort discount reason from POS line data; neutral when unknown."""
         Program = self.env["loyalty.program"]
@@ -159,7 +171,64 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
             return _("Manual discount")
         if getattr(line, "price_type", False) == "manual":
             return _("Price override")
+        pricelist_reason = self._avea_discount_pricelist_reason(line)
+        if pricelist_reason:
+            return pricelist_reason
         return _("Other")
+
+    @api.model
+    def _avea_reward_discount_target_lines(self, line):
+        """Product lines that a POS loyalty reward discount line applies to."""
+        if not line.is_reward_line or not line.reward_identifier_code:
+            return self.env["pos.order.line"]
+        return line.order_id.lines.filtered(
+            lambda candidate: (
+                candidate.reward_identifier_code == line.reward_identifier_code
+                and not candidate.is_reward_line
+                and candidate.product_id
+                and candidate.product_id.type not in ("service", "combo")
+                and not candidate.combo_line_ids
+                and candidate.qty
+            )
+        )
+
+    @api.model
+    def _avea_discount_report_line_presentation(self, line, discount_amount):
+        """Product label and unit amounts for a discount report row."""
+        target_lines = self._avea_reward_discount_target_lines(line)
+        if target_lines:
+            labels = []
+            seen = set()
+            for target in target_lines:
+                label = (
+                    target.avea_product_display
+                    or target.full_product_name
+                    or target.product_id.display_name
+                )
+                if label and label not in seen:
+                    seen.add(label)
+                    labels.append(label)
+            product_display = ", ".join(labels)
+            qty = sum(abs(float(target.qty or 0.0)) for target in target_lines)
+            retail_unit = target_lines[0]._avea_sale_time_retail_unit_ex_tax()
+            actual_unit = retail_unit - (discount_amount / qty) if qty else 0.0
+            return {
+                "product_display": product_display,
+                "quantity": qty,
+                "retail_unit_ex_tax": retail_unit,
+                "actual_unit_ex_tax": actual_unit,
+            }
+        qty = float(line.qty or 0.0)
+        retail_unit = line._avea_sale_time_retail_unit_ex_tax()
+        actual_unit = float(line.price_subtotal or 0.0) / qty if qty else 0.0
+        return {
+            "product_display": line.avea_product_display
+            or line.full_product_name
+            or (line.product_id.display_name if line.product_id else ""),
+            "quantity": qty,
+            "retail_unit_ex_tax": retail_unit,
+            "actual_unit_ex_tax": actual_unit,
+        }
 
     @api.model
     def _avea_profit_report_rows(self, orders):
@@ -204,10 +273,8 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
             discount_amount = self._avea_performance_discount_given(line)
             if float_is_zero(discount_amount, precision_rounding=currency.rounding):
                 continue
-            qty = float(line.qty or 0.0)
-            retail_unit = line._avea_sale_time_retail_unit_ex_tax()
-            actual_unit = (
-                float(line.price_subtotal or 0.0) / qty if qty else 0.0
+            presentation = self._avea_discount_report_line_presentation(
+                line, discount_amount
             )
             rows.append(
                 {
@@ -216,12 +283,10 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
                     or line.order_id._avea_till_display_reference()
                     or line.order_id.name,
                     "order_date_label": line.avea_order_date_label,
-                    "product_display": line.avea_product_display
-                    or line.full_product_name
-                    or line.product_id.display_name,
-                    "quantity": qty,
-                    "retail_unit_ex_tax": retail_unit,
-                    "actual_unit_ex_tax": actual_unit,
+                    "product_display": presentation["product_display"],
+                    "quantity": presentation["quantity"],
+                    "retail_unit_ex_tax": presentation["retail_unit_ex_tax"],
+                    "actual_unit_ex_tax": presentation["actual_unit_ex_tax"],
                     "discount_amount": discount_amount,
                     "discount_reason": self._avea_discount_reason_label(line),
                 }

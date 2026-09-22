@@ -36,15 +36,15 @@
                     <div class="o_avea_workspace_block">
                         <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--report_summary">
                             <div class="o_avea_workspace_kpi_card">
-                                <span class="o_avea_workspace_kpi_label">Sales</span>
+                                <span class="o_avea_workspace_kpi_label">Sales (Excl. Tax)</span>
                                 <field name="sales_ex_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                             </div>
                             <div class="o_avea_workspace_kpi_card">
-                                <span class="o_avea_workspace_kpi_label">Cost of Goods Sold</span>
+                                <span class="o_avea_workspace_kpi_label">Cost of Goods Sold (Excl. Tax)</span>
                                 <field name="cost_of_goods_sold" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                             </div>
                             <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
-                                <span class="o_avea_workspace_kpi_label">Gross Profit</span>
+                                <span class="o_avea_workspace_kpi_label">Gross Profit (Excl. Tax)</span>
                                 <field name="gross_profit" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                             </div>
                             <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--compact">
@@ -66,9 +66,9 @@
                                     <field name="order_reference" string="Receipt"/>
                                     <field name="product_display" string="Product"/>
                                     <field name="quantity" string="Qty"/>
-                                    <field name="sales" string="Sales" widget="monetary" sum="Sales"/>
-                                    <field name="cost_total" string="COGS" widget="monetary" sum="COGS"/>
-                                    <field name="gross_profit" string="Gross Profit" widget="monetary" sum="Gross Profit"/>
+                                    <field name="sales" string="Sales (Excl. Tax)" widget="monetary" sum="Sales (Excl. Tax)"/>
+                                    <field name="cost_total" string="COGS (Excl. Tax)" widget="monetary" sum="COGS (Excl. Tax)"/>
+                                    <field name="gross_profit" string="Gross Profit (Excl. Tax)" widget="monetary" sum="Gross Profit (Excl. Tax)"/>
                                     <field name="gross_margin_percent" string="Margin %"/>
                                     <field name="currency_id" column_invisible="True"/>
                                     <field name="pos_line_id" column_invisible="True"/>
@@ -116,7 +116,7 @@
                     <div class="o_avea_workspace_block">
                         <div class="o_avea_workspace_kpi_grid o_avea_workspace_kpi_grid--report_summary">
                             <div class="o_avea_workspace_kpi_card">
-                                <span class="o_avea_workspace_kpi_label">Total Discounts Given</span>
+                                <span class="o_avea_workspace_kpi_label">Total Discounts Given (Excl. Tax)</span>
                                 <field name="discounts_given" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                             </div>
                         </div>
@@ -132,10 +132,10 @@
                                     <field name="order_date_label" string="Date / Time"/>
                                     <field name="order_reference" string="Receipt"/>
                                     <field name="product_display" string="Product"/>
-                                    <field name="retail_unit_ex_tax" string="Retail Price" widget="monetary"/>
-                                    <field name="actual_unit_ex_tax" string="Actual Price" widget="monetary"/>
+                                    <field name="retail_unit_ex_tax" string="Retail Price (Excl. Tax)" widget="monetary"/>
+                                    <field name="actual_unit_ex_tax" string="Actual Price (Excl. Tax)" widget="monetary"/>
                                     <field name="quantity" string="Qty"/>
-                                    <field name="discount_amount" string="Discount" widget="monetary" sum="Discounts Given"/>
+                                    <field name="discount_amount" string="Discount (Excl. Tax)" widget="monetary" sum="Discounts Given (Excl. Tax)"/>
                                     <field name="discount_reason" string="Reason"/>
                                     <field name="currency_id" column_invisible="True"/>
                                     <field name="pos_line_id" column_invisible="True"/>

@@ -21,10 +21,18 @@ class AveaProfitReportLine(models.TransientModel):
     order_reference = fields.Char(string="Receipt", readonly=True)
     product_display = fields.Char(string="Product", readonly=True)
     quantity = fields.Float(string="Qty", digits="Product Unit", readonly=True)
-    sales = fields.Monetary(string="Sales", currency_field="currency_id", readonly=True)
-    cost_total = fields.Monetary(string="COGS", currency_field="currency_id", readonly=True)
+    sales = fields.Monetary(
+        string="Sales (Excl. Tax)",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    cost_total = fields.Monetary(
+        string="COGS (Excl. Tax)",
+        currency_field="currency_id",
+        readonly=True,
+    )
     gross_profit = fields.Monetary(
-        string="Gross Profit",
+        string="Gross Profit (Excl. Tax)",
         currency_field="currency_id",
         readonly=True,
     )
@@ -64,17 +72,17 @@ class AveaProfitReport(models.TransientModel):
         readonly=True,
     )
     sales_ex_tax = fields.Monetary(
-        string="Sales",
+        string="Sales (Excl. Tax)",
         currency_field="currency_id",
         readonly=True,
     )
     cost_of_goods_sold = fields.Monetary(
-        string="Cost of Goods Sold",
+        string="Cost of Goods Sold (Excl. Tax)",
         currency_field="currency_id",
         readonly=True,
     )
     gross_profit = fields.Monetary(
-        string="Gross Profit",
+        string="Gross Profit (Excl. Tax)",
         currency_field="currency_id",
         readonly=True,
     )
@@ -176,17 +184,17 @@ class AveaDiscountReportLine(models.TransientModel):
     product_display = fields.Char(string="Product", readonly=True)
     quantity = fields.Float(string="Qty", digits="Product Unit", readonly=True)
     retail_unit_ex_tax = fields.Monetary(
-        string="Retail Price",
+        string="Retail Price (Excl. Tax)",
         currency_field="currency_id",
         readonly=True,
     )
     actual_unit_ex_tax = fields.Monetary(
-        string="Actual Price",
+        string="Actual Price (Excl. Tax)",
         currency_field="currency_id",
         readonly=True,
     )
     discount_amount = fields.Monetary(
-        string="Discount",
+        string="Discount (Excl. Tax)",
         currency_field="currency_id",
         readonly=True,
     )
@@ -222,7 +230,7 @@ class AveaDiscountReport(models.TransientModel):
         readonly=True,
     )
     discounts_given = fields.Monetary(
-        string="Total Discounts Given",
+        string="Total Discounts Given (Excl. Tax)",
         currency_field="currency_id",
         readonly=True,
     )

@@ -158,14 +158,32 @@ class TestAveaFinancialDrilldown(TestPoSCommon):
         product = self.create_product("Drill Promo", self.categ_basic, 100.0, 40.0)
         program = self._create_reward_program("promotion", "Drill Promotion")
         order, _session = self._create_paid_order(lines=[(product, 1)], uuid="drill-promo-sale")
-        line = order.lines[0]
-        line.write(
+        product_line = order.lines[0]
+        reward_code = "drill-promo-reward-code"
+        product_line.write({"reward_identifier_code": reward_code})
+        reward_line = self.env["pos.order.line"].create(
             {
+                "order_id": order.id,
+                "product_id": product.id,
+                "name": "Promotion discount",
+                "full_product_name": "10% on Drill Promo",
                 "is_reward_line": True,
                 "reward_id": program.reward_ids.id,
+                "reward_identifier_code": reward_code,
+                "qty": 1.0,
+                "price_unit": -10.0,
+                "price_subtotal": -10.0,
+                "price_subtotal_incl": -10.0,
             }
         )
-        self.assertEqual(self.Line._avea_discount_reason_label(line), "Promotion")
+        self.assertEqual(self.Line._avea_discount_reason_label(reward_line), "Promotion")
+        report = self._open_discount_report("today")
+        row = report.line_ids.filtered(lambda record: record.pos_line_id == reward_line)
+        self.assertTrue(row)
+        self.assertIn("Drill Promo", row.product_display)
+        self.assertGreater(row.retail_unit_ex_tax, 0.0)
+        self.assertGreater(row.actual_unit_ex_tax, 0.0)
+        self.assertLess(row.actual_unit_ex_tax, row.retail_unit_ex_tax)
 
     def test_loyalty_discount_reason(self):
         product = self.create_product("Drill Loyalty", self.categ_basic, 100.0, 40.0)
@@ -194,6 +212,28 @@ class TestAveaFinancialDrilldown(TestPoSCommon):
             }
         )
         self.assertEqual(self.Line._avea_discount_reason_label(line), "e-wallet")
+
+    def test_pricelist_discount_reason(self):
+        staff_pl = self.env["product.pricelist"].create({"name": "Staff Pricelist Test"})
+        product = self.create_product("Drill Staff PL", self.categ_basic, 129.57, 50.0)
+        order, _session = self._create_paid_order(
+            lines=[
+                {
+                    "product": product,
+                    "quantity": 1,
+                    "price_unit": 93.04,
+                    "price_subtotal": 93.04,
+                    "price_subtotal_incl": 93.04,
+                }
+            ],
+            uuid="drill-staff-pl",
+        )
+        line = order.lines[0]
+        order.write({"pricelist_id": staff_pl.id})
+        self.assertEqual(self.Line._avea_discount_reason_label(line), "Staff Pricelist Test")
+        report = self._open_discount_report("today")
+        reason = report.line_ids.filtered(lambda row: row.pos_line_id == line).discount_reason
+        self.assertEqual(reason, "Staff Pricelist Test")
 
     def test_combo_price_discount_reason(self):
         product_a = self.create_product("Drill Combo A", self.categ_basic, 100.0, 40.0)
