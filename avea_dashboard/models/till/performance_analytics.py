@@ -4,6 +4,7 @@ Ranking methodology and gross-profit cost basis are defined in ADR-010
 (docs/decisions.md).
 """
 import math
+import re
 
 from odoo import _, api, models
 from odoo.tools.float_utils import float_is_zero
@@ -177,20 +178,66 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
         return _("Other")
 
     @api.model
-    def _avea_reward_discount_target_lines(self, line):
-        """Product lines that a POS loyalty reward discount line applies to."""
-        if not line.is_reward_line or not line.reward_identifier_code:
-            return self.env["pos.order.line"]
-        return line.order_id.lines.filtered(
+    def _avea_reward_discount_product_line_candidates(self, order):
+        return order.lines.filtered(
             lambda candidate: (
-                candidate.reward_identifier_code == line.reward_identifier_code
-                and not candidate.is_reward_line
+                not candidate.is_reward_line
                 and candidate.product_id
                 and candidate.product_id.type not in ("service", "combo")
                 and not candidate.combo_line_ids
                 and candidate.qty
             )
         )
+
+    @api.model
+    def _avea_reward_discount_target_lines_from_description(self, line):
+        """When POS only stored reward_identifier_code on the discount line."""
+        label = (line.full_product_name or line.name or "").strip()
+        if not label:
+            return self.env["pos.order.line"]
+        product_hint = False
+        match = re.search(r"\bon\s+(.+)$", label, flags=re.IGNORECASE)
+        if match:
+            product_hint = match.group(1).strip()
+        if not product_hint or product_hint.lower() in {"your order", "the order"}:
+            return self.env["pos.order.line"]
+        candidates = self._avea_reward_discount_product_line_candidates(line.order_id)
+
+        def line_label(candidate):
+            return (
+                candidate.avea_product_display
+                or candidate.full_product_name
+                or candidate.product_id.display_name
+                or ""
+            ).strip()
+
+        return candidates.filtered(
+            lambda candidate: (
+                line_label(candidate) == product_hint
+                or product_hint in line_label(candidate)
+                or line_label(candidate) in product_hint
+            )
+        )
+
+    @api.model
+    def _avea_reward_discount_target_lines(self, line):
+        """Product lines that a POS loyalty reward discount line applies to."""
+        if not line.is_reward_line:
+            return self.env["pos.order.line"]
+        if line.reward_identifier_code:
+            linked = line.order_id.lines.filtered(
+                lambda candidate: (
+                    candidate.reward_identifier_code == line.reward_identifier_code
+                    and not candidate.is_reward_line
+                    and candidate.product_id
+                    and candidate.product_id.type not in ("service", "combo")
+                    and not candidate.combo_line_ids
+                    and candidate.qty
+                )
+            )
+            if linked:
+                return linked
+        return self._avea_reward_discount_target_lines_from_description(line)
 
     @api.model
     def _avea_discount_report_line_presentation(self, line, discount_amount):

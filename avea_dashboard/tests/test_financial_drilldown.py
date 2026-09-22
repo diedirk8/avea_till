@@ -185,6 +185,36 @@ class TestAveaFinancialDrilldown(TestPoSCommon):
         self.assertGreater(row.actual_unit_ex_tax, 0.0)
         self.assertLess(row.actual_unit_ex_tax, row.retail_unit_ex_tax)
 
+    def test_promotion_discount_product_from_reward_description(self):
+        """POS often stores reward_identifier_code only on the discount line."""
+        product = self.create_product("NexGard Drill", self.categ_basic, 119.0, 40.0)
+        program = self._create_reward_program("promotion", "Drill NexGard Promo")
+        order, _session = self._create_paid_order(
+            lines=[(product, 2)],
+            uuid="drill-promo-desc",
+        )
+        product_line = order.lines[0]
+        reward_line = self.env["pos.order.line"].create(
+            {
+                "order_id": order.id,
+                "product_id": product.id,
+                "name": "Promotion discount",
+                "full_product_name": "15% on NexGard Drill",
+                "is_reward_line": True,
+                "reward_id": program.reward_ids.id,
+                "reward_identifier_code": "only-on-reward-line",
+                "qty": 1.0,
+                "price_unit": -20.0,
+                "price_subtotal": -20.0,
+                "price_subtotal_incl": -20.0,
+            }
+        )
+        report = self._open_discount_report("today")
+        row = report.line_ids.filtered(lambda record: record.pos_line_id == reward_line)
+        self.assertIn("NexGard Drill", row.product_display)
+        self.assertGreater(row.retail_unit_ex_tax, 0.0)
+        self.assertGreater(row.actual_unit_ex_tax, 0.0)
+
     def test_loyalty_discount_reason(self):
         product = self.create_product("Drill Loyalty", self.categ_basic, 100.0, 40.0)
         program = self._create_reward_program("loyalty", "Drill Loyalty Program")
