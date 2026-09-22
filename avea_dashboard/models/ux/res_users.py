@@ -4,6 +4,16 @@ from odoo import api, models
 class ResUsers(models.Model):
     _inherit = ["res.users", "avea.nav.mixin"]
 
+    @api.model
+    def _avea_product_shell_globally_enabled(self):
+        """Kill switch: set ir.config_parameter avea_till.product_shell_enabled to False."""
+        value = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param("avea_till.product_shell_enabled", "True")
+        )
+        return str(value).lower() not in ("0", "false", "no", "off")
+
     def _avea_uses_product_shell(self):
         """Normal Avea users see Avea, not the Odoo app switcher.
 
@@ -12,6 +22,8 @@ class ResUsers(models.Model):
         retail product navigation.
         """
         self.ensure_one()
+        if not self._avea_product_shell_globally_enabled():
+            return False
         return (
             not self._is_system()
             and self.has_group("avea_till.group_avea_cashier")

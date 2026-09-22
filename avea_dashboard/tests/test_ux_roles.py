@@ -128,6 +128,13 @@ class TestAveaUxRoles(TestPoSCommon):
             self.assertTrue(user._avea_uses_product_shell())
         self.assertFalse(self.env.ref("base.user_admin")._avea_uses_product_shell())
 
+    def test_product_shell_global_disable(self):
+        param = self.env["ir.config_parameter"].sudo()
+        param.set_param("avea_till.product_shell_enabled", "False")
+        self.assertFalse(self.cashier._avea_uses_product_shell())
+        param.set_param("avea_till.product_shell_enabled", "True")
+        self.assertTrue(self.cashier._avea_uses_product_shell())
+
     def test_admin_keeps_odoo_shell_despite_avea_groups(self):
         admin = self.env.ref("base.user_admin")
         self.assertTrue(admin.has_group("avea_till.group_avea_cashier"))

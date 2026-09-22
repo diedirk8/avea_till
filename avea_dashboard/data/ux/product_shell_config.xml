@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <record id="config_avea_product_shell_enabled" model="ir.config_parameter">
+        <field name="key">avea_till.product_shell_enabled</field>
+        <field name="value">True</field>
+    </record>
+</odoo>

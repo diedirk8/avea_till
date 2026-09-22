@@ -54,7 +54,8 @@ patch(PosStore.prototype, {
             window.location = `/odoo/action-${aveaActionId}`;
             return;
         }
-        return super.redirectToBackend(...arguments);
+        // Default POS redirect opens the POS client action and can show a blank screen.
+        window.location = "/odoo";
     },
 
     async processServerData() {
