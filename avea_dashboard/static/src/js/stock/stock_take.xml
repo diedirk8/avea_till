@@ -83,20 +83,35 @@
                         <div class="o_avea_stock_take_pick_header">
                             <div>
                                 <h2 class="o_avea_stock_take_section_title">Search results</h2>
-                                <p class="o_avea_stock_take_pick_meta">
-                                    <strong t-esc="visibleSelectedCount"/> of <strong t-esc="state.matchedCount or 0"/> in this search selected
-                                    <t t-if="state.matchedTruncated"> (first 500 shown)</t>
+                                <p class="o_avea_stock_take_pick_meta" t-if="state.matchedCount">
+                                    <strong t-esc="state.matchedCount"/> products match these filters.
+                                    <t t-if="state.matchedProducts.length">
+                                        Showing <strong t-esc="matchedRangeStart"/>–<strong t-esc="matchedRangeEnd"/>.
+                                    </t>
+                                    <t t-if="pageSelectedCount">
+                                        <span> <strong t-esc="pageSelectedCount"/> selected on this page.</span>
+                                    </t>
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                class="btn btn-link btn-sm"
-                                t-att-disabled="!state.matchedProducts.length"
-                                t-on-click="onToggleSelectAllVisible"
-                            >
-                                <t t-if="allVisibleSelected">Remove visible</t>
-                                <t t-else="">Add all visible</t>
-                            </button>
+                            <div class="o_avea_stock_take_toolbar_actions">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    t-att-disabled="!state.matchedCount or state.productsLoading"
+                                    t-on-click="onAddAllMatching"
+                                >
+                                    Add all <t t-esc="state.matchedCount"/> found
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-link btn-sm"
+                                    t-att-disabled="!state.matchedProducts.length"
+                                    t-on-click="onToggleSelectAllPage"
+                                >
+                                    <t t-if="allPageSelected">Clear this page</t>
+                                    <t t-else="">Select this page</t>
+                                </button>
+                            </div>
                         </div>
                         <div class="o_avea_stock_take_pick_loading" t-if="state.productsLoading">Loading products...</div>
                         <div class="o_avea_stock_take_pick_empty" t-elif="!state.matchedProducts.length">No products match these filters.</div>
@@ -107,8 +122,8 @@
                                         <th class="o_avea_stock_take_col_check">
                                             <input
                                                 type="checkbox"
-                                                t-att-checked="allVisibleSelected ? 'checked' : undefined"
-                                                t-on-change="onToggleSelectAllVisible"
+                                                t-att-checked="allPageSelected ? 'checked' : undefined"
+                                                t-on-change="onToggleSelectAllPage"
                                             />
                                         </th>
                                         <th>Product</th>
@@ -146,6 +161,30 @@
                                     </t>
                                 </tbody>
                             </table>
+                        </div>
+                        <div
+                            class="o_avea_stock_take_pick_pager d-flex align-items-center justify-content-between gap-2 mt-2"
+                            t-if="state.matchedCount and state.matchedProducts.length"
+                        >
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                t-att-disabled="!canGoToPreviousResultsPage or state.productsLoading"
+                                t-on-click="onPreviousResultsPage"
+                            >
+                                Previous
+                            </button>
+                            <span class="o_avea_stock_take_pick_meta mb-0">
+                                Page <strong t-esc="matchedRangeStart"/>–<strong t-esc="matchedRangeEnd"/> of <strong t-esc="state.matchedCount"/>
+                            </span>
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                t-att-disabled="!state.matchedHasMore or state.productsLoading"
+                                t-on-click="onNextResultsPage"
+                            >
+                                Next
+                            </button>
                         </div>
                     </div>
 

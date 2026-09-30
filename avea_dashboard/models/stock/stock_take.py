@@ -234,15 +234,33 @@ class AveaStockTake(models.Model):
         }
 
     @api.model
-    def search_products_for_selection(self, values, limit=500):
+    def product_ids_matching_partial_filters(self, values):
+        """Product IDs for the current partial-count filters (bulk selection)."""
         values = self._avea_values_from_client(values)
         if values.get("scope_mode") != "partial":
-            return {"products": [], "count": 0, "truncated": False}
+            return {"product_ids": [], "count": 0}
+        Product = self.env["product.product"]
+        domain = self._avea_partial_filter_domain_from_values(values)
+        products = Product.search(domain, order="name, id")
+        return {"product_ids": products.ids, "count": len(products)}
+
+    @api.model
+    def search_products_for_selection(self, values, offset=0, limit=100):
+        values = self._avea_values_from_client(values)
+        if values.get("scope_mode") != "partial":
+            return {
+                "products": [],
+                "count": 0,
+                "offset": 0,
+                "limit": 0,
+                "has_more": False,
+            }
         Product = self.env["product.product"]
         domain = self._avea_partial_filter_domain_from_values(values)
         total = Product.search_count(domain)
-        limit = max(1, min(int(limit or 500), 1000))
-        products = Product.search(domain, order="name, id", limit=limit)
+        offset = max(0, int(offset or 0))
+        limit = max(1, min(int(limit or 100), 200))
+        products = Product.search(domain, order="name, id", offset=offset, limit=limit)
         company = self.env.company
         if values.get("company_id"):
             company = self.env["res.company"].browse(values["company_id"])
@@ -267,7 +285,13 @@ class AveaStockTake(models.Model):
                     "qty_available": product.with_context(location=location.id).qty_available,
                 }
             )
-        return {"products": rows, "count": total, "truncated": total > limit}
+        return {
+            "products": rows,
+            "count": total,
+            "offset": offset,
+            "limit": limit,
+            "has_more": offset + len(products) < total,
+        }
 
     def _avea_populate_lines(self):
         self.ensure_one()

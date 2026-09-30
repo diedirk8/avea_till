@@ -230,6 +230,46 @@ class TestAveaStockTake(TransactionCase):
         self.assertTrue(line.is_applied)
         self.assertFalse(self.product_a.active)
 
+    def test_search_products_for_selection_pagination(self):
+        result = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": self.category_a.id,
+            },
+            offset=0,
+            limit=1,
+        )
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(len(result["products"]), 1)
+        self.assertEqual(result["offset"], 0)
+        self.assertTrue(result["has_more"])
+
+        result_page_two = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": self.category_a.id,
+            },
+            offset=1,
+            limit=1,
+        )
+        self.assertEqual(result_page_two["count"], 2)
+        self.assertEqual(len(result_page_two["products"]), 1)
+        self.assertEqual(result_page_two["offset"], 1)
+        self.assertFalse(result_page_two["has_more"])
+        first_ids = {row["id"] for row in result["products"]}
+        second_ids = {row["id"] for row in result_page_two["products"]}
+        self.assertEqual(first_ids & second_ids, set())
+
+    def test_product_ids_matching_partial_filters(self):
+        result = self.env["avea.stock.take"].product_ids_matching_partial_filters(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": self.category_a.id,
+            }
+        )
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(set(result["product_ids"]), {self.product_a.id, self.product_b.id})
+
     def test_search_products_for_selection_accepts_string_many2one_ids(self):
         """OWL <select> values arrive as strings; filters must still apply."""
         result = self.env["avea.stock.take"].search_products_for_selection(
