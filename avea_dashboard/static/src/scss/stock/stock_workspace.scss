@@ -1750,7 +1750,7 @@
 
     .o_avea_stock_take_sheet {
         margin: 0 auto;
-        max-width: min(1360px, calc(100% - 2.5rem));
+        max-width: unquote("min(1360px, calc(100% - 2.5rem))");
         padding: 1.5rem 1.75rem 3.5rem;
     }
 
@@ -1871,17 +1871,17 @@
         position: sticky;
         bottom: 0.75rem;
         z-index: 2;
-    }
 
-    .o_avea_stock_take_start_btn.btn-primary,
-    & .btn-primary {
-        background-color: var(--avea-brand);
-        border-color: var(--avea-brand);
+        .o_avea_stock_take_start_btn.btn-primary,
+        .btn-primary {
+            background-color: var(--avea-brand);
+            border-color: var(--avea-brand);
 
-        &:hover,
-        &:focus {
-            background-color: #a84d1f;
-            border-color: #a84d1f;
+            &:hover,
+            &:focus {
+                background-color: #a84d1f;
+                border-color: #a84d1f;
+            }
         }
     }
 
@@ -2006,7 +2006,7 @@
     .o_avea_stock_take_pick_table_wrap {
         border: 1px solid rgba(16, 24, 40, 0.08);
         border-radius: 0.65rem;
-        max-height: min(52vh, 34rem);
+        max-height: unquote("min(52vh, 34rem)");
         overflow: auto;
 
         .o_avea_stock_take_col_check {
@@ -2040,7 +2040,7 @@
     .o_avea_stock_take_selected_table_wrap {
         border: 1px solid rgba(16, 24, 40, 0.08);
         border-radius: 0.65rem;
-        max-height: min(28vh, 18rem);
+        max-height: unquote("min(28vh, 18rem)");
         overflow-y: auto;
 
         thead th {
@@ -2076,7 +2076,7 @@
     }
 
     .o_avea_stock_take_panel--list {
-        max-height: min(48vh, 28rem);
+        max-height: unquote("min(48vh, 28rem)");
     }
 
     @media (min-width: 1100px) {
