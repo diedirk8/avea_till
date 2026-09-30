@@ -1,7 +1,5 @@
 /* Avea product shell — suppress Odoo chrome and apply brand styling */
 
-@import "../_avea_brand_chrome";
-
 body.o_avea_product_shell {
     @include avea-brand-tokens;
     --avea-search-radius: 0.45rem;

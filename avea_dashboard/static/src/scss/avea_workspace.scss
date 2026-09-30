@@ -1,6 +1,5 @@
 // Shared Avea Till workspace styling for Session Dashboard and Cash Ledger.
-
-@import "avea_brand_chrome";
+// Brand mixins: _avea_brand_chrome.scss (loaded earlier in web.assets_backend).
 
 .o_form_view.o_avea_workspace,
 .o_list_view.o_avea_workspace {
