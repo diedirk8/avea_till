@@ -35,6 +35,11 @@
                     <field name="show_sales_trend" invisible="1"/>
                     <field name="show_sales_sparkline" invisible="1"/>
                     <field name="show_trading_pattern" invisible="1"/>
+                    <field name="show_platform_reporting" invisible="1"/>
+                    <field name="platform_sales_ex_tax" invisible="1"/>
+                    <field name="platform_gross_profit" invisible="1"/>
+                    <field name="platform_commission" invisible="1"/>
+                    <field name="platform_contribution" invisible="1"/>
 
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
@@ -311,6 +316,54 @@
                                 <field name="gross_margin_percent" nolabel="1" readonly="1" class="o_avea_pulse_metric_value"/>
                                 <span>%</span>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_platform_reporting_block" invisible="not show_platform_reporting">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Sales platforms</h2>
+                            <span class="o_avea_workspace_section_meta">Excluding tax · same period</span>
+                        </div>
+                        <div class="o_avea_workspace_kpi_grid o_avea_platform_reporting_totals">
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--primary">
+                                <span class="o_avea_workspace_kpi_label">Platform sales</span>
+                                <field name="platform_sales_ex_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card">
+                                <span class="o_avea_workspace_kpi_label">Gross profit</span>
+                                <field name="platform_gross_profit" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card">
+                                <span class="o_avea_workspace_kpi_label">Platform costs</span>
+                                <field name="platform_commission" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                            <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
+                                <span class="o_avea_workspace_kpi_label">After platform costs</span>
+                                <field name="platform_contribution" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                            </div>
+                        </div>
+                        <div class="o_avea_workspace_ledger_card o_avea_platform_reporting_card">
+                            <field name="platform_line_ids" nolabel="1" readonly="1">
+                                <list create="false" edit="false" delete="false" class="o_avea_platform_reporting_list">
+                                    <field name="name" string="Platform"/>
+                                    <field name="sales_ex_tax" string="Sales" widget="monetary"/>
+                                    <field name="cost_total" string="COGS" widget="monetary" optional="hide"/>
+                                    <field name="gross_profit" string="Gross profit" widget="monetary"/>
+                                    <field name="commission" string="Platform costs" widget="monetary"/>
+                                    <field name="contribution" string="After costs" widget="monetary"/>
+                                    <field name="top_product_name" string="Top product" optional="show"/>
+                                    <field name="line_count" string="Lines" optional="hide"/>
+                                    <button
+                                        name="action_open_platform_sales"
+                                        type="object"
+                                        string="View sales"
+                                        icon="fa-line-chart"
+                                        class="btn btn-link o_avea_platform_sales_link"
+                                    />
+                                    <field name="platform_id" column_invisible="True"/>
+                                    <field name="currency_id" column_invisible="True"/>
+                                </list>
+                            </field>
                         </div>
                     </div>
 

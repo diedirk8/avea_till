@@ -9,6 +9,7 @@ from odoo.tools.float_utils import float_compare, float_round
 class AveaSalesPlatform(models.Model):
     _name = "avea.sales.platform"
     _description = "Avea Sales Platform"
+    _inherit = ["avea.sales.platform.reporting.mixin"]
     _order = "name, id"
 
     name = fields.Char(required=True)
@@ -77,6 +78,7 @@ class AveaSalesPlatform(models.Model):
     pricelist_is_active = fields.Boolean(string="Pricelist active", compute="_compute_integration_labels")
     pricelist_active_label = fields.Char(string="Pricelist status", compute="_compute_integration_labels")
     integration_ready = fields.Boolean(compute="_compute_integration_labels")
+    sale_line_count = fields.Integer(string="Sale lines", compute="_compute_sale_line_count")
 
     lookup_product_id = fields.Many2one(
         "product.product",
@@ -136,6 +138,49 @@ class AveaSalesPlatform(models.Model):
                 platform.display_pricelist = _("Created when you save this platform")
                 platform.pricelist_is_active = False
                 platform.pricelist_active_label = _("Not linked")
+
+    @api.depends("partner_id", "pricelist_id")
+    def _compute_sale_line_count(self):
+        Line = self.env["pos.order.line"]
+        for platform in self:
+            platform.sale_line_count = Line.search_count(platform._avea_platform_sales_line_domain())
+
+    def _avea_platform_sales_line_domain(self):
+        """POS sale lines tied to this platform (pricelist or platform customer)."""
+        self.ensure_one()
+        Line = self.env["pos.order.line"]
+        domain = list(Line._avea_sales_ledger_domain())
+        match = []
+        if self.pricelist_id:
+            match.append(("order_id.pricelist_id", "=", self.pricelist_id.id))
+        if self.partner_id:
+            match.append(("order_id.partner_id", "child_of", self.partner_id.id))
+        if len(match) == 2:
+            domain += ["|", match[0], match[1]]
+        elif len(match) == 1:
+            domain += match
+        else:
+            domain.append(("id", "=", 0))
+        return domain
+
+    def action_view_platform_sales(self):
+        self.ensure_one()
+        self._avea_ensure_links()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("%s sales", self.name),
+            "res_model": "pos.order.line",
+            "view_mode": "list",
+            "views": [(self.env.ref("avea_till.view_avea_sales_ledger_line_list").id, "list")],
+            "search_view_id": self.env.ref("avea_till.view_avea_sales_ledger_line_search").id,
+            "domain": self._avea_platform_sales_line_domain(),
+            "context": {
+                "avea_sales_ledger": True,
+                "create": False,
+                "delete": False,
+                "edit": False,
+            },
+        }
 
     @api.depends(
         "lookup_product_id",

@@ -12,6 +12,7 @@
     --bs-primary-rgb: 196, 92, 38;
     --bs-link-color: var(--avea-brand);
     --bs-link-hover-color: var(--avea-brand-hover);
+    --avea-platform-shell-width: min(1280px, 100%);
 }
 
 .o_form_view.o_avea_workspace--sales-platform {
@@ -60,8 +61,6 @@
         --bs-btn-border-color: var(--avea-brand);
         --bs-btn-hover-bg: var(--avea-brand-soft);
         --bs-btn-hover-border-color: var(--avea-brand);
-        --bs-btn-active-bg: var(--avea-brand-soft);
-        --bs-btn-active-border-color: var(--avea-brand);
         color: var(--avea-brand) !important;
         border-color: var(--avea-brand) !important;
         font-weight: 600;
@@ -75,7 +74,8 @@
         }
     }
 
-    .btn-link {
+    .btn-link,
+    .o_avea_sales_platform_sales_btn {
         color: var(--avea-brand);
         font-weight: 600;
 
@@ -204,16 +204,35 @@
 
 .o_avea_workspace--sales-platform-list {
     background-color: var(--o-webclient-background-color, #f4f5f7);
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0;
     min-width: 0;
+    padding: 1.25rem 1.5rem 2rem;
 
     > .o_control_panel {
         display: none !important;
     }
 
-    .o_avea_sales_platform_list_sheet {
-        max-width: 1280px;
-        padding: 1rem 1.5rem 0;
+    .o_avea_sales_platform_list_shell {
+        margin: 0 auto;
+        max-width: var(--avea-platform-shell-width);
         width: 100%;
+    }
+
+    .o_avea_sales_platform_list_sheet {
+        padding: 0;
+        width: 100%;
+    }
+
+    .o_avea_sales_platform_list_hero {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-bottom: none;
+        border-radius: 0.75rem 0.75rem 0 0;
+        box-shadow: none;
+        margin: 0;
+        padding: 1.25rem 1.35rem 1rem;
     }
 
     .o_avea_workspace_eyebrow {
@@ -233,7 +252,7 @@
         flex-wrap: wrap;
         gap: 1rem;
         justify-content: space-between;
-        margin-bottom: 1rem;
+        margin-bottom: 0;
     }
 
     .o_avea_sales_platform_list_actions .btn-primary,
@@ -270,27 +289,47 @@
     > .o_content {
         background: #fff;
         border: 1px solid var(--o-gray-300, #dee2e6);
-        border-radius: 0.75rem;
-        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-        margin: 0 1.5rem 1.5rem;
-        max-width: calc(1280px + 3rem);
-        min-width: 0;
-        overflow: hidden;
+        border-radius: 0;
+        border-top: none;
+        box-shadow: none;
+        flex: 0 0 auto !important;
+        height: auto !important;
+        margin: 0 auto;
+        max-width: var(--avea-platform-shell-width);
+        min-height: 0 !important;
+        overflow-x: auto;
+        overflow-y: visible;
         padding: 0 !important;
+        width: 100%;
 
         .o_list_renderer {
             border: none;
             box-shadow: none;
+            height: auto !important;
             margin: 0;
+            min-height: 0 !important;
+        }
+
+        .o_list_table {
+            margin-bottom: 0;
         }
     }
 
+    .o_avea_sales_platform_list_footer {
+        margin: 0 auto;
+        max-width: var(--avea-platform-shell-width);
+        width: 100%;
+    }
+
     .o_avea_sales_platform_pager {
-        border-top: 1px solid var(--o-gray-300, #dee2e6);
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0 0 0.75rem 0.75rem;
+        border-top: 1px solid var(--o-gray-200, #e9ecef);
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
         display: flex;
         justify-content: flex-end;
-        margin: 0 1.5rem 1.5rem;
-        max-width: calc(1280px + 3rem);
+        margin: 0;
         padding: 0.65rem 1rem 0.75rem;
     }
 
@@ -311,6 +350,13 @@
         .o_data_row {
             cursor: pointer;
         }
+    }
+
+    .o_avea_sales_platform_sales_btn {
+        color: var(--avea-brand) !important;
+        font-weight: 600;
+        padding-left: 0;
+        padding-right: 0;
     }
 }
 

@@ -123,6 +123,43 @@ class AveaReportingWorkspaceMixin(models.AbstractModel):
             )
         return self.env["pos.session"]._avea_financial_summary_from_orders(orders)
 
+    def _reporting_platform_summary_for_orders(self, orders):
+        return (
+            self.env["avea.sales.platform"]
+            .sudo()
+            ._avea_reporting_summarize_orders(orders)
+        )
+
+    def _reporting_populate_platform_lines(self, parent, orders):
+        """Fill platform reporting lines on overview or performance dashboards."""
+        summary = self._reporting_platform_summary_for_orders(orders)
+        Line = self.env["avea.business.reporting.platform.line"]
+        if parent._name == "avea.business.overview":
+            parent_field = "overview_id"
+        else:
+            parent_field = "performance_id"
+        Line.search([(parent_field, "=", parent.id)]).unlink()
+        if not summary.get("has_activity"):
+            return summary
+        Line.create(
+            [
+                {
+                    parent_field: parent.id,
+                    "platform_id": row["platform_id"],
+                    "name": row["name"],
+                    "sales_ex_tax": row["sales_ex_tax"],
+                    "cost_total": row["cost_total"],
+                    "gross_profit": row["gross_profit"],
+                    "commission": row["commission"],
+                    "contribution": row["contribution"],
+                    "line_count": row["line_count"],
+                    "top_product_name": row["top_product_name"],
+                }
+                for row in summary["platforms"]
+            ]
+        )
+        return summary
+
     def _reporting_period_context(self, period=None, date_from=None, date_to=None):
         period = normalize_period_key(period or PERIOD_TODAY)
         custom_from = date_from

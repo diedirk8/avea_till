@@ -276,6 +276,33 @@ class AveaBusinessOverview(models.TransientModel):
     show_products = fields.Boolean(
         compute="_compute_show_products",
     )
+    platform_line_ids = fields.One2many(
+        "avea.business.reporting.platform.line",
+        "overview_id",
+        string="Sales platforms",
+        readonly=True,
+    )
+    show_platform_reporting = fields.Boolean(compute="_compute_platform_reporting")
+    platform_sales_ex_tax = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_cost_total = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_gross_profit = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_commission = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_contribution = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
     activity_refund_count = fields.Integer(
         string="Refunds",
         compute="_compute_metrics",
@@ -376,18 +403,38 @@ class AveaBusinessOverview(models.TransientModel):
     def create(self, vals_list):
         overviews = super().create(vals_list)
         overviews._populate_product_lines()
+        overviews._populate_platform_lines()
         return overviews
 
     def write(self, vals):
         res = super().write(vals)
         if any(key in vals for key in ("period", "date_from", "date_to")):
             self._populate_product_lines()
+            self._populate_platform_lines()
         return res
 
     @api.depends("product_line_ids")
     def _compute_show_products(self):
         for overview in self:
             overview.show_products = bool(overview.product_line_ids)
+
+    @api.depends(
+        "platform_line_ids",
+        "platform_line_ids.sales_ex_tax",
+        "platform_line_ids.cost_total",
+        "platform_line_ids.gross_profit",
+        "platform_line_ids.commission",
+        "platform_line_ids.contribution",
+    )
+    def _compute_platform_reporting(self):
+        for overview in self:
+            lines = overview.platform_line_ids
+            overview.show_platform_reporting = bool(lines)
+            overview.platform_sales_ex_tax = sum(lines.mapped("sales_ex_tax"))
+            overview.platform_cost_total = sum(lines.mapped("cost_total"))
+            overview.platform_gross_profit = sum(lines.mapped("gross_profit"))
+            overview.platform_commission = sum(lines.mapped("commission"))
+            overview.platform_contribution = sum(lines.mapped("contribution"))
 
     @api.model
     def action_open_business_overview(
@@ -1112,6 +1159,14 @@ class AveaBusinessOverview(models.TransientModel):
             orders,
             limit=OVERVIEW_PRODUCT_LIMIT,
         )
+
+    def _populate_platform_lines(self):
+        for overview in self:
+            if not overview.id:
+                continue
+            windows = overview._period_windows(overview.period or "today")
+            orders = overview._paid_orders_between(*windows["data_current"])
+            overview._reporting_populate_platform_lines(overview, orders)
 
     def _populate_product_lines(self):
         ProductLine = self.env["avea.business.overview.product.line"]

@@ -14,6 +14,7 @@ from . import till_movement
 from . import pos_session
 from . import pos_config
 from . import payment_correction_wizard
+from . import business_reporting_platform
 from . import business_overview
 from . import business_performance
 from . import business_transaction

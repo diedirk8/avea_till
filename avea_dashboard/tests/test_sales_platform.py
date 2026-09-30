@@ -97,6 +97,19 @@ class TestAveaSalesPlatform(TransactionCase):
         )
         self.assertEqual(len(items), 1)
 
+    def test_platform_sales_line_domain(self):
+        platform = self._create_platform(name="Sales Domain Test")
+        domain = platform._avea_platform_sales_line_domain()
+        self.assertIn(("order_id.pricelist_id", "=", platform.pricelist_id.id), domain)
+        self.assertIn(("order_id.partner_id", "child_of", platform.partner_id.id), domain)
+
+    def test_action_view_platform_sales_opens_ledger(self):
+        platform = self._create_platform()
+        action = platform.action_view_platform_sales()
+        self.assertEqual(action["res_model"], "pos.order.line")
+        self.assertEqual(action["views"][0][1], "list")
+        self.assertIn(("order_id.pricelist_id", "=", platform.pricelist_id.id), action["domain"])
+
     def test_mr_d_seed_record(self):
         mr_d = self.env.ref("avea_till.sales_platform_mr_d", raise_if_not_found=False)
         if not mr_d:

@@ -208,6 +208,29 @@ class AveaBusinessPerformance(models.TransientModel):
     show_top_categories = fields.Boolean(compute="_compute_visibility")
     show_profit_products = fields.Boolean(compute="_compute_visibility")
     show_profit_categories = fields.Boolean(compute="_compute_visibility")
+    platform_line_ids = fields.One2many(
+        "avea.business.reporting.platform.line",
+        "performance_id",
+        string="Sales platforms",
+        readonly=True,
+    )
+    show_platform_reporting = fields.Boolean(compute="_compute_platform_reporting")
+    platform_sales_ex_tax = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_gross_profit = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_commission = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_contribution = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -234,6 +257,22 @@ class AveaBusinessPerformance(models.TransientModel):
             dashboard.show_top_categories = bool(dashboard.top_category_line_ids)
             dashboard.show_profit_products = bool(dashboard.profit_product_line_ids)
             dashboard.show_profit_categories = bool(dashboard.profit_category_line_ids)
+
+    @api.depends(
+        "platform_line_ids",
+        "platform_line_ids.sales_ex_tax",
+        "platform_line_ids.gross_profit",
+        "platform_line_ids.commission",
+        "platform_line_ids.contribution",
+    )
+    def _compute_platform_reporting(self):
+        for dashboard in self:
+            lines = dashboard.platform_line_ids
+            dashboard.show_platform_reporting = bool(lines)
+            dashboard.platform_sales_ex_tax = sum(lines.mapped("sales_ex_tax"))
+            dashboard.platform_gross_profit = sum(lines.mapped("gross_profit"))
+            dashboard.platform_commission = sum(lines.mapped("commission"))
+            dashboard.platform_contribution = sum(lines.mapped("contribution"))
 
     def _currency_delta_display(self, delta):
         currency = self.env.company.currency_id
@@ -424,3 +463,6 @@ class AveaBusinessPerformance(models.TransientModel):
                     rows.append(vals)
             if rows:
                 Line.create(rows)
+            windows = dashboard._period_windows(dashboard.period or PERIOD_TODAY)
+            orders = dashboard._paid_orders_between(*windows["data_current"])
+            dashboard._reporting_populate_platform_lines(dashboard, orders)

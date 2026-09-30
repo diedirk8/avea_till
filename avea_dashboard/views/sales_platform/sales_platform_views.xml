@@ -13,12 +13,21 @@
                 delete="1"
             >
                 <field name="name" string="Platform"/>
+                <button
+                    name="action_view_platform_sales"
+                    type="object"
+                    string="View sales"
+                    icon="fa-line-chart"
+                    class="btn btn-link o_avea_sales_platform_sales_btn"
+                    title="POS sales for this platform"
+                />
                 <field name="active" widget="boolean_toggle" string="Active"/>
                 <field name="display_pricelist" string="Pricelist"/>
                 <field name="pricelist_active_label" string="Pricelist status"/>
                 <field name="commission_percent" string="Commission %"/>
                 <field name="price_rounding_rule" string="Rounding"/>
                 <field name="pricelist_item_count" string="Price lines"/>
+                <field name="sale_line_count" string="Sales" optional="show"/>
                 <field name="last_price_update" optional="hide"/>
                 <field name="pricelist_is_active" column_invisible="True"/>
             </list>
@@ -61,9 +70,16 @@
                         <div class="o_avea_sales_platform_hero_actions">
                             <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
                             <button
+                                name="action_view_platform_sales"
+                                type="object"
+                                string="View sales"
+                                class="btn btn-outline-primary"
+                                invisible="not integration_ready"
+                            />
+                            <button
                                 name="action_update_platform_prices"
                                 type="object"
-                                string="Update Platform Prices"
+                                string="Update prices"
                                 class="btn btn-outline-primary"
                                 confirm="Recalculate platform prices from current retail prices for all saleable products?"
                                 invisible="not integration_ready"

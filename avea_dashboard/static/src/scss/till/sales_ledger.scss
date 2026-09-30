@@ -1,8 +1,46 @@
 // Sales Ledger — scoped workspace styling.
 
 .o_avea_workspace--sales-ledger {
+    --avea-brand: #c45c26;
+    --avea-brand-hover: #a84d1f;
+    --avea-brand-soft: rgba(196, 92, 38, 0.12);
+    --avea-brand-border: rgba(196, 92, 38, 0.35);
+    --bs-primary: var(--avea-brand);
+    --bs-link-color: var(--avea-brand);
+    --bs-link-hover-color: var(--avea-brand-hover);
+
     background-color: var(--o-webclient-background-color, #f8f9fa);
     min-width: 0;
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand) !important;
+    }
+
+    .o_avea_period_btn.btn-primary,
+    .o_avea_custom_period_apply.btn-primary {
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+
+        &:hover,
+        &:focus,
+        &:active {
+            background-color: var(--avea-brand-hover) !important;
+            border-color: var(--avea-brand-hover) !important;
+        }
+    }
+
+    .o_avea_period_btn.btn-outline-secondary:hover,
+    .o_avea_period_btn.btn-outline-secondary:focus {
+        background: var(--avea-brand-soft);
+        border-color: var(--avea-brand-border);
+        color: var(--avea-brand);
+    }
+
+    .o_avea_sales_ledger_order_link a,
+    .o_avea_platform_sales_link {
+        color: var(--avea-brand) !important;
+        font-weight: 600;
+    }
 
     .o_avea_workspace_sheet,
     .o_avea_sales_ledger_sheet {

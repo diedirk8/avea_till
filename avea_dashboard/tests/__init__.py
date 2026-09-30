@@ -11,6 +11,7 @@ from . import test_financial_drilldown
 from . import test_combo_price_reporting
 from . import test_sales_platform
 from . import test_business_overview
+from . import test_business_platform_reporting
 from . import test_business_transactions
 from . import test_avea_settings_receipt_email
 from . import test_pos_partner_access
