@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models, Command
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools.float_utils import float_is_zero
 from .stock_mixin import AVEA_STOCK_TAKE_ORIGIN
 
 
@@ -389,6 +390,49 @@ class AveaStockTake(models.Model):
             raise UserError(_("An applied stock take cannot be cancelled."))
         self.state = "cancelled"
         return self._avea_open_client_action(new=True)
+
+    def _avea_archive_product(self, product):
+        product.ensure_one()
+        product.product_tmpl_id.write({"active": False})
+
+    @api.model
+    def action_zero_and_archive_product(self, product_id):
+        """Zero on-hand stock at the default location and archive (partial count helper)."""
+        product = self.env["product.product"].browse(product_id).exists()
+        if not product:
+            raise UserError(_("Product not found."))
+        if not product.is_storable:
+            raise UserError(_("%s is not a stock product.", product.display_name))
+        location = self._avea_default_stock_location(self.env.company)
+        current_qty = product.with_context(location=location.id).qty_available
+        if not float_is_zero(current_qty, precision_rounding=product.uom_id.rounding):
+            self._avea_apply_inventory_count(
+                product,
+                location,
+                0.0,
+                origin=AVEA_STOCK_TAKE_ORIGIN,
+            )
+        self._avea_archive_product(product)
+        return {"product_id": product.id, "archived": True}
+
+    def action_zero_and_archive_line(self, line_id):
+        """Count zero, apply inventory, and archive during a partial stock take."""
+        self.ensure_one()
+        if self.scope_mode != "partial":
+            raise UserError(_("Zero & Archive is only available on partial stock takes."))
+        if self.state not in ("counting", "review"):
+            raise UserError(_("This stock take is not active."))
+        line = self.line_ids.browse(line_id)
+        if not line or line.stock_take_id != self:
+            raise UserError(_("That product is not part of this stock take."))
+        if line.is_applied:
+            raise UserError(_("This product has already been updated."))
+        line._avea_set_counted_qty(0.0)
+        line._avea_apply_count()
+        self._avea_archive_product(line.product_id)
+        if self.state == "review" and self.remaining_count == 0:
+            pass
+        return self._avea_workspace_payload()
 
     def _avea_finalize_applied(self):
         self.ensure_one()

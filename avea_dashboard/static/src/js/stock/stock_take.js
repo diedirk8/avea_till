@@ -175,6 +175,10 @@ export class AveaStockTakeClientAction extends Component {
         return this.state.form.scope_mode === "partial";
     }
 
+    get isPartialScope() {
+        return this.isPartial || this.stockTake?.scope_mode === "partial";
+    }
+
     get hasPartialFilter() {
         const form = this.state.form;
         return Boolean(
@@ -445,6 +449,49 @@ export class AveaStockTakeClientAction extends Component {
         this.state.form.manual_product_ids = [];
         this.state.selectedProducts = {};
         this.state.previewCount = 0;
+    }
+
+    _confirmZeroAndArchive() {
+        return window.confirm(
+            _t(
+                "Set stock to 0 and archive this product? It will no longer appear in active product or POS searches. Sales history is kept."
+            )
+        );
+    }
+
+    async onZeroAndArchiveProduct(product, ev) {
+        ev?.stopPropagation?.();
+        if (!this._confirmZeroAndArchive()) {
+            return;
+        }
+        try {
+            await this.orm.call("avea.stock.take", "action_zero_and_archive_product", [product.id]);
+            if (this.isProductSelected(product.id)) {
+                this.onRemoveSelected(product.id);
+            }
+            await this._refreshProductList();
+            this.notification.add(_t("Product archived and stock set to zero."), { type: "success" });
+        } catch (error) {
+            this.notification.add(error.message || _t("Could not archive product."), { type: "danger" });
+        }
+    }
+
+    async onZeroAndArchiveLine(line, ev) {
+        ev?.stopPropagation?.();
+        if (!this.stockTake?.stock_take_id || !this._confirmZeroAndArchive()) {
+            return;
+        }
+        try {
+            const payload = await this.orm.call(
+                "avea.stock.take",
+                "action_zero_and_archive_line",
+                [[this.stockTake.stock_take_id], line.id]
+            );
+            this._setStockTake(payload);
+            this.notification.add(_t("Product archived and stock set to zero."), { type: "success" });
+        } catch (error) {
+            this.notification.add(error.message || _t("Could not archive product."), { type: "danger" });
+        }
     }
 
     onToggleSelectAllVisible() {

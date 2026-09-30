@@ -210,6 +210,26 @@ class TestAveaStockTake(TransactionCase):
         self.assertIn("category_name", result["products"][0])
         self.assertIn("qty_available", result["products"][0])
 
+    def test_zero_and_archive_product(self):
+        self._set_qty(self.product_a, 6.0)
+        self.env["avea.stock.take"].action_zero_and_archive_product(self.product_a.id)
+        self.assertAlmostEqual(self._qty(self.product_a), 0.0, places=2)
+        self.assertFalse(self.product_a.product_tmpl_id.active)
+        self.assertFalse(self.product_a.active)
+
+    def test_zero_and_archive_line_on_partial_stock_take(self):
+        self._set_qty(self.product_a, 4.0)
+        stock_take = self._create_take(
+            scope_mode="partial",
+            manual_product_ids=[Command.set([self.product_a.id])],
+        )
+        line = stock_take.line_ids.filtered(lambda record: record.product_id == self.product_a)
+        stock_take.action_zero_and_archive_line(line.id)
+        self.assertAlmostEqual(self._qty(self.product_a), 0.0, places=2)
+        self.assertTrue(line.is_counted)
+        self.assertTrue(line.is_applied)
+        self.assertFalse(self.product_a.active)
+
     def test_search_products_for_selection_accepts_string_many2one_ids(self):
         """OWL <select> values arrive as strings; filters must still apply."""
         result = self.env["avea.stock.take"].search_products_for_selection(
