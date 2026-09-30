@@ -16,3 +16,27 @@
 .o_database_list .card-body .border-bottom {
     border-color: var(--avea-header-border) !important;
 }
+
+// Odoo confirmation/alert dialogs (portal on <body>, not inside workspace forms)
+.o_dialog .modal-footer .btn-primary,
+.o_dialog footer .btn-primary,
+.o_dialog .modal-footer .btn.btn-primary,
+.o_dialog footer .btn.btn-primary {
+    --bs-btn-bg: var(--avea-brand);
+    --bs-btn-border-color: var(--avea-brand);
+    --bs-btn-hover-bg: #a84d1f;
+    --bs-btn-hover-border-color: #a84d1f;
+    --bs-btn-active-bg: #a84d1f;
+    --bs-btn-active-border-color: #a84d1f;
+    background-color: var(--avea-brand) !important;
+    border-color: var(--avea-brand) !important;
+    color: #fff !important;
+
+    &:hover,
+    &:focus,
+    &:active {
+        background-color: #a84d1f !important;
+        border-color: #a84d1f !important;
+        color: #fff !important;
+    }
+}

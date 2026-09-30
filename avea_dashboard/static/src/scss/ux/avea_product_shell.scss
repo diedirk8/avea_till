@@ -220,6 +220,19 @@ body.o_avea_product_shell {
         }
     }
 
+    .o_dialog .modal-footer .btn-primary,
+    .o_dialog footer .btn-primary {
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+
+        &:hover,
+        &:focus,
+        &:active {
+            background-color: var(--avea-brand-hover) !important;
+            border-color: var(--avea-brand-hover) !important;
+        }
+    }
+
     // Period filter pills (Business Overview, Performance, Sales Ledger)
     .o_avea_period_btn.btn-primary,
     .o_avea_custom_period_apply.btn-primary,
