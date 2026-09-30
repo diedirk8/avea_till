@@ -106,6 +106,10 @@ class AveaNavMixin(models.AbstractModel):
                         "menu_xmlid": "avea_till.menu_avea_promotion",
                     },
                     {
+                        "label": "Sales Platforms",
+                        "menu_xmlid": "avea_till.menu_avea_sales_platform",
+                    },
+                    {
                         "id": "store_credit",
                         "label": "Store Credit",
                         "items": [

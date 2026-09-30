@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_sales_platform_list" model="ir.ui.view">
+        <field name="name">avea.sales.platform.list</field>
+        <field name="model">avea.sales.platform</field>
+        <field name="arch" type="xml">
+            <list string="Sales Platforms" class="o_avea_sales_platform_list" create="1" delete="1">
+                <field name="name"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="commission_percent" string="Commission %"/>
+                <field name="commission_vat" string="VAT on commission"/>
+                <field name="price_rounding_rule" optional="show"/>
+                <field name="pricelist_item_count" string="Pricelist lines" optional="show"/>
+                <field name="last_price_update" optional="hide"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_sales_platform_search" model="ir.ui.view">
+        <field name="name">avea.sales.platform.search</field>
+        <field name="model">avea.sales.platform</field>
+        <field name="arch" type="xml">
+            <search string="Sales Platforms">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Inactive" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_sales_platform_form" model="ir.ui.view">
+        <field name="name">avea.sales.platform.form</field>
+        <field name="model">avea.sales.platform</field>
+        <field name="arch" type="xml">
+            <form string="Sales Platform" class="o_avea_workspace o_avea_workspace--sales-platform">
+                <header>
+                    <button
+                        name="action_update_platform_prices"
+                        type="object"
+                        string="Update Platform Prices"
+                        class="btn-primary"
+                        confirm="Recalculate platform prices from current retail prices for all saleable products?"
+                    />
+                </header>
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Customers</span>
+                            <h1 class="o_avea_workspace_title">Sales Platform</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Manage third-party marketplaces that sell your products and charge commission.
+                                Platform prices live on a dedicated pricelist — retail shelf prices are never changed.
+                            </p>
+                        </div>
+                        <div class="o_avea_sales_platform_hero_actions">
+                            <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
+                            <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_sales_platform_workspace">
+                        <div class="o_avea_sales_platform_panel o_avea_workspace_panel">
+                            <h2 class="o_avea_workspace_section_title">Platform details</h2>
+                            <div class="o_avea_sales_platform_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Platform name</span>
+                                    <field name="name" nolabel="1" placeholder="e.g. Mr D"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Active</span>
+                                    <field name="active" nolabel="1" widget="boolean_toggle"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Commission %</span>
+                                    <field name="commission_percent" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">VAT on commission</span>
+                                    <field name="commission_vat" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Price rounding</span>
+                                    <field name="price_rounding_rule" nolabel="1"/>
+                                </div>
+                            </div>
+                            <div class="o_avea_sales_platform_links mt-3">
+                                <button name="action_open_partner" type="object" class="btn btn-link btn-sm" string="Open platform customer"/>
+                                <button name="action_open_pricelist" type="object" class="btn btn-link btn-sm" string="Open platform pricelist"/>
+                            </div>
+                            <field name="partner_id" readonly="1" groups="base.group_no_one"/>
+                            <field name="pricelist_id" readonly="1" groups="base.group_no_one"/>
+                            <field name="notes" placeholder="Internal notes about this platform..." class="mt-3"/>
+                        </div>
+
+                        <div class="o_avea_sales_platform_panel o_avea_workspace_panel">
+                            <h2 class="o_avea_workspace_section_title">Price lookup</h2>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Check what a product should list for on this platform before updating the full pricelist.
+                            </p>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Product</span>
+                                <field name="lookup_product_id" nolabel="1" options="{'no_create': True}"/>
+                            </div>
+                            <div class="o_avea_sales_platform_lookup_grid">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Retail (shelf)</span>
+                                    <field name="lookup_retail_price_inc" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Platform list price</span>
+                                    <field name="lookup_platform_price_inc" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Commission uplift</span>
+                                    <field name="lookup_commission_amount_inc" nolabel="1" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="o_avea_sales_platform_panel o_avea_workspace_panel o_avea_sales_platform_panel--meta">
+                            <h2 class="o_avea_workspace_section_title">Pricelist sync</h2>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Fixed prices stored on the platform pricelist (retail list prices are not modified).
+                            </p>
+                            <div class="o_avea_sales_platform_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Pricelist lines</span>
+                                    <field name="pricelist_item_count" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Last price update</span>
+                                    <field name="last_price_update" nolabel="1" readonly="1"/>
+                                </div>
+                            </div>
+                            <field name="settings_json" invisible="1"/>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_sales_platform" model="ir.actions.act_window">
+        <field name="name">Sales Platforms</field>
+        <field name="res_model">avea.sales.platform</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_sales_platform_search"/>
+        <field name="context">{'default_active': True}</field>
+    </record>
+
+</odoo>

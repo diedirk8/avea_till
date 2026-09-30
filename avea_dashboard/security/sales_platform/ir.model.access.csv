@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_avea_sales_platform,access.avea.sales.platform,model_avea_sales_platform,avea_till.group_avea_manager,1,1,1,1
+access_avea_sales_platform_cashier,access.avea.sales.platform.cashier,model_avea_sales_platform,avea_till.group_avea_cashier,1,0,0,0

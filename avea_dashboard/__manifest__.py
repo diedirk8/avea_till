@@ -21,7 +21,7 @@ Features:
 - Receive Stock, Return Stock, and Stock Take
 - Avea Promotions (wrapper over Odoo Discount & Loyalty), including Combo Price
 """,
-    "version": "19.0.3.12.15",
+    "version": "19.0.3.13.0",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -46,9 +46,11 @@ Features:
         "security/operations/ir.model.access.csv",
         "security/stock/ir.model.access.csv",
         "security/promotion/ir.model.access.csv",
+        "security/sales_platform/ir.model.access.csv",
         "data/stock/decimal_precision_data.xml",
         "data/stock/stock_take_sequence.xml",
         "data/promotion/combo_discount_product_data.xml",
+        "data/sales_platform/mr_d_platform_data.xml",
         "data/credit/sequence.xml",
         "data/credit/credit_reason_data.xml",
         "data/till/pos_receipt_email_templates.xml",
@@ -99,6 +101,8 @@ Features:
         "views/stock/stock_menu.xml",
         "views/promotion/promotion_views.xml",
         "views/promotion/promotion_menu.xml",
+        "views/sales_platform/sales_platform_views.xml",
+        "views/sales_platform/sales_platform_menu.xml",
     ],
     "assets": {
         "web.report_assets_common": [
@@ -132,6 +136,7 @@ Features:
             "avea_till/static/src/scss/operations/account_balances.scss",
             "avea_till/static/src/scss/stock/stock_workspace.scss",
             "avea_till/static/src/scss/promotion/promotion_workspace.scss",
+            "avea_till/static/src/scss/sales_platform/sales_platform_workspace.scss",
             "avea_till/static/src/js/promotion/fields/promotion_product_picker.xml",
             "avea_till/static/src/js/promotion/fields/promotion_product_picker.js",
             "avea_till/static/src/js/promotion/promotion_form.js",
