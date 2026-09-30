@@ -5,15 +5,15 @@
         <field name="name">avea.sales.platform.list</field>
         <field name="model">avea.sales.platform</field>
         <field name="arch" type="xml">
-            <list string="Sales Platforms" class="o_avea_workspace o_avea_sales_platform_list" create="1" delete="1">
+            <list string="Sales Platforms" class="o_avea_workspace o_avea_workspace--sales-platform o_avea_sales_platform_list" create="1" delete="1">
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
+                <field name="display_pricelist" string="Pricelist"/>
+                <field name="pricelist_is_active" string="Pricelist active" widget="boolean"/>
                 <field name="commission_percent" string="Commission %"/>
-                <field name="commission_vat" string="VAT on commission"/>
                 <field name="price_rounding_rule" optional="show"/>
-                <field name="pricelist_item_count" string="Pricelist lines" optional="show"/>
+                <field name="pricelist_item_count" string="Price lines" optional="show"/>
                 <field name="last_price_update" optional="hide"/>
-                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
         </field>
     </record>
@@ -24,6 +24,7 @@
         <field name="arch" type="xml">
             <search string="Sales Platforms">
                 <field name="name"/>
+                <field name="display_pricelist"/>
                 <field name="partner_id"/>
                 <filter string="Active" name="active" domain="[('active', '=', True)]"/>
                 <filter string="Inactive" name="inactive" domain="[('active', '=', False)]"/>
@@ -36,37 +37,39 @@
         <field name="model">avea.sales.platform</field>
         <field name="arch" type="xml">
             <form string="Sales Platform" class="o_avea_workspace o_avea_workspace--sales-platform">
-                <header>
-                    <button
-                        name="action_update_platform_prices"
-                        type="object"
-                        string="Update Platform Prices"
-                        class="btn-primary"
-                        confirm="Recalculate platform prices from current retail prices for all saleable products?"
-                    />
-                </header>
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
+                    <field name="partner_id" invisible="1"/>
+                    <field name="pricelist_id" invisible="1"/>
+                    <field name="integration_ready" invisible="1"/>
+
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
-                            <span class="o_avea_workspace_eyebrow">Customers</span>
+                            <span class="o_avea_workspace_eyebrow">Sales Platforms</span>
                             <h1 class="o_avea_workspace_title">Sales Platform</h1>
                             <p class="o_avea_workspace_section_subtitle">
-                                Manage third-party marketplaces that sell your products and charge commission.
-                                Platform prices live on a dedicated pricelist — retail shelf prices are never changed.
+                                Commission-based marketplace pricing on a dedicated pricelist. Retail shelf prices are never changed.
                             </p>
                         </div>
                         <div class="o_avea_sales_platform_hero_actions">
                             <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
+                            <button
+                                name="action_update_platform_prices"
+                                type="object"
+                                string="Update Platform Prices"
+                                class="btn btn-outline-primary"
+                                confirm="Recalculate platform prices from current retail prices for all saleable products?"
+                                invisible="not integration_ready"
+                            />
                             <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
                         </div>
                     </div>
 
                     <div class="o_avea_sales_platform_workspace">
-                        <div class="o_avea_sales_platform_panel o_avea_workspace_panel">
-                            <h2 class="o_avea_workspace_section_title">Platform details</h2>
+                        <div class="o_avea_sales_platform_panel">
+                            <h2 class="o_avea_workspace_section_title">Platform setup</h2>
                             <div class="o_avea_sales_platform_fields">
-                                <div class="o_avea_workspace_info_item">
+                                <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
                                     <span class="o_avea_workspace_info_label">Platform name</span>
                                     <field name="name" nolabel="1" placeholder="e.g. Mr D"/>
                                 </div>
@@ -82,31 +85,44 @@
                                     <span class="o_avea_workspace_info_label">VAT on commission</span>
                                     <field name="commission_vat" nolabel="1"/>
                                 </div>
-                                <div class="o_avea_workspace_info_item">
+                                <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
                                     <span class="o_avea_workspace_info_label">Price rounding</span>
                                     <field name="price_rounding_rule" nolabel="1"/>
                                 </div>
                             </div>
-                            <div class="o_avea_sales_platform_fields o_avea_sales_platform_links_row mt-3">
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Platform customer</span>
-                                    <field name="partner_id" nolabel="1" readonly="1" options="{'no_open': False}"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Platform pricelist</span>
-                                    <field name="pricelist_id" nolabel="1" readonly="1" options="{'no_open': False}"/>
-                                </div>
-                            </div>
-                            <p class="o_avea_workspace_section_subtitle mb-0 mt-2">
-                                Customer and pricelist are created automatically when you save a new platform.
-                            </p>
-                            <field name="notes" placeholder="Internal notes about this platform..." class="mt-3"/>
                         </div>
 
-                        <div class="o_avea_sales_platform_panel o_avea_workspace_panel">
+                        <div class="o_avea_sales_platform_panel o_avea_sales_platform_panel--integration">
+                            <h2 class="o_avea_workspace_section_title">Linked customer &amp; pricelist</h2>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Created automatically when you save. The platform pricelist holds your marketplace list prices.
+                            </p>
+                            <div class="o_avea_sales_platform_integration_grid">
+                                <div class="o_avea_sales_platform_integration_card">
+                                    <span class="o_avea_workspace_info_label">Platform customer</span>
+                                    <field name="display_partner" nolabel="1" readonly="1" class="o_avea_sales_platform_integration_value"/>
+                                    <button name="action_open_partner" type="object" class="btn btn-link btn-sm" string="Open customer" invisible="not partner_id"/>
+                                </div>
+                                <div class="o_avea_sales_platform_integration_card">
+                                    <span class="o_avea_workspace_info_label">Platform pricelist</span>
+                                    <field name="display_pricelist" nolabel="1" readonly="1" class="o_avea_sales_platform_integration_value"/>
+                                    <div class="o_avea_sales_platform_integration_meta">
+                                        <span class="o_avea_workspace_info_label">Pricelist status</span>
+                                        <field name="pricelist_is_active" nolabel="1" readonly="1" widget="boolean_toggle"/>
+                                    </div>
+                                    <div class="o_avea_sales_platform_integration_actions">
+                                        <button name="action_open_pricelist" type="object" class="btn btn-link btn-sm" string="Open pricelist" invisible="not pricelist_id"/>
+                                        <button name="action_ensure_integration_links" type="object" class="btn btn-link btn-sm" string="Create / repair links" invisible="integration_ready"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <field name="notes" placeholder="Internal notes..." class="mt-3"/>
+                        </div>
+
+                        <div class="o_avea_sales_platform_panel">
                             <h2 class="o_avea_workspace_section_title">Price lookup</h2>
                             <p class="o_avea_workspace_section_subtitle">
-                                Check what a product should list for on this platform before updating the full pricelist.
+                                Spot-check one product before running a full pricelist update.
                             </p>
                             <div class="o_avea_workspace_info_item">
                                 <span class="o_avea_workspace_info_label">Product</span>
@@ -128,18 +144,15 @@
                             </div>
                         </div>
 
-                        <div class="o_avea_sales_platform_panel o_avea_workspace_panel o_avea_sales_platform_panel--meta">
+                        <div class="o_avea_sales_platform_panel o_avea_sales_platform_panel--meta">
                             <h2 class="o_avea_workspace_section_title">Pricelist sync</h2>
-                            <p class="o_avea_workspace_section_subtitle">
-                                Fixed prices stored on the platform pricelist (retail list prices are not modified).
-                            </p>
                             <div class="o_avea_sales_platform_fields">
                                 <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Pricelist lines</span>
+                                    <span class="o_avea_workspace_info_label">Fixed price lines</span>
                                     <field name="pricelist_item_count" nolabel="1" readonly="1"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Last price update</span>
+                                    <span class="o_avea_workspace_info_label">Last update</span>
                                     <field name="last_price_update" nolabel="1" readonly="1"/>
                                 </div>
                             </div>

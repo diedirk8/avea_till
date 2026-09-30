@@ -72,6 +72,10 @@ class AveaSalesPlatform(models.Model):
     )
     last_price_update = fields.Datetime(readonly=True)
     pricelist_item_count = fields.Integer(compute="_compute_pricelist_item_count")
+    display_partner = fields.Char(string="Platform customer", compute="_compute_integration_labels")
+    display_pricelist = fields.Char(string="Platform pricelist", compute="_compute_integration_labels")
+    pricelist_is_active = fields.Boolean(string="Pricelist active", compute="_compute_integration_labels")
+    integration_ready = fields.Boolean(compute="_compute_integration_labels")
 
     lookup_product_id = fields.Many2one(
         "product.product",
@@ -112,6 +116,21 @@ class AveaSalesPlatform(models.Model):
     def _compute_pricelist_item_count(self):
         for platform in self:
             platform.pricelist_item_count = len(platform.pricelist_id.item_ids) if platform.pricelist_id else 0
+
+    @api.depends("partner_id", "partner_id.name", "pricelist_id", "pricelist_id.name", "pricelist_id.active")
+    def _compute_integration_labels(self):
+        for platform in self:
+            platform.integration_ready = bool(platform.partner_id and platform.pricelist_id)
+            if platform.partner_id:
+                platform.display_partner = platform.partner_id.display_name
+            else:
+                platform.display_partner = _("Created when you save this platform")
+            if platform.pricelist_id:
+                platform.display_pricelist = platform.pricelist_id.display_name
+                platform.pricelist_is_active = platform.pricelist_id.active
+            else:
+                platform.display_pricelist = _("Created when you save this platform")
+                platform.pricelist_is_active = False
 
     @api.depends(
         "lookup_product_id",
@@ -344,8 +363,24 @@ class AveaSalesPlatform(models.Model):
             },
         }
 
+    def action_ensure_integration_links(self):
+        self._avea_ensure_links()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Platform links"),
+                "message": _("Customer and pricelist are ready."),
+                "type": "success",
+                "sticky": False,
+            },
+        }
+
     def action_open_pricelist(self):
         self.ensure_one()
+        self._avea_ensure_links()
+        if not self.pricelist_id:
+            raise UserError(_("No platform pricelist is linked yet. Save the platform first."))
         return {
             "type": "ir.actions.act_window",
             "name": _("Platform pricelist"),
@@ -357,6 +392,9 @@ class AveaSalesPlatform(models.Model):
 
     def action_open_partner(self):
         self.ensure_one()
+        self._avea_ensure_links()
+        if not self.partner_id:
+            raise UserError(_("No platform customer is linked yet. Save the platform first."))
         return {
             "type": "ir.actions.act_window",
             "name": _("Platform customer"),
