@@ -247,6 +247,10 @@ class AveaStockTake(models.Model):
     @api.model
     def search_products_for_selection(self, values, offset=0, limit=100):
         values = self._avea_values_from_client(values)
+        if values.get("selection_offset") is not None:
+            offset = values["selection_offset"]
+        if values.get("selection_limit") is not None:
+            limit = values["selection_limit"]
         if values.get("scope_mode") != "partial":
             return {
                 "products": [],

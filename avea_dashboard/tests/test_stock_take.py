@@ -260,6 +260,21 @@ class TestAveaStockTake(TransactionCase):
         second_ids = {row["id"] for row in result_page_two["products"]}
         self.assertEqual(first_ids & second_ids, set())
 
+    def test_search_products_for_selection_accepts_pagination_in_values(self):
+        """OWL RPC should pass a single values dict (offset/limit inside), not extra positional args."""
+        result = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": self.category_a.id,
+                "selection_offset": 1,
+                "selection_limit": 1,
+            }
+        )
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(len(result["products"]), 1)
+        self.assertEqual(result["offset"], 1)
+        self.assertFalse(result["has_more"])
+
     def test_product_ids_matching_partial_filters(self):
         result = self.env["avea.stock.take"].product_ids_matching_partial_filters(
             {

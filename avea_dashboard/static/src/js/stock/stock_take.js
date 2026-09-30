@@ -317,8 +317,8 @@ export class AveaStockTakeClientAction extends Component {
         return Number.isFinite(parsed) ? parsed : false;
     }
 
-    _filterPayload() {
-        return {
+    _filterPayload(includePagination = false) {
+        const payload = {
             scope_mode: "partial",
             filter_product_name: this.state.form.filter_product_name,
             filter_sku: this.state.form.filter_sku,
@@ -327,6 +327,11 @@ export class AveaStockTakeClientAction extends Component {
             filter_supplier_id: this._parseFilterId(this.state.form.filter_supplier_id),
             filter_stock_status: this.state.form.filter_stock_status,
         };
+        if (includePagination) {
+            payload.selection_offset = this.state.matchedOffset;
+            payload.selection_limit = MATCHED_PAGE_SIZE;
+        }
+        return payload;
     }
 
     async _refreshPreview() {
@@ -397,7 +402,7 @@ export class AveaStockTakeClientAction extends Component {
             const result = await this.orm.call(
                 "avea.stock.take",
                 "search_products_for_selection",
-                [this._filterPayload(), this.state.matchedOffset, MATCHED_PAGE_SIZE]
+                [this._filterPayload(true)]
             );
             this.state.matchedProducts = result.products || [];
             this.state.matchedCount = result.count || 0;
