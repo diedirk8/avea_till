@@ -210,6 +210,30 @@ class TestAveaStockTake(TransactionCase):
         self.assertIn("category_name", result["products"][0])
         self.assertIn("qty_available", result["products"][0])
 
+    def test_search_products_for_selection_accepts_string_many2one_ids(self):
+        """OWL <select> values arrive as strings; filters must still apply."""
+        result = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": str(self.category_b.id),
+                "filter_supplier_id": str(self.supplier.id),
+            }
+        )
+        product_ids = {row["id"] for row in result["products"]}
+        self.assertEqual(product_ids, set())
+        self.assertEqual(result["count"], 0)
+
+        result = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": str(self.category_a.id),
+                "filter_supplier_id": str(self.supplier.id),
+            }
+        )
+        product_ids = {row["id"] for row in result["products"]}
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(product_ids, {self.product_a.id, self.product_b.id})
+
     def test_partial_without_products_cannot_start(self):
         stock_take = self.env["avea.stock.take"].create(
             {

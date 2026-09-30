@@ -284,11 +284,16 @@ export class AveaStockTakeClientAction extends Component {
             filter_product_name: this.state.form.filter_product_name,
             filter_sku: this.state.form.filter_sku,
             filter_barcode: this.state.form.filter_barcode,
-            filter_category_id: this.state.form.filter_category_id || false,
-            filter_supplier_id: this.state.form.filter_supplier_id || false,
+            filter_category_id: this._parseFilterId(this.state.form.filter_category_id),
+            filter_supplier_id: this._parseFilterId(this.state.form.filter_supplier_id),
             filter_stock_status: this.state.form.filter_stock_status,
             manual_product_ids: [[6, 0, this.state.form.manual_product_ids]],
         };
+    }
+
+    _parseFilterId(value) {
+        const parsed = parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : false;
     }
 
     _filterPayload() {
@@ -297,8 +302,8 @@ export class AveaStockTakeClientAction extends Component {
             filter_product_name: this.state.form.filter_product_name,
             filter_sku: this.state.form.filter_sku,
             filter_barcode: this.state.form.filter_barcode,
-            filter_category_id: this.state.form.filter_category_id || false,
-            filter_supplier_id: this.state.form.filter_supplier_id || false,
+            filter_category_id: this._parseFilterId(this.state.form.filter_category_id),
+            filter_supplier_id: this._parseFilterId(this.state.form.filter_supplier_id),
             filter_stock_status: this.state.form.filter_stock_status,
         };
     }

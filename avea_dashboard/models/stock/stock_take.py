@@ -132,6 +132,20 @@ class AveaStockTake(models.Model):
             stock_take.total_variance = sum(counted.mapped("difference_qty"))
 
     @api.model
+    def _avea_values_from_client(self, values):
+        """Normalize OWL/RPC payloads before ``new()`` (Many2one ids must be ints)."""
+        vals = dict(values or {})
+        for field_name in ("filter_category_id", "filter_supplier_id"):
+            raw = vals.get(field_name)
+            if raw in (False, None, "", 0):
+                vals[field_name] = False
+            else:
+                vals[field_name] = int(raw)
+        if vals.get("company_id"):
+            vals["company_id"] = int(vals["company_id"])
+        return vals
+
+    @api.model
     def _avea_base_product_domain(self, company=None):
         company = company or self.env.company
         return [
@@ -141,29 +155,49 @@ class AveaStockTake(models.Model):
             ("company_id", "in", [False, company.id]),
         ]
 
-    def _avea_partial_filter_domain(self):
-        self.ensure_one()
-        domain = list(self._avea_base_product_domain(self.company_id))
-        name = (self.filter_product_name or "").strip()
-        sku = (self.filter_sku or "").strip()
-        barcode = (self.filter_barcode or "").strip()
+    @api.model
+    def _avea_partial_filter_domain_from_values(self, values):
+        """Build the partial-count product domain from RPC / form values."""
+        vals = self._avea_values_from_client(values)
+        company = self.env.company
+        if vals.get("company_id"):
+            company = self.env["res.company"].browse(vals["company_id"])
+        domain = list(self._avea_base_product_domain(company))
+        name = (vals.get("filter_product_name") or "").strip()
+        sku = (vals.get("filter_sku") or "").strip()
+        barcode = (vals.get("filter_barcode") or "").strip()
         if name:
             domain.append(("name", "ilike", name))
         if sku:
             domain.append(("default_code", "ilike", sku))
         if barcode:
             domain.append(("barcode", "ilike", barcode))
-        if self.filter_category_id:
-            domain.append(("categ_id", "child_of", self.filter_category_id.id))
-        if self.filter_supplier_id:
-            domain.append(
-                ("product_tmpl_id.avea_supplier_id", "=", self.filter_supplier_id.id)
-            )
-        if self.filter_stock_status and self.filter_stock_status != "all":
+        category_id = vals.get("filter_category_id")
+        if category_id:
+            domain.append(("categ_id", "child_of", category_id))
+        supplier_id = vals.get("filter_supplier_id")
+        if supplier_id:
+            domain.append(("product_tmpl_id.avea_supplier_id", "=", supplier_id))
+        stock_status = vals.get("filter_stock_status") or "all"
+        if stock_status != "all":
             ProductTemplate = self.env["product.template"]
-            status_domain = ProductTemplate._search_avea_stock_status("=", self.filter_stock_status)
+            status_domain = ProductTemplate._search_avea_stock_status("=", stock_status)
             domain.extend(status_domain)
         return domain
+
+    def _avea_partial_filter_domain(self):
+        self.ensure_one()
+        return self._avea_partial_filter_domain_from_values(
+            {
+                "filter_product_name": self.filter_product_name,
+                "filter_sku": self.filter_sku,
+                "filter_barcode": self.filter_barcode,
+                "filter_category_id": self.filter_category_id.id,
+                "filter_supplier_id": self.filter_supplier_id.id,
+                "filter_stock_status": self.filter_stock_status,
+                "company_id": self.company_id.id,
+            }
+        )
 
     def _avea_filter_domain(self):
         self.ensure_one()
@@ -182,33 +216,40 @@ class AveaStockTake(models.Model):
 
     @api.model
     def preview_product_count(self, values):
-        stock_take = self.new(values)
-        stock_take.company_id = values.get("company_id") or self.env.company.id
-        if stock_take.scope_mode == "everything":
+        values = self._avea_values_from_client(values)
+        scope_mode = values.get("scope_mode") or "everything"
+        company = self.env.company
+        if values.get("company_id"):
+            company = self.env["res.company"].browse(values["company_id"])
+        if scope_mode == "everything":
             Product = self.env["product.product"]
-            return {
-                "count": Product.search_count(
-                    stock_take._avea_base_product_domain(stock_take.company_id)
-                )
-            }
-        if stock_take.manual_product_ids:
-            return {"count": len(stock_take.manual_product_ids)}
+            return {"count": Product.search_count(self._avea_base_product_domain(company))}
+        manual_ids = values.get("manual_product_ids")
+        if manual_ids and manual_ids[0][0] == 6:
+            return {"count": len(manual_ids[0][2])}
         Product = self.env["product.product"]
-        return {"count": Product.search_count(stock_take._avea_partial_filter_domain())}
+        return {
+            "count": Product.search_count(self._avea_partial_filter_domain_from_values(values))
+        }
 
     @api.model
     def search_products_for_selection(self, values, limit=500):
-        stock_take = self.new(values)
-        stock_take.company_id = values.get("company_id") or self.env.company.id
-        if stock_take.scope_mode != "partial":
+        values = self._avea_values_from_client(values)
+        if values.get("scope_mode") != "partial":
             return {"products": [], "count": 0, "truncated": False}
         Product = self.env["product.product"]
-        domain = stock_take._avea_partial_filter_domain()
+        domain = self._avea_partial_filter_domain_from_values(values)
         total = Product.search_count(domain)
         limit = max(1, min(int(limit or 500), 1000))
         products = Product.search(domain, order="name, id", limit=limit)
-        location = stock_take.location_id or self._avea_default_stock_location(
-            stock_take.company_id
+        company = self.env.company
+        if values.get("company_id"):
+            company = self.env["res.company"].browse(values["company_id"])
+        location_id = values.get("location_id")
+        location = (
+            self.env["stock.location"].browse(int(location_id))
+            if location_id
+            else self._avea_default_stock_location(company)
         )
         rows = []
         for product in products:
