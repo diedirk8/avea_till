@@ -49,6 +49,27 @@ class TestAveaSalesPlatform(TransactionCase):
         price = platform._avea_platform_price_from_retail(100.0)
         self.assertEqual(price, 109.0)
 
+    def test_platform_price_rounding_lower_and_upper_bounds(self):
+        platform = self.env["avea.sales.platform"]
+        raw = 112.43
+        self.assertEqual(platform._avea_round_lower_5(raw), 110.0)
+        self.assertEqual(platform._avea_round_upper_5(raw), 115.0)
+        self.assertEqual(platform._avea_round_lower_10(raw), 110.0)
+        self.assertEqual(platform._avea_round_upper_10(raw), 120.0)
+        self.assertEqual(platform._avea_round_lower_9(raw), 109.0)
+        self.assertEqual(platform._avea_round_upper_9(raw), 119.0)
+
+    def test_platform_price_rounding_upper_5_or_9_closer(self):
+        platform = self.env["avea.sales.platform"]
+        self.assertEqual(platform._avea_round_upper_5_or_9_closer(112.43), 115.0)
+        self.assertEqual(platform._avea_round_upper_5_or_9_closer(117.0), 119.0)
+
+    def test_platform_price_rounding_rules_on_record(self):
+        record = self._create_platform(price_rounding_rule="upper_9")
+        self.assertEqual(record._avea_apply_price_rounding(112.43), 119.0)
+        record.price_rounding_rule = "lower_5"
+        self.assertEqual(record._avea_apply_price_rounding(112.43), 110.0)
+
     def test_update_platform_prices_does_not_change_retail(self):
         platform = self._create_platform(commission_percent=10.0, commission_vat=False, price_rounding_rule="none")
         retail_before = self.template.list_price

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import math
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_compare, float_round
@@ -50,6 +52,13 @@ class AveaSalesPlatform(models.Model):
             ("nearest_9", "Nearest R9"),
             ("nearest_10", "Nearest R10"),
             ("nearest_10_then_9", "Nearest R10, then R9 ending"),
+            ("lower_5", "Lower R5"),
+            ("upper_5", "Upper R5"),
+            ("lower_9", "Lower R9"),
+            ("upper_9", "Upper R9"),
+            ("lower_10", "Lower R10"),
+            ("upper_10", "Upper R10"),
+            ("upper_5_or_9_closer", "Upper R5 or R9 (whichever is closer)"),
         ],
         string="Price rounding",
         required=True,
@@ -155,9 +164,78 @@ class AveaSalesPlatform(models.Model):
         raw = retail_inc / (1.0 - effective) if effective > 0 else retail_inc
         return self._avea_apply_price_rounding(raw)
 
+    @api.model
+    def _avea_round_lower_5(self, price):
+        if price <= 0:
+            return 0.0
+        return math.floor(price / 5.0 + 1e-9) * 5.0
+
+    @api.model
+    def _avea_round_upper_5(self, price):
+        if price <= 0:
+            return 0.0
+        return math.ceil((price - 1e-9) / 5.0) * 5.0
+
+    @api.model
+    def _avea_round_lower_10(self, price):
+        if price <= 0:
+            return 0.0
+        return math.floor(price / 10.0 + 1e-9) * 10.0
+
+    @api.model
+    def _avea_round_upper_10(self, price):
+        if price <= 0:
+            return 0.0
+        return math.ceil((price - 1e-9) / 10.0) * 10.0
+
+    @api.model
+    def _avea_round_lower_9(self, price):
+        if price <= 0:
+            return 0.0
+        if price <= 9.0:
+            return 9.0
+        tens = math.floor(price / 10.0)
+        candidate = tens * 10.0 + 9.0
+        if candidate > price:
+            candidate = (tens - 1) * 10.0 + 9.0
+        return max(candidate, 9.0)
+
+    @api.model
+    def _avea_round_upper_9(self, price):
+        if price <= 0:
+            return 0.0
+        if price <= 9.0:
+            return 9.0
+        tens = math.floor(price / 10.0)
+        candidate = tens * 10.0 + 9.0
+        if candidate < price:
+            candidate = (tens + 1) * 10.0 + 9.0
+        return candidate
+
+    @api.model
+    def _avea_round_nearest_9(self, price):
+        if price <= 0:
+            return 0.0
+        lower = self._avea_round_lower_9(price)
+        upper = self._avea_round_upper_9(price)
+        if lower == upper:
+            return lower
+        return lower if abs(price - lower) <= abs(price - upper) else upper
+
+    @api.model
+    def _avea_round_upper_5_or_9_closer(self, price):
+        if price <= 0:
+            return 0.0
+        upper_5 = self._avea_round_upper_5(price)
+        upper_9 = self._avea_round_upper_9(price)
+        if (upper_5 - price) <= (upper_9 - price):
+            return upper_5
+        return upper_9
+
     def _avea_apply_price_rounding(self, price):
         self.ensure_one()
         rule = self.price_rounding_rule or "none"
+        Platform = self.env["avea.sales.platform"]
         if rule == "none":
             return float_round(price, precision_digits=2)
         if rule == "nearest_5":
@@ -165,18 +243,24 @@ class AveaSalesPlatform(models.Model):
         if rule == "nearest_10":
             return round(price / 10.0) * 10.0
         if rule == "nearest_9":
-            if price <= 0:
-                return 0.0
-            lower = round(price / 10.0) * 10.0 - 1.0
-            upper = lower + 10.0
-            if lower < 9.0:
-                lower = 9.0
-                upper = 19.0
-            return lower if abs(price - lower) <= abs(price - upper) else upper
+            return Platform._avea_round_nearest_9(price)
         if rule == "nearest_10_then_9":
             base = round(price / 10.0) * 10.0
-            rounded = base - 1.0
-            return max(rounded, 9.0)
+            return max(base - 1.0, 9.0)
+        if rule == "lower_5":
+            return Platform._avea_round_lower_5(price)
+        if rule == "upper_5":
+            return Platform._avea_round_upper_5(price)
+        if rule == "lower_9":
+            return Platform._avea_round_lower_9(price)
+        if rule == "upper_9":
+            return Platform._avea_round_upper_9(price)
+        if rule == "lower_10":
+            return Platform._avea_round_lower_10(price)
+        if rule == "upper_10":
+            return Platform._avea_round_upper_10(price)
+        if rule == "upper_5_or_9_closer":
+            return Platform._avea_round_upper_5_or_9_closer(price)
         return float_round(price, precision_digits=2)
 
     def _avea_product_templates_for_pricing(self):
