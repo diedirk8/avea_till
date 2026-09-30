@@ -5,7 +5,7 @@
         <field name="name">avea.sales.platform.list</field>
         <field name="model">avea.sales.platform</field>
         <field name="arch" type="xml">
-            <list string="Sales Platforms" class="o_avea_sales_platform_list" create="1" delete="1">
+            <list string="Sales Platforms" class="o_avea_workspace o_avea_sales_platform_list" create="1" delete="1">
                 <field name="name"/>
                 <field name="active" widget="boolean_toggle"/>
                 <field name="commission_percent" string="Commission %"/>
@@ -87,12 +87,19 @@
                                     <field name="price_rounding_rule" nolabel="1"/>
                                 </div>
                             </div>
-                            <div class="o_avea_sales_platform_links mt-3">
-                                <button name="action_open_partner" type="object" class="btn btn-link btn-sm" string="Open platform customer"/>
-                                <button name="action_open_pricelist" type="object" class="btn btn-link btn-sm" string="Open platform pricelist"/>
+                            <div class="o_avea_sales_platform_fields o_avea_sales_platform_links_row mt-3">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Platform customer</span>
+                                    <field name="partner_id" nolabel="1" readonly="1" options="{'no_open': False}"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Platform pricelist</span>
+                                    <field name="pricelist_id" nolabel="1" readonly="1" options="{'no_open': False}"/>
+                                </div>
                             </div>
-                            <field name="partner_id" readonly="1" groups="base.group_no_one"/>
-                            <field name="pricelist_id" readonly="1" groups="base.group_no_one"/>
+                            <p class="o_avea_workspace_section_subtitle mb-0 mt-2">
+                                Customer and pricelist are created automatically when you save a new platform.
+                            </p>
                             <field name="notes" placeholder="Internal notes about this platform..." class="mt-3"/>
                         </div>
 

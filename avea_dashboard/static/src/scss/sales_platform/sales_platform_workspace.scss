@@ -1,4 +1,116 @@
+.o_avea_workspace--sales-platform,
+.o_avea_sales_platform_list {
+    --avea-brand: #c45c26;
+    --avea-brand-hover: #a84d1f;
+    --avea-brand-soft: rgba(196, 92, 38, 0.12);
+    --avea-brand-border: rgba(196, 92, 38, 0.35);
+}
+
 .o_avea_workspace--sales-platform {
+    .o_control_panel {
+        display: none !important;
+    }
+
+    .o_form_sheet_bg {
+        background: var(--o-webclient-background-color, #f4f5f7);
+    }
+
+    .o_avea_workspace_sheet {
+        max-width: 1280px;
+        padding-bottom: 2.5rem;
+        padding-top: 1.15rem;
+    }
+
+    .o_avea_workspace_hero {
+        align-items: flex-start;
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.85rem 1rem;
+        justify-content: space-between;
+        margin-bottom: 0.95rem;
+        padding: 0.05rem 0 0;
+    }
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand);
+    }
+
+    .o_avea_workspace_title {
+        font-size: 1.7rem;
+        letter-spacing: -0.04em;
+    }
+
+    header .o_form_button_save,
+    header .btn-primary,
+    .o_avea_sales_platform_hero_actions .btn-primary {
+        background-color: var(--avea-brand);
+        border-color: var(--avea-brand);
+        font-weight: 700;
+
+        &:hover,
+        &:focus,
+        &:active {
+            background-color: var(--avea-brand-hover);
+            border-color: var(--avea-brand-hover);
+        }
+    }
+
+    .o_avea_sales_platform_hero_actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        margin-left: auto;
+
+        .btn {
+            min-height: 2.45rem;
+            min-width: 7.5rem;
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .btn-secondary {
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            color: var(--o-gray-800, #343a40);
+            font-weight: 600;
+        }
+    }
+
+    .o_form_statusbar {
+        border-bottom-color: var(--o-gray-300, #dee2e6);
+
+        .btn-primary,
+        .o_statusbar_buttons .btn-primary {
+            background-color: var(--avea-brand);
+            border-color: var(--avea-brand);
+
+            &:hover,
+            &:focus {
+                background-color: var(--avea-brand-hover);
+                border-color: var(--avea-brand-hover);
+            }
+        }
+    }
+
+    .o_avea_sales_platform_links .btn-link {
+        color: var(--avea-brand);
+        font-weight: 600;
+
+        &:hover,
+        &:focus {
+            color: var(--avea-brand-hover);
+        }
+    }
+
+    .o_field_widget.o_field_boolean_toggle .form-check-input:checked {
+        background-color: var(--avea-brand);
+        border-color: var(--avea-brand);
+    }
+
     .o_avea_sales_platform_workspace {
         display: grid;
         gap: 1.25rem;
@@ -39,6 +151,20 @@
         .o_avea_sales_platform_fields,
         .o_avea_sales_platform_lookup_grid {
             grid-template-columns: minmax(0, 1fr);
+        }
+    }
+}
+
+.o_action:has(.o_avea_sales_platform_list) {
+    .o_control_panel .o_cp_action_menus .btn-primary,
+    .o_list_button_add {
+        background-color: var(--avea-brand, #c45c26);
+        border-color: var(--avea-brand, #c45c26);
+
+        &:hover,
+        &:focus {
+            background-color: var(--avea-brand-hover, #a84d1f);
+            border-color: var(--avea-brand-hover, #a84d1f);
         }
     }
 }

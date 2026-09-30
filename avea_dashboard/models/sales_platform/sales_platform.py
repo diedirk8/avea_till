@@ -213,8 +213,19 @@ class AveaSalesPlatform(models.Model):
         PricelistItem.create(vals)
         return "created"
 
+    def _avea_ensure_links(self):
+        """Create missing partner/pricelist (e.g. legacy records)."""
+        for platform in self:
+            if not platform.partner_id:
+                platform.partner_id = platform._avea_create_partner(platform.name, platform.company_id)
+            if not platform.pricelist_id:
+                platform.pricelist_id = platform._avea_create_pricelist()
+            elif not platform.pricelist_id.avea_sales_platform_id:
+                platform.pricelist_id.avea_sales_platform_id = platform.id
+
     def action_update_platform_prices(self):
         self.ensure_one()
+        self._avea_ensure_links()
         if not self.pricelist_id:
             raise UserError(_("This platform does not have a pricelist yet."))
         created = 0
@@ -324,6 +335,7 @@ class AveaSalesPlatform(models.Model):
 
     def write(self, vals):
         res = super().write(vals)
+        self._avea_ensure_links()
         if "name" in vals:
             for platform in self:
                 if platform.partner_id and platform.partner_id.name != platform.name:
