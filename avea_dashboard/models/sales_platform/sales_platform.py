@@ -75,6 +75,7 @@ class AveaSalesPlatform(models.Model):
     display_partner = fields.Char(string="Platform customer", compute="_compute_integration_labels")
     display_pricelist = fields.Char(string="Platform pricelist", compute="_compute_integration_labels")
     pricelist_is_active = fields.Boolean(string="Pricelist active", compute="_compute_integration_labels")
+    pricelist_active_label = fields.Char(string="Pricelist status", compute="_compute_integration_labels")
     integration_ready = fields.Boolean(compute="_compute_integration_labels")
 
     lookup_product_id = fields.Many2one(
@@ -128,9 +129,13 @@ class AveaSalesPlatform(models.Model):
             if platform.pricelist_id:
                 platform.display_pricelist = platform.pricelist_id.display_name
                 platform.pricelist_is_active = platform.pricelist_id.active
+                platform.pricelist_active_label = (
+                    _("Active") if platform.pricelist_id.active else _("Inactive")
+                )
             else:
                 platform.display_pricelist = _("Created when you save this platform")
                 platform.pricelist_is_active = False
+                platform.pricelist_active_label = _("Not linked")
 
     @api.depends(
         "lookup_product_id",

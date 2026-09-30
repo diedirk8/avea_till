@@ -5,15 +5,22 @@
         <field name="name">avea.sales.platform.list</field>
         <field name="model">avea.sales.platform</field>
         <field name="arch" type="xml">
-            <list string="Sales Platforms" class="o_avea_workspace o_avea_workspace--sales-platform o_avea_sales_platform_list" create="1" delete="1">
-                <field name="name"/>
-                <field name="active" widget="boolean_toggle"/>
+            <list
+                string="Sales Platforms"
+                class="o_avea_sales_platform_table"
+                js_class="avea_sales_platform_list"
+                create="0"
+                delete="1"
+            >
+                <field name="name" string="Platform"/>
+                <field name="active" widget="boolean_toggle" string="Active"/>
                 <field name="display_pricelist" string="Pricelist"/>
-                <field name="pricelist_is_active" string="Pricelist active" widget="boolean"/>
+                <field name="pricelist_active_label" string="Pricelist status"/>
                 <field name="commission_percent" string="Commission %"/>
-                <field name="price_rounding_rule" optional="show"/>
-                <field name="pricelist_item_count" string="Price lines" optional="show"/>
+                <field name="price_rounding_rule" string="Rounding"/>
+                <field name="pricelist_item_count" string="Price lines"/>
                 <field name="last_price_update" optional="hide"/>
+                <field name="pricelist_is_active" column_invisible="True"/>
             </list>
         </field>
     </record>

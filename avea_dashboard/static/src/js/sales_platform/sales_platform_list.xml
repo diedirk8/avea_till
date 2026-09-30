@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.SalesPlatformList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_workspace_sheet o_avea_sales_platform_list_sheet">
+                <div class="o_avea_workspace_hero">
+                    <div class="o_avea_workspace_hero_intro">
+                        <span class="o_avea_workspace_eyebrow">Customers</span>
+                        <h1 class="o_avea_workspace_title">Sales Platforms</h1>
+                        <p class="o_avea_workspace_subtitle">
+                            Marketplaces that sell your products and charge commission. Each platform has its own customer and pricelist.
+                        </p>
+                        <div class="o_avea_period_selector o_avea_sales_platform_filters">
+                            <button type="button" t-att-class="this._filterButtonClass('all')" t-on-click="() => this.onFilterClick('all')">
+                                All
+                            </button>
+                            <button type="button" t-att-class="this._filterButtonClass('active')" t-on-click="() => this.onFilterClick('active')">
+                                Active
+                            </button>
+                            <button type="button" t-att-class="this._filterButtonClass('inactive')" t-on-click="() => this.onFilterClick('inactive')">
+                                Inactive
+                            </button>
+                        </div>
+                    </div>
+                    <div class="o_avea_sales_platform_list_actions">
+                        <button type="button" class="btn btn-primary" t-on-click="() => this.onClickCreatePlatform()">
+                            New platform
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div
+                t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                class="o_avea_sales_platform_pager o_cp_pager text-nowrap"
+            >
+                <Pager t-props="env.config.pagerProps"/>
+            </div>
+        </xpath>
+    </t>
+
+</templates>
