@@ -1,6 +1,15 @@
 // Shared Avea Till workspace styling for Session Dashboard and Cash Ledger.
 
+@import "avea_brand_chrome";
+
+.o_form_view.o_avea_workspace,
+.o_list_view.o_avea_workspace {
+    @include avea-brand-chrome;
+}
+
 .o_avea_workspace {
+    @include avea-brand-chrome;
+
     --avea-info: #01666b;
     --avea-info-soft: rgba(1, 102, 107, 0.08);
     --avea-info-border: rgba(1, 102, 107, 0.22);
@@ -93,7 +102,7 @@
     }
 
     .o_avea_workspace_eyebrow {
-        color: var(--avea-info);
+        color: var(--avea-brand, #c45c26);
         display: block;
         font-size: 0.75rem;
         font-weight: 700;
@@ -813,6 +822,11 @@
             }
         }
     }
+}
+
+.o_form_view.o_avea_wizard,
+.o_avea_wizard {
+    @include avea-brand-chrome;
 }
 
 .o_avea_wizard {

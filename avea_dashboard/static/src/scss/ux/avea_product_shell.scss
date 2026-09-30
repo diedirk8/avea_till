@@ -1,16 +1,15 @@
 /* Avea product shell — suppress Odoo chrome and apply brand styling */
 
+@import "../_avea_brand_chrome";
+
 body.o_avea_product_shell {
-    --avea-brand: #c45c26;
-    --avea-brand-hover: #a34a1f;
-    --avea-brand-soft: rgba(196, 92, 38, 0.12);
-    --avea-brand-focus: rgba(196, 92, 38, 0.22);
+    @include avea-brand-tokens;
     --avea-search-radius: 0.45rem;
     --avea-search-height: 2.35rem;
-    --bs-primary: var(--avea-brand);
-    --bs-primary-rgb: 196, 92, 38;
-    --bs-link-color: var(--avea-brand);
-    --bs-link-hover-color: var(--avea-brand-hover);
+
+    .o_action_manager {
+        @include avea-brand-chrome;
+    }
 
     // -------------------------------------------------------------------------
     // Suppress leaked Odoo navbar / systray chrome
@@ -29,103 +28,12 @@ body.o_avea_product_shell {
         display: none !important;
     }
 
-    // -------------------------------------------------------------------------
-    // Brand colour — interactive chrome only (not semantic status colours)
-    // -------------------------------------------------------------------------
-
-    .btn-primary,
-    .btn.btn-primary,
-    .o_form_button_save,
-    .o_form_button_create {
-        --bs-btn-bg: var(--avea-brand);
-        --bs-btn-border-color: var(--avea-brand);
-        --bs-btn-hover-bg: var(--avea-brand-hover);
-        --bs-btn-hover-border-color: var(--avea-brand-hover);
-        --bs-btn-active-bg: var(--avea-brand-hover);
-        --bs-btn-active-border-color: var(--avea-brand-hover);
-        --bs-btn-focus-shadow-rgb: 196, 92, 38;
-        background-color: var(--avea-brand);
-        border-color: var(--avea-brand);
-
-        &:hover,
-        &:focus,
-        &:active,
-        &.active,
-        &:disabled,
-        &.disabled {
-            background-color: var(--avea-brand-hover);
-            border-color: var(--avea-brand-hover);
-        }
-    }
-
-    .btn-outline-primary {
-        --bs-btn-color: var(--avea-brand);
-        --bs-btn-border-color: var(--avea-brand);
-        --bs-btn-hover-bg: var(--avea-brand-soft);
-        --bs-btn-hover-border-color: var(--avea-brand);
-        --bs-btn-active-bg: var(--avea-brand-soft);
-        --bs-btn-active-border-color: var(--avea-brand);
-    }
-
-    .btn-link,
-    a:not(.o_avea_sidebar_brand):not(.o_avea_sidebar_link):not(.dropdown-item):not(.o_avea_user_menu_item) {
-        &.text-action,
-        &.text-primary {
-            color: var(--avea-brand);
-
-            &:hover {
-                color: var(--avea-brand-hover);
-            }
-        }
-    }
-
     a:not(.btn):not(.dropdown-item):not(.o_avea_sidebar_link):not(.o_avea_user_menu_item) {
         color: var(--avea-brand);
 
         &:hover {
             color: var(--avea-brand-hover);
         }
-    }
-
-    .text-primary,
-    .text-action {
-        color: var(--avea-brand) !important;
-    }
-
-    .nav-tabs .nav-link.active,
-    .nav-pills .nav-link.active {
-        color: var(--avea-brand);
-    }
-
-    .nav-tabs .nav-link.active {
-        border-bottom-color: var(--avea-brand);
-    }
-
-    .page-item.active .page-link {
-        background-color: var(--avea-brand);
-        border-color: var(--avea-brand);
-    }
-
-    .form-check-input:checked {
-        background-color: var(--avea-brand);
-        border-color: var(--avea-brand);
-    }
-
-    .form-control:focus,
-    .form-select:focus,
-    .o_input:focus {
-        border-color: var(--avea-brand);
-        box-shadow: 0 0 0 0.2rem var(--avea-brand-focus);
-    }
-
-    .badge.text-bg-primary {
-        background-color: var(--avea-brand) !important;
-    }
-
-    .o_field_widget .o_external_button,
-    .o_field_widget .o_input_dropdown .o_dropdown_button,
-    .o_list_renderer .o_optional_columns_dropdown_toggle {
-        color: var(--avea-brand);
     }
 
     // -------------------------------------------------------------------------
@@ -202,49 +110,4 @@ body.o_avea_product_shell {
         display: none !important;
     }
 
-    // Selection / highlights
-    .o_data_row.o_data_row_selected,
-    .o_list_renderer .o_data_row.o_data_row_selected > .o_data_cell {
-        background-color: var(--avea-brand-soft) !important;
-    }
-
-    // Avea-native search inputs (stock catalogue, promotions, etc.)
-    .o_avea_stock_filter_input,
-    .o_avea_stock_filter_select,
-    .o_avea_promotion_product_search,
-    input[type="search"].form-control {
-        &:focus,
-        &:focus-within {
-            border-color: var(--avea-brand);
-            box-shadow: 0 0 0 3px var(--avea-brand-soft);
-        }
-    }
-
-    .o_dialog .modal-footer .btn-primary,
-    .o_dialog footer .btn-primary {
-        background-color: var(--avea-brand) !important;
-        border-color: var(--avea-brand) !important;
-
-        &:hover,
-        &:focus,
-        &:active {
-            background-color: var(--avea-brand-hover) !important;
-            border-color: var(--avea-brand-hover) !important;
-        }
-    }
-
-    // Period filter pills (Business Overview, Performance, Sales Ledger)
-    .o_avea_period_btn.btn-primary,
-    .o_avea_custom_period_apply.btn-primary,
-    .o_avea_workspace_nav.btn-primary,
-    .o_avea_workspace_section_action.btn-primary {
-        background-color: var(--avea-brand);
-        border-color: var(--avea-brand);
-
-        &:hover,
-        &:focus {
-            background-color: var(--avea-brand-hover);
-            border-color: var(--avea-brand-hover);
-        }
-    }
 }
