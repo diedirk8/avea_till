@@ -150,12 +150,23 @@ class AveaStockReturnHistory(models.Model):
     @api.model
     def action_open_history(self):
         view_id = self.env.ref("avea_till.view_avea_stock_return_history_list").id
+        form_id = self.env.ref("avea_till.view_avea_stock_return_history_form").id
         return {
             "type": "ir.actions.act_window",
             "name": _("Return history"),
             "res_model": self._name,
             "view_mode": "list,form",
-            "views": [(view_id, "list"), (False, "form")],
+            "views": [(view_id, "list"), (form_id, "form")],
+            "search_view_id": self.env.ref(
+                "avea_till.view_avea_stock_return_history_search"
+            ).id,
             "target": "main",
-            "context": {"clear_breadcrumbs": True},
+            "context": {
+                "clear_breadcrumbs": True,
+                "create": False,
+                "avea_stock_history_readonly": True,
+            },
         }
+
+    def action_back_to_return_history(self):
+        return self.action_open_history()

@@ -2978,3 +2978,86 @@
         }
     }
 }
+
+.o_avea_workspace--stock-history {
+    .o_control_panel {
+        display: none !important;
+    }
+
+    .o_form_sheet_bg,
+    > .o_content {
+        background: var(--o-webclient-background-color, #f4f5f7);
+    }
+
+    .o_avea_stock_history_shell {
+        padding: 1.15rem 1.15rem 0;
+    }
+
+    .o_avea_stock_history_sheet {
+        padding-bottom: 0.35rem;
+    }
+
+    .o_avea_stock_history_hero {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1rem;
+        justify-content: space-between;
+    }
+
+    .o_avea_stock_history_actions {
+        flex: 0 0 auto;
+    }
+
+    > .o_content {
+        padding: 0 1.15rem 1.5rem;
+
+        .o_list_renderer {
+            background: #fff;
+            border: 1px solid var(--o-gray-200, #e9ecef);
+            border-radius: var(--avea-stock-card-radius, 0.7rem);
+            box-shadow: var(--avea-stock-card-shadow);
+            max-height: calc(100vh - 16.5rem);
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-gutter: stable;
+
+            .o_list_table {
+                @include avea-compact-table-base;
+                margin-bottom: 0;
+
+                thead th {
+                    background-color: var(--o-gray-100, #f8f9fa);
+                    box-shadow: 0 1px 0 var(--o-gray-200, #e9ecef);
+                    font-size: 0.72rem;
+                    font-weight: 700;
+                    position: sticky;
+                    top: 0;
+                    z-index: 2;
+                }
+            }
+        }
+    }
+
+    .o_avea_stock_history_pager {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 0.75rem;
+        padding: 0 0.15rem;
+    }
+
+    .o_avea_stock_panel {
+        background: #fff;
+        border: 1px solid var(--o-gray-200, #e9ecef);
+        border-radius: var(--avea-stock-card-radius, 0.7rem);
+        box-shadow: var(--avea-stock-card-shadow);
+        margin-bottom: 0.85rem;
+        padding: 1rem 1.05rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .o_avea_workspace--stock-history > .o_content .o_list_renderer {
+        max-height: calc(100vh - 18rem);
+    }
+}

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.StockReceiveHistoryList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_stock_history_shell">
+                <div class="o_avea_workspace_sheet o_avea_stock_history_sheet">
+                    <div class="o_avea_workspace_hero o_avea_stock_history_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock</span>
+                            <h1 class="o_avea_workspace_title">Receive history</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Completed supplier receives — open a row for details or return stock to the supplier.
+                            </p>
+                            <div class="o_avea_period_selector o_avea_stock_history_filters">
+                                <button type="button" t-att-class="this._filterButtonClass('all')" t-on-click="() => this.onFilterClick('all')">All</button>
+                                <button type="button" t-att-class="this._filterButtonClass('last_7')" t-on-click="() => this.onFilterClick('last_7')">Last 7 days</button>
+                                <button type="button" t-att-class="this._filterButtonClass('last_30')" t-on-click="() => this.onFilterClick('last_30')">Last 30 days</button>
+                                <button type="button" t-att-class="this._filterButtonClass('last_90')" t-on-click="() => this.onFilterClick('last_90')">Last 90 days</button>
+                            </div>
+                        </div>
+                        <div class="o_avea_stock_history_actions">
+                            <button type="button" class="btn btn-secondary" t-on-click="() => this.openReturnHistory()">
+                                Return history
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div
+                t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                class="o_avea_stock_history_pager o_cp_pager text-nowrap"
+            >
+                <Pager t-props="env.config.pagerProps"/>
+            </div>
+        </xpath>
+    </t>
+
+    <t t-name="avea_till.StockReturnHistoryList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_stock_history_shell">
+                <div class="o_avea_workspace_sheet o_avea_stock_history_sheet">
+                    <div class="o_avea_workspace_hero o_avea_stock_history_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock</span>
+                            <h1 class="o_avea_workspace_title">Return history</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Stock returned to suppliers — credit notes and how much supplier credit is still open.
+                            </p>
+                            <div class="o_avea_period_selector o_avea_stock_history_filters">
+                                <button type="button" t-att-class="this._filterButtonClass('all')" t-on-click="() => this.onFilterClick('all')">All</button>
+                                <button type="button" t-att-class="this._filterButtonClass('last_7')" t-on-click="() => this.onFilterClick('last_7')">Last 7 days</button>
+                                <button type="button" t-att-class="this._filterButtonClass('last_30')" t-on-click="() => this.onFilterClick('last_30')">Last 30 days</button>
+                                <button type="button" t-att-class="this._filterButtonClass('last_90')" t-on-click="() => this.onFilterClick('last_90')">Last 90 days</button>
+                            </div>
+                        </div>
+                        <div class="o_avea_stock_history_actions">
+                            <button type="button" class="btn btn-secondary" t-on-click="() => this.openReceiveHistory()">
+                                Receive history
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div
+                t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                class="o_avea_stock_history_pager o_cp_pager text-nowrap"
+            >
+                <Pager t-props="env.config.pagerProps"/>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

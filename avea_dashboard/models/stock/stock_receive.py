@@ -722,15 +722,23 @@ class AveaStockReceive(models.Model):
     @api.model
     def action_open_receive_history(self):
         view_id = self.env.ref("avea_till.view_avea_stock_receive_history_list").id
+        form_id = self.env.ref("avea_till.view_avea_stock_receive_history_form").id
         return {
             "type": "ir.actions.act_window",
             "name": _("Receive history"),
             "res_model": self._name,
             "view_mode": "list,form",
-            "views": [(view_id, "list"), (False, "form")],
+            "views": [(view_id, "list"), (form_id, "form")],
             "domain": [("state", "=", "done")],
+            "search_view_id": self.env.ref(
+                "avea_till.view_avea_stock_receive_history_search"
+            ).id,
             "target": "main",
-            "context": {"clear_breadcrumbs": True, "create": False},
+            "context": {
+                "clear_breadcrumbs": True,
+                "create": False,
+                "avea_stock_history_readonly": True,
+            },
         }
 
     def _avea_get_receipt_picking(self):
@@ -792,6 +800,9 @@ class AveaStockReceive(models.Model):
                 _("No stock receipt was found for this receive. Open the receipt from Inventory.")
             )
         return self.env["avea.stock.return"].action_open_return_for_picking(picking)
+
+    def action_back_to_receive_history(self):
+        return self.action_open_receive_history()
 
     def action_open_return(self):
         return self.env["avea.stock.return"].action_open_return()
