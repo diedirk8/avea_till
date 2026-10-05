@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_stock_receive_history_list" model="ir.ui.view">
+        <field name="name">avea.stock.receive.history.list</field>
+        <field name="model">avea.stock.receive</field>
+        <field name="arch" type="xml">
+            <list string="Receive history" create="false" delete="false" class="o_avea_stock_history_list">
+                <field name="currency_id" column_invisible="True"/>
+                <field name="can_return_stock" column_invisible="True"/>
+                <field name="received_date" string="Received"/>
+                <field name="partner_id" string="Supplier"/>
+                <field name="invoice_number" string="Invoice"/>
+                <field name="picking_id" string="Receipt" optional="show"/>
+                <field name="amount_total" string="Total" widget="monetary"/>
+                <field name="supplier_credit_applied" string="Credit used" widget="monetary" optional="show"/>
+                <field name="payment_status" string="Payment"/>
+                <field name="user_id" string="By" optional="hide"/>
+                <button
+                    name="action_return_this_stock"
+                    type="object"
+                    string="Return this stock"
+                    class="btn-secondary"
+                    invisible="not can_return_stock"
+                />
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_stock_receive_history_form" model="ir.ui.view">
+        <field name="name">avea.stock.receive.history.form</field>
+        <field name="model">avea.stock.receive</field>
+        <field name="priority">30</field>
+        <field name="arch" type="xml">
+            <form string="Receive history" create="false" delete="false" edit="false" class="o_avea_workspace o_avea_workspace--stock">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="can_return_stock" invisible="1"/>
+                    <field name="bill_id" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock history</span>
+                            <h1 class="o_avea_workspace_title">Stock received</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                <field name="display_name" nolabel="1" readonly="1" class="oe_inline"/>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="o_avea_workspace_info_grid">
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Supplier</span>
+                            <field name="partner_id" nolabel="1" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Invoice number</span>
+                            <field name="invoice_number" nolabel="1" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Receipt</span>
+                            <field name="picking_id" nolabel="1" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Date received</span>
+                            <field name="received_date" nolabel="1" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Payment</span>
+                            <field name="payment_status" nolabel="1" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item" invisible="not supplier_credit_applied">
+                            <span class="o_avea_workspace_info_label">Supplier credit applied</span>
+                            <field name="supplier_credit_applied" nolabel="1" widget="monetary" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item" invisible="not bill_residual">
+                            <span class="o_avea_workspace_info_label">Bill balance</span>
+                            <field name="bill_residual" nolabel="1" widget="monetary" readonly="1"/>
+                        </div>
+                    </div>
+                    <h2 class="o_avea_workspace_section_title">Products received</h2>
+                    <div class="o_avea_stock_list_surface">
+                        <field name="line_ids" nolabel="1" readonly="1">
+                            <list create="false" delete="false" edit="false">
+                                <field name="product_id"/>
+                                <field name="quantity"/>
+                                <field name="price_unit" string="EX-tax cost"/>
+                                <field name="price_total" widget="monetary"/>
+                            </list>
+                        </field>
+                    </div>
+                    <div class="o_avea_stock_footer">
+                        <button
+                            name="action_return_this_stock"
+                            type="object"
+                            string="Return this stock"
+                            class="btn-primary"
+                            invisible="not can_return_stock"
+                        />
+                        <button
+                            name="action_view_bill"
+                            type="object"
+                            string="View vendor bill"
+                            class="btn-secondary"
+                            invisible="not bill_id"
+                        />
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_stock_receive_history" model="ir.actions.act_window">
+        <field name="name">Receive history</field>
+        <field name="res_model">avea.stock.receive</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_stock_receive_history_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_stock_receive_history_form')})]"/>
+        <field name="domain">[('state', '=', 'done')]</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+    <record id="view_avea_stock_return_history_list" model="ir.ui.view">
+        <field name="name">avea.stock.return.history.list</field>
+        <field name="model">avea.stock.return.history</field>
+        <field name="arch" type="xml">
+            <list string="Return history" create="false" delete="false" class="o_avea_stock_history_list">
+                <field name="currency_id" column_invisible="True"/>
+                <field name="return_date"/>
+                <field name="partner_id" string="Supplier"/>
+                <field name="invoice_number" string="Invoice"/>
+                <field name="receipt_picking_id" string="Receipt"/>
+                <field name="return_picking_id" string="Return transfer" optional="show"/>
+                <field name="product_count" string="Products"/>
+                <field name="quantity_total" string="Qty returned"/>
+                <field name="credit_total" string="Credit" widget="monetary" optional="show"/>
+                <field name="credit_residual" string="Credit open" widget="monetary"/>
+                <field name="user_id" string="By" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_stock_return_history_form" model="ir.ui.view">
+        <field name="name">avea.stock.return.history.form</field>
+        <field name="model">avea.stock.return.history</field>
+        <field name="arch" type="xml">
+            <form string="Return history" create="false" delete="false" edit="false" class="o_avea_workspace o_avea_workspace--stock">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock history</span>
+                            <h1 class="o_avea_workspace_title">Stock returned</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                <field name="summary" nolabel="1" readonly="1" class="oe_inline"/>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="o_avea_workspace_info_grid">
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Supplier</span>
+                            <field name="partner_id" nolabel="1" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Supplier invoice</span>
+                            <field name="invoice_number" nolabel="1" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Return date</span>
+                            <field name="return_date" nolabel="1" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Credit note total</span>
+                            <field name="credit_total" nolabel="1" widget="monetary" readonly="1"/>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <span class="o_avea_workspace_info_label">Credit still available</span>
+                            <field name="credit_residual" nolabel="1" widget="monetary" readonly="1"/>
+                        </div>
+                    </div>
+                    <h2 class="o_avea_workspace_section_title">Products returned</h2>
+                    <div class="o_avea_stock_list_surface">
+                        <field name="line_ids" nolabel="1" readonly="1">
+                            <list create="false" delete="false" edit="false">
+                                <field name="product_id"/>
+                                <field name="quantity"/>
+                            </list>
+                        </field>
+                    </div>
+                    <div class="o_avea_stock_footer">
+                        <button
+                            name="action_open_original_receipt"
+                            type="object"
+                            string="Original receipt"
+                            class="btn-secondary"
+                        />
+                        <button
+                            name="action_open_return_transfer"
+                            type="object"
+                            string="Return transfer"
+                            class="btn-secondary"
+                            invisible="not return_picking_id"
+                        />
+                        <button
+                            name="action_open_credit_note"
+                            type="object"
+                            string="Vendor credit note"
+                            class="btn-secondary"
+                            invisible="not credit_id"
+                        />
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_stock_return_history" model="ir.actions.act_window">
+        <field name="name">Return history</field>
+        <field name="res_model">avea.stock.return.history</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'create': False}</field>
+    </record>
+
+</odoo>

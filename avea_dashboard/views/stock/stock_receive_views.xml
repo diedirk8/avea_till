@@ -16,6 +16,11 @@
                     <field name="bill_id" invisible="1"/>
                     <field name="show_confirmation" invisible="1"/>
                     <field name="user_id" invisible="1"/>
+                    <field name="supplier_credit_available" invisible="1"/>
+                    <field name="has_supplier_credit" invisible="1"/>
+                    <field name="can_return_stock" invisible="1"/>
+                    <field name="supplier_credit_applied" invisible="1"/>
+                    <field name="bill_residual" invisible="1"/>
 
                     <div class="o_avea_stock_capture" invisible="show_confirmation">
                     <div class="o_avea_workspace_hero">
@@ -254,6 +259,14 @@
                                     <field name="mark_as_paid" nolabel="1"/>
                                     <span class="o_avea_workspace_info_label">Mark as Paid</span>
                                 </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_check_row" invisible="not has_supplier_credit">
+                                    <field name="use_supplier_credit" nolabel="1"/>
+                                    <span class="o_avea_workspace_info_label">Apply supplier credit</span>
+                                </div>
+                                <div class="o_avea_workspace_info_item" invisible="not has_supplier_credit">
+                                    <span class="o_avea_workspace_info_label">Credit available</span>
+                                    <field name="supplier_credit_available" nolabel="1" widget="monetary" readonly="1"/>
+                                </div>
                                 <div class="o_avea_workspace_info_item" invisible="not mark_as_paid">
                                     <span class="o_avea_workspace_info_label">Paid From</span>
                                     <field
@@ -265,7 +278,7 @@
                                 </div>
                                 <div class="o_avea_stock_payment_hint">
                                     <i class="fa fa-info-circle" title="Payment information" aria-hidden="true"/>
-                                    <span>If paid, a payment will be recorded against the vendor bill after receiving stock.</span>
+                                    <span>Supplier credit from returns is applied first. Any remainder can be marked as paid from cash or bank.</span>
                                 </div>
                             </div>
                         </div>
@@ -362,14 +375,27 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="o_avea_stock_panel o_avea_stock_card--compact o_avea_stock_status o_avea_stock_status--unpaid" invisible="mark_as_paid">
+                        <div class="o_avea_stock_panel o_avea_stock_card--compact o_avea_stock_status o_avea_stock_status--unpaid" invisible="mark_as_paid or supplier_credit_applied">
                             <div class="o_avea_workspace_info_item">
                                 <span class="o_avea_workspace_info_label">Payment</span>
                                 <span class="o_avea_stock_status_value">Unpaid</span>
                             </div>
                         </div>
+                        <div class="o_avea_stock_panel o_avea_stock_card--compact" invisible="not supplier_credit_applied and not payment_status">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Payment summary</span>
+                                <field name="payment_status" nolabel="1" readonly="1"/>
+                            </div>
+                        </div>
 
                         <div class="o_avea_stock_footer o_avea_stock_actions--confirmation">
+                            <button
+                                name="action_return_this_stock"
+                                type="object"
+                                string="Return this stock"
+                                class="btn-secondary"
+                                invisible="not can_return_stock"
+                            />
                             <button
                                 name="action_done"
                                 type="object"

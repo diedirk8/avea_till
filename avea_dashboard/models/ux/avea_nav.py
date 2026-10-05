@@ -94,6 +94,14 @@ class AveaNavMixin(models.AbstractModel):
                         "label": "Return Stock",
                         "menu_xmlid": "avea_till.menu_avea_stock_return",
                     },
+                    {
+                        "label": "Receive history",
+                        "menu_xmlid": "avea_till.menu_avea_stock_receive_history",
+                    },
+                    {
+                        "label": "Return history",
+                        "menu_xmlid": "avea_till.menu_avea_stock_return_history",
+                    },
                 ],
             },
             {

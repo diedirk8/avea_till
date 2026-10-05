@@ -200,8 +200,7 @@ class AveaStockReturn(models.TransientModel):
         return move.product_uom.round(quantity)
 
     @api.model
-    def action_open_return(self):
-        wizard = self.create({})
+    def _avea_return_form_action(self, wizard):
         view_id = self.env.ref("avea_till.view_avea_stock_return_form").id
         return {
             "type": "ir.actions.act_window",
@@ -215,6 +214,23 @@ class AveaStockReturn(models.TransientModel):
             "context": {"clear_breadcrumbs": True},
         }
 
+    @api.model
+    def action_open_return(self):
+        wizard = self.create({})
+        return self._avea_return_form_action(wizard)
+
+    @api.model
+    def action_open_return_for_picking(self, picking):
+        wizard = self.create(
+            {
+                "picking_id": picking.id,
+                "company_id": picking.company_id.id,
+                "return_date": fields.Date.context_today(self),
+            }
+        )
+        wizard._onchange_picking_id()
+        return self._avea_return_form_action(wizard)
+
     def action_open_receive(self):
         return self.env["avea.stock.receive"].action_open_receive()
 
@@ -225,7 +241,34 @@ class AveaStockReturn(models.TransientModel):
         return_picking = self._avea_create_return_picking(lines)
         self._avea_complete_picking(return_picking, date_done=self.return_date)
         credit = self._avea_create_supplier_credit(lines)
+        self._avea_create_return_history(lines, return_picking, credit)
         return self._avea_success(return_picking, credit)
+
+    def _avea_create_return_history(self, lines, return_picking, credit):
+        self.ensure_one()
+        self.env["avea.stock.return.history"].sudo().create(
+            {
+                "company_id": self.company_id.id,
+                "currency_id": self.currency_id.id,
+                "user_id": self.env.user.id,
+                "partner_id": (self.partner_id or self.picking_id.partner_id).id,
+                "receipt_picking_id": self.picking_id.id,
+                "return_picking_id": return_picking.id,
+                "credit_id": credit.id if credit else False,
+                "invoice_number": self.invoice_number,
+                "return_date": self.return_date,
+                "line_ids": [
+                    Command.create(
+                        {
+                            "product_id": line.product_id.id,
+                            "quantity": line.quantity,
+                            "move_id": line.move_id.id,
+                        }
+                    )
+                    for line in lines
+                ],
+            }
+        )
 
     def _avea_sync_return_lines_from_picking(self):
         """Keep user quantities but ensure every line is tied to a move (and product)."""

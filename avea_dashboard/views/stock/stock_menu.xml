@@ -50,4 +50,22 @@
         sequence="10"
     />
 
+    <menuitem
+        id="menu_avea_stock_receive_history"
+        name="Receive history"
+        parent="menu_avea_stock"
+        action="action_avea_stock_receive_history"
+        groups="avea_till.group_avea_manager"
+        sequence="12"
+    />
+
+    <menuitem
+        id="menu_avea_stock_return_history"
+        name="Return history"
+        parent="menu_avea_stock"
+        action="action_avea_stock_return_history"
+        groups="avea_till.group_avea_manager"
+        sequence="13"
+    />
+
 </odoo>

@@ -2,6 +2,7 @@
 from . import test_stock_receive_charges
 from . import test_stock_receive_pricing
 from . import test_stock_return
+from . import test_stock_history
 from . import test_product_pricing_tax
 from . import test_stock_take
 from . import test_sales_ledger

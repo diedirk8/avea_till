@@ -1,6 +1,6 @@
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools.float_utils import float_compare
+from odoo.tools.float_utils import float_compare, float_is_zero
 
 from .stock_mixin import AVEA_RECEIVE_ORIGIN, AVEA_SUPPLIER_COST_PRECISION
 
@@ -424,6 +424,43 @@ class AveaStockReceive(models.Model):
     mark_as_paid = fields.Boolean(
         string="Mark as Paid",
     )
+    use_supplier_credit = fields.Boolean(
+        string="Apply supplier credit",
+        help="Use open vendor credit notes from returns against this bill before paying cash or bank.",
+    )
+    supplier_credit_available = fields.Monetary(
+        string="Supplier credit available",
+        currency_field="currency_id",
+        compute="_compute_supplier_credit_available",
+    )
+    has_supplier_credit = fields.Boolean(
+        compute="_compute_supplier_credit_available",
+    )
+    supplier_credit_applied = fields.Monetary(
+        string="Supplier credit applied",
+        currency_field="currency_id",
+        readonly=True,
+        copy=False,
+    )
+    purchase_order_id = fields.Many2one(
+        "purchase.order",
+        string="Purchase order",
+        readonly=True,
+        copy=False,
+    )
+    picking_id = fields.Many2one(
+        "stock.picking",
+        string="Receipt",
+        readonly=True,
+        copy=False,
+    )
+    can_return_stock = fields.Boolean(
+        compute="_compute_can_return_stock",
+    )
+    bill_residual = fields.Monetary(
+        related="bill_id.amount_residual",
+        currency_field="currency_id",
+    )
     paid_from_journal_id = fields.Many2one(
         "account.journal",
         string="Paid From",
@@ -536,16 +573,35 @@ class AveaStockReceive(models.Model):
             receive.product_count = len(lines)
             receive.quantity_total = sum(lines.mapped("quantity"))
 
-    @api.depends("mark_as_paid", "paid_from_journal_id")
+    @api.depends(
+        "mark_as_paid",
+        "paid_from_journal_id",
+        "supplier_credit_applied",
+        "bill_id",
+        "bill_id.amount_residual",
+        "bill_id.payment_state",
+    )
     def _compute_payment_status(self):
         for receive in self:
+            parts = []
+            if receive.supplier_credit_applied:
+                parts.append(
+                    _("Credit applied %(amount)s", amount=receive.supplier_credit_applied)
+                )
+            bill = receive.bill_id
+            if bill and not bill.currency_id.is_zero(bill.amount_residual):
+                parts.append(_("Balance due %(amount)s", amount=bill.amount_residual))
+            elif bill and receive.supplier_credit_applied and not receive.mark_as_paid:
+                parts.append(_("Paid with supplier credit"))
             if receive.mark_as_paid:
                 journal = receive.paid_from_journal_id
-                receive.payment_status = (
+                parts.append(
                     _("Paid from %s") % journal.display_name if journal else _("Paid")
                 )
-            else:
+            if not parts:
                 receive.payment_status = _("Unpaid")
+            else:
+                receive.payment_status = " · ".join(parts)
 
     @api.depends("amount_total", "invoice_total", "currency_id")
     def _compute_totals_mismatch(self):
@@ -663,6 +719,80 @@ class AveaStockReceive(models.Model):
             receive._avea_repair_false_done()
         return receive._avea_receive_action(receive)
 
+    @api.model
+    def action_open_receive_history(self):
+        view_id = self.env.ref("avea_till.view_avea_stock_receive_history_list").id
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Receive history"),
+            "res_model": self._name,
+            "view_mode": "list,form",
+            "views": [(view_id, "list"), (False, "form")],
+            "domain": [("state", "=", "done")],
+            "target": "main",
+            "context": {"clear_breadcrumbs": True, "create": False},
+        }
+
+    def _avea_get_receipt_picking(self):
+        self.ensure_one()
+        if self.picking_id:
+            return self.picking_id
+        order = self.purchase_order_id
+        if not order and self.bill_id:
+            order = self.bill_id.invoice_line_ids.purchase_line_id.order_id[:1]
+        if order:
+            picking = order.picking_ids.filtered(
+                lambda picking: picking.picking_type_code == "incoming"
+                and picking.state == "done"
+            )[:1]
+            if picking:
+                return picking
+        if self.invoice_number and self.partner_id:
+            return self.env["stock.picking"]._avea_find_receipt_for_return(
+                self.invoice_number,
+                partner=self.partner_id,
+                company=self.company_id,
+            )
+        return self.env["stock.picking"]
+
+    @api.depends("state", "picking_id", "purchase_order_id", "bill_id", "invoice_number")
+    def _compute_can_return_stock(self):
+        Return = self.env["avea.stock.return"]
+        for receive in self:
+            receive.can_return_stock = False
+            if receive.state != "done":
+                continue
+            picking = receive._avea_get_receipt_picking()
+            if not picking or picking.state != "done":
+                continue
+            for move in picking.move_ids.filtered(lambda move: move.state == "done"):
+                available = Return._avea_qty_available_to_return(move)
+                if not float_is_zero(available, precision_rounding=move.product_uom.rounding):
+                    receive.can_return_stock = True
+                    break
+
+    @api.depends("partner_id", "effective_partner_id", "company_id")
+    def _compute_supplier_credit_available(self):
+        mixin = self.env["avea.stock.mixin"]
+        for receive in self:
+            partner = receive.effective_partner_id or receive.partner_id
+            available = (
+                mixin._avea_supplier_credit_available(partner, receive.company_id)
+                if partner
+                else 0.0
+            )
+            receive.supplier_credit_available = available
+            receive.has_supplier_credit = available > 0.0
+
+    def action_return_this_stock(self):
+        self.ensure_one()
+        picking = self._avea_get_receipt_picking()
+        if not picking:
+            raise UserError(
+                _("No stock receipt was found for this receive. Open the receipt from Inventory.")
+            )
+        return self.env["avea.stock.return"].action_open_return_for_picking(picking)
+
     def action_open_return(self):
         return self.env["avea.stock.return"].action_open_return()
 
@@ -759,6 +889,11 @@ class AveaStockReceive(models.Model):
         bill = self._avea_create_vendor_bill(order)
         if self.invoice_document:
             self._avea_attach_invoice(bill)
+        credit_applied = 0.0
+        if self.use_supplier_credit:
+            credit_applied = mixin._avea_apply_supplier_credits_to_bill(
+                bill, partner, self.company_id
+            )
         if self.mark_as_paid:
             self._avea_pay_vendor_bill(
                 bill,
@@ -768,7 +903,13 @@ class AveaStockReceive(models.Model):
                 self.invoice_date,
                 self.invoice_number,
             )
-        return self._avea_success(partner, order, bill)
+        return self._avea_success(
+            partner,
+            order,
+            bill,
+            picking=picking,
+            credit_applied=credit_applied,
+        )
 
     def _avea_apply_product_cost_updates(self):
         """Pricing updates are applied in the pricing popup; keep for compatibility."""
@@ -1025,13 +1166,16 @@ class AveaStockReceive(models.Model):
             )
         return journal
 
-    def _avea_success(self, partner, order, bill):
+    def _avea_success(self, partner, order, bill, picking=False, credit_applied=0.0):
         self.write(
             {
                 "state": "done",
                 "bill_id": bill.id,
                 "partner_id": partner.id,
                 "add_new_supplier": False,
+                "purchase_order_id": order.id,
+                "picking_id": picking.id if picking else False,
+                "supplier_credit_applied": credit_applied,
             }
         )
         return self._avea_confirmation_action()
