@@ -1,4 +1,5 @@
 from . import stock_mixin
+from . import stock_picking
 from . import stock_receive
 from . import stock_receive_charge
 from . import stock_receive_pricing_wizard

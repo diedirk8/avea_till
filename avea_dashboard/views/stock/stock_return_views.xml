@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
+    <record id="view_stock_picking_avea_return_search" model="ir.ui.view">
+        <field name="name">stock.picking.avea.return.search</field>
+        <field name="model">stock.picking</field>
+        <field name="arch" type="xml">
+            <search string="Receipts">
+                <field name="name" string="Receipt"/>
+                <field name="avea_supplier_invoice_ref" string="Supplier invoice"/>
+                <field name="partner_id" string="Supplier"/>
+                <field name="origin"/>
+            </search>
+        </field>
+    </record>
+
     <record id="view_avea_stock_return_form" model="ir.ui.view">
         <field name="name">avea.stock.return.form</field>
         <field name="model">avea.stock.return</field>
@@ -22,13 +35,36 @@
 
                     <div class="o_avea_stock_panel">
                         <h2 class="o_avea_workspace_section_title">Receipt</h2>
+                        <p class="o_avea_workspace_section_subtitle mb-3">
+                            Use the supplier invoice number, or search the receipt list by invoice, supplier, or WH/IN number.
+                        </p>
                         <div class="o_avea_workspace_info_grid o_avea_stock_side_grid">
+                            <div class="o_avea_workspace_info_item o_avea_stock_return_lookup">
+                                <span class="o_avea_workspace_info_label">Supplier invoice number</span>
+                                <div class="d-flex flex-wrap gap-2 align-items-start">
+                                    <field name="lookup_invoice_number" nolabel="1" class="flex-grow-1" placeholder="e.g. INV0050795"/>
+                                    <button
+                                        name="action_find_receipt_by_invoice"
+                                        type="object"
+                                        string="Find receipt"
+                                        class="btn btn-secondary"
+                                    />
+                                </div>
+                            </div>
                             <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Supplier (optional)</span>
+                                <field
+                                    name="lookup_partner_id"
+                                    nolabel="1"
+                                    options="{'no_create': True}"
+                                />
+                            </div>
+                            <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
                                 <span class="o_avea_workspace_info_label">Receipt</span>
                                 <field
                                     name="picking_id"
                                     nolabel="1"
-                                    options="{'no_create': True, 'no_open': True}"
+                                    options="{'no_create': True, 'no_open': True, 'search_view_ref': 'avea_till.view_stock_picking_avea_return_search'}"
                                 />
                             </div>
                             <div class="o_avea_workspace_info_item">

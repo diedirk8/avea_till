@@ -68,6 +68,15 @@ class AveaStockReturn(models.TransientModel):
         required=True,
         default=lambda self: self.env.company.currency_id,
     )
+    lookup_invoice_number = fields.Char(
+        string="Supplier invoice number",
+        help="Type the invoice number from the supplier and click Find receipt.",
+    )
+    lookup_partner_id = fields.Many2one(
+        "res.partner",
+        string="Supplier (optional)",
+        help="Narrow the search when several suppliers use similar invoice numbers.",
+    )
     picking_id = fields.Many2one(
         "stock.picking",
         string="Receipt",
@@ -113,6 +122,27 @@ class AveaStockReturn(models.TransientModel):
                 continue
             order = picking.move_ids.purchase_line_id.order_id[:1]
             wizard.invoice_number = order.partner_ref or picking.origin or picking.name
+
+    def action_find_receipt_by_invoice(self):
+        self.ensure_one()
+        if not (self.lookup_invoice_number or "").strip():
+            raise ValidationError(_("Enter the supplier invoice number to search."))
+        picking = self.env["stock.picking"]._avea_find_receipt_for_return(
+            self.lookup_invoice_number,
+            partner=self.lookup_partner_id,
+            company=self.company_id,
+        )
+        if not picking:
+            raise ValidationError(
+                _(
+                    "No received stock was found for invoice “%(invoice)s”. "
+                    "Check the number or pick the receipt from the list.",
+                    invoice=self.lookup_invoice_number.strip(),
+                )
+            )
+        self.picking_id = picking
+        self._onchange_picking_id()
+        return False
 
     @api.onchange("picking_id")
     def _onchange_picking_id(self):
