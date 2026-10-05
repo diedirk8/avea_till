@@ -64,6 +64,7 @@
                                 <field
                                     name="picking_id"
                                     nolabel="1"
+                                    context="{'avea_return_stock_receipt_order': 1}"
                                     options="{'no_create': True, 'no_open': True, 'search_view_ref': 'avea_till.view_stock_picking_avea_return_search'}"
                                 />
                             </div>

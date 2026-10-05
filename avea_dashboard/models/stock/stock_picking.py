@@ -6,6 +6,12 @@ class StockPicking(models.Model):
 
     _rec_names_search = ["name", "avea_supplier_invoice_ref", "partner_id.name", "origin"]
 
+    @api.model
+    def search(self, domain, offset=0, limit=None, order=None):
+        if order is None and self.env.context.get("avea_return_stock_receipt_order"):
+            order = "date_done desc, id desc"
+        return super().search(domain, offset=offset, limit=limit, order=order)
+
     avea_supplier_invoice_ref = fields.Char(
         string="Supplier invoice",
         compute="_compute_avea_supplier_invoice_ref",
