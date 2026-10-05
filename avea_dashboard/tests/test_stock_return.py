@@ -57,6 +57,23 @@ class TestAveaStockReturn(TransactionCase):
         self.assertTrue(line.move_id)
         self.assertEqual(line.product_id, self.product)
 
+    def test_return_stock_receipt_picker_orders_newest_first(self):
+        first = self._create_done_incoming_picking(qty=1.0)
+        second = self._create_done_incoming_picking(qty=2.0)
+        pairs = (
+            self.env["stock.picking"]
+            .with_context(avea_return_stock_receipt_order=True)
+            .name_search(
+                "",
+                [
+                    ("picking_type_code", "=", "incoming"),
+                    ("state", "=", "done"),
+                    ("id", "in", [first.id, second.id]),
+                ],
+            )
+        )
+        self.assertEqual(pairs[0][0], second.id)
+
     def test_find_receipt_by_supplier_invoice_number(self):
         warehouse = self.env["stock.warehouse"].search(
             [("company_id", "=", self.env.company.id)], limit=1

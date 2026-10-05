@@ -6,11 +6,43 @@ class StockPicking(models.Model):
 
     _rec_names_search = ["name", "avea_supplier_invoice_ref", "partner_id.name", "origin"]
 
+    _AVEA_RETURN_RECEIPT_ORDER = "date_done desc, id desc"
+
+    @api.model
+    def _avea_return_stock_receipt_order(self):
+        if self.env.context.get("avea_return_stock_receipt_order"):
+            return self._AVEA_RETURN_RECEIPT_ORDER
+        return None
+
     @api.model
     def search(self, domain, offset=0, limit=None, order=None):
-        if order is None and self.env.context.get("avea_return_stock_receipt_order"):
-            order = "date_done desc, id desc"
+        receipt_order = self._avea_return_stock_receipt_order()
+        if receipt_order and not order:
+            order = receipt_order
         return super().search(domain, offset=offset, limit=limit, order=order)
+
+    @api.model
+    def search_fetch(self, domain, field_names=None, offset=0, limit=None, order=None):
+        receipt_order = self._avea_return_stock_receipt_order()
+        if receipt_order and not order:
+            order = receipt_order
+        return super().search_fetch(
+            domain, field_names, offset=offset, limit=limit, order=order
+        )
+
+    @api.model
+    def web_search_read(self, domain, specification, offset=0, limit=None, order=None, count_limit=None):
+        receipt_order = self._avea_return_stock_receipt_order()
+        if receipt_order and not order:
+            order = receipt_order
+        return super().web_search_read(
+            domain,
+            specification,
+            offset=offset,
+            limit=limit,
+            order=order,
+            count_limit=count_limit,
+        )
 
     avea_supplier_invoice_ref = fields.Char(
         string="Supplier invoice",
