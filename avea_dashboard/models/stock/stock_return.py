@@ -30,11 +30,15 @@ class AveaStockReturnLine(models.TransientModel):
     qty_received = fields.Float(
         string="Received",
         digits="Product Unit",
+        compute="_compute_return_qty_from_move",
+        store=True,
         readonly=True,
     )
     qty_available = fields.Float(
         string="Available to return",
         digits="Product Unit",
+        compute="_compute_return_qty_from_move",
+        store=True,
         readonly=True,
     )
     quantity = fields.Float(
@@ -49,6 +53,25 @@ class AveaStockReturnLine(models.TransientModel):
     def _compute_product_id(self):
         for line in self:
             line.product_id = line.move_id.product_id
+
+    @api.depends(
+        "move_id",
+        "move_id.quantity",
+        "move_id.state",
+        "move_id.move_dest_ids.quantity",
+        "move_id.move_dest_ids.state",
+        "move_id.move_dest_ids.origin_returned_move_id",
+    )
+    def _compute_return_qty_from_move(self):
+        Return = self.env["avea.stock.return"]
+        for line in self:
+            move = line.move_id
+            if not move or move.state != "done":
+                line.qty_received = 0.0
+                line.qty_available = 0.0
+                continue
+            line.qty_received = move.quantity
+            line.qty_available = Return._avea_qty_available_to_return(move)
 
 
 class AveaStockReturn(models.TransientModel):
@@ -159,8 +182,6 @@ class AveaStockReturn(models.TransientModel):
                     {
                         "move_id": move.id,
                         "product_id": move.product_id.id,
-                        "qty_received": move.quantity,
-                        "qty_available": available,
                         "quantity": 0.0,
                     }
                 )
@@ -221,7 +242,7 @@ class AveaStockReturn(models.TransientModel):
         )
         if not valid_move_ids:
             return
-        if not qty_by_move or any(
+        if any(
             line.move_id and line.move_id.id not in valid_move_ids for line in self.line_ids
         ):
             self._onchange_picking_id()
@@ -243,11 +264,12 @@ class AveaStockReturn(models.TransientModel):
             raise ValidationError(_("Enter the quantity to return for at least one product."))
         for line in lines:
             rounding = line.move_id.product_uom.rounding
-            if float_compare(line.quantity, line.qty_available, precision_rounding=rounding) > 0:
+            available = self._avea_qty_available_to_return(line.move_id)
+            if float_compare(line.quantity, available, precision_rounding=rounding) > 0:
                 raise ValidationError(
                     _(
                         "You can return at most %(available)s of %(product)s.",
-                        available=line.qty_available,
+                        available=available,
                         product=line.product_id.display_name,
                     )
                 )

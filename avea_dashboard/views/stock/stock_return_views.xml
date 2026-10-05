@@ -96,7 +96,7 @@
                         <div class="o_avea_stock_list_surface">
                             <field name="line_ids" nolabel="1">
                                 <list editable="bottom" create="false" delete="false" class="o_avea_stock_return_list">
-                                    <field name="move_id" column_invisible="True"/>
+                                    <field name="move_id" column_invisible="True" force_save="1"/>
                                     <field name="currency_id" column_invisible="True"/>
                                     <field name="product_id" readonly="1" force_save="1"/>
                                     <field name="qty_received"/>

@@ -118,3 +118,17 @@ class TestAveaStockReturn(TransactionCase):
         line = wizard.line_ids[:1]
         line.write({"quantity": 3.0})
         self.assertEqual(line.product_id, self.product)
+
+    def test_return_validates_quantity_against_move_after_quantity_only_save(self):
+        """Readonly qty columns are not always persisted from the UI; validation uses the move."""
+        picking = self._create_done_incoming_picking(qty=10.0)
+        wizard = self.env["avea.stock.return"].create(
+            {"picking_id": picking.id, "return_date": "2026-10-05"}
+        )
+        wizard._onchange_picking_id()
+        line = wizard.line_ids[:1]
+        line.write({"quantity": 3.0})
+        self.assertGreaterEqual(line.qty_available, 3.0)
+        lines = wizard._avea_return_lines()
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines[0].quantity, 3.0)
