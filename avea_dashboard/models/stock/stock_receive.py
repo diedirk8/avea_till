@@ -858,7 +858,90 @@ class AveaStockReceive(models.Model):
         return self.env["avea.stock.receive"].action_open_receive()
 
     def _avea_archive_completed(self):
-        self.filtered(lambda receive: receive.show_confirmation).unlink()
+        """Leave completed receives in the database for Receive history."""
+
+    @api.model
+    def _avea_backfill_receive_history(self):
+        """Recreate history rows from Avea purchase orders (e.g. after old confirmation deletes)."""
+        Purchase = self.env["purchase.order"].sudo()
+        orders = Purchase.search([("origin", "=", AVEA_RECEIVE_ORIGIN)])
+        created = 0
+        for order in orders:
+            if self._avea_find_history_for_order(order):
+                continue
+            bill = order.invoice_ids.filtered(
+                lambda move: move.move_type == "in_invoice" and move.state == "posted"
+            )[:1]
+            picking = order.picking_ids.filtered(
+                lambda pick: pick.picking_type_code == "incoming" and pick.state == "done"
+            )[:1]
+            lines = order.order_line.filtered(
+                lambda line: not line.display_type and line.product_id
+            )
+            if not lines:
+                continue
+            invoice_number = (order.partner_ref or bill.ref or order.name or "").strip()
+            invoice_date = (
+                bill.invoice_date
+                if bill
+                else (order.date_order.date() if order.date_order else fields.Date.today())
+            )
+            received_date = (
+                picking.date_done.date()
+                if picking and picking.date_done
+                else invoice_date
+            )
+            line_commands = [
+                Command.create(
+                    {
+                        "product_id": line.product_id.id,
+                        "quantity": line.product_qty,
+                        "price_unit": line.price_unit,
+                        "discount": line.discount or 0.0,
+                    }
+                )
+                for line in lines
+            ]
+            self.sudo().create(
+                {
+                    "state": "done",
+                    "user_id": order.user_id.id or self.env.user.id,
+                    "company_id": order.company_id.id,
+                    "currency_id": order.currency_id.id,
+                    "partner_id": order.partner_id.id,
+                    "invoice_number": invoice_number,
+                    "invoice_date": invoice_date,
+                    "received_date": received_date,
+                    "purchase_order_id": order.id,
+                    "picking_id": picking.id if picking else False,
+                    "bill_id": bill.id if bill else False,
+                    "line_ids": line_commands,
+                }
+            )
+            created += 1
+        return created
+
+    @api.model
+    def _avea_find_history_for_order(self, order):
+        domain = [("state", "=", "done"), ("purchase_order_id", "=", order.id)]
+        if self.sudo().search_count(domain):
+            return True
+        bills = order.invoice_ids.ids
+        if bills and self.sudo().search_count([("state", "=", "done"), ("bill_id", "in", bills)]):
+            return True
+        ref = (order.partner_ref or "").strip()
+        if ref:
+            return bool(
+                self.sudo().search_count(
+                    [
+                        ("state", "=", "done"),
+                        ("partner_id", "=", order.partner_id.id),
+                        ("invoice_number", "=", ref),
+                    ],
+                    limit=1,
+                )
+            )
+        return False
 
     def action_view_bill(self):
         self.ensure_one()

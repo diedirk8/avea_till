@@ -81,3 +81,54 @@ class TestAveaStockHistory(TransactionCase):
         )
         self.assertEqual(len(history), 1)
         self.assertEqual(history.line_ids.quantity, 2.0)
+
+    def test_done_receive_not_deleted_on_archive(self):
+        picking = self._create_done_incoming_picking()
+        receive = self.env["avea.stock.receive"].create(
+            {
+                "state": "done",
+                "partner_id": self.partner.id,
+                "invoice_number": "KEEP-001",
+                "invoice_date": "2026-10-05",
+                "received_date": "2026-10-05",
+                "picking_id": picking.id,
+            }
+        )
+        receive_id = receive.id
+        receive._avea_archive_completed()
+        self.assertTrue(self.env["avea.stock.receive"].browse(receive_id).exists())
+
+    def test_backfill_receive_history_from_avea_po(self):
+        warehouse = self.env["stock.warehouse"].search(
+            [("company_id", "=", self.env.company.id)], limit=1
+        )
+        po = self.env["purchase.order"].create(
+            {
+                "partner_id": self.partner.id,
+                "partner_ref": "BACKFILL-INV",
+                "origin": "Avea Receive Stock",
+                "picking_type_id": warehouse.in_type_id.id,
+            }
+        )
+        self.env["purchase.order.line"].create(
+            {
+                "order_id": po.id,
+                "product_id": self.product.id,
+                "product_qty": 5.0,
+                "price_unit": 10.0,
+            }
+        )
+        po.button_confirm()
+        picking = po.picking_ids[:1]
+        picking.move_ids.quantity = 5.0
+        picking.button_validate()
+        po.action_create_invoice()
+        bill = po.invoice_ids[:1]
+        bill.invoice_date = "2026-10-05"
+        bill.action_post()
+        self.assertEqual(self.env["avea.stock.receive"]._avea_backfill_receive_history(), 1)
+        history = self.env["avea.stock.receive"].search(
+            [("purchase_order_id", "=", po.id), ("state", "=", "done")]
+        )
+        self.assertEqual(len(history), 1)
+        self.assertEqual(history.invoice_number, "BACKFILL-INV")
