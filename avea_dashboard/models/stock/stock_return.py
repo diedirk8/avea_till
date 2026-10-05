@@ -23,7 +23,8 @@ class AveaStockReturnLine(models.TransientModel):
     product_id = fields.Many2one(
         "product.product",
         string="Product",
-        required=True,
+        compute="_compute_product_id",
+        store=True,
         readonly=True,
     )
     qty_received = fields.Float(
@@ -43,6 +44,11 @@ class AveaStockReturnLine(models.TransientModel):
         default=0.0,
     )
     currency_id = fields.Many2one(related="return_id.currency_id")
+
+    @api.depends("move_id", "move_id.product_id")
+    def _compute_product_id(self):
+        for line in self:
+            line.product_id = line.move_id.product_id
 
 
 class AveaStockReturn(models.TransientModel):
@@ -163,17 +169,46 @@ class AveaStockReturn(models.TransientModel):
 
     def action_return_stock(self):
         self.ensure_one()
+        self._avea_sync_return_lines_from_picking()
         lines = self._avea_return_lines()
         return_picking = self._avea_create_return_picking(lines)
         self._avea_complete_picking(return_picking, date_done=self.return_date)
         credit = self._avea_create_supplier_credit(lines)
         return self._avea_success(return_picking, credit)
 
+    def _avea_sync_return_lines_from_picking(self):
+        """Keep user quantities but ensure every line is tied to a move (and product)."""
+        self.ensure_one()
+        if not self.picking_id:
+            return
+        qty_by_move = {
+            line.move_id.id: line.quantity
+            for line in self.line_ids
+            if line.move_id
+        }
+        valid_move_ids = set(
+            self.picking_id.move_ids.filtered(lambda move: move.state == "done").ids
+        )
+        if not valid_move_ids:
+            return
+        if not qty_by_move or any(
+            line.move_id and line.move_id.id not in valid_move_ids for line in self.line_ids
+        ):
+            self._onchange_picking_id()
+            for line in self.line_ids:
+                if line.move_id.id in qty_by_move:
+                    line.quantity = qty_by_move[line.move_id.id]
+            return
+        for line in self.line_ids.filtered(lambda ln: ln.move_id and not ln.product_id):
+            line.product_id = line.move_id.product_id
+
     def _avea_return_lines(self):
         self.ensure_one()
         if not self.picking_id:
             raise ValidationError(_("Choose the receipt to return."))
-        lines = self.line_ids.filtered(lambda line: line.quantity > 0)
+        lines = self.line_ids.filtered(
+            lambda line: line.move_id and line.product_id and line.quantity > 0
+        )
         if not lines:
             raise ValidationError(_("Enter the quantity to return for at least one product."))
         for line in lines:

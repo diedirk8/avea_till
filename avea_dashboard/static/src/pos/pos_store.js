@@ -60,6 +60,8 @@ patch(PosStore.prototype, {
 
     async processServerData() {
         await super.processServerData(...arguments);
+        this.aveaPlatformPricelistByPartnerId =
+            this.config?.avea_sales_platform_pricelist_by_partner_id || {};
         this._aveaNormalizePosConfig();
     },
 
@@ -200,11 +202,104 @@ patch(PosStore.prototype, {
             return this.getPartnerStoreCreditBalance(partner);
         }
     },
-    setPartnerToCurrentOrder(partner) {
+    async setPartnerToCurrentOrder(partner) {
+        if (partner?.id) {
+            await this._aveaPreparePlatformPartner(partner);
+        }
         super.setPartnerToCurrentOrder(...arguments);
         if (partner?.id) {
+            this._aveaApplyPlatformPricelistToOrder(this.getOrder(), partner);
             this.refreshPartnerStoreCreditBalance(partner.id);
         }
+    },
+
+    _aveaPlatformPricelistIdForPartner(partnerId) {
+        const mapping = this.aveaPlatformPricelistByPartnerId || {};
+        return mapping[partnerId] ?? mapping[String(partnerId)];
+    },
+
+    _aveaPartnerPricelistId(partner) {
+        if (!partner) {
+            return null;
+        }
+        const fromPlatform = this._aveaPlatformPricelistIdForPartner(partner.id);
+        if (fromPlatform) {
+            return fromPlatform;
+        }
+        const prop = partner.property_product_pricelist;
+        if (typeof prop === "number") {
+            return prop;
+        }
+        if (Array.isArray(prop)) {
+            return prop[0];
+        }
+        return prop?.id ?? null;
+    },
+
+    _aveaPricelistRecord(pricelistId) {
+        if (!pricelistId) {
+            return false;
+        }
+        const fromConfig = this.config.available_pricelist_ids?.find((pl) => pl.id === pricelistId);
+        if (fromConfig) {
+            return fromConfig;
+        }
+        return this.models["product.pricelist"]?.get(pricelistId) || false;
+    },
+
+    _aveaApplyPlatformPricelistToPartner(partner) {
+        const pricelistId = this._aveaPartnerPricelistId(partner);
+        if (!pricelistId) {
+            return;
+        }
+        const pricelist = this._aveaPricelistRecord(pricelistId);
+        if (!pricelist) {
+            return;
+        }
+        partner.property_product_pricelist = pricelist;
+    },
+
+    _aveaApplyPlatformPricelistToOrder(order, partner) {
+        const pricelistId = this._aveaPartnerPricelistId(partner);
+        if (!pricelistId || !order) {
+            return;
+        }
+        const pricelist = this._aveaPricelistRecord(pricelistId);
+        if (pricelist && order.pricelist_id?.id !== pricelist.id) {
+            order.setPricelist(pricelist);
+        }
+    },
+
+    _aveaPreparePlatformPartnerSync(partner) {
+        this._aveaApplyPlatformPricelistToPartner(partner);
+        this._aveaApplyPlatformPricelistToOrder(this.getOrder(), partner);
+    },
+
+    async _aveaLoadPricelistItemsForLoadedProducts() {
+        const templates = this.models["product.template"]?.getAll() || [];
+        const products = this.models["product.product"]?.getAll() || [];
+        if (!templates.length || !this.session?.id) {
+            return;
+        }
+        const productTmplIds = templates.map((t) => t.id);
+        const productIds = products.map((p) => p.id);
+        const data = await this.data.silentCall(
+            "pos.session",
+            "avea_load_pricelist_items_for_products",
+            [this.session.id, productTmplIds, productIds]
+        );
+        if (data) {
+            this.models.connectNewData(data);
+        }
+    },
+
+    async _aveaPreparePlatformPartner(partner) {
+        const pricelistId = this._aveaPlatformPricelistIdForPartner(partner.id);
+        if (!pricelistId) {
+            return;
+        }
+        await this._aveaLoadPricelistItemsForLoadedProducts();
+        this._aveaPreparePlatformPartnerSync(partner);
     },
 
     filterExcludedProducts(products) {

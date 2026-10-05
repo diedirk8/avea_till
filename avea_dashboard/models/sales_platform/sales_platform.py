@@ -375,6 +375,29 @@ class AveaSalesPlatform(models.Model):
                 platform.pricelist_id = platform._avea_create_pricelist()
             elif not platform.pricelist_id.avea_sales_platform_id:
                 platform.pricelist_id.avea_sales_platform_id = platform.id
+        self._avea_apply_pos_integration()
+
+    def _avea_sync_partner_pricelist(self):
+        """POS uses the customer's property pricelist when a platform is selected."""
+        for platform in self:
+            if not platform.partner_id or not platform.pricelist_id:
+                continue
+            platform.partner_id.with_company(platform.company_id).write(
+                {"property_product_pricelist": platform.pricelist_id.id}
+            )
+
+    def _avea_register_pricelist_on_pos_configs(self):
+        PosConfig = self.env["pos.config"]
+        for platform in self:
+            if not platform.pricelist_id:
+                continue
+            configs = PosConfig.search([("company_id", "=", platform.company_id.id)])
+            for config in configs:
+                config._avea_register_sales_platform_pricelist(platform.pricelist_id)
+
+    def _avea_apply_pos_integration(self):
+        self._avea_sync_partner_pricelist()
+        self._avea_register_pricelist_on_pos_configs()
 
     def action_update_platform_prices(self):
         self.ensure_one()
@@ -503,6 +526,7 @@ class AveaSalesPlatform(models.Model):
         for platform in records:
             if platform.pricelist_id and not platform.pricelist_id.avea_sales_platform_id:
                 platform.pricelist_id.avea_sales_platform_id = platform.id
+        records._avea_ensure_links()
         return records
 
     def write(self, vals):

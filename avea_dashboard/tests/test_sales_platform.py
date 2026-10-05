@@ -39,6 +39,26 @@ class TestAveaSalesPlatform(TransactionCase):
         self.assertEqual(platform.pricelist_id.avea_sales_platform_id, platform)
         self.assertEqual(platform.pricelist_id.company_id, self.company)
 
+    def test_pos_integration_registers_platform_pricelist(self):
+        platform = self._create_platform(name="POS Integration Test")
+        pos_config = self.env["pos.config"].search(
+            [("company_id", "=", self.company.id)], limit=1
+        )
+        if not pos_config:
+            self.skipTest("No POS config on this company.")
+        self.assertTrue(pos_config.use_pricelist)
+        self.assertIn(platform.pricelist_id, pos_config.available_pricelist_ids)
+        self.assertEqual(
+            platform.partner_id.property_product_pricelist,
+            platform.pricelist_id,
+        )
+        pos_config.invalidate_recordset(["avea_sales_platform_pricelist_by_partner_id"])
+        mapping = pos_config.avea_sales_platform_pricelist_by_partner_id
+        self.assertEqual(
+            mapping.get(str(platform.partner_id.id)),
+            platform.pricelist_id.id,
+        )
+
     def test_platform_price_gross_up_without_vat(self):
         platform = self._create_platform(commission_percent=10.0, commission_vat=False, price_rounding_rule="none")
         price = platform._avea_platform_price_from_retail(100.0)

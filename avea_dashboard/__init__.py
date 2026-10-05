@@ -12,6 +12,7 @@ def post_init_hook(env):
     _avea_cash_up_assign_default_groups(env)
     _avea_correct_payment_assign_default_groups(env)
     env["res.users"]._avea_assign_default_roles()
+    env["avea.sales.platform"].search([])._avea_apply_pos_integration()
 
 
 def _avea_credit_assign_default_groups(env):
