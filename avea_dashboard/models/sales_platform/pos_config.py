@@ -16,6 +16,7 @@ class PosConfig(models.Model):
         Platform = self.env["avea.sales.platform"].sudo()
         for config in self:
             mapping = {}
+            Partner = self.env["res.partner"].sudo()
             for platform in Platform.search(
                 [
                     ("active", "=", True),
@@ -24,7 +25,19 @@ class PosConfig(models.Model):
                     ("pricelist_id", "!=", False),
                 ]
             ):
-                mapping[str(platform.partner_id.id)] = platform.pricelist_id.id
+                partner_ids = {platform.partner_id.id}
+                duplicates = Partner.search(
+                    [
+                        ("name", "=", platform.partner_id.name),
+                        ("id", "!=", platform.partner_id.id),
+                        "|",
+                        ("company_id", "=", False),
+                        ("company_id", "=", config.company_id.id),
+                    ]
+                )
+                partner_ids.update(duplicates.ids)
+                for partner_id in partner_ids:
+                    mapping[str(partner_id)] = platform.pricelist_id.id
             config.avea_sales_platform_pricelist_by_partner_id = mapping
 
     @api.model

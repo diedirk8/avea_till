@@ -313,7 +313,23 @@ patch(ProductScreen.prototype, {
     },
 
     getProductDisplayPrice(product) {
-        return product.displayPriceUnit;
+        const order = this.currentOrder;
+        const pricelist = order?.pricelist_id || this.pos.config.pricelist_id;
+        const template = product.product_tmpl_id || product;
+        const variant = product.product_tmpl_id ? product : false;
+        const config = this.pos.config;
+        let amount = template.getPrice(pricelist, 1, 0, false, variant);
+        if (config.iface_tax_included === "total") {
+            const details = template.getTaxDetails({
+                overridedValues: {
+                    price: amount,
+                    pricelist,
+                    fiscalPosition: order?.fiscal_position_id || false,
+                },
+            });
+            amount = details.total_included;
+        }
+        return this.env.utils.formatCurrency(amount, config.currency_id.id);
     },
 
     getStockQuantityLabel(product) {

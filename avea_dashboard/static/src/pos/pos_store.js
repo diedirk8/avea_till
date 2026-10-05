@@ -215,7 +215,21 @@ patch(PosStore.prototype, {
 
     _aveaPlatformPricelistIdForPartner(partnerId) {
         const mapping = this.aveaPlatformPricelistByPartnerId || {};
-        return mapping[partnerId] ?? mapping[String(partnerId)];
+        let pricelistId = mapping[partnerId] ?? mapping[String(partnerId)];
+        if (pricelistId) {
+            return pricelistId;
+        }
+        const partner = this.models?.["res.partner"]?.get(partnerId);
+        if (!partner?.name) {
+            return null;
+        }
+        for (const [mappedPartnerId, mappedPricelistId] of Object.entries(mapping)) {
+            const mappedPartner = this.models["res.partner"].get(Number(mappedPartnerId));
+            if (mappedPartner?.name === partner.name) {
+                return mappedPricelistId;
+            }
+        }
+        return null;
     },
 
     _aveaPartnerPricelistId(partner) {

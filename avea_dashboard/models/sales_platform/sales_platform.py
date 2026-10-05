@@ -379,10 +379,23 @@ class AveaSalesPlatform(models.Model):
 
     def _avea_sync_partner_pricelist(self):
         """POS uses the customer's property pricelist when a platform is selected."""
+        Partner = self.env["res.partner"].sudo()
         for platform in self:
             if not platform.partner_id or not platform.pricelist_id:
                 continue
-            platform.partner_id.with_company(platform.company_id).write(
+            partners = platform.partner_id
+            # Legacy installs often have a duplicate contact (same name) used on POS orders.
+            duplicates = Partner.search(
+                [
+                    ("name", "=", platform.partner_id.name),
+                    ("id", "!=", platform.partner_id.id),
+                    "|",
+                    ("company_id", "=", False),
+                    ("company_id", "=", platform.company_id.id),
+                ]
+            )
+            partners = partners | duplicates
+            partners.with_company(platform.company_id).write(
                 {"property_product_pricelist": platform.pricelist_id.id}
             )
 

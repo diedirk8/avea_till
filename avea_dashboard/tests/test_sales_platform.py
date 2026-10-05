@@ -39,6 +39,28 @@ class TestAveaSalesPlatform(TransactionCase):
         self.assertEqual(platform.pricelist_id.avea_sales_platform_id, platform)
         self.assertEqual(platform.pricelist_id.company_id, self.company)
 
+    def test_pos_integration_syncs_duplicate_name_partners(self):
+        platform = self._create_platform(name="Duplicate Name Platform")
+        duplicate = self.env["res.partner"].create(
+            {"name": "Duplicate Name Platform", "customer_rank": 1}
+        )
+        platform._avea_apply_pos_integration()
+        self.assertEqual(
+            duplicate.property_product_pricelist,
+            platform.pricelist_id,
+        )
+        pos_config = self.env["pos.config"].search(
+            [("company_id", "=", self.company.id)], limit=1
+        )
+        if not pos_config:
+            self.skipTest("No POS config on this company.")
+        pos_config.invalidate_recordset(["avea_sales_platform_pricelist_by_partner_id"])
+        mapping = pos_config.avea_sales_platform_pricelist_by_partner_id
+        self.assertEqual(
+            mapping.get(str(duplicate.id)),
+            platform.pricelist_id.id,
+        )
+
     def test_pos_integration_registers_platform_pricelist(self):
         platform = self._create_platform(name="POS Integration Test")
         pos_config = self.env["pos.config"].search(
