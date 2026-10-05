@@ -300,7 +300,7 @@ class AveaStockReceive(models.Model):
     _name = "avea.stock.receive"
     _description = "Receive Stock"
     _inherit = ["avea.stock.mixin"]
-    _order = "write_date desc, id desc"
+    _order = "received_date desc, id desc"
 
     user_id = fields.Many2one(
         "res.users",
@@ -454,6 +454,11 @@ class AveaStockReceive(models.Model):
         readonly=True,
         copy=False,
     )
+    receipt_display = fields.Char(
+        string="Receipt",
+        compute="_compute_receipt_display",
+        store=True,
+    )
     can_return_stock = fields.Boolean(
         compute="_compute_can_return_stock",
     )
@@ -594,9 +599,15 @@ class AveaStockReceive(models.Model):
             bill = receive.bill_id
             if bill and not bill.currency_id.is_zero(bill.amount_residual):
                 parts.append(_("Balance due %(amount)s", amount=bill.amount_residual))
-            elif bill and receive.supplier_credit_applied and not receive.mark_as_paid:
-                parts.append(_("Paid with supplier credit"))
-            if receive.mark_as_paid:
+            elif bill and bill.payment_state in ("paid", "in_payment"):
+                journal = receive.paid_from_journal_id
+                if receive.mark_as_paid and journal:
+                    parts.append(_("Paid from %s") % journal.display_name)
+                elif receive.supplier_credit_applied and not receive.mark_as_paid:
+                    parts.append(_("Paid with supplier credit"))
+                else:
+                    parts.append(_("Paid"))
+            elif receive.mark_as_paid:
                 journal = receive.paid_from_journal_id
                 parts.append(
                     _("Paid from %s") % journal.display_name if journal else _("Paid")
@@ -743,6 +754,57 @@ class AveaStockReceive(models.Model):
                 "avea_stock_history_readonly": True,
             },
         }
+
+    @api.depends(
+        "picking_id",
+        "picking_id.display_name",
+        "purchase_order_id",
+        "bill_id",
+        "invoice_number",
+        "partner_id",
+    )
+    def _compute_receipt_display(self):
+        for receive in self:
+            picking = receive._avea_get_receipt_picking()
+            receive.receipt_display = picking.display_name if picking else ""
+
+    @api.model
+    def _avea_sync_missing_picking_links(self):
+        """Link history rows to WH/IN receipts and purchase orders when missing."""
+        receives = self.sudo().search(
+            [
+                ("state", "=", "done"),
+                "|",
+                ("picking_id", "=", False),
+                ("purchase_order_id", "=", False),
+            ]
+        )
+        updated = 0
+        for receive in receives:
+            picking = receive._avea_get_receipt_picking()
+            order = receive.purchase_order_id
+            if not order and receive.bill_id:
+                order = receive.bill_id.invoice_line_ids.purchase_line_id.order_id[:1]
+            if not order and picking:
+                order = picking.move_ids.purchase_line_id.order_id[:1]
+            if not order and receive.invoice_number and receive.partner_id:
+                order = self.env["purchase.order"].search(
+                    [
+                        ("origin", "=", AVEA_RECEIVE_ORIGIN),
+                        ("partner_id", "=", receive.partner_id.id),
+                        ("partner_ref", "=", receive.invoice_number.strip()),
+                    ],
+                    limit=1,
+                )
+            vals = {}
+            if picking and not receive.picking_id:
+                vals["picking_id"] = picking.id
+            if order and not receive.purchase_order_id:
+                vals["purchase_order_id"] = order.id
+            if vals:
+                receive.write(vals)
+                updated += 1
+        return updated
 
     def _avea_get_receipt_picking(self):
         self.ensure_one()
@@ -958,6 +1020,7 @@ class AveaStockReceive(models.Model):
                 }
             )
             created += 1
+        self._avea_sync_missing_picking_links()
         return created
 
     @api.model

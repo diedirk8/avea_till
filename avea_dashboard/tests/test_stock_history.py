@@ -98,6 +98,50 @@ class TestAveaStockHistory(TransactionCase):
         receive._avea_archive_completed()
         self.assertTrue(self.env["avea.stock.receive"].browse(receive_id).exists())
 
+    def test_payment_status_follows_posted_bill_not_only_mark_as_paid(self):
+        picking = self._create_done_incoming_picking()
+        bill = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": self.partner.id,
+                "invoice_date": "2026-10-05",
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 100.0,
+                        }
+                    )
+                ],
+            }
+        )
+        bill.action_post()
+        journals = self.env.company._avea_expense_journals()
+        if journals:
+            self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+                bill,
+                journals[:1],
+                self.partner,
+                self.env.company,
+                "2026-10-05",
+                "PAID-TEST",
+            )
+        receive = self.env["avea.stock.receive"].create(
+            {
+                "state": "done",
+                "partner_id": self.partner.id,
+                "invoice_number": "PAID-TEST",
+                "invoice_date": "2026-10-05",
+                "received_date": "2026-10-05",
+                "bill_id": bill.id,
+                "picking_id": picking.id,
+                "mark_as_paid": False,
+            }
+        )
+        receive._compute_payment_status()
+        self.assertEqual(receive.payment_status, "Paid")
+
     def test_backfill_receive_history_from_avea_po(self):
         warehouse = self.env["stock.warehouse"].search(
             [("company_id", "=", self.env.company.id)], limit=1

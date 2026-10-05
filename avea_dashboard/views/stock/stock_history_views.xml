@@ -41,6 +41,7 @@
                 string="Receive history"
                 create="false"
                 delete="false"
+                default_order="received_date desc"
                 class="o_avea_stock_history_list o_avea_stock_receive_history_list"
                 js_class="avea_stock_receive_history_list"
             >
@@ -50,7 +51,7 @@
                 <field name="received_date" string="Received"/>
                 <field name="partner_id" string="Supplier"/>
                 <field name="invoice_number" string="Invoice"/>
-                <field name="picking_id" string="Receipt" optional="show"/>
+                <field name="receipt_display" string="Receipt"/>
                 <field name="amount_total" string="Total" widget="monetary"/>
                 <field name="supplier_credit_applied" string="Credit used" widget="monetary" optional="show"/>
                 <field name="payment_status" string="Payment"/>
@@ -223,6 +224,7 @@
                 string="Return history"
                 create="false"
                 delete="false"
+                default_order="return_date desc"
                 class="o_avea_stock_history_list o_avea_stock_return_history_list"
                 js_class="avea_stock_return_history_list"
             >
