@@ -589,6 +589,14 @@ class AveaStockReceive(models.Model):
         "bill_id.amount_residual",
         "bill_id.payment_state",
     )
+    def _avea_payment_source_label(self):
+        self.ensure_one()
+        if self.paid_from_journal_id:
+            return self.paid_from_journal_id.display_name
+        mixin = self.env["avea.stock.mixin"]
+        journal = mixin._avea_journal_from_bill_payment(self.bill_id)
+        return journal.display_name if journal else False
+
     def _compute_payment_status(self):
         for receive in self:
             parts = []
@@ -597,21 +605,21 @@ class AveaStockReceive(models.Model):
                     _("Credit applied %(amount)s", amount=receive.supplier_credit_applied)
                 )
             bill = receive.bill_id
+            payment_source = receive._avea_payment_source_label()
             if bill and not bill.currency_id.is_zero(bill.amount_residual):
                 parts.append(_("Balance due %(amount)s", amount=bill.amount_residual))
             elif bill and bill.payment_state in ("paid", "in_payment"):
-                journal = receive.paid_from_journal_id
-                if receive.mark_as_paid and journal:
-                    parts.append(_("Paid from %s") % journal.display_name)
+                if payment_source:
+                    parts.append(_("Paid from %s") % payment_source)
                 elif receive.supplier_credit_applied and not receive.mark_as_paid:
                     parts.append(_("Paid with supplier credit"))
                 else:
                     parts.append(_("Paid"))
             elif receive.mark_as_paid:
-                journal = receive.paid_from_journal_id
-                parts.append(
-                    _("Paid from %s") % journal.display_name if journal else _("Paid")
-                )
+                if payment_source:
+                    parts.append(_("Paid from %s") % payment_source)
+                else:
+                    parts.append(_("Paid"))
             if not parts:
                 receive.payment_status = _("Unpaid")
             else:
@@ -1372,6 +1380,12 @@ class AveaStockReceive(models.Model):
                 "purchase_order_id": order.id,
                 "picking_id": picking.id if picking else False,
                 "supplier_credit_applied": credit_applied,
+                "mark_as_paid": self.mark_as_paid,
+                "paid_from_journal_id": (
+                    self.paid_from_journal_id.id
+                    if self.mark_as_paid and self.paid_from_journal_id
+                    else False
+                ),
             }
         )
         return self._avea_confirmation_action()

@@ -191,6 +191,41 @@ class AveaStockMixin(models.AbstractModel):
         return statement_line
 
     @api.model
+    def _avea_journal_from_bill_payment(self, bill):
+        """Resolve cash/bank journal from how the vendor bill was reconciled."""
+        if not bill:
+            return self.env["account.journal"]
+        partner = bill.partner_id
+        company = bill.company_id
+        try:
+            payable = self._avea_supplier_payable_account(partner, company)
+        except UserError:
+            payable = self.env["account.account"].search(
+                [
+                    ("account_type", "=", "liability_payable"),
+                    ("company_id", "=", company.id),
+                ],
+                limit=1,
+            )
+        bill_lines = bill.line_ids.filtered(
+            lambda line: line.account_id == payable and line.reconciled
+        )
+        for bill_line in bill_lines:
+            partials = bill_line.matched_debit_ids | bill_line.matched_credit_ids
+            for partial in partials:
+                candidates = (partial.debit_move_id, partial.credit_move_id)
+                for aml in candidates:
+                    if not aml or aml.id == bill_line.id:
+                        continue
+                    statement_line = aml.statement_line_id
+                    if statement_line and statement_line.journal_id:
+                        return statement_line.journal_id
+                    payment = aml.payment_id
+                    if payment and payment.journal_id:
+                        return payment.journal_id
+        return self.env["account.journal"]
+
+    @api.model
     def _avea_supplier_credit_available(self, partner, company):
         """Posted vendor credit notes with an open balance for this supplier."""
         if not partner:
