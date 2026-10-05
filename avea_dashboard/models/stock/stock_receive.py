@@ -457,6 +457,9 @@ class AveaStockReceive(models.Model):
     can_return_stock = fields.Boolean(
         compute="_compute_can_return_stock",
     )
+    can_pay_bill = fields.Boolean(
+        compute="_compute_can_pay_bill",
+    )
     bill_residual = fields.Monetary(
         related="bill_id.amount_residual",
         currency_field="currency_id",
@@ -763,6 +766,16 @@ class AveaStockReceive(models.Model):
             )
         return self.env["stock.picking"]
 
+    @api.depends("state", "bill_id", "bill_id.amount_residual")
+    def _compute_can_pay_bill(self):
+        for receive in self:
+            bill = receive.bill_id
+            receive.can_pay_bill = bool(
+                receive.state == "done"
+                and bill
+                and not bill.currency_id.is_zero(bill.amount_residual)
+            )
+
     @api.depends("state", "picking_id", "purchase_order_id", "bill_id", "invoice_number")
     def _compute_can_return_stock(self):
         Return = self.env["avea.stock.return"]
@@ -803,6 +816,32 @@ class AveaStockReceive(models.Model):
 
     def action_back_to_receive_history(self):
         return self.action_open_receive_history()
+
+    def action_open_pay_bill_wizard(self):
+        self.ensure_one()
+        if not self.can_pay_bill:
+            raise UserError(_("This bill is already paid or has no balance due."))
+        journal = self.paid_from_journal_id or self._avea_default_paid_from_journal(
+            self.company_id
+        )
+        wizard = (
+            self.env["avea.stock.receive.pay.wizard"]
+            .sudo()
+            .create(
+                {
+                    "receive_id": self.id,
+                    "journal_id": journal.id if journal else False,
+                }
+            )
+        )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Pay vendor bill"),
+            "res_model": "avea.stock.receive.pay.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
 
     def action_open_return(self):
         return self.env["avea.stock.return"].action_open_return()

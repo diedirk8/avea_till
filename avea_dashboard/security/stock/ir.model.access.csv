@@ -9,3 +9,4 @@ access_avea_stock_return_history_line,access.avea.stock.return.history.line,mode
 access_avea_stock_take,access.avea.stock.take,model_avea_stock_take,,1,1,1,1
 access_avea_stock_take_line,access.avea.stock.take.line,model_avea_stock_take_line,,1,1,1,1
 access_avea_stock_receive_pricing_wizard,access.avea.stock.receive.pricing.wizard,model_avea_stock_receive_pricing_wizard,,1,1,1,1
+access_avea_stock_receive_pay_wizard,access.avea.stock.receive.pay.wizard,model_avea_stock_receive_pay_wizard,,1,1,1,1
