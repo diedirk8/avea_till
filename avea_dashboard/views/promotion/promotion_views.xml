@@ -38,9 +38,11 @@
         <field name="model">avea.promotion</field>
         <field name="arch" type="xml">
             <search string="Promotions">
-                <field name="name"/>
-                <field name="promo_code"/>
-                <field name="deal_summary"/>
+                <field
+                    name="name"
+                    string="Search promotions"
+                    filter_domain="['|', '|', ('name', 'ilike', self), ('promo_code', 'ilike', self), ('deal_summary', 'ilike', self)]"
+                />
                 <filter string="Running" name="running" domain="[('schedule_status', '=', 'running')]"/>
                 <filter string="Scheduled" name="scheduled" domain="[('schedule_status', '=', 'scheduled')]"/>
                 <filter string="Expired" name="expired" domain="[('schedule_status', '=', 'expired')]"/>

@@ -823,6 +823,25 @@
         }
     }
 
+    .o_avea_promotion_list_search {
+        margin-top: 0.75rem;
+        max-width: 28rem;
+        min-width: min(100%, 16rem);
+        width: 100%;
+
+        .o_avea_workspace_info_label {
+            color: var(--o-gray-600, #6c757d);
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-bottom: 0.28rem;
+        }
+
+        .o_avea_promotion_list_search_input {
+            min-height: 2.35rem;
+        }
+    }
+
     .o_avea_promotion_list_filters {
         flex-wrap: wrap;
         margin-top: 0.65rem;

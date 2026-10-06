@@ -13,6 +13,19 @@
                                 Set up till deals — discounts, buy-one-get-one, combo prices, and loyalty bonuses.
                                 Status shows whether each promotion is running, scheduled, or expired.
                             </p>
+                            <div class="o_avea_promotion_list_search">
+                                <label class="o_avea_workspace_info_label" for="avea_promotion_list_search">
+                                    Search
+                                </label>
+                                <input
+                                    id="avea_promotion_list_search"
+                                    type="search"
+                                    class="o_avea_stock_filter_input form-control o_avea_promotion_list_search_input"
+                                    placeholder="Name, promo code, or deal"
+                                    t-att-value="bannerState.searchText"
+                                    t-on-input="(ev) => this.onPromotionSearchInput(ev)"
+                                />
+                            </div>
                             <div class="o_avea_period_selector o_avea_promotion_list_filters">
                                 <button type="button" t-att-class="this._filterButtonClass('all')" t-on-click="() => this.onFilterClick('all')">All</button>
                                 <button type="button" t-att-class="this._filterButtonClass('running')" t-on-click="() => this.onFilterClick('running')">Running</button>

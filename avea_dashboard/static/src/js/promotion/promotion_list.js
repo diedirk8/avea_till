@@ -4,6 +4,7 @@ import { Pager } from "@web/core/pager/pager";
 import { ListController } from "@web/views/list/list_controller";
 import { listView } from "@web/views/list/list_view";
 import { registry } from "@web/core/registry";
+import { debounce } from "@web/core/utils/timing";
 import { useState } from "@odoo/owl";
 
 const PROMOTION_FILTER_NAMES = new Set([
@@ -20,7 +21,8 @@ export class AveaPromotionListController extends ListController {
 
     setup() {
         super.setup();
-        this.bannerState = useState({ activeFilter: "all" });
+        this.bannerState = useState({ activeFilter: "all", searchText: "" });
+        this._applySearchDebounced = debounce(() => this.applyPromotionSearch(), 300);
     }
 
     get className() {
@@ -37,6 +39,45 @@ export class AveaPromotionListController extends ListController {
 
     _promotionSearchItem(name) {
         return Object.values(this.env.searchModel.searchItems).find((item) => item.name === name);
+    }
+
+    _promotionTextSearchItem() {
+        return Object.values(this.env.searchModel.searchItems).find(
+            (item) => item.type === "field" && item.fieldName === "name"
+        );
+    }
+
+    _clearPromotionTextSearch(searchModel) {
+        const item = this._promotionTextSearchItem();
+        if (!item) {
+            return;
+        }
+        searchModel.query = searchModel.query.filter((queryElem) => queryElem.searchItemId !== item.id);
+    }
+
+    async applyPromotionSearch() {
+        const searchModel = this.env.searchModel;
+        if (!searchModel) {
+            return;
+        }
+        const text = this.bannerState.searchText.trim();
+        this._clearPromotionTextSearch(searchModel);
+        if (text) {
+            const item = this._promotionTextSearchItem();
+            if (item) {
+                searchModel.addAutoCompletionValues(item.id, {
+                    label: text,
+                    value: text,
+                    operator: "ilike",
+                });
+            }
+        }
+        await searchModel.search();
+    }
+
+    onPromotionSearchInput(ev) {
+        this.bannerState.searchText = ev.target.value;
+        this._applySearchDebounced();
     }
 
     _filterButtonClass(filterKey) {
