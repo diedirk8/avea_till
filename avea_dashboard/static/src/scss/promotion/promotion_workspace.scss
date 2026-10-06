@@ -826,7 +826,7 @@
     .o_avea_promotion_list_search {
         margin-top: 0.75rem;
         max-width: 28rem;
-        min-width: min(100%, 16rem);
+        min-width: unquote("min(100%, 16rem)");
         width: 100%;
 
         .o_avea_workspace_info_label {
