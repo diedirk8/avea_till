@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.PromotionList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_promotion_list_shell">
+                <div class="o_avea_workspace_sheet o_avea_promotion_list_sheet">
+                    <div class="o_avea_workspace_hero o_avea_promotion_list_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Promotions</span>
+                            <h1 class="o_avea_workspace_title">Promotions</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Set up till deals — discounts, buy-one-get-one, combo prices, and loyalty bonuses.
+                                Status shows whether each promotion is running, scheduled, or expired.
+                            </p>
+                            <div class="o_avea_period_selector o_avea_promotion_list_filters">
+                                <button type="button" t-att-class="this._filterButtonClass('all')" t-on-click="() => this.onFilterClick('all')">All</button>
+                                <button type="button" t-att-class="this._filterButtonClass('running')" t-on-click="() => this.onFilterClick('running')">Running</button>
+                                <button type="button" t-att-class="this._filterButtonClass('scheduled')" t-on-click="() => this.onFilterClick('scheduled')">Scheduled</button>
+                                <button type="button" t-att-class="this._filterButtonClass('expired')" t-on-click="() => this.onFilterClick('expired')">Expired</button>
+                                <button type="button" t-att-class="this._filterButtonClass('inactive')" t-on-click="() => this.onFilterClick('inactive')">Disabled</button>
+                            </div>
+                        </div>
+                        <div class="o_avea_promotion_list_actions">
+                            <button type="button" class="btn btn-primary" t-on-click="() => this.onClickCreatePromotion()">
+                                New promotion
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div
+                t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                class="o_avea_promotion_list_pager o_cp_pager text-nowrap"
+            >
+                <Pager t-props="env.config.pagerProps"/>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

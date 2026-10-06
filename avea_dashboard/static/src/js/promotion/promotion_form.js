@@ -1,10 +1,24 @@
 /** @odoo-module **/
 
 import { FormController } from "@web/views/form/form_controller";
+import { formView } from "@web/views/form/form_view";
+import { registry } from "@web/core/registry";
 import { patch } from "@web/core/utils/patch";
 
 const PROMOTION_MODEL = "avea.promotion";
 const PROMOTION_LIST_ACTION = "avea_till.action_avea_promotion";
+
+export class AveaPromotionFormController extends FormController {
+    get className() {
+        const base = super.className || "";
+        return `${base} o_avea_workspace o_avea_workspace--promotion`.trim();
+    }
+}
+
+registry.category("views").add("avea_promotion_form", {
+    ...formView,
+    Controller: AveaPromotionFormController,
+});
 
 /**
  * Promotion forms hide the standard control panel, so Cancel must discard
