@@ -7,7 +7,16 @@
         <field name="arch" type="xml">
             <list string="Promotions" class="o_avea_promotion_list" create="1" delete="1">
                 <field name="name"/>
-                <field name="active" widget="boolean_toggle"/>
+                <field
+                    name="schedule_status"
+                    string="Status"
+                    widget="badge"
+                    decoration-success="schedule_status == 'running'"
+                    decoration-info="schedule_status == 'scheduled'"
+                    decoration-warning="schedule_status == 'expired'"
+                    decoration-muted="schedule_status == 'inactive'"
+                />
+                <field name="active" string="Enabled" widget="boolean_toggle"/>
                 <field name="date_from" optional="show"/>
                 <field name="date_to" optional="show"/>
                 <field name="deal_summary" string="Deal"/>
@@ -25,8 +34,12 @@
                 <field name="name"/>
                 <field name="promo_code"/>
                 <field name="deal_summary"/>
-                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
-                <filter string="Inactive" name="inactive" domain="[('active', '=', False)]"/>
+                <filter string="Running" name="running" domain="[('schedule_status', '=', 'running')]"/>
+                <filter string="Scheduled" name="scheduled" domain="[('schedule_status', '=', 'scheduled')]"/>
+                <filter string="Expired" name="expired" domain="[('schedule_status', '=', 'expired')]"/>
+                <separator/>
+                <filter string="Enabled" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Disabled" name="inactive" domain="[('active', '=', False)]"/>
             </search>
         </field>
     </record>
@@ -83,7 +96,7 @@
                                         </div>
                                         <div class="o_avea_workspace_info_item o_avea_promotion_check_row">
                                             <field name="active" nolabel="1"/>
-                                            <span class="o_avea_workspace_info_label">Active</span>
+                                            <span class="o_avea_workspace_info_label">Enabled</span>
                                         </div>
                                     </div>
                                 </div>
@@ -263,13 +276,22 @@
 
                                 <div class="o_avea_promotion_summary_name_block">
                                     <field name="summary_name" nolabel="1" readonly="1" class="o_avea_promotion_summary_name"/>
+                                    <field name="schedule_status" invisible="1"/>
                                     <span
-                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--active"
-                                        invisible="not active"
-                                    >Active</span>
+                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--running"
+                                        invisible="schedule_status != 'running'"
+                                    >Running</span>
+                                    <span
+                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--scheduled"
+                                        invisible="schedule_status != 'scheduled'"
+                                    >Scheduled</span>
+                                    <span
+                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--expired"
+                                        invisible="schedule_status != 'expired'"
+                                    >Expired</span>
                                     <span
                                         class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--inactive"
-                                        invisible="active"
+                                        invisible="schedule_status != 'inactive'"
                                     >Inactive</span>
                                 </div>
 

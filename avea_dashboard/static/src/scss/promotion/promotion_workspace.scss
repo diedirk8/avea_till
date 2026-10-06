@@ -674,9 +674,20 @@
         width: fit-content;
     }
 
+    .o_avea_promotion_summary_badge--running,
     .o_avea_promotion_summary_badge--active {
         background: var(--avea-positive-soft, rgba(0, 136, 24, 0.08));
         color: var(--avea-positive, #008818);
+    }
+
+    .o_avea_promotion_summary_badge--scheduled {
+        background: rgba(1, 102, 107, 0.1);
+        color: var(--avea-info, #01666b);
+    }
+
+    .o_avea_promotion_summary_badge--expired {
+        background: rgba(255, 193, 7, 0.15);
+        color: #b78100;
     }
 
     .o_avea_promotion_summary_badge--inactive {
