@@ -47,6 +47,20 @@ class TestAveaProductPricingTax(TransactionCase):
         self.assertAlmostEqual(self.product.avea_cost_incl_tax, 279.40, places=2)
         self.assertAlmostEqual(self.product.avea_profit_incl_tax, 85.60, places=2)
 
+    def test_list_price_not_reverted_by_stale_markup_on_save(self):
+        """Editing retail must stick; markup is derived from retail, not the other way around."""
+        self.template.write(
+            {
+                "avea_cost_ex_tax": 446.09,
+                "standard_price": 446.09,
+                "list_price": 614.96,
+            }
+        )
+        markup_before = self.template.avea_markup_percent
+        self.template.write({"list_price": 615.0})
+        self.assertAlmostEqual(self.template.list_price, 615.0, places=2)
+        self.assertGreater(self.template.avea_markup_percent, markup_before)
+
     def test_zero_tax_product_leaves_cost_incl_equal_to_cost_ex(self):
         product = self.env["product.product"].create(
             {

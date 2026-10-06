@@ -222,7 +222,41 @@ class ProductTemplate(models.Model):
             retail_inc = product._avea_retail_inc_vat_from_ex(retail_ex)
             product.list_price = mixin._avea_round_product_cost(retail_inc)
 
+    def _avea_retail_inc_from_markup_percent(self, markup_percent):
+        self.ensure_one()
+        cost = self._avea_get_cost_ex_tax()
+        retail_ex = cost * (1.0 + (markup_percent or 0.0) / 100.0)
+        mixin = self.env["avea.stock.mixin"]
+        return mixin._avea_round_product_cost(self._avea_retail_inc_vat_from_ex(retail_ex))
+
+    def _avea_retail_inc_from_margin_percent(self, margin_percent):
+        self.ensure_one()
+        margin = margin_percent or 0.0
+        cost = self._avea_get_cost_ex_tax()
+        retail_ex = cost / (1.0 - margin / 100.0) if margin < 100.0 else 0.0
+        mixin = self.env["avea.stock.mixin"]
+        return mixin._avea_round_product_cost(self._avea_retail_inc_vat_from_ex(retail_ex))
+
+    def _avea_user_edited_retail_not_markup(self, driver_field, driver_value):
+        """True when retail INC tax was edited and a stale markup/margin onchange fired."""
+        self.ensure_one()
+        mixin = self.env["avea.stock.mixin"]
+        current = mixin._avea_round_product_cost(self.list_price or 0.0)
+        if driver_field == "markup":
+            from_driver = self._avea_retail_inc_from_markup_percent(driver_value)
+        else:
+            from_driver = self._avea_retail_inc_from_margin_percent(driver_value)
+        if float_compare(current, from_driver, precision_digits=2) != 0:
+            _, _, _, implied_markup, implied_margin = self._avea_pricing_tuple()
+            implied = implied_markup if driver_field == "markup" else implied_margin
+            if float_compare(driver_value or 0.0, implied or 0.0, precision_digits=2) != 0:
+                return False
+            return True
+        return False
+
     def _inverse_avea_markup_percent(self):
+        if self.env.context.get("avea_pricing_retail_authoritative"):
+            return
         for product in self:
             cost = product._avea_get_cost_ex_tax()
             retail_ex = cost * (1.0 + (product.avea_markup_percent or 0.0) / 100.0)
@@ -230,6 +264,8 @@ class ProductTemplate(models.Model):
         self._compute_avea_pricing()
 
     def _inverse_avea_margin_percent(self):
+        if self.env.context.get("avea_pricing_retail_authoritative"):
+            return
         for product in self:
             cost = product._avea_get_cost_ex_tax()
             margin = product.avea_margin_percent or 0.0
@@ -241,14 +277,21 @@ class ProductTemplate(models.Model):
             product._avea_apply_retail_ex(retail_ex)
         self._compute_avea_pricing()
 
-    @api.onchange("avea_cost_ex_tax", "standard_price", "list_price", "taxes_id")
+    @api.onchange("avea_cost_ex_tax", "standard_price", "taxes_id")
     def _onchange_avea_pricing_fields(self):
-        # Recompute display fields immediately while editing.
+        self._compute_avea_pricing()
+
+    @api.onchange("list_price")
+    def _onchange_list_price_avea(self):
+        """Retail INC tax is authoritative; refresh markup/margin without reverting retail."""
         self._compute_avea_pricing()
 
     @api.onchange("avea_markup_percent")
     def _onchange_avea_markup_percent(self):
         if self.env.context.get("avea_pricing_guard"):
+            return
+        if self._avea_user_edited_retail_not_markup("markup", self.avea_markup_percent):
+            self._compute_avea_pricing()
             return
         self = self.with_context(avea_pricing_guard=True)
         cost = self._avea_get_cost_ex_tax()
@@ -268,6 +311,9 @@ class ProductTemplate(models.Model):
                     "message": _("Margin must be less than 100%."),
                 }
             }
+        if self._avea_user_edited_retail_not_markup("margin", margin):
+            self._compute_avea_pricing()
+            return
         self = self.with_context(avea_pricing_guard=True)
         cost = self._avea_get_cost_ex_tax()
         retail_ex = cost / (1.0 - margin / 100.0)
@@ -556,7 +602,14 @@ class ProductTemplate(models.Model):
         ):
             vals = dict(vals)
             vals["standard_price"] = mixin._avea_round_product_cost(vals["avea_cost_ex_tax"])
-        res = super().write(vals)
+        templates = self
+        if (
+            "list_price" in vals
+            and "avea_markup_percent" not in vals
+            and "avea_margin_percent" not in vals
+        ):
+            templates = templates.with_context(avea_pricing_retail_authoritative=True)
+        res = super(ProductTemplate, templates).write(vals)
         return res
 
     @api.model
