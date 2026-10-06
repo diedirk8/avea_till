@@ -57,7 +57,7 @@ class TestAveaProductPricingTax(TransactionCase):
             }
         )
         markup_before = self.template.avea_markup_percent
-        self.template.write({"list_price": 615.0})
+        self.template.with_context(avea_stock_workspace=True).write({"list_price": 615.0})
         self.assertAlmostEqual(self.template.list_price, 615.0, places=2)
         self.assertGreater(self.template.avea_markup_percent, markup_before)
 

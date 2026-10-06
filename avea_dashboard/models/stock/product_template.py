@@ -578,40 +578,6 @@ class ProductTemplate(models.Model):
                 ", ".join(product.pos_categ_ids.mapped("name")) or _("Not set")
             )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        mixin = self.env["avea.stock.mixin"]
-        for vals in vals_list:
-            if vals.get("avea_cost_ex_tax") is None and vals.get("standard_price") is not None:
-                vals["avea_cost_ex_tax"] = mixin._avea_round_supplier_cost(
-                    vals["standard_price"]
-                )
-            elif vals.get("standard_price") is None and vals.get("avea_cost_ex_tax") is not None:
-                vals["standard_price"] = mixin._avea_round_product_cost(
-                    vals["avea_cost_ex_tax"]
-                )
-        return super().create(vals_list)
-
-    def write(self, vals):
-        mixin = self.env["avea.stock.mixin"]
-        if (
-            "avea_cost_ex_tax" in vals
-            and "standard_price" not in vals
-            and len(self) == 1
-            and self.cost_method == "standard"
-        ):
-            vals = dict(vals)
-            vals["standard_price"] = mixin._avea_round_product_cost(vals["avea_cost_ex_tax"])
-        templates = self
-        if (
-            "list_price" in vals
-            and "avea_markup_percent" not in vals
-            and "avea_margin_percent" not in vals
-        ):
-            templates = templates.with_context(avea_pricing_retail_authoritative=True)
-        res = super(ProductTemplate, templates).write(vals)
-        return res
-
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -768,7 +734,16 @@ class ProductTemplate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        mixin = self.env["avea.stock.mixin"]
         for vals in vals_list:
+            if vals.get("avea_cost_ex_tax") is None and vals.get("standard_price") is not None:
+                vals["avea_cost_ex_tax"] = mixin._avea_round_supplier_cost(
+                    vals["standard_price"]
+                )
+            elif vals.get("standard_price") is None and vals.get("avea_cost_ex_tax") is not None:
+                vals["standard_price"] = mixin._avea_round_product_cost(
+                    vals["avea_cost_ex_tax"]
+                )
             if self.env.context.get("avea_stock_workspace"):
                 vals.setdefault("sale_ok", True)
                 vals.setdefault("purchase_ok", True)
@@ -777,7 +752,6 @@ class ProductTemplate(models.Model):
                     vals["sale_ok"] = True
                 if vals.get("is_storable"):
                     vals["type"] = "consu"
-                # Carry product category onto POS category when POS cats were not set.
                 if vals.get("categ_id") and not vals.get("pos_categ_ids"):
                     categ = self.env["product.category"].browse(vals["categ_id"])
                     pos_categ = self._avea_pos_category_for_product_category(categ)
@@ -786,6 +760,15 @@ class ProductTemplate(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        mixin = self.env["avea.stock.mixin"]
+        if (
+            "avea_cost_ex_tax" in vals
+            and "standard_price" not in vals
+            and len(self) == 1
+            and self.cost_method == "standard"
+        ):
+            vals = dict(vals)
+            vals["standard_price"] = mixin._avea_round_product_cost(vals["avea_cost_ex_tax"])
         if self.env.context.get("avea_stock_workspace") and vals.get("is_storable"):
             vals = dict(vals, type="consu")
         if (
@@ -797,7 +780,14 @@ class ProductTemplate(models.Model):
             pos_categ = self._avea_pos_category_for_product_category(categ)
             if pos_categ:
                 vals = dict(vals, pos_categ_ids=[(6, 0, pos_categ.ids)])
-        return super().write(vals)
+        templates = self
+        if (
+            "list_price" in vals
+            and "avea_markup_percent" not in vals
+            and "avea_margin_percent" not in vals
+        ):
+            templates = templates.with_context(avea_pricing_retail_authoritative=True)
+        return super(ProductTemplate, templates).write(vals)
 
     @api.model
     def _load_pos_data_fields(self, config):
