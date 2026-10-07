@@ -1,0 +1,14 @@
+// POS idle / saver screen branding.
+
+.pos {
+    --navbar-logo: url("/avea_till/static/src/img/avea_pos_logo.png");
+}
+
+.pos .login-overlay .avea-pos-saver-logo {
+    display: block;
+    max-height: 25vh;
+    max-width: min(32rem, 85vw);
+    object-fit: contain;
+    width: auto;
+    height: auto;
+}
