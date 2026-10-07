@@ -132,6 +132,14 @@
                         </div>
                         <div class="o_avea_stock_product_hero_actions">
                             <button
+                                string="Print Labels"
+                                name="action_open_label_layout"
+                                type="object"
+                                class="btn btn-secondary"
+                                icon="fa-barcode"
+                                invisible="not id or type == 'service'"
+                            />
+                            <button
                                 string="Back to Receive"
                                 name="action_avea_back_to_receive"
                                 type="object"
@@ -421,6 +429,14 @@
                                 </div>
 
                                 <div class="o_avea_stock_product_footer o_avea_stock_product_footer--bar">
+                                    <button
+                                        string="Print Labels"
+                                        name="action_open_label_layout"
+                                        type="object"
+                                        class="btn btn-secondary"
+                                        icon="fa-barcode"
+                                        invisible="not id or type == 'service'"
+                                    />
                                     <button
                                         string="Back to Receive"
                                         name="action_avea_back_to_receive"

@@ -92,3 +92,8 @@ class TestAveaProductPricingTax(TransactionCase):
         template = product.product_tmpl_id
         self.assertAlmostEqual(template.avea_cost_incl_tax, 60.0, places=2)
         self.assertAlmostEqual(template.avea_profit_incl_tax, 40.0, places=2)
+
+    def test_print_labels_opens_odoo_label_layout_wizard(self):
+        action = self.template.action_open_label_layout()
+        self.assertEqual(action.get("res_model"), "product.label.layout")
+        self.assertIn(self.template.id, action.get("context", {}).get("default_product_tmpl_ids", []))
