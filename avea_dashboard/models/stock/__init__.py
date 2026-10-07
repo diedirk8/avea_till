@@ -9,5 +9,6 @@ from . import stock_return_history
 from . import purchase_order_line
 from . import product_template
 from . import product_product
+from . import product_label_layout
 from . import stock_take
 from . import account_move_line

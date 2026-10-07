@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <!-- Off by default; enable on DEV via Settings or ir.config_parameter. -->
+    <record id="config_avea_direct_product_label_print" model="ir.config_parameter">
+        <field name="key">avea_till.direct_product_label_print</field>
+        <field name="value">False</field>
+    </record>
+</odoo>

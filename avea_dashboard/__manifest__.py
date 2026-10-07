@@ -21,7 +21,7 @@ Features:
 - Receive Stock, Return Stock, and Stock Take
 - Avea Promotions (wrapper over Odoo Discount & Loyalty), including Combo Price
 """,
-    "version": "19.0.3.14.26",
+    "version": "19.0.3.14.27",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -48,6 +48,7 @@ Features:
         "security/promotion/ir.model.access.csv",
         "security/sales_platform/ir.model.access.csv",
         "data/stock/decimal_precision_data.xml",
+        "data/stock/product_label_print_config.xml",
         "data/stock/stock_take_sequence.xml",
         "data/promotion/combo_discount_product_data.xml",
         "data/sales_platform/mr_d_platform_data.xml",
@@ -110,6 +111,7 @@ Features:
         "web.report_assets_common": [
             "avea_till/static/src/scss/report/avea_report.scss",
             "avea_till/static/src/scss/pos/print_receipt.scss",
+            "avea_till/static/src/scss/stock/product_label_print.scss",
         ],
         "web.assets_frontend": [
             "avea_till/static/src/scss/ux/avea_backend.scss",
@@ -155,6 +157,7 @@ Features:
             "avea_till/static/src/js/stock/stock_catalogue.js",
             "avea_till/static/src/js/stock/stock_catalogue.xml",
             "avea_till/static/src/js/stock/stock_receive_form.js",
+            "avea_till/static/src/js/stock/product_label_direct_print.js",
             "avea_till/static/src/js/stock/stock_history_list.xml",
             "avea_till/static/src/js/stock/stock_history_list.js",
             "avea_till/static/src/js/stock/stock_history_form.js",
