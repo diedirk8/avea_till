@@ -34,7 +34,7 @@ class TestAveaProductLabelPrint(TransactionCase):
         )
 
     def test_dymo_process_unchanged_when_disabled(self):
-        self.param.set_param("avea_till.direct_product_label_print", "0")
+        self.param.set_param("avea_till.direct_product_label_print", "off")
         wizard = self.env["product.label.layout"].create(
             {
                 "print_format": "dymo",

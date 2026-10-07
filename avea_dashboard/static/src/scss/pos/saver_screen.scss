@@ -7,7 +7,7 @@
 .pos .login-overlay .avea-pos-saver-logo {
     display: block;
     max-height: 25vh;
-    max-width: min(32rem, 85vw);
+    max-width: unquote("min(32rem, 85vw)");
     object-fit: contain;
     width: auto;
     height: auto;

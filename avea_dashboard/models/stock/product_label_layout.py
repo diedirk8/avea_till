@@ -9,12 +9,12 @@ class ProductLabelLayout(models.TransientModel):
 
     @api.model
     def _avea_direct_label_print_enabled(self):
-        return (
+        param = (
             self.env["ir.config_parameter"]
             .sudo()
-            .get_param(_AVEA_DIRECT_LABEL_PRINT_PARAM)
-            == "1"
+            .get_param(_AVEA_DIRECT_LABEL_PRINT_PARAM, "1")
         )
+        return str(param).strip().lower() not in ("0", "false", "no", "off")
 
     @api.model
     def default_get(self, fields_list):
