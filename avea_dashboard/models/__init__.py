@@ -1,3 +1,4 @@
+from . import customer
 from . import credit
 from . import operations
 from . import promotion

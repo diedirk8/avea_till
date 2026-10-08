@@ -110,6 +110,10 @@ class AveaNavMixin(models.AbstractModel):
                 "min_role": "manager",
                 "items": [
                     {
+                        "label": "Customer Centre",
+                        "menu_xmlid": "avea_till.menu_avea_customer_centre",
+                    },
+                    {
                         "label": "Promotions",
                         "menu_xmlid": "avea_till.menu_avea_promotion",
                     },

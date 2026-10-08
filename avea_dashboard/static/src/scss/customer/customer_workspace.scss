@@ -1,0 +1,31 @@
+.o_avea_workspace--customer {
+    .o_avea_customer_workspace {
+        display: grid;
+        gap: 1.25rem;
+        grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+        align-items: start;
+    }
+
+    .o_avea_customer_hero_actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        justify-content: flex-end;
+    }
+
+    .o_avea_customer_name_title input {
+        font-size: inherit;
+        font-weight: inherit;
+    }
+
+    .o_avea_customer_summary {
+        position: sticky;
+        top: 0.5rem;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .o_avea_workspace--customer .o_avea_customer_workspace {
+        grid-template-columns: 1fr;
+    }
+}

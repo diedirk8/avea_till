@@ -71,8 +71,10 @@ class TestAveaNav(TestPoSCommon):
     def test_customers_and_money_use_nested_groups(self):
         nav = self.manager._avea_nav_structure()
         customers = next(s for s in nav["sections"] if s["id"] == "customers")
-        self.assertEqual(customers["items"][0]["label"], "Promotions")
-        store_credit = customers["items"][1]
+        self.assertEqual(customers["items"][0]["label"], "Customer Centre")
+        self.assertEqual(customers["items"][1]["label"], "Promotions")
+        self.assertEqual(customers["items"][2]["label"], "Sales Platforms")
+        store_credit = customers["items"][3]
         self.assertEqual(store_credit["label"], "Store Credit")
         self.assertIn("items", store_credit)
 

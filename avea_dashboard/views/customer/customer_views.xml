@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_customer_search" model="ir.ui.view">
+        <field name="name">avea.customer.search</field>
+        <field name="model">res.partner</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <search string="Customers">
+                <field name="name" string="Customer" filter_domain="['|', '|', ('name', 'ilike', self), ('email', 'ilike', self), ('phone', 'ilike', self)]"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="city"/>
+                <separator/>
+                <filter string="Has store credit" name="avea_has_store_credit" domain="[('avea_credit_balance', '>', 0)]"/>
+                <separator/>
+                <filter string="Active" name="avea_active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="avea_archived" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_customer_list" model="ir.ui.view">
+        <field name="name">avea.customer.list</field>
+        <field name="model">res.partner</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <list
+                string="Customers"
+                class="o_avea_customer_list"
+                create="1"
+                delete="0"
+                duplicate="0"
+            >
+                <button
+                    name="action_avea_open_customer"
+                    type="object"
+                    string="Open"
+                    icon="fa-external-link"
+                    title="Open customer"
+                    class="btn-link"
+                />
+                <field name="display_name" string="Customer"/>
+                <field name="email" optional="show"/>
+                <field name="phone" optional="show"/>
+                <field name="city" optional="show"/>
+                <field name="avea_credit_currency_id" column_invisible="True"/>
+                <field name="avea_credit_balance" string="Store credit" widget="monetary" options="{'currency_field': 'avea_credit_currency_id'}"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="avea_customer_account_balance" string="Account balance" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="active" string="Active" widget="boolean_toggle" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_customer_form" model="ir.ui.view">
+        <field name="name">avea.customer.form</field>
+        <field name="model">res.partner</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <form string="Customer" class="o_avea_workspace o_avea_workspace--customer">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_type" invisible="1"/>
+                    <field name="customer_rank" invisible="1"/>
+                    <field name="avea_credit_currency_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Customers</span>
+                            <h1 class="o_avea_workspace_title">
+                                <field name="name" nolabel="1" placeholder="Customer name" class="o_avea_customer_name_title"/>
+                            </h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Contact details, balances, and store credit for this customer.
+                            </p>
+                        </div>
+                        <div class="o_avea_customer_hero_actions">
+                            <button
+                                string="View ledger"
+                                name="action_open_store_credit"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Issue credit"
+                                name="action_issue_store_credit"
+                                type="object"
+                                class="btn btn-secondary"
+                                groups="avea_till.group_avea_credit_manager"
+                                invisible="not id"
+                            />
+                            <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_customer_workspace">
+                        <div class="o_avea_stock_product_panel">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-user" title="Contact" aria-hidden="true"/>
+                                Contact
+                            </h2>
+                            <div class="o_avea_stock_product_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Email</span>
+                                    <field name="email" nolabel="1" widget="email"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Phone</span>
+                                    <field name="phone" nolabel="1" widget="phone"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
+                                    <span class="o_avea_workspace_info_label">Street</span>
+                                    <field name="street" nolabel="1" placeholder="Street address"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">City</span>
+                                    <field name="city" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Country</span>
+                                    <field name="country_id" nolabel="1" options="{'no_create': True}"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <aside class="o_avea_customer_summary">
+                            <div class="o_avea_stock_product_summary_card">
+                                <div class="o_avea_stock_product_summary_header">
+                                    <span class="o_avea_stock_product_summary_eyebrow">Balances</span>
+                                    <h2 class="o_avea_stock_product_summary_title">At a glance</h2>
+                                </div>
+                                <div class="o_avea_stock_product_summary_block">
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Store credit</span>
+                                        <field name="avea_credit_balance" nolabel="1" widget="monetary" readonly="1" options="{'currency_field': 'avea_credit_currency_id'}"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Account balance</span>
+                                        <field name="avea_customer_account_balance" nolabel="1" widget="monetary" readonly="1" options="{'currency_field': 'currency_id'}"/>
+                                    </div>
+                                </div>
+                                <div class="o_avea_stock_product_summary_block">
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Active</span>
+                                        <field name="active" nolabel="1" widget="boolean_toggle"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_customer_centre" model="ir.actions.act_window">
+        <field name="name">Customer Centre</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_customer_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_customer_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_customer_form')}),
+        ]"/>
+        <field name="target">main</field>
+        <field name="context">{
+            'avea_customer_workspace': True,
+            'clear_breadcrumbs': True,
+            'no_breadcrumbs': True,
+            'default_customer_rank': 1,
+        }</field>
+        <field name="domain">[('customer_rank', '>', 0)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first customer
+            </p>
+            <p>
+                Customers created here are available in POS and store credit.
+            </p>
+        </field>
+    </record>
+
+</odoo>

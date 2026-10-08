@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_customer_centre"
+        name="Customer Centre"
+        parent="menu_avea_root"
+        action="action_avea_customer_centre"
+        groups="avea_till.group_avea_manager"
+        sequence="11"
+    />
+
+</odoo>
