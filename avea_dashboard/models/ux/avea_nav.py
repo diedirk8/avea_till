@@ -110,16 +110,8 @@ class AveaNavMixin(models.AbstractModel):
                 "min_role": "manager",
                 "items": [
                     {
-                        "label": "Customer Centre",
+                        "label": "Customers",
                         "menu_xmlid": "avea_till.menu_avea_customer_centre",
-                    },
-                    {
-                        "label": "Promotions",
-                        "menu_xmlid": "avea_till.menu_avea_promotion",
-                    },
-                    {
-                        "label": "Sales Platforms",
-                        "menu_xmlid": "avea_till.menu_avea_sales_platform",
                     },
                     {
                         "id": "store_credit",
@@ -141,7 +133,7 @@ class AveaNavMixin(models.AbstractModel):
                     },
                     {
                         "id": "credit_reports",
-                        "label": "Reports",
+                        "label": "Credit Reports",
                         "items": [
                             {
                                 "label": "Statements",
@@ -156,6 +148,14 @@ class AveaNavMixin(models.AbstractModel):
                                 "menu_xmlid": "avea_till.menu_avea_credit_report_activity",
                             },
                         ],
+                    },
+                    {
+                        "label": "Promotions",
+                        "menu_xmlid": "avea_till.menu_avea_promotion",
+                    },
+                    {
+                        "label": "Sales Platforms",
+                        "menu_xmlid": "avea_till.menu_avea_sales_platform",
                     },
                 ],
             },

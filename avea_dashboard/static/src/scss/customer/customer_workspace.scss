@@ -1,16 +1,395 @@
-.o_avea_workspace--customer {
-    .o_avea_customer_workspace {
-        display: grid;
-        gap: 1.25rem;
-        grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
-        align-items: start;
+.o_avea_workspace--customer,
+.o_list_view.o_avea_workspace--customer {
+    --avea-brand: #c45c26;
+    --avea-brand-hover: #a84d1f;
+    --avea-brand-soft: rgba(196, 92, 38, 0.12);
+    --avea-brand-border: rgba(196, 92, 38, 0.35);
+    --avea-customer-shell-width: min(1680px, calc(100vw - 3rem));
+}
+
+.o_action_manager.o_avea_customer_list_action_manager {
+    -ms-overflow-style: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: auto !important;
+
+    &::-webkit-scrollbar {
+        display: block !important;
+        height: 12px;
+        width: 12px;
     }
 
-    .o_avea_customer_hero_actions {
+    &::-webkit-scrollbar-thumb {
+        background: rgba(73, 80, 87, 0.45);
+        border-radius: 999px;
+    }
+}
+
+.o_avea_workspace--customer-list {
+    .o_list_renderer {
+        overflow-x: auto;
+    }
+
+    .o_list_table {
+        table-layout: auto;
+        width: 100%;
+
+        tbody td {
+            vertical-align: top;
+        }
+
+        .o_data_cell[name="display_name"] .o_field_widget,
+        .o_data_cell[name="email"] .o_field_widget,
+        .o_data_cell[name="avea_visit_rhythm_label"] .o_field_widget,
+        .o_data_cell[name="avea_usual_buys_category"] .o_field_widget,
+        .o_data_cell.o_avea_customer_wrap_cell .o_field_widget {
+            overflow: visible !important;
+            text-overflow: clip !important;
+            white-space: normal !important;
+            word-break: break-word;
+        }
+
+        .o_data_cell[name="display_name"],
+        .o_data_cell[name="email"],
+        .o_data_cell[name="avea_visit_rhythm_label"],
+        .o_data_cell[name="avea_usual_buys_category"] {
+            max-width: 22rem;
+            width: auto;
+        }
+
+        .o_data_cell[name="phone"],
+        .o_data_cell[name="avea_last_visit"],
+        .o_data_cell[name="avea_days_since_visit"],
+        .o_data_cell[name="avea_usual_visit_spend"],
+        .o_data_cell[name="avea_credit_balance"],
+        .o_data_cell[name="avea_pos_sales_total"] {
+            white-space: nowrap;
+            width: 1%;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 4;
+        }
+
+        thead th {
+            background: var(--o-gray-100, #f8f9fa);
+            box-shadow: inset 0 -1px 0 var(--o-gray-300, #dee2e6);
+            hyphens: none;
+            line-height: 1.35;
+            padding-bottom: 0.5rem;
+            padding-top: 0.5rem;
+            position: sticky;
+            text-align: left !important;
+            top: 0;
+            vertical-align: top;
+            white-space: nowrap !important;
+            z-index: 4;
+
+            .d-flex,
+            .d-block {
+                align-items: flex-start !important;
+                flex-wrap: nowrap !important;
+                justify-content: flex-start !important;
+                max-width: 100%;
+                text-align: left !important;
+                white-space: nowrap !important;
+            }
+
+            .text-truncate,
+            span {
+                overflow: visible !important;
+                text-align: left !important;
+                text-overflow: clip !important;
+                white-space: nowrap !important;
+                word-break: normal;
+            }
+
+            &.o_column_sortable {
+                padding-right: 0.65rem;
+
+                .o_list_sortable_icon {
+                    background: transparent;
+                    display: inline-block;
+                    margin-left: 0.2rem;
+                    padding: 0;
+                    position: static;
+                    vertical-align: middle;
+                }
+
+                .o_list_header_label_spacer {
+                    display: none;
+                }
+            }
+
+            &.o_list_number_th {
+                text-align: left !important;
+            }
+        }
+    }
+
+    background-color: var(--o-webclient-background-color, #f4f5f7);
+    display: flex;
+    flex-direction: column;
+    min-height: min(100%, 100%);
+    min-width: 0;
+    padding: 1.25rem 1.5rem 2rem;
+
+    > .o_control_panel {
+        display: none !important;
+    }
+
+    .o_avea_customer_list_shell {
+        margin: 0 auto;
+        max-width: var(--avea-customer-shell-width);
+        width: 100%;
+    }
+
+    .o_avea_customer_list_hero {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-bottom: none;
+        border-radius: 0.75rem 0.75rem 0 0;
+        margin: 0;
+        padding: 1.25rem 1.35rem 1rem;
+    }
+
+    .o_avea_customer_list_sheet {
+        border-radius: 0.75rem 0.75rem 0 0;
+        overflow: hidden;
+    }
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand) !important;
+    }
+
+    .o_avea_workspace_subtitle {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.9rem;
+        margin: 0.35rem 0 0;
+        max-width: 42rem;
+    }
+
+    .o_avea_workspace_hero {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 0;
+    }
+
+    .o_avea_customer_list_filters {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0 0 0.75rem 0.75rem;
+        border-top: none;
+        display: grid;
+        gap: 0.65rem 0.75rem;
+        grid-template-columns: minmax(0, 2fr) minmax(12rem, 1fr);
+        margin-top: 0;
+        padding: 1rem 1.35rem 1.1rem;
+
+        .o_avea_workspace_info_item {
+            min-width: 0;
+        }
+
+        .o_avea_workspace_info_label {
+            color: var(--o-gray-600, #6c757d);
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            margin-bottom: 0.28rem;
+        }
+
+        .o_avea_customer_filter_span_full {
+            grid-column: 1 / -1;
+        }
+
+        .o_avea_customer_filter_input,
+        .o_avea_customer_filter_select {
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            border-radius: 0.45rem;
+            font-size: 0.875rem;
+            min-height: 2.35rem;
+            padding: 0.35rem 0.7rem;
+            width: 100%;
+
+            &:focus {
+                border-color: var(--avea-brand);
+                box-shadow: 0 0 0 3px var(--avea-brand-soft);
+                outline: none;
+            }
+        }
+
+        .o_avea_customer_list_status {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin-top: 0.35rem;
+        }
+
+        .o_avea_customer_filter_hint {
+            color: var(--o-gray-600, #6c757d);
+            font-size: 0.8rem;
+            line-height: 1.45;
+            margin: 0.65rem 0 0;
+            max-width: 46rem;
+        }
+    }
+
+    .o_avea_customer_selection_bar {
+        align-items: center;
+        border-top: 1px solid var(--o-gray-200, #e9ecef);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 0.75rem;
+        margin-top: 0.75rem;
+        padding-top: 0.75rem;
+    }
+
+    .o_avea_customer_selection_count {
+        color: var(--o-gray-700, #495057);
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .o_avea_customer_list_actions {
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem;
         justify-content: flex-end;
+    }
+
+    .o_avea_customer_list_actions .btn-primary,
+    .o_avea_period_btn.btn-primary {
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+        font-weight: 700;
+    }
+
+    > .o_content {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.75rem;
+        flex: 0 0 auto;
+        margin: 1rem auto 0;
+        max-width: var(--avea-customer-shell-width);
+        min-width: 0;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding: 0 !important;
+        width: 100%;
+
+        .o_list_renderer {
+            border: none;
+            box-shadow: none;
+            margin: 0;
+            max-width: 100%;
+            min-width: 0;
+            overflow: visible;
+            -webkit-overflow-scrolling: touch;
+        }
+    }
+
+    .o_avea_customer_list_footer {
+        margin: 0 auto;
+        max-width: var(--avea-customer-shell-width);
+        width: 100%;
+    }
+
+    .o_avea_customer_list_pager {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0 0 0.75rem 0.75rem;
+        border-top: 1px solid var(--o-gray-200, #e9ecef);
+        display: flex;
+        justify-content: flex-end;
+        margin: 0;
+        padding: 0.65rem 1rem 0.75rem;
+    }
+}
+
+@media (max-width: 991.98px) {
+    .o_avea_workspace--customer-list .o_avea_customer_list_filters {
+        grid-template-columns: 1fr;
+    }
+}
+
+.o_form_view.o_avea_workspace--customer {
+    .o_control_panel {
+        display: none !important;
+    }
+
+    .o_form_sheet_bg {
+        background: var(--o-webclient-background-color, #f4f5f7);
+    }
+
+    .o_avea_workspace_sheet {
+        margin: 0 auto;
+        max-width: 72rem;
+        padding: 1rem 1.25rem 2rem;
+    }
+
+    .o_avea_workspace_hero {
+        align-items: flex-start;
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-bottom: 0.85rem;
+        padding: 1rem 1.15rem;
+    }
+
+    .o_avea_workspace_hero_intro {
+        flex: 1 1 16rem;
+        min-width: 0;
+    }
+
+    .o_avea_workspace_title {
+        font-size: 1.45rem;
+        letter-spacing: -0.03em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .o_avea_workspace_section_subtitle {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.84rem;
+        line-height: 1.45;
+        margin: 0.35rem 0 0;
+        max-width: 36rem;
+    }
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand) !important;
+    }
+
+    .o_avea_customer_hero_actions {
+        display: flex;
+        flex: 1 1 20rem;
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        justify-content: flex-end;
+        max-width: 100%;
+
+        .btn {
+            font-size: 0.8125rem;
+            padding: 0.35rem 0.65rem;
+        }
+
+        .btn-primary {
+            font-weight: 700;
+        }
     }
 
     .o_avea_customer_name_title input {
@@ -18,14 +397,197 @@
         font-weight: inherit;
     }
 
+    .o_avea_customer_workspace {
+        align-items: start;
+        display: grid;
+        gap: 0.85rem;
+        grid-template-columns: minmax(0, 1fr) minmax(13.5rem, 16.5rem);
+    }
+
+    .o_avea_customer_main {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        min-width: 0;
+    }
+
+    .o_avea_stock_product_panel {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        min-width: 0;
+        overflow: hidden;
+        padding: 0.85rem 1rem 1rem;
+    }
+
+    .o_avea_workspace_section_title {
+        align-items: center;
+        border-bottom: 1px solid var(--o-gray-200, #e9ecef);
+        color: var(--o-gray-900, #212529);
+        display: flex;
+        font-size: 0.88rem;
+        font-weight: 700;
+        gap: 0.45rem;
+        margin: 0 0 0.75rem;
+        padding-bottom: 0.55rem;
+
+        .fa {
+            color: var(--avea-brand);
+            font-size: 0.9rem;
+            text-align: center;
+            width: 1rem;
+        }
+    }
+
+    .o_avea_customer_panel_heading {
+        align-items: center;
+        border-bottom: 1px solid var(--o-gray-200, #e9ecef);
+        display: flex;
+        gap: 0.75rem;
+        justify-content: space-between;
+        margin: -0.85rem -1rem 0.75rem;
+        padding: 0.85rem 1rem 0.55rem;
+
+        .o_avea_workspace_section_title {
+            border-bottom: none;
+            margin: 0;
+            padding-bottom: 0;
+        }
+    }
+
+    .o_avea_stock_product_fields {
+        display: grid;
+        gap: 0.65rem 0.85rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .o_avea_stock_product_fields_span {
+        grid-column: 1 / -1;
+    }
+
+    .o_avea_workspace_info_label {
+        color: var(--o-gray-600, #6c757d);
+        display: block;
+        font-size: 0.74rem;
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+    }
+
+    .o_avea_customer_main .o_list_renderer {
+        border: 1px solid var(--o-gray-200, #e9ecef);
+        border-radius: 0.5rem;
+        max-height: 14rem;
+        overflow: auto;
+    }
+
+    .o_avea_customer_main .o_list_table {
+        margin-bottom: 0;
+
+        thead th {
+            background: var(--o-gray-100, #f8f9fa);
+            font-size: 0.75rem;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+    }
+
     .o_avea_customer_summary {
+        min-width: 0;
         position: sticky;
-        top: 0.5rem;
+        top: 0.75rem;
+    }
+
+    .o_avea_stock_product_summary_card {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        padding: 0.9rem 1rem 1rem;
+    }
+
+    .o_avea_stock_product_summary_eyebrow {
+        color: var(--avea-brand);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .o_avea_stock_product_summary_title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin: 0.15rem 0 0.65rem;
+    }
+
+    .o_avea_stock_product_summary_block + .o_avea_stock_product_summary_block {
+        border-top: 1px solid var(--o-gray-200, #e9ecef);
+        margin-top: 0.65rem;
+        padding-top: 0.65rem;
+    }
+
+    .o_avea_stock_product_summary_row {
+        align-items: center;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: space-between;
+        padding: 0.28rem 0;
+    }
+
+    .o_avea_customer_summary_wrap {
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.75rem;
+
+        .o_avea_customer_summary_value,
+        .o_avea_customer_summary_value .o_field_widget {
+            flex: 1 1 8rem;
+            max-width: 100%;
+            min-width: 0;
+            text-align: right;
+            white-space: normal;
+            word-break: break-word;
+        }
+    }
+
+    .o_avea_stock_product_summary_label {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .o_avea_customer_rhythm_value {
+        color: var(--o-gray-800, #343a40);
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: right;
+    }
+
+    .o_avea_customer_pattern_alert {
+        .o_avea_stock_product_summary_label {
+            color: var(--o-danger, #dc3545);
+        }
     }
 }
 
 @media (max-width: 991.98px) {
-    .o_avea_workspace--customer .o_avea_customer_workspace {
-        grid-template-columns: 1fr;
+    .o_form_view.o_avea_workspace--customer {
+        .o_avea_customer_workspace {
+            grid-template-columns: 1fr;
+        }
+
+        .o_avea_customer_summary {
+            position: static;
+        }
+
+        .o_avea_stock_product_fields {
+            grid-template-columns: 1fr;
+        }
+
+        .o_avea_customer_hero_actions {
+            justify-content: flex-start;
+        }
     }
 }

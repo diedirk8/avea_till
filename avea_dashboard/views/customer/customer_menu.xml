@@ -1,13 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
+    <!-- Folder under Avea root: store credit and reports live here too. -->
     <menuitem
-        id="menu_avea_customer_centre"
-        name="Customer Centre"
+        id="menu_avea_customers_hub"
+        name="Customers"
         parent="menu_avea_root"
-        action="action_avea_customer_centre"
         groups="avea_till.group_avea_manager"
         sequence="11"
+    />
+
+    <record id="menu_avea_customers_hub" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+    <!-- Leaf menu (Avea sidebar "Customers" link) — must not have Odoo child menus. -->
+    <menuitem
+        id="menu_avea_customer_centre"
+        name="Customers"
+        parent="menu_avea_customers_hub"
+        action="action_avea_customer_centre"
+        groups="avea_till.group_avea_manager"
+        sequence="1"
     />
 
 </odoo>

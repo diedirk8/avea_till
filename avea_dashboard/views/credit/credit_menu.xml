@@ -3,15 +3,14 @@
 
     <menuitem
         id="menu_avea_customer_credit"
-        name="Customer Credit"
-        parent="menu_avea_root"
-        action="action_avea_credit_dashboard"
+        name="Store Credit"
+        parent="menu_avea_customers_hub"
         groups="avea_till.group_avea_manager"
-        sequence="20"
+        sequence="5"
     />
 
     <record id="menu_avea_customer_credit" model="ir.ui.menu">
-        <field name="action" ref="action_avea_credit_dashboard"/>
+        <field name="action" eval="False"/>
     </record>
 
     <menuitem

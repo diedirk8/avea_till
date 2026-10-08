@@ -11,11 +11,28 @@
                 <field name="email"/>
                 <field name="phone"/>
                 <field name="city"/>
+                <field name="country_id"/>
                 <separator/>
                 <filter string="Has store credit" name="avea_has_store_credit" domain="[('avea_credit_balance', '>', 0)]"/>
+                <filter string="Customers with sales" name="avea_has_pos_sales" domain="[('avea_pos_order_count', '>', 0)]"/>
+                <filter
+                    string="Customers to follow up"
+                    name="avea_lapsed_regulars"
+                    domain="[('avea_visit_pattern_lapsed', '=', True)]"
+                    help="Regular customers who have not been in as long as they usually do."
+                />
+                <filter
+                    string="Visited in last 30 days"
+                    name="avea_visited_30d"
+                    domain="[('avea_last_visit', '>=', (context_today() - relativedelta(days=30)).strftime('%Y-%m-%d 00:00:00'))]"
+                />
                 <separator/>
                 <filter string="Active" name="avea_active" domain="[('active', '=', True)]"/>
                 <filter string="Archived" name="avea_archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="City" name="group_city" context="{'group_by': 'city'}"/>
+                    <filter string="Country" name="group_country" context="{'group_by': 'country_id'}"/>
+                </group>
             </search>
         </field>
     </record>
@@ -28,9 +45,11 @@
             <list
                 string="Customers"
                 class="o_avea_customer_list"
+                js_class="avea_customer_list"
                 create="1"
                 delete="0"
                 duplicate="0"
+                default_order="name asc"
             >
                 <button
                     name="action_avea_open_customer"
@@ -40,15 +59,63 @@
                     title="Open customer"
                     class="btn-link"
                 />
-                <field name="display_name" string="Customer"/>
-                <field name="email" optional="show"/>
+                <field name="display_name" string="Customer" class="o_avea_customer_wrap_cell"/>
+                <field name="email" optional="show" class="o_avea_customer_wrap_cell"/>
                 <field name="phone" optional="show"/>
-                <field name="city" optional="show"/>
+                <field name="avea_visit_rhythm_label" string="Usual visits" optional="show" class="o_avea_customer_wrap_cell"/>
+                <field
+                    name="avea_usual_visit_spend"
+                    string="Spend / visit"
+                    widget="monetary"
+                    optional="show"
+                    class="o_avea_customer_wrap_cell"
+                    options="{'currency_field': 'avea_pos_sales_currency_id'}"
+                />
+                <field name="avea_last_visit" string="Last visit" optional="show" class="o_avea_customer_wrap_cell"/>
+                <field name="avea_days_since_visit" string="Days away" optional="show" class="o_avea_customer_wrap_cell"/>
+                <field name="avea_usual_buys_category" string="Usually buys" optional="show" class="o_avea_customer_wrap_cell"/>
+                <field name="city" optional="hide"/>
                 <field name="avea_credit_currency_id" column_invisible="True"/>
                 <field name="avea_credit_balance" string="Store credit" widget="monetary" options="{'currency_field': 'avea_credit_currency_id'}"/>
-                <field name="currency_id" column_invisible="True"/>
-                <field name="avea_customer_account_balance" string="Account balance" widget="monetary" options="{'currency_field': 'currency_id'}" optional="show"/>
+                <field name="avea_pos_sales_currency_id" column_invisible="True"/>
+                <field
+                    name="avea_pos_sales_total"
+                    string="Total sales"
+                    widget="monetary"
+                    options="{'currency_field': 'avea_pos_sales_currency_id', 'allow_order': true}"
+                />
                 <field name="active" string="Active" widget="boolean_toggle" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_customer_pos_order_list" model="ir.ui.view">
+        <field name="name">avea.customer.pos.order.list</field>
+        <field name="model">pos.order</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <list string="Sales history" create="false" edit="false" delete="false" default_order="date_order desc">
+                <field name="currency_id" column_invisible="True"/>
+                <field name="date_order" string="Date"/>
+                <field name="pos_reference" string="Receipt"/>
+                <field name="amount_total" string="Total" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                <field name="state" string="Status" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_customer_credit_ledger_list" model="ir.ui.view">
+        <field name="name">avea.customer.credit.ledger.list</field>
+        <field name="model">avea.credit.ledger.entry</field>
+        <field name="priority">20</field>
+        <field name="arch" type="xml">
+            <list string="Store credit" create="false" edit="false" delete="false" default_order="transaction_date desc, id desc">
+                <field name="currency_id" column_invisible="True"/>
+                <field name="transaction_date" string="Date"/>
+                <field name="name" string="Reference"/>
+                <field name="reason_id" string="Reason"/>
+                <field name="amount" widget="credit_ledger_amount"/>
+                <field name="state" widget="badge" optional="hide"/>
             </list>
         </field>
     </record>
@@ -72,10 +139,24 @@
                                 <field name="name" nolabel="1" placeholder="Customer name" class="o_avea_customer_name_title"/>
                             </h1>
                             <p class="o_avea_workspace_section_subtitle">
-                                Contact details, balances, and store credit for this customer.
+                                Contact, sales history, and store credit in one place.
                             </p>
                         </div>
                         <div class="o_avea_customer_hero_actions">
+                            <button
+                                string="All sales"
+                                name="action_avea_open_sales_history"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Credit dashboard"
+                                name="action_avea_open_credit_dashboard"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
                             <button
                                 string="View ledger"
                                 name="action_open_store_credit"
@@ -91,11 +172,26 @@
                                 groups="avea_till.group_avea_credit_manager"
                                 invisible="not id"
                             />
+                            <button
+                                string="Credit statement"
+                                name="action_avea_open_credit_statement"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Possible duplicates"
+                                name="action_avea_show_related_duplicates"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
                             <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
                         </div>
                     </div>
 
                     <div class="o_avea_customer_workspace">
+                        <div class="o_avea_customer_main">
                         <div class="o_avea_stock_product_panel">
                             <h2 class="o_avea_workspace_section_title">
                                 <i class="fa fa-user" title="Contact" aria-hidden="true"/>
@@ -108,7 +204,7 @@
                                 </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Phone</span>
-                                    <field name="phone" nolabel="1" widget="phone"/>
+                                    <field name="phone" nolabel="1"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
                                     <span class="o_avea_workspace_info_label">Street</span>
@@ -125,6 +221,60 @@
                             </div>
                         </div>
 
+                        <div class="o_avea_stock_product_panel" invisible="not id">
+                            <div class="o_avea_customer_panel_heading">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-shopping-cart" title="Sales" aria-hidden="true"/>
+                                    Sales history
+                                </h2>
+                                <button
+                                    name="action_avea_open_sales_history"
+                                    type="object"
+                                    string="View all"
+                                    class="btn btn-link btn-sm"
+                                />
+                            </div>
+                            <field
+                                name="avea_pos_order_ids"
+                                nolabel="1"
+                                readonly="1"
+                                domain="[('state', 'in', ('paid', 'done', 'invoiced'))]"
+                            >
+                                <list create="false" edit="false" delete="false" default_order="date_order desc">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="date_order" string="Date"/>
+                                    <field name="pos_reference" string="Receipt"/>
+                                    <field name="amount_total" string="Total" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    <field name="state" string="Status" widget="badge"/>
+                                </list>
+                            </field>
+                        </div>
+
+                        <div class="o_avea_stock_product_panel" invisible="not id">
+                            <div class="o_avea_customer_panel_heading">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-credit-card" title="Store credit" aria-hidden="true"/>
+                                    Store credit
+                                </h2>
+                                <button
+                                    name="action_open_store_credit"
+                                    type="object"
+                                    string="Full ledger"
+                                    class="btn btn-link btn-sm"
+                                />
+                            </div>
+                            <field name="avea_credit_ledger_entry_ids" nolabel="1" readonly="1">
+                                <list create="false" edit="false" delete="false" default_order="transaction_date desc, id desc">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="transaction_date" string="Date"/>
+                                    <field name="name" string="Reference"/>
+                                    <field name="reason_id" string="Reason"/>
+                                    <field name="amount" widget="credit_ledger_amount"/>
+                                </list>
+                            </field>
+                        </div>
+                        </div>
+
                         <aside class="o_avea_customer_summary">
                             <div class="o_avea_stock_product_summary_card">
                                 <div class="o_avea_stock_product_summary_header">
@@ -137,8 +287,58 @@
                                         <field name="avea_credit_balance" nolabel="1" widget="monetary" readonly="1" options="{'currency_field': 'avea_credit_currency_id'}"/>
                                     </div>
                                     <div class="o_avea_stock_product_summary_row">
-                                        <span class="o_avea_stock_product_summary_label">Account balance</span>
-                                        <field name="avea_customer_account_balance" nolabel="1" widget="monetary" readonly="1" options="{'currency_field': 'currency_id'}"/>
+                                        <span class="o_avea_stock_product_summary_label">Last visit</span>
+                                        <field name="avea_last_visit" nolabel="1" readonly="1" widget="datetime"/>
+                                    </div>
+                                    <div
+                                        class="o_avea_stock_product_summary_row o_avea_customer_summary_wrap"
+                                        invisible="not avea_visit_rhythm_label"
+                                    >
+                                        <span class="o_avea_stock_product_summary_label">Usual visits</span>
+                                        <field name="avea_visit_rhythm_label" nolabel="1" readonly="1" class="o_avea_customer_summary_value"/>
+                                    </div>
+                                    <div
+                                        class="o_avea_stock_product_summary_row o_avea_customer_summary_wrap"
+                                        invisible="not avea_usual_visit_spend"
+                                    >
+                                        <span class="o_avea_stock_product_summary_label">Spend / visit</span>
+                                        <field
+                                            name="avea_usual_visit_spend"
+                                            nolabel="1"
+                                            readonly="1"
+                                            widget="monetary"
+                                            class="o_avea_customer_summary_value"
+                                            options="{'currency_field': 'avea_pos_sales_currency_id'}"
+                                        />
+                                    </div>
+                                    <div
+                                        class="o_avea_stock_product_summary_row o_avea_customer_summary_wrap"
+                                        invisible="not avea_usual_buys_category"
+                                    >
+                                        <span class="o_avea_stock_product_summary_label">Usually buys</span>
+                                        <field name="avea_usual_buys_category" nolabel="1" readonly="1" class="o_avea_customer_summary_value"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row" invisible="not avea_last_visit">
+                                        <span class="o_avea_stock_product_summary_label">Days away</span>
+                                        <field name="avea_days_since_visit" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div
+                                        class="o_avea_stock_product_summary_row o_avea_customer_pattern_alert"
+                                        invisible="not avea_visit_pattern_lapsed"
+                                    >
+                                        <span class="o_avea_stock_product_summary_label">Follow-up</span>
+                                        <span class="text-danger fw-semibold">
+                                            Customers to follow up
+                                        </span>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">POS sales</span>
+                                        <field name="avea_pos_order_count" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Sales total</span>
+                                        <field name="avea_pos_sales_currency_id" invisible="1"/>
+                                        <field name="avea_pos_sales_total" nolabel="1" widget="monetary" readonly="1" options="{'currency_field': 'avea_pos_sales_currency_id'}"/>
                                     </div>
                                 </div>
                                 <div class="o_avea_stock_product_summary_block">
@@ -156,7 +356,7 @@
     </record>
 
     <record id="action_avea_customer_centre" model="ir.actions.act_window">
-        <field name="name">Customer Centre</field>
+        <field name="name">Customers</field>
         <field name="res_model">res.partner</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_avea_customer_search"/>

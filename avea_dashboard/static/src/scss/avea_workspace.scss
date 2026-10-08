@@ -779,7 +779,7 @@
             max-height: none;
         }
 
-        .o_avea_products_sold_list .o_list_table {
+        .o_avea_products_sold_list:not(.o_avea_products_profit_list) .o_list_table {
             min-width: 0;
             table-layout: fixed;
             width: 100%;
@@ -818,6 +818,60 @@
                 line-height: 1.4;
                 padding-top: 0.55rem;
                 padding-bottom: 0.55rem;
+            }
+        }
+
+        .o_avea_products_profit_list {
+            .o_list_renderer {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .o_list_table {
+                min-width: 38rem;
+                table-layout: auto;
+                width: max-content;
+
+                thead th {
+                    hyphens: none;
+                    line-height: 1.25;
+                    max-width: none;
+                    overflow-wrap: normal;
+                    padding: 0.45rem 0.5rem;
+                    white-space: nowrap;
+                    word-break: normal;
+
+                    .text-truncate,
+                    span {
+                        overflow: visible !important;
+                        text-overflow: clip !important;
+                        white-space: nowrap !important;
+                        word-break: normal !important;
+                    }
+                }
+
+                th[data-name="name"],
+                td[name="name"] {
+                    max-width: 10rem;
+                    min-width: 6.5rem;
+                    white-space: normal;
+                    word-break: normal;
+                }
+
+                th[data-name="quantity_sold"],
+                td[name="quantity_sold"],
+                th[data-name="revenue_ex_tax"],
+                td[name="revenue_ex_tax"],
+                th[data-name="cost_total"],
+                td[name="cost_total"],
+                th[data-name="gross_profit"],
+                td[name="gross_profit"],
+                th[data-name="gross_margin_percent"],
+                td[name="gross_margin_percent"],
+                th[data-name="discount_given"],
+                td[name="discount_given"] {
+                    width: auto !important;
+                }
             }
         }
     }

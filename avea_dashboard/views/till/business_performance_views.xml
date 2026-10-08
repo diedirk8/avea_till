@@ -325,7 +325,7 @@
                                 </div>
                                 <div class="o_avea_workspace_ledger_card o_avea_products_sold_card" invisible="not show_profit_products">
                                     <field name="profit_product_line_ids" nolabel="1" readonly="1">
-                                        <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                        <list create="false" edit="false" delete="false" class="o_avea_products_sold_list o_avea_products_profit_list">
                                             <field name="name" string="Product"/>
                                             <field name="quantity_sold" string="Qty"/>
                                             <field name="revenue_ex_tax" string="Sales" widget="monetary"/>
@@ -354,7 +354,7 @@
                                 </div>
                                 <div class="o_avea_workspace_ledger_card o_avea_products_sold_card" invisible="not show_profit_categories">
                                     <field name="profit_category_line_ids" nolabel="1" readonly="1">
-                                        <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                        <list create="false" edit="false" delete="false" class="o_avea_products_sold_list o_avea_products_profit_list">
                                             <field name="name" string="Category"/>
                                             <field name="quantity_sold" string="Qty"/>
                                             <field name="revenue_ex_tax" string="Sales" widget="monetary"/>

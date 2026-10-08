@@ -84,6 +84,12 @@
     td[name="gross_profit"],
     th[data-name="sales_value"],
     td[name="sales_value"],
+    th[data-name="cost_total"],
+    td[name="cost_total"],
+    th[data-name="gross_margin_percent"],
+    td[name="gross_margin_percent"],
+    th[data-name="discount_given"],
+    td[name="discount_given"],
     th[data-name="counted_qty"],
     td[name="counted_qty"],
     td.o_list_button,
@@ -105,7 +111,10 @@
     td[name="quantity_sold"] .o_field_widget,
     td[name="revenue_ex_tax"] .o_field_widget,
     td[name="gross_profit"] .o_field_widget,
-    td[name="sales_value"] .o_field_widget {
+    td[name="sales_value"] .o_field_widget,
+    td[name="cost_total"] .o_field_widget,
+    td[name="gross_margin_percent"] .o_field_widget,
+    td[name="discount_given"] .o_field_widget {
         white-space: nowrap !important;
     }
 
