@@ -83,6 +83,10 @@ class AveaStockHistoryListController extends ListController {
     async openReturnHistory() {
         await this.actionService.doAction("avea_till.action_avea_stock_return_history");
     }
+
+    async openStockTakeHistory() {
+        await this.actionService.doAction("avea_till.action_avea_stock_take_history");
+    }
 }
 
 export class AveaStockReceiveHistoryListController extends AveaStockHistoryListController {
@@ -91,6 +95,10 @@ export class AveaStockReceiveHistoryListController extends AveaStockHistoryListC
 
 export class AveaStockReturnHistoryListController extends AveaStockHistoryListController {
     static template = "avea_till.StockReturnHistoryList";
+}
+
+export class AveaStockTakeHistoryListController extends AveaStockHistoryListController {
+    static template = "avea_till.StockTakeHistoryList";
 }
 
 registry.category("views").add("avea_stock_receive_history_list", {
@@ -105,6 +113,15 @@ registry.category("views").add("avea_stock_receive_history_list", {
 registry.category("views").add("avea_stock_return_history_list", {
     ...listView,
     Controller: AveaStockReturnHistoryListController,
+    props: (genericProps, view) => {
+        const props = listView.props(genericProps, view);
+        return { ...props, allowSelectors: false };
+    },
+});
+
+registry.category("views").add("avea_stock_take_history_list", {
+    ...listView,
+    Controller: AveaStockTakeHistoryListController,
     props: (genericProps, view) => {
         const props = listView.props(genericProps, view);
         return { ...props, allowSelectors: false };

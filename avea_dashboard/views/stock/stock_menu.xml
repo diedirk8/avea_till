@@ -68,4 +68,13 @@
         sequence="13"
     />
 
+    <menuitem
+        id="menu_avea_stock_take_history"
+        name="Stock take history"
+        parent="menu_avea_stock"
+        action="action_avea_stock_take_history"
+        groups="avea_till.group_avea_manager"
+        sequence="14"
+    />
+
 </odoo>

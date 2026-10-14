@@ -182,6 +182,27 @@ class TestAveaStockTake(TransactionCase):
         self.assertEqual(action["tag"], "avea_stock_take")
         self.assertFalse(action["params"]["stock_take_id"])
 
+    def test_stock_take_history_lists_applied_and_cancelled(self):
+        applied = self._create_take(manual_product_ids=[Command.set([self.product_a.id])])
+        applied.line_ids._avea_set_counted_qty(2.0)
+        applied.action_prepare_review()
+        applied.action_apply_stock_take()
+        self.assertTrue(applied.history_date)
+
+        cancelled = self._create_take(manual_product_ids=[Command.set([self.product_b.id])])
+        cancelled.action_cancel_stock_take()
+        self.assertTrue(cancelled.history_date)
+
+        action = self.env["avea.stock.take"].action_open_stock_take_history()
+        self.assertEqual(action["res_model"], "avea.stock.take")
+        history = self.env["avea.stock.take"].search(action["domain"])
+        self.assertIn(applied, history)
+        self.assertIn(cancelled, history)
+        self.assertEqual(
+            cancelled.action_back_to_stock_take_history()["res_model"],
+            "avea.stock.take",
+        )
+
     def test_resume_draft_for_user(self):
         stock_take = self.env["avea.stock.take"].create(
             {

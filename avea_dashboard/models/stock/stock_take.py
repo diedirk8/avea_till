@@ -101,6 +101,36 @@ class AveaStockTake(models.Model):
     total_variance = fields.Float(compute="_compute_stats", digits="Product Unit")
     applied_at = fields.Datetime(copy=False)
     applied_by = fields.Many2one("res.users", copy=False)
+    history_date = fields.Datetime(
+        string="Completed",
+        compute="_compute_history_date",
+        store=True,
+    )
+    scope_label = fields.Char(
+        string="Scope",
+        compute="_compute_scope_label",
+    )
+
+    @api.depends("state", "applied_at", "write_date")
+    def _compute_history_date(self):
+        for stock_take in self:
+            if stock_take.state == "applied":
+                stock_take.history_date = stock_take.applied_at
+            elif stock_take.state == "cancelled":
+                stock_take.history_date = stock_take.write_date
+            else:
+                stock_take.history_date = False
+
+    @api.depends(
+        "scope_mode",
+        "filter_category_id",
+        "filter_supplier_id",
+        "filter_product_name",
+        "manual_product_ids",
+    )
+    def _compute_scope_label(self):
+        for stock_take in self:
+            stock_take.scope_label = stock_take._avea_scope_label()
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -589,6 +619,31 @@ class AveaStockTake(models.Model):
         if existing:
             return existing._avea_open_client_action()
         return self._avea_open_client_action(new=True)
+
+    @api.model
+    def action_open_stock_take_history(self):
+        view_id = self.env.ref("avea_till.view_avea_stock_take_history_list").id
+        form_id = self.env.ref("avea_till.view_avea_stock_take_history_form").id
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Stock take history"),
+            "res_model": self._name,
+            "view_mode": "list,form",
+            "views": [(view_id, "list"), (form_id, "form")],
+            "domain": [("state", "in", ("applied", "cancelled"))],
+            "search_view_id": self.env.ref(
+                "avea_till.view_avea_stock_take_history_search"
+            ).id,
+            "target": "main",
+            "context": {
+                "clear_breadcrumbs": True,
+                "create": False,
+                "avea_stock_history_readonly": True,
+            },
+        }
+
+    def action_back_to_stock_take_history(self):
+        return self.action_open_stock_take_history()
 
 
 class AveaStockTakeLine(models.Model):
