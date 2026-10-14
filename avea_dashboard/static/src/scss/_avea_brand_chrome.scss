@@ -1,0 +1,160 @@
+// Shared Avea orange interactive chrome (buttons, links, focus, toggles).
+// Included on workspace roots and on body.o_avea_product_shell.
+
+@mixin avea-brand-tokens {
+    --avea-brand: #c45c26;
+    --avea-brand-hover: #a84d1f;
+    --avea-brand-soft: rgba(196, 92, 38, 0.12);
+    --avea-brand-border: rgba(196, 92, 38, 0.35);
+    --avea-brand-focus: rgba(196, 92, 38, 0.22);
+    --bs-primary: var(--avea-brand);
+    --bs-primary-rgb: 196, 92, 38;
+    --bs-link-color: var(--avea-brand);
+    --bs-link-hover-color: var(--avea-brand-hover);
+}
+
+@mixin avea-brand-chrome {
+    @include avea-brand-tokens;
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand) !important;
+    }
+
+    .btn-primary,
+    .btn.btn-primary,
+    .o_form_button_save,
+    .o_form_button_create,
+    .o_list_button_add {
+        --bs-btn-bg: var(--avea-brand);
+        --bs-btn-border-color: var(--avea-brand);
+        --bs-btn-hover-bg: var(--avea-brand-hover);
+        --bs-btn-hover-border-color: var(--avea-brand-hover);
+        --bs-btn-active-bg: var(--avea-brand-hover);
+        --bs-btn-active-border-color: var(--avea-brand-hover);
+        --bs-btn-focus-shadow-rgb: 196, 92, 38;
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+        color: #fff !important;
+
+        &:hover,
+        &:focus,
+        &:active,
+        &.active {
+            background-color: var(--avea-brand-hover) !important;
+            border-color: var(--avea-brand-hover) !important;
+            color: #fff !important;
+        }
+    }
+
+    .btn-outline-primary,
+    .btn.btn-outline-primary {
+        --bs-btn-color: var(--avea-brand);
+        --bs-btn-border-color: var(--avea-brand);
+        --bs-btn-hover-bg: var(--avea-brand-soft);
+        --bs-btn-hover-border-color: var(--avea-brand);
+        --bs-btn-active-bg: var(--avea-brand-soft);
+        --bs-btn-active-border-color: var(--avea-brand);
+        color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+
+        &:hover,
+        &:focus,
+        &:active {
+            background-color: var(--avea-brand-soft) !important;
+            color: var(--avea-brand-hover) !important;
+            border-color: var(--avea-brand-hover) !important;
+        }
+    }
+
+    .btn-secondary.o_avea_period_btn,
+    .o_avea_period_btn.btn-outline-secondary {
+        &:hover,
+        &:focus {
+            background: var(--avea-brand-soft) !important;
+            border-color: var(--avea-brand-border) !important;
+            color: var(--avea-brand) !important;
+        }
+    }
+
+    .btn-link,
+    .btn.btn-link,
+    a.btn-link {
+        color: var(--avea-brand) !important;
+
+        &:hover,
+        &:focus {
+            color: var(--avea-brand-hover) !important;
+        }
+    }
+
+    .text-primary,
+    .text-action {
+        color: var(--avea-brand) !important;
+    }
+
+    a:not(.btn):not(.dropdown-item):not(.o_avea_sidebar_link):not(.o_avea_user_menu_item) {
+        &.text-action,
+        &.text-primary {
+            color: var(--avea-brand);
+
+            &:hover {
+                color: var(--avea-brand-hover);
+            }
+        }
+    }
+
+    .nav-tabs .nav-link.active,
+    .nav-pills .nav-link.active {
+        color: var(--avea-brand);
+    }
+
+    .nav-tabs .nav-link.active {
+        border-bottom-color: var(--avea-brand);
+    }
+
+    .page-item.active .page-link {
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+    }
+
+    .form-check-input:checked,
+    .form-switch .form-check-input:checked {
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+    }
+
+    .o_field_boolean_toggle .form-check-input:checked {
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+    }
+
+    .form-control:focus,
+    .form-select:focus,
+    .o_input:focus {
+        border-color: var(--avea-brand);
+        box-shadow: 0 0 0 0.2rem var(--avea-brand-focus);
+    }
+
+    .badge.text-bg-primary {
+        background-color: var(--avea-brand) !important;
+    }
+
+    .o_field_widget .o_external_button,
+    .o_field_widget .o_input_dropdown .o_dropdown_button,
+    .o_list_renderer .o_optional_columns_dropdown_toggle {
+        color: var(--avea-brand);
+    }
+
+    .o_data_row.o_data_row_selected,
+    .o_list_renderer .o_data_row.o_data_row_selected > .o_data_cell {
+        background-color: var(--avea-brand-soft) !important;
+    }
+
+    .o_avea_stock_filter_input:focus,
+    .o_avea_stock_filter_select:focus,
+    .o_avea_promotion_product_search:focus,
+    input[type="search"].form-control:focus {
+        border-color: var(--avea-brand);
+        box-shadow: 0 0 0 3px var(--avea-brand-soft);
+    }
+}

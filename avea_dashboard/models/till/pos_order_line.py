@@ -2,12 +2,19 @@ import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools.float_utils import float_compare, float_is_zero
 from odoo.tools.misc import format_date, format_time
 
 
 class PosOrderLine(models.Model):
     _inherit = ["pos.order.line", "avea.performance.analytics.mixin"]
 
+    avea_retail_unit_ex_tax = fields.Float(
+        string="Retail unit EX tax at sale",
+        digits="Product Price",
+        copy=False,
+        help="Catalog retail price (EX tax) captured when the sale line was created.",
+    )
     avea_order_date = fields.Datetime(
         string="Sale date",
         related="order_id.date_order",
@@ -100,6 +107,78 @@ class PosOrderLine(models.Model):
                     name = raw[len(f"[{reference}]") :].strip() or raw
             line.avea_product_reference = reference or False
             line.avea_product_display = name or raw
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        Product = self.env["product.product"]
+        for vals in vals_list:
+            if vals.get("avea_retail_unit_ex_tax") or not vals.get("product_id"):
+                continue
+            product = Product.browse(vals["product_id"])
+            if not product or product.type in ("service", "combo"):
+                continue
+            template = product.product_tmpl_id
+            if template:
+                _, _, retail_ex, _, _ = template._avea_pricing_tuple()
+                vals["avea_retail_unit_ex_tax"] = retail_ex
+        return super().create(vals_list)
+
+    def _avea_sale_time_retail_unit_ex_tax(self):
+        """Normal retail EX tax at sale time (stored), with legacy fallbacks."""
+        self.ensure_one()
+        if self.avea_retail_unit_ex_tax:
+            return float(self.avea_retail_unit_ex_tax)
+        if self.discount:
+            return float(self.price_unit or 0.0)
+        qty = float(self.qty or 0.0)
+        if qty:
+            return abs(float(self.price_subtotal or 0.0) / qty)
+        return float(self.price_unit or 0.0)
+
+    def _avea_sale_time_retail_unit_inc_tax(self):
+        """Normal retail INC tax at sale time (from stored EX retail)."""
+        self.ensure_one()
+        template = self.product_id.product_tmpl_id
+        if not template:
+            return 0.0
+        return template._avea_retail_inc_vat_from_ex(
+            self._avea_sale_time_retail_unit_ex_tax()
+        )
+
+    def _avea_discount_given_ex_tax(self):
+        """Signed discount EX tax: positive when less than normal retail was charged."""
+        self.ensure_one()
+        if self.avea_combo_program_id or self.is_reward_line:
+            return -float(self.price_subtotal or 0.0)
+        if (
+            not self.product_id
+            or self.product_id.type in ("service", "combo")
+            or self.combo_line_ids
+        ):
+            return 0.0
+        qty = float(self.qty or 0.0)
+        if not qty:
+            return 0.0
+        currency = self.order_id.currency_id or self.env.company.currency_id
+        actual = float(self.price_subtotal or 0.0)
+        # Some refund lines keep a positive subtotal while qty is negative.
+        if qty < 0.0 and actual > 0.0:
+            actual = -actual
+        # No line discount % and customer paid shelf INC tax (or more): not a discount.
+        # This avoids EX-tax / tax-inclusive conversion penny gaps on full-price sales.
+        if not self.discount:
+            retail_unit_inc = self._avea_sale_time_retail_unit_inc_tax()
+            shelf_inc = currency.round(retail_unit_inc * abs(qty))
+            actual_inc = currency.round(abs(float(self.price_subtotal_incl or 0.0)))
+            if float_compare(
+                actual_inc, shelf_inc, precision_rounding=currency.rounding
+            ) >= 0:
+                return 0.0
+        retail_ex = self._avea_sale_time_retail_unit_ex_tax()
+        gap = currency.round((retail_ex * qty) - actual)
+        if float_is_zero(gap, precision_rounding=currency.rounding):
+            return 0.0
+        return gap
 
     @api.model
     def _avea_sales_ledger_domain(self):

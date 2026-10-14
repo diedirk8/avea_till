@@ -1,6 +1,14 @@
 // Shared Avea Till workspace styling for Session Dashboard and Cash Ledger.
+// Brand mixins: _avea_brand_chrome.scss (loaded earlier in web.assets_backend).
+
+.o_form_view.o_avea_workspace,
+.o_list_view.o_avea_workspace {
+    @include avea-brand-chrome;
+}
 
 .o_avea_workspace {
+    @include avea-brand-chrome;
+
     --avea-info: #01666b;
     --avea-info-soft: rgba(1, 102, 107, 0.08);
     --avea-info-border: rgba(1, 102, 107, 0.22);
@@ -93,7 +101,7 @@
     }
 
     .o_avea_workspace_eyebrow {
-        color: var(--avea-info);
+        color: var(--avea-brand, #c45c26);
         display: block;
         font-size: 0.75rem;
         font-weight: 700;
@@ -334,6 +342,37 @@
         min-height: 8rem;
         min-width: 0;
         padding: 1.25rem 1.35rem 1.3rem;
+    }
+
+    .o_avea_workspace_kpi_card--clickable {
+        position: relative;
+        cursor: pointer;
+
+        &:hover {
+            border-color: var(--avea-nav-brand, #c45c26);
+            box-shadow: 0 0.15rem 0.65rem rgba(31, 41, 55, 0.08);
+        }
+    }
+
+    .o_avea_kpi_drilldown_hitarea {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        margin: 0;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        cursor: pointer;
+    }
+
+    .o_avea_report_back_btn {
+        align-self: flex-start;
+        margin: 0 0 0.35rem;
+        padding: 0;
+    }
+
+    .o_avea_workspace_kpi_grid--report_summary {
+        grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
     }
 
     .o_avea_workspace_kpi_card--compact {
@@ -740,7 +779,7 @@
             max-height: none;
         }
 
-        .o_avea_products_sold_list .o_list_table {
+        .o_avea_products_sold_list:not(.o_avea_products_profit_list) .o_list_table {
             min-width: 0;
             table-layout: fixed;
             width: 100%;
@@ -781,7 +820,66 @@
                 padding-bottom: 0.55rem;
             }
         }
+
+        .o_avea_products_profit_list {
+            .o_list_renderer {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .o_list_table {
+                min-width: 38rem;
+                table-layout: auto;
+                width: max-content;
+
+                thead th {
+                    hyphens: none;
+                    line-height: 1.25;
+                    max-width: none;
+                    overflow-wrap: normal;
+                    padding: 0.45rem 0.5rem;
+                    white-space: nowrap;
+                    word-break: normal;
+
+                    .text-truncate,
+                    span {
+                        overflow: visible !important;
+                        text-overflow: clip !important;
+                        white-space: nowrap !important;
+                        word-break: normal !important;
+                    }
+                }
+
+                th[data-name="name"],
+                td[name="name"] {
+                    max-width: 10rem;
+                    min-width: 6.5rem;
+                    white-space: normal;
+                    word-break: normal;
+                }
+
+                th[data-name="quantity_sold"],
+                td[name="quantity_sold"],
+                th[data-name="revenue_ex_tax"],
+                td[name="revenue_ex_tax"],
+                th[data-name="cost_total"],
+                td[name="cost_total"],
+                th[data-name="gross_profit"],
+                td[name="gross_profit"],
+                th[data-name="gross_margin_percent"],
+                td[name="gross_margin_percent"],
+                th[data-name="discount_given"],
+                td[name="discount_given"] {
+                    width: auto !important;
+                }
+            }
+        }
     }
+}
+
+.o_form_view.o_avea_wizard,
+.o_avea_wizard {
+    @include avea-brand-chrome;
 }
 
 .o_avea_wizard {

@@ -5,6 +5,7 @@
         id="menu_avea_operations"
         name="Operations"
         parent="menu_avea_root"
+        groups="avea_till.group_avea_manager"
         sequence="18"
     />
 
@@ -17,6 +18,7 @@
         name="Account Balances"
         parent="menu_avea_operations"
         action="action_avea_account_balance_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="5"
     />
 
@@ -25,6 +27,7 @@
         name="Add Operational Expense"
         parent="menu_avea_operations"
         action="action_avea_operational_expense_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="10"
     />
 
@@ -33,6 +36,7 @@
         name="Transfer Money"
         parent="menu_avea_operations"
         action="action_avea_money_transfer_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="20"
     />
 
@@ -41,6 +45,7 @@
         name="Withdraw Cash"
         parent="menu_avea_operations"
         action="action_avea_withdraw_cash_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="25"
     />
 
@@ -49,6 +54,7 @@
         name="Manual Journal"
         parent="menu_avea_operations"
         action="action_avea_manual_journal_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="30"
     />
 

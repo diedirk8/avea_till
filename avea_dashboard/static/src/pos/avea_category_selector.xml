@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="avea_till.AveaCategorySelector">
+        <div class="avea-category-nav" t-if="rootCategories.length">
+            <div class="avea-category-scroll">
+                <button
+                    type="button"
+                    class="avea-category-pill"
+                    t-att-class="{ 'avea-category-pill--active': isAllProductsSelected() }"
+                    t-on-click="selectAllProducts"
+                >
+                    <t t-esc="allProductsLabel"/>
+                </button>
+                <button
+                    t-if="showParentPill"
+                    type="button"
+                    class="avea-category-pill avea-category-pill--parent"
+                    t-on-click="selectParentCategory"
+                >
+                    <i class="fa fa-chevron-left me-1" aria-hidden="true"/>
+                    <t t-esc="parentCategory.name"/>
+                </button>
+                <button
+                    t-foreach="visibleCategories"
+                    t-as="category"
+                    t-key="category.id"
+                    type="button"
+                    class="avea-category-pill"
+                    t-att-class="{ 'avea-category-pill--active': isCategorySelected(category) }"
+                    t-on-click="() => this.selectCategory(category)"
+                    t-esc="category.name"
+                />
+            </div>
+        </div>
+    </t>
+
+</templates>

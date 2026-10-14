@@ -182,6 +182,27 @@ class TestAveaStockTake(TransactionCase):
         self.assertEqual(action["tag"], "avea_stock_take")
         self.assertFalse(action["params"]["stock_take_id"])
 
+    def test_stock_take_history_lists_applied_and_cancelled(self):
+        applied = self._create_take(manual_product_ids=[Command.set([self.product_a.id])])
+        applied.line_ids._avea_set_counted_qty(2.0)
+        applied.action_prepare_review()
+        applied.action_apply_stock_take()
+        self.assertTrue(applied.history_date)
+
+        cancelled = self._create_take(manual_product_ids=[Command.set([self.product_b.id])])
+        cancelled.action_cancel_stock_take()
+        self.assertTrue(cancelled.history_date)
+
+        action = self.env["avea.stock.take"].action_open_stock_take_history()
+        self.assertEqual(action["res_model"], "avea.stock.take")
+        history = self.env["avea.stock.take"].search(action["domain"])
+        self.assertIn(applied, history)
+        self.assertIn(cancelled, history)
+        self.assertEqual(
+            cancelled.action_back_to_stock_take_history()["res_model"],
+            "avea.stock.take",
+        )
+
     def test_resume_draft_for_user(self):
         stock_take = self.env["avea.stock.take"].create(
             {
@@ -209,6 +230,105 @@ class TestAveaStockTake(TransactionCase):
         self.assertEqual(product_ids, {self.product_a.id, self.product_b.id})
         self.assertIn("category_name", result["products"][0])
         self.assertIn("qty_available", result["products"][0])
+
+    def test_zero_and_archive_product(self):
+        self._set_qty(self.product_a, 6.0)
+        self.env["avea.stock.take"].action_zero_and_archive_product(self.product_a.id)
+        self.assertAlmostEqual(self._qty(self.product_a), 0.0, places=2)
+        self.assertFalse(self.product_a.product_tmpl_id.active)
+        self.assertFalse(self.product_a.active)
+
+    def test_zero_and_archive_line_on_partial_stock_take(self):
+        self._set_qty(self.product_a, 4.0)
+        stock_take = self._create_take(
+            scope_mode="partial",
+            manual_product_ids=[Command.set([self.product_a.id])],
+        )
+        line = stock_take.line_ids.filtered(lambda record: record.product_id == self.product_a)
+        stock_take.action_zero_and_archive_line(line.id)
+        self.assertAlmostEqual(self._qty(self.product_a), 0.0, places=2)
+        self.assertTrue(line.is_counted)
+        self.assertTrue(line.is_applied)
+        self.assertFalse(self.product_a.active)
+
+    def test_search_products_for_selection_pagination(self):
+        result = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": self.category_a.id,
+            },
+            offset=0,
+            limit=1,
+        )
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(len(result["products"]), 1)
+        self.assertEqual(result["offset"], 0)
+        self.assertTrue(result["has_more"])
+
+        result_page_two = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": self.category_a.id,
+            },
+            offset=1,
+            limit=1,
+        )
+        self.assertEqual(result_page_two["count"], 2)
+        self.assertEqual(len(result_page_two["products"]), 1)
+        self.assertEqual(result_page_two["offset"], 1)
+        self.assertFalse(result_page_two["has_more"])
+        first_ids = {row["id"] for row in result["products"]}
+        second_ids = {row["id"] for row in result_page_two["products"]}
+        self.assertEqual(first_ids & second_ids, set())
+
+    def test_search_products_for_selection_accepts_pagination_in_values(self):
+        """OWL RPC should pass a single values dict (offset/limit inside), not extra positional args."""
+        result = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": self.category_a.id,
+                "selection_offset": 1,
+                "selection_limit": 1,
+            }
+        )
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(len(result["products"]), 1)
+        self.assertEqual(result["offset"], 1)
+        self.assertFalse(result["has_more"])
+
+    def test_product_ids_matching_partial_filters(self):
+        result = self.env["avea.stock.take"].product_ids_matching_partial_filters(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": self.category_a.id,
+            }
+        )
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(set(result["product_ids"]), {self.product_a.id, self.product_b.id})
+
+    def test_search_products_for_selection_accepts_string_many2one_ids(self):
+        """OWL <select> values arrive as strings; filters must still apply."""
+        result = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": str(self.category_b.id),
+                "filter_supplier_id": str(self.supplier.id),
+            }
+        )
+        product_ids = {row["id"] for row in result["products"]}
+        self.assertEqual(product_ids, set())
+        self.assertEqual(result["count"], 0)
+
+        result = self.env["avea.stock.take"].search_products_for_selection(
+            {
+                "scope_mode": "partial",
+                "filter_category_id": str(self.category_a.id),
+                "filter_supplier_id": str(self.supplier.id),
+            }
+        )
+        product_ids = {row["id"] for row in result["products"]}
+        self.assertEqual(result["count"], 2)
+        self.assertEqual(product_ids, {self.product_a.id, self.product_b.id})
 
     def test_partial_without_products_cannot_start(self):
         stock_take = self.env["avea.stock.take"].create(
@@ -260,3 +380,67 @@ class TestAveaStockTake(TransactionCase):
         stock_take.action_apply_stock_take()
         self.assertAlmostEqual(self._qty(self.product_a), 12.0, places=2)
         self.assertAlmostEqual(self._qty(self.product_b), 0.0, places=2)
+
+    def test_stock_take_report_summary_fields(self):
+        self.product_a.product_tmpl_id.standard_price = 10.0
+        self.product_b.product_tmpl_id.standard_price = 4.0
+        self._set_qty(self.product_a, 8.0)
+        self._set_qty(self.product_b, 5.0)
+        stock_take = self._create_take(
+            manual_product_ids=[Command.set([self.product_a.id, self.product_b.id])],
+        )
+        line_a = stock_take.line_ids.filtered(lambda line: line.product_id == self.product_a)
+        line_b = stock_take.line_ids.filtered(lambda line: line.product_id == self.product_b)
+        line_a._avea_set_counted_qty(10.0)
+        line_b._avea_set_counted_qty(3.0)
+        stock_take.action_prepare_review()
+        stock_take.action_apply_stock_take()
+        self.assertEqual(stock_take.increase_count, 1)
+        self.assertEqual(stock_take.decrease_count, 1)
+        self.assertEqual(stock_take.unchanged_count, 0)
+        self.assertAlmostEqual(stock_take.total_gain_value, 20.0, places=2)
+        self.assertAlmostEqual(stock_take.total_loss_value, 8.0, places=2)
+        self.assertAlmostEqual(stock_take.net_stock_value_impact, 12.0, places=2)
+        self.assertEqual(line_a.variance_direction, "increase")
+        self.assertEqual(line_b.variance_direction, "decrease")
+        payload = stock_take.get_stock_take_report_payload()
+        self.assertEqual(len(payload["variance_lines"]), 2)
+        self.assertEqual(len(payload["all_lines"]), 2)
+        report = self.env.ref("avea_till.action_report_avea_stock_take")
+        html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            report.report_name, stock_take.ids
+        )
+        self.assertIn(stock_take.name.encode(), html)
+        self.assertIn(b"Stock Take Report", html)
+
+    def test_stock_take_report_summary_fields(self):
+        self.product_a.product_tmpl_id.standard_price = 10.0
+        self.product_b.product_tmpl_id.standard_price = 4.0
+        self._set_qty(self.product_a, 8.0)
+        self._set_qty(self.product_b, 5.0)
+        stock_take = self._create_take(
+            manual_product_ids=[Command.set([self.product_a.id, self.product_b.id])],
+        )
+        line_a = stock_take.line_ids.filtered(lambda line: line.product_id == self.product_a)
+        line_b = stock_take.line_ids.filtered(lambda line: line.product_id == self.product_b)
+        line_a._avea_set_counted_qty(10.0)
+        line_b._avea_set_counted_qty(3.0)
+        stock_take.action_prepare_review()
+        stock_take.action_apply_stock_take()
+        self.assertEqual(stock_take.increase_count, 1)
+        self.assertEqual(stock_take.decrease_count, 1)
+        self.assertEqual(stock_take.unchanged_count, 0)
+        self.assertAlmostEqual(stock_take.total_gain_value, 20.0, places=2)
+        self.assertAlmostEqual(stock_take.total_loss_value, 8.0, places=2)
+        self.assertAlmostEqual(stock_take.net_stock_value_impact, 12.0, places=2)
+        self.assertEqual(line_a.variance_direction, "increase")
+        self.assertEqual(line_b.variance_direction, "decrease")
+        payload = stock_take.get_stock_take_report_payload()
+        self.assertEqual(len(payload["variance_lines"]), 2)
+        self.assertEqual(len(payload["all_lines"]), 2)
+        report = self.env.ref("avea_till.action_report_avea_stock_take")
+        html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            report.report_name, stock_take.ids
+        )
+        self.assertIn(stock_take.name.encode(), html)
+        self.assertIn(b"Stock Take Report", html)

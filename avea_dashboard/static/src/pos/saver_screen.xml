@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="point_of_sale.SaverScreen" t-inherit="point_of_sale.SaverScreen" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('pos-logo')]" position="replace">
+            <img
+                class="avea-pos-saver-logo"
+                src="/avea_till/static/src/img/avea_pos_logo.png"
+                alt="Avea"
+            />
+        </xpath>
+    </t>
+
+</templates>

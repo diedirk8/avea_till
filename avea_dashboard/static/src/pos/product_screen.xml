@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="avea_till.ProductScreen">
+        <div class="product-screen avea-product-screen d-flex h-100 overflow-hidden">
+            <section
+                class="avea-products-pane d-flex flex-column"
+                t-att-class="{
+                    'flex-grow-1 w-100 mw-100': ui.isSmall,
+                    'd-none': ui.isSmall and pos.mobile_pane !== 'right',
+                }"
+            >
+                <div class="avea-products-toolbar">
+                    <div class="avea-product-tabs">
+                        <button
+                            t-foreach="aveaProductTabs"
+                            t-as="tab"
+                            t-key="tab.id"
+                            type="button"
+                            class="avea-product-tab"
+                            t-att-class="{ 'avea-product-tab--active': isAveaProductTabActive(tab.id) }"
+                            t-on-click="() => this.aveaSetProductTab(tab.id)"
+                        >
+                            <i t-attf-class="fa {{ tab.icon }} me-1" aria-hidden="true"/>
+                            <span t-esc="tab.label"/>
+                        </button>
+                    </div>
+                    <div class="avea-products-search-row">
+                        <Input
+                            tModel="[pos, 'searchProductWord']"
+                            class="'avea-products-search'"
+                            placeholder.translate="Search products, SKU or barcode..."
+                            icon="{type: 'fa', value: 'fa-search'}"
+                            debounceMillis="500"
+                        />
+                        <button
+                            type="button"
+                            class="btn btn-secondary avea-scan-btn"
+                            t-on-click="aveaToggleScan"
+                        >
+                            <i class="fa fa-barcode me-1" aria-hidden="true"/>
+                            <span t-if="!ui.isSmall">Scan</span>
+                        </button>
+                    </div>
+                    <AveaCategorySelector t-if="!pos.scanning"/>
+                </div>
+
+                <div class="avea-products-body position-relative d-flex flex-column flex-grow-1 overflow-hidden">
+                    <BarcodeVideoScanner t-if="pos.scanning" t-props="barcodeVideoScannerProps"/>
+
+                    <t t-elif="aveaProductCount > 0">
+                        <div class="avea-products-meta">
+                            <span class="avea-products-count">
+                                Showing <t t-esc="aveaPaginatedProducts.length"/> of <t t-esc="aveaProductCount"/> products
+                            </span>
+                        </div>
+
+                        <div t-if="aveaIsListLayout" class="avea-product-list flex-grow-1 overflow-y-auto" t-on-scroll="onScroll">
+                            <table class="avea-product-table">
+                                <thead>
+                                    <tr>
+                                        <th class="avea-col-fav" aria-label="Favourite"/>
+                                        <th class="avea-col-product">Product</th>
+                                        <th t-if="aveaShowProductCode" class="avea-col-sku">SKU</th>
+                                        <th class="avea-col-price">Price</th>
+                                        <th t-if="aveaShowStockQuantity or aveaShowStockStatus" class="avea-col-stock">Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        t-foreach="aveaPaginatedProducts"
+                                        t-as="product"
+                                        t-key="product.id"
+                                        class="avea-product-row"
+                                        role="button"
+                                        tabindex="0"
+                                        t-on-click="() => this.addProductToOrder(product)"
+                                        t-on-mousedown="(event) => this.onMouseDown(event, product)"
+                                        t-on-mouseup="longPressHandlers.onMouseUp"
+                                        t-on-touchstart="(event) => this.onTouchStart(product)"
+                                        t-on-touchend="longPressHandlers.onTouchEnd"
+                                    >
+                                        <td class="avea-col-fav">
+                                            <button
+                                                type="button"
+                                                class="btn btn-link avea-fav-btn p-0"
+                                                t-on-click.stop="() => this.aveaToggleFavorite(product)"
+                                                t-att-title="product.is_favorite ? 'Remove favourite' : 'Add favourite'"
+                                            >
+                                                <i
+                                                    t-attf-class="fa {{ product.is_favorite ? 'fa-star text-warning' : 'fa-star-o' }}"
+                                                    aria-hidden="true"
+                                                />
+                                            </button>
+                                        </td>
+                                        <td class="avea-col-product">
+                                            <div class="avea-product-cell">
+                                                <img
+                                                    t-if="aveaShowProductImages"
+                                                    class="avea-product-thumb"
+                                                    t-att-src="getProductImage(product)"
+                                                    t-att-alt="getProductName(product)"
+                                                    draggable="false"
+                                                />
+                                                <div class="avea-product-copy">
+                                                    <span class="avea-product-name" t-esc="getProductName(product)"/>
+                                                    <span
+                                                        t-if="getProductCategoryLabel(product)"
+                                                        class="avea-product-category"
+                                                        t-esc="getProductCategoryLabel(product)"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td t-if="aveaShowProductCode" class="avea-col-sku">
+                                            <span t-esc="getProductCode(product)"/>
+                                        </td>
+                                        <td class="avea-col-price">
+                                            <span class="avea-product-price" t-esc="getProductDisplayPrice(product)"/>
+                                        </td>
+                                        <td t-if="aveaShowStockQuantity or aveaShowStockStatus" class="avea-col-stock">
+                                            <div
+                                                t-if="aveaShouldShowStock(product)"
+                                                class="avea-stock-label"
+                                                t-att-class="getStockStatusClass(product)"
+                                            >
+                                                <t t-if="aveaShowStockQuantity and product.is_storable">
+                                                    <span class="avea-stock-qty" t-esc="getStockQuantityLabel(product)"/>
+                                                </t>
+                                                <t t-if="aveaShowStockStatus and product.is_storable">
+                                                    <span t-esc="getStockStatusLabel(product)"/>
+                                                </t>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div t-else="" class="avea-product-grid-wrap flex-grow-1 overflow-y-auto" t-on-scroll="onScroll">
+                            <div class="avea-product-grid">
+                                <div
+                                    t-foreach="aveaPaginatedProducts"
+                                    t-as="product"
+                                    t-key="product.id"
+                                    class="avea-grid-tile-wrap"
+                                >
+                                    <ProductCard
+                                        productId="product.id"
+                                        product="product"
+                                        class="pos.productViewMode"
+                                        name="getProductName(product)"
+                                        color="product.color || product.pos_categ_ids?.at(-1)?.color"
+                                        imageUrl="aveaShowProductImages and this.getProductImage(product)"
+                                        onClick.bind="() => this.addProductToOrder(product)"
+                                        t-on-mousedown="(event) => this.onMouseDown(event, product)"
+                                        t-on-mouseup="longPressHandlers.onMouseUp"
+                                        t-on-touchstart="(event) => this.onTouchStart(product)"
+                                        t-on-touchend="longPressHandlers.onTouchEnd"
+                                        productCartQty="this.state.quantityByProductTmplId[product.id]"
+                                    />
+                                    <div
+                                        t-if="aveaShowProductCode or aveaShouldShowStock(product)"
+                                        class="avea-grid-meta"
+                                    >
+                                        <span t-if="aveaShowProductCode" class="avea-grid-code" t-esc="getProductCode(product)"/>
+                                        <span
+                                            t-if="aveaShouldShowStock(product)"
+                                            class="avea-grid-stock"
+                                            t-att-class="getStockStatusClass(product)"
+                                        >
+                                            <t t-if="aveaShowStockQuantity and product.is_storable" t-esc="getStockQuantityLabel(product)"/>
+                                            <t t-if="aveaShowStockStatus and product.is_storable">
+                                                <t t-if="aveaShowStockQuantity and product.is_storable"> </t>
+                                                <t t-esc="getStockStatusLabel(product)"/>
+                                            </t>
+                                        </span>
+                                        <span class="avea-grid-price" t-esc="getProductDisplayPrice(product)"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div t-if="aveaTotalPages > 1" class="avea-products-pagination">
+                            <div class="avea-pagination-pages">
+                                <button
+                                    type="button"
+                                    class="btn btn-link avea-page-btn"
+                                    t-att-disabled="aveaCurrentPage === 0 ? 'disabled' : null"
+                                    t-on-click="aveaPreviousPage"
+                                >
+                                    <i class="fa fa-chevron-left" aria-hidden="true"/>
+                                </button>
+                                <span class="avea-page-indicator">
+                                    Page <t t-esc="aveaCurrentPage + 1"/> / <t t-esc="aveaTotalPages"/>
+                                </span>
+                                <button
+                                    type="button"
+                                    class="btn btn-link avea-page-btn"
+                                    t-att-disabled="aveaCurrentPage >= aveaTotalPages - 1 ? 'disabled' : null"
+                                    t-on-click="aveaNextPage"
+                                >
+                                    <i class="fa fa-chevron-right" aria-hidden="true"/>
+                                </button>
+                            </div>
+                            <span class="avea-pagination-size">
+                                Show <t t-esc="aveaProductsPerPage"/> per page
+                            </span>
+                        </div>
+                    </t>
+
+                    <div t-else="" class="flex-grow-1 text-center mt-5 px-3">
+                        <p t-if="searchWord">
+                            No products found for <b>"<t t-esc="searchWord"/>"</b> in this category.
+                        </p>
+                        <p t-elif="aveaIsPromotionsTab" class="text-muted mt-4">
+                            No products are linked to active promotions on this till.
+                        </p>
+                        <div t-elif="!pos.selectedCategory" class="o_view_nocontent">
+                            <div class="o_nocontent_help">
+                                <p class="o_view_nocontent_smiling_face">No Product Yet?</p>
+                                <p>Scan a barcode to create automatically, or load our sample data.</p>
+                                <p>
+                                    <button
+                                        class="btn btn-lg btn-primary me-2"
+                                        t-on-click="() => doLoadSampleData.call()"
+                                        t-att-disabled="doLoadSampleData.status === 'loading' ? 'disabled' : null"
+                                    >
+                                        <t t-if="doLoadSampleData.status === 'loading'">Loading...</t>
+                                        <t t-else="">Load Sample</t>
+                                    </button>
+                                    <button
+                                        role="button"
+                                        class="btn btn-lg btn-secondary"
+                                        t-on-click="() => pos.editProduct()"
+                                    >
+                                        Create Manually
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                        <p t-else="">There are no products in this category.</p>
+                    </div>
+
+                    <div t-if="searchWord and !pos.scanning" class="search-more-button d-flex justify-content-center m-2">
+                        <button class="btn btn-primary btn-lg lh-lg" t-on-click="onPressEnterKey">Search more</button>
+                    </div>
+                </div>
+            </section>
+
+            <section
+                class="avea-sale-pane d-flex flex-column"
+                t-key="pos.selectedOrderUuid"
+                t-att-class="{
+                    'flex-grow-1 w-100 mw-100': ui.isSmall,
+                    'd-none': ui.isSmall and pos.mobile_pane !== 'left',
+                }"
+            >
+                <header class="avea-sale-header">
+                    <div class="avea-sale-heading">
+                        <h2 class="avea-sale-title">Current Sale</h2>
+                        <span t-if="currentOrderDisplayRef" class="avea-sale-ref" t-esc="currentOrderDisplayRef"/>
+                    </div>
+                    <button
+                        type="button"
+                        class="btn btn-link avea-sale-more p-0"
+                        t-on-click="displayAllControlPopup"
+                        title="More actions"
+                    >
+                        <i class="oi oi-ellipsis-v" aria-hidden="true"/>
+                    </button>
+                </header>
+
+                <button
+                    type="button"
+                    class="avea-customer-card"
+                    t-on-click="() => this.pos.selectPartner()"
+                >
+                    <span class="avea-customer-icon" aria-hidden="true">
+                        <i class="fa fa-user"/>
+                    </span>
+                    <span class="avea-customer-copy">
+                        <span class="avea-customer-label" t-esc="partnerDisplayName"/>
+                        <span t-if="!currentOrder?.getPartner()" class="avea-customer-hint">Add customer (optional)</span>
+                    </span>
+                    <i class="fa fa-chevron-right avea-customer-chevron" aria-hidden="true"/>
+                </button>
+
+                <div class="avea-sale-lines flex-grow-1 overflow-hidden d-flex flex-column">
+                    <OrderSummary t-key="pos.selectedOrderUuid"/>
+                </div>
+
+                <div class="avea-sale-actions">
+                    <button type="button" class="btn btn-light avea-sale-action-btn" t-on-click="displayAllControlPopup">
+                        <i class="fa fa-tag me-1" aria-hidden="true"/>Discount / Promo
+                    </button>
+                    <button type="button" class="btn btn-light avea-sale-action-btn" t-on-click="() => this.pos.selectPartner()">
+                        <i class="fa fa-user me-1" aria-hidden="true"/>Customer
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-light avea-sale-action-btn avea-sale-action-clear"
+                        t-att-disabled="currentOrder?.isEmpty() ? 'disabled' : null"
+                        t-on-click="aveaClearSale"
+                    >
+                        <i class="fa fa-trash me-1" aria-hidden="true"/>Clear Sale
+                    </button>
+                </div>
+
+                <div class="avea-sale-pads">
+                    <t t-if="!ui.isSmall">
+                        <div class="control-buttons d-none"/>
+                    </t>
+                    <div class="subpads d-flex flex-column gap-2">
+                        <Numpad
+                            t-if="!currentOrder?.isEmpty() and pos.getOrder()?.uiState.selected_orderline_uuid"
+                            class="'d-grid'"
+                            buttons="getNumpadButtons()"
+                            onClick.bind="onNumpadClick"
+                        />
+                        <ActionpadWidget
+                            partner="currentOrder?.getPartner()"
+                            onClickMore.bind="displayAllControlPopup"
+                            actionName.translate="Payment"
+                            actionToTrigger="() => pos.pay()"
+                            showActionButton="!currentOrder?.isEmpty()"
+                            fastValidate="(paymentMethod) => this.fastValidate(paymentMethod)"
+                        />
+                    </div>
+                </div>
+
+                <div t-if="!ui.isSmall" class="avea-sale-secondary-actions">
+                    <button
+                        type="button"
+                        class="btn btn-light avea-hold-btn"
+                        t-att-disabled="currentOrder?.isEmpty() ? 'disabled' : null"
+                        t-on-click="aveaHoldSale"
+                    >
+                        <i class="fa fa-pause me-1" aria-hidden="true"/>Hold Sale
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-light avea-park-btn"
+                        t-att-disabled="currentOrder?.isEmpty() ? 'disabled' : null"
+                        t-on-click="aveaParkSale"
+                    >
+                        <i class="fa fa-save me-1" aria-hidden="true"/>Park Sale
+                    </button>
+                </div>
+            </section>
+
+            <t t-if="ui.isSmall">
+                <div class="switchpane d-flex gap-2 p-2 border-top bg-view w-100">
+                    <button
+                        t-if="!pos.scanning"
+                        class="btn-switchpane pay-button btn btn-lg flex-grow-1"
+                        t-attf-class="{{ currentOrder.isEmpty() ? 'btn-secondary' : 'btn-primary' }}"
+                        t-on-click="() => this.pos.pay()"
+                    >
+                        <span class="d-block">Pay</span>
+                        <span t-esc="total"/>
+                    </button>
+                    <button class="btn-switchpane btn btn-secondary review-button flex-grow-1" t-on-click="switchPane">
+                        <span class="d-block" t-esc="pos.mobile_pane === 'left' ? 'Products' : 'Cart'"/>
+                        <small><t t-esc="items"/> items</small>
+                    </button>
+                    <button
+                        t-if="pos.scanning"
+                        class="btn-switchpane btn btn-secondary btn-lg flex-grow-1"
+                        t-on-click="() => this.pos.scanning = false"
+                    >
+                        <span class="d-block">Products</span>
+                    </button>
+                </div>
+            </t>
+        </div>
+    </t>
+
+</templates>
