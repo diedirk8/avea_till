@@ -7,6 +7,7 @@ from .reporting_period import (
     PERIOD_LAST_30,
     PERIOD_MTD,
     PERIOD_TODAY,
+    PERIOD_YESTERDAY,
     PERIOD_WTD,
     PERIOD_YTD,
     normalize_period_key,
@@ -93,6 +94,7 @@ class AveaBusinessPerformance(models.TransientModel):
     period = fields.Selection(
         [
             ("today", "Today"),
+            ("yesterday", "Yesterday"),
             ("wtd", "Week to Date"),
             ("mtd", "Month to Date"),
             ("last_7", "Last 7 Days"),
@@ -347,6 +349,9 @@ class AveaBusinessPerformance(models.TransientModel):
 
     def action_period_today(self):
         return self.action_open_business_performance(period=PERIOD_TODAY)
+
+    def action_period_yesterday(self):
+        return self.action_open_business_performance(period=PERIOD_YESTERDAY)
 
     def action_period_wtd(self):
         return self.action_open_business_performance(period=PERIOD_WTD)

@@ -168,6 +168,7 @@ class TestAveaBusinessReportingFinancials(TestPoSCommon):
         today = date(2026, 9, 21)
         cases = {
             "today": "Yesterday",
+            "yesterday": "Previous Day",
             "wtd": "Last Week",
             "mtd": "Last Month",
             "ytd": "Last Year",
@@ -175,6 +176,15 @@ class TestAveaBusinessReportingFinancials(TestPoSCommon):
         for period, expected in cases.items():
             reporting = resolve_reporting_period(period, today)
             self.assertEqual(reporting.comparison_label, expected)
+
+    def test_yesterday_period_window(self):
+        today = date(2026, 9, 21)
+        reporting = resolve_reporting_period("yesterday", today)
+        self.assertEqual(reporting.current_start, date(2026, 9, 20))
+        self.assertEqual(reporting.current_end, date(2026, 9, 20))
+        self.assertEqual(reporting.comparison_start, date(2026, 9, 19))
+        self.assertEqual(reporting.comparison_end, date(2026, 9, 19))
+        self.assertEqual(reporting.label, "Yesterday")
 
     def test_overview_comparison_label_matches_period(self):
         overview = self.env["avea.business.overview"].create({"period": "mtd"})

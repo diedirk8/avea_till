@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 PERIOD_TODAY = "today"
+PERIOD_YESTERDAY = "yesterday"
 PERIOD_WTD = "wtd"
 PERIOD_MTD = "mtd"
 PERIOD_LAST_7 = "last_7"
@@ -18,6 +19,7 @@ PERIOD_CUSTOM = "custom"
 
 PERIOD_KEYS = (
     PERIOD_TODAY,
+    PERIOD_YESTERDAY,
     PERIOD_WTD,
     PERIOD_MTD,
     PERIOD_LAST_7,
@@ -33,6 +35,7 @@ LEGACY_PERIODS = {
 
 PERIOD_LABELS = {
     PERIOD_TODAY: "Today",
+    PERIOD_YESTERDAY: "Yesterday",
     PERIOD_WTD: "Week to Date",
     PERIOD_MTD: "Month to Date",
     PERIOD_LAST_7: "Last 7 Days",
@@ -43,6 +46,7 @@ PERIOD_LABELS = {
 
 COMPARISON_LABELS = {
     PERIOD_TODAY: "Yesterday",
+    PERIOD_YESTERDAY: "Previous Day",
     PERIOD_WTD: "Last Week",
     PERIOD_MTD: "Last Month",
     PERIOD_LAST_7: "Previous 7 Days",
@@ -146,6 +150,11 @@ def resolve_reporting_period(period, today, custom_from=None, custom_to=None):
     if key == PERIOD_TODAY:
         current_start = current_end = today
         comparison_start = comparison_end = today - timedelta(days=1)
+        elapsed = 1
+    elif key == PERIOD_YESTERDAY:
+        yesterday = today - timedelta(days=1)
+        current_start = current_end = yesterday
+        comparison_start = comparison_end = today - timedelta(days=2)
         elapsed = 1
     elif key == PERIOD_WTD:
         current_start = _week_start(today)

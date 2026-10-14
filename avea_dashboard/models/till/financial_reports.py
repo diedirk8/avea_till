@@ -51,6 +51,7 @@ class AveaProfitReport(models.TransientModel):
     period = fields.Selection(
         [
             ("today", "Today"),
+            ("yesterday", "Yesterday"),
             ("wtd", "Week to Date"),
             ("mtd", "Month to Date"),
             ("last_7", "Last 7 Days"),
@@ -209,6 +210,7 @@ class AveaDiscountReport(models.TransientModel):
     period = fields.Selection(
         [
             ("today", "Today"),
+            ("yesterday", "Yesterday"),
             ("wtd", "Week to Date"),
             ("mtd", "Month to Date"),
             ("last_7", "Last 7 Days"),

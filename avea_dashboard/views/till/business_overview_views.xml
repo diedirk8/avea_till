@@ -76,6 +76,20 @@
                                 invisible="period == 'today'"
                             />
                             <button
+                                name="action_period_yesterday"
+                                type="object"
+                                string="Yesterday"
+                                class="btn-primary o_avea_period_btn"
+                                invisible="period != 'yesterday'"
+                            />
+                            <button
+                                name="action_period_yesterday"
+                                type="object"
+                                string="Yesterday"
+                                class="btn-secondary o_avea_period_btn"
+                                invisible="period == 'yesterday'"
+                            />
+                            <button
                                 name="action_period_wtd"
                                 type="object"
                                 string="Week to Date"
