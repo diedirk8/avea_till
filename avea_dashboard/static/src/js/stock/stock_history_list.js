@@ -5,7 +5,9 @@ import { ListController } from "@web/views/list/list_controller";
 import { listView } from "@web/views/list/list_view";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { useState } from "@odoo/owl";
+import { useState, onMounted, onWillUnmount } from "@odoo/owl";
+
+const ACTION_MANAGER_SCROLL_CLASS = "o_avea_stock_history_action_manager";
 
 const PERIOD_FILTER_NAMES = new Set([
     "avea_stock_hist_last_7",
@@ -20,6 +22,20 @@ class AveaStockHistoryListController extends ListController {
         super.setup();
         this.actionService = useService("action");
         this.bannerState = useState({ activeFilter: "all" });
+        onMounted(() => this._setupScrollShell());
+        onWillUnmount(() => this._teardownScrollShell());
+    }
+
+    _actionManagerEl() {
+        return document.querySelector(".o_action_manager");
+    }
+
+    _setupScrollShell() {
+        this._actionManagerEl()?.classList.add(ACTION_MANAGER_SCROLL_CLASS);
+    }
+
+    _teardownScrollShell() {
+        this._actionManagerEl()?.classList.remove(ACTION_MANAGER_SCROLL_CLASS);
     }
 
     get className() {

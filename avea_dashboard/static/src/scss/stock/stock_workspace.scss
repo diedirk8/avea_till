@@ -2979,6 +2979,27 @@
     }
 }
 
+.o_action_manager.o_avea_stock_history_action_manager {
+    -ms-overflow-style: auto !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: auto !important;
+
+    &::-webkit-scrollbar {
+        display: block !important;
+        height: 12px;
+        width: 12px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgba(73, 80, 87, 0.45);
+        border-radius: 999px;
+    }
+}
+
 .o_avea_workspace--stock-history {
     .o_control_panel {
         display: none !important;
@@ -3054,10 +3075,56 @@
         margin-bottom: 0.85rem;
         padding: 1rem 1.05rem;
     }
+
+    &.o_form_view {
+        height: auto !important;
+        max-height: none !important;
+
+        .o_content,
+        .o_form_renderer,
+        .o_form_sheet_bg {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+
+        .o_avea_stock_list_surface {
+            display: block;
+            min-height: 0;
+            overflow: visible !important;
+
+            .o_field_x2many,
+            .o_field_widget,
+            .o_list_renderer {
+                display: block;
+                flex: none;
+                height: auto !important;
+                max-height: none !important;
+                min-height: 0;
+                overflow-x: auto;
+                overflow-y: visible !important;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        .o_avea_stock_footer {
+            padding-bottom: calc(1.15rem + env(safe-area-inset-bottom, 0px));
+        }
+    }
 }
 
 @media (max-width: 767.98px) {
-    .o_avea_workspace--stock-history > .o_content .o_list_renderer {
+    .o_avea_workspace--stock-history.o_list_view > .o_content .o_list_renderer {
         max-height: calc(100vh - 18rem);
+    }
+
+    .o_avea_workspace--stock-history.o_form_view {
+        > .o_content .o_list_renderer {
+            max-height: none !important;
+        }
+
+        .o_avea_workspace_sheet {
+            padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+        }
     }
 }
