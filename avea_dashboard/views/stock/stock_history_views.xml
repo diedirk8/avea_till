@@ -392,6 +392,8 @@
                 <field name="line_count" string="Products"/>
                 <field name="difference_count" string="Variances"/>
                 <field name="total_variance" string="Net variance" optional="show"/>
+                <field name="currency_id" column_invisible="True"/>
+                <field name="net_stock_value_impact" string="Net value" widget="monetary" optional="show"/>
                 <field name="user_id" string="By" optional="hide"/>
                 <field name="applied_by" string="Applied by" optional="hide"/>
             </list>
@@ -412,6 +414,8 @@
                 js_class="avea_stock_history_form"
             >
                 <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="has_accounting_impact" invisible="1"/>
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">Stock</span>
@@ -469,25 +473,150 @@
                                 <span class="o_avea_workspace_info_label">Net variance (units)</span>
                                 <field name="total_variance" nolabel="1" readonly="1"/>
                             </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Correct (no variance)</span>
+                                <field name="unchanged_count" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Increases</span>
+                                <field name="increase_count" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Decreases</span>
+                                <field name="decrease_count" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Total increase (units)</span>
+                                <field name="total_increase_qty" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Total decrease (units)</span>
+                                <field name="total_decrease_qty" nolabel="1" readonly="1"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_panel" invisible="state != 'applied'">
+                        <h2 class="o_avea_workspace_section_title">Stock value impact</h2>
+                        <p class="o_avea_workspace_section_subtitle mb-3">
+                            Based on each product's Avea unit cost (ex tax) at apply time.
+                            Accounting impact is shown when Odoo posts inventory journals automatically.
+                        </p>
+                        <div class="o_avea_workspace_info_grid o_avea_stock_side_grid">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Stock gain (count &gt; system)</span>
+                                <field name="total_gain_value" nolabel="1" readonly="1" widget="monetary"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Stock loss (count &lt; system)</span>
+                                <field name="total_loss_value" nolabel="1" readonly="1" widget="monetary"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Net stock value impact</span>
+                                <field name="net_stock_value_impact" nolabel="1" readonly="1" widget="monetary"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item" invisible="not has_accounting_impact">
+                                <span class="o_avea_workspace_info_label">Accounting impact (posted)</span>
+                                <field name="accounting_impact_total" nolabel="1" readonly="1" widget="monetary"/>
+                            </div>
                         </div>
                     </div>
 
                     <div class="o_avea_stock_panel o_avea_stock_panel--products" invisible="state != 'applied'">
-                        <h2 class="o_avea_workspace_section_title">Counted products</h2>
+                        <h2 class="o_avea_workspace_section_title">Items not correct (variances)</h2>
                         <div class="o_avea_stock_list_surface">
-                            <field name="line_ids" nolabel="1" readonly="1">
-                                <list create="false" delete="false" edit="false" class="o_avea_stock_take_history_lines">
+                            <field name="line_ids" nolabel="1" readonly="1" domain="[('variance_direction', 'in', ('increase', 'decrease'))]">
+                                <list create="false" delete="false" edit="false" class="o_avea_stock_take_history_lines" decoration-success="variance_direction == 'increase'" decoration-danger="variance_direction == 'decrease'">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="variance_direction" column_invisible="True"/>
                                     <field name="product_id"/>
-                                    <field name="default_code" string="SKU" optional="hide"/>
+                                    <field name="default_code" string="SKU"/>
+                                    <field name="barcode" optional="hide"/>
+                                    <field name="categ_id" string="Category" optional="show"/>
+                                    <field name="supplier_id" string="Supplier" optional="show"/>
                                     <field name="expected_qty" string="Expected"/>
                                     <field name="counted_qty" string="Counted"/>
                                     <field name="difference_qty" string="Difference"/>
+                                    <field name="unit_cost" string="Unit cost" widget="monetary"/>
+                                    <field name="variance_value" string="Stock value" widget="monetary"/>
+                                    <field name="accounting_value" string="Accounting" widget="monetary" optional="hide"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_panel o_avea_stock_panel--products" invisible="state != 'applied'">
+                        <h2 class="o_avea_workspace_section_title">Stock increases</h2>
+                        <div class="o_avea_stock_list_surface">
+                            <field name="line_ids" nolabel="1" readonly="1" domain="[('variance_direction', '=', 'increase')]">
+                                <list create="false" delete="false" edit="false" class="o_avea_stock_take_history_lines" decoration-success="1">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="variance_direction" column_invisible="True"/>
+                                    <field name="product_id"/>
+                                    <field name="default_code" string="SKU"/>
+                                    <field name="expected_qty" string="Expected"/>
+                                    <field name="counted_qty" string="Counted"/>
+                                    <field name="difference_qty" string="Difference"/>
+                                    <field name="unit_cost" string="Unit cost" widget="monetary"/>
+                                    <field name="variance_value" string="Stock value" widget="monetary"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_panel o_avea_stock_panel--products" invisible="state != 'applied'">
+                        <h2 class="o_avea_workspace_section_title">Stock decreases</h2>
+                        <div class="o_avea_stock_list_surface">
+                            <field name="line_ids" nolabel="1" readonly="1" domain="[('variance_direction', '=', 'decrease')]">
+                                <list create="false" delete="false" edit="false" class="o_avea_stock_take_history_lines" decoration-danger="1">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="variance_direction" column_invisible="True"/>
+                                    <field name="product_id"/>
+                                    <field name="default_code" string="SKU"/>
+                                    <field name="expected_qty" string="Expected"/>
+                                    <field name="counted_qty" string="Counted"/>
+                                    <field name="difference_qty" string="Difference"/>
+                                    <field name="unit_cost" string="Unit cost" widget="monetary"/>
+                                    <field name="variance_value" string="Stock value" widget="monetary"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_panel o_avea_stock_panel--products" invisible="state != 'applied'">
+                        <h2 class="o_avea_workspace_section_title">All items counted</h2>
+                        <div class="o_avea_stock_list_surface">
+                            <field name="line_ids" nolabel="1" readonly="1">
+                                <list create="false" delete="false" edit="false" class="o_avea_stock_take_history_lines" decoration-success="variance_direction == 'increase'" decoration-danger="variance_direction == 'decrease'" decoration-muted="variance_direction == 'match'">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="variance_direction" string="Result"/>
+                                    <field name="product_id"/>
+                                    <field name="default_code" string="SKU"/>
+                                    <field name="barcode" optional="hide"/>
+                                    <field name="categ_id" string="Category" optional="show"/>
+                                    <field name="supplier_id" string="Supplier" optional="show"/>
+                                    <field name="product_uom_id" string="UoM" optional="hide"/>
+                                    <field name="expected_qty" string="Expected"/>
+                                    <field name="counted_qty" string="Counted"/>
+                                    <field name="difference_qty" string="Difference"/>
+                                    <field name="unit_cost" string="Unit cost" widget="monetary"/>
+                                    <field name="variance_value" string="Stock value" widget="monetary"/>
+                                    <field name="accounting_value" string="Accounting" widget="monetary" optional="hide"/>
+                                    <field name="applied_at" string="Applied at" optional="hide"/>
+                                    <field name="applied_by" string="Applied by" optional="hide"/>
                                 </list>
                             </field>
                         </div>
                     </div>
 
                     <div class="o_avea_stock_footer">
+                        <button
+                            name="action_print_stock_take_report"
+                            type="object"
+                            string="Print report"
+                            class="btn-primary"
+                            invisible="state != 'applied'"
+                        />
                         <button
                             name="action_back_to_stock_take_history"
                             type="object"

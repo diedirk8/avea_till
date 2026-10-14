@@ -380,3 +380,67 @@ class TestAveaStockTake(TransactionCase):
         stock_take.action_apply_stock_take()
         self.assertAlmostEqual(self._qty(self.product_a), 12.0, places=2)
         self.assertAlmostEqual(self._qty(self.product_b), 0.0, places=2)
+
+    def test_stock_take_report_summary_fields(self):
+        self.product_a.product_tmpl_id.standard_price = 10.0
+        self.product_b.product_tmpl_id.standard_price = 4.0
+        self._set_qty(self.product_a, 8.0)
+        self._set_qty(self.product_b, 5.0)
+        stock_take = self._create_take(
+            manual_product_ids=[Command.set([self.product_a.id, self.product_b.id])],
+        )
+        line_a = stock_take.line_ids.filtered(lambda line: line.product_id == self.product_a)
+        line_b = stock_take.line_ids.filtered(lambda line: line.product_id == self.product_b)
+        line_a._avea_set_counted_qty(10.0)
+        line_b._avea_set_counted_qty(3.0)
+        stock_take.action_prepare_review()
+        stock_take.action_apply_stock_take()
+        self.assertEqual(stock_take.increase_count, 1)
+        self.assertEqual(stock_take.decrease_count, 1)
+        self.assertEqual(stock_take.unchanged_count, 0)
+        self.assertAlmostEqual(stock_take.total_gain_value, 20.0, places=2)
+        self.assertAlmostEqual(stock_take.total_loss_value, 8.0, places=2)
+        self.assertAlmostEqual(stock_take.net_stock_value_impact, 12.0, places=2)
+        self.assertEqual(line_a.variance_direction, "increase")
+        self.assertEqual(line_b.variance_direction, "decrease")
+        payload = stock_take.get_stock_take_report_payload()
+        self.assertEqual(len(payload["variance_lines"]), 2)
+        self.assertEqual(len(payload["all_lines"]), 2)
+        report = self.env.ref("avea_till.action_report_avea_stock_take")
+        html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            report.report_name, stock_take.ids
+        )
+        self.assertIn(stock_take.name.encode(), html)
+        self.assertIn(b"Stock Take Report", html)
+
+    def test_stock_take_report_summary_fields(self):
+        self.product_a.product_tmpl_id.standard_price = 10.0
+        self.product_b.product_tmpl_id.standard_price = 4.0
+        self._set_qty(self.product_a, 8.0)
+        self._set_qty(self.product_b, 5.0)
+        stock_take = self._create_take(
+            manual_product_ids=[Command.set([self.product_a.id, self.product_b.id])],
+        )
+        line_a = stock_take.line_ids.filtered(lambda line: line.product_id == self.product_a)
+        line_b = stock_take.line_ids.filtered(lambda line: line.product_id == self.product_b)
+        line_a._avea_set_counted_qty(10.0)
+        line_b._avea_set_counted_qty(3.0)
+        stock_take.action_prepare_review()
+        stock_take.action_apply_stock_take()
+        self.assertEqual(stock_take.increase_count, 1)
+        self.assertEqual(stock_take.decrease_count, 1)
+        self.assertEqual(stock_take.unchanged_count, 0)
+        self.assertAlmostEqual(stock_take.total_gain_value, 20.0, places=2)
+        self.assertAlmostEqual(stock_take.total_loss_value, 8.0, places=2)
+        self.assertAlmostEqual(stock_take.net_stock_value_impact, 12.0, places=2)
+        self.assertEqual(line_a.variance_direction, "increase")
+        self.assertEqual(line_b.variance_direction, "decrease")
+        payload = stock_take.get_stock_take_report_payload()
+        self.assertEqual(len(payload["variance_lines"]), 2)
+        self.assertEqual(len(payload["all_lines"]), 2)
+        report = self.env.ref("avea_till.action_report_avea_stock_take")
+        html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            report.report_name, stock_take.ids
+        )
+        self.assertIn(stock_take.name.encode(), html)
+        self.assertIn(b"Stock Take Report", html)

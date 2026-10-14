@@ -21,7 +21,7 @@ Features:
 - Receive Stock, Return Stock, and Stock Take
 - Avea Promotions (wrapper over Odoo Discount & Loyalty), including Combo Price
 """,
-    "version": "19.0.3.14.58",
+    "version": "19.0.3.14.59",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -79,6 +79,7 @@ Features:
         "views/credit/credit_transactions_views.xml",
         "report/avea_report_layout.xml",
         "report/credit_report_templates.xml",
+        "report/stock_take_report_templates.xml",
         "report/avea_report_branding.xml",
         "views/credit/credit_report_wizard_views.xml",
         "views/credit/credit_reason_views.xml",
