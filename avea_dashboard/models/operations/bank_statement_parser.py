@@ -1,22 +1,63 @@
 # -*- coding: utf-8 -*-
-"""Parse South African bank statement exports (FNB CSV and generic CSV)."""
+"""Parse South African bank statement exports (FNB PDF/CSV and generic CSV/OFX)."""
 from __future__ import annotations
 
 import csv
 import io
 import re
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from odoo import _
 from odoo.exceptions import UserError
+
+_MONTH_ABBR = {
+    "jan": 1,
+    "feb": 2,
+    "mar": 3,
+    "apr": 4,
+    "may": 5,
+    "jun": 6,
+    "jul": 7,
+    "aug": 8,
+    "sep": 9,
+    "oct": 10,
+    "nov": 11,
+    "dec": 12,
+}
+
+_AMOUNT_RE = r"-?(?:\d{1,3}(?:[,\s]\d{3})*|\d+)\.\d{2}"
+_FNB_PDF_LINE_RE = re.compile(
+    rf"^(\d{{1,2}}\s+[A-Za-z]{{3}}|\d{{4}}-\d{{2}}-\d{{2}})\s+"
+    rf"(.+?)\s+({_AMOUNT_RE})\s+({_AMOUNT_RE})(?:\s+({_AMOUNT_RE}))?\s*$"
+)
 
 
 def _parse_fnb_date(value: str):
     raw = (value or "").strip()
     if not raw:
         return None
-    for fmt in ("%Y%m%d", "%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"):
+    for fmt in ("%Y%m%d", "%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y", "%d %b %Y", "%d %B %Y"):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            continue
+    short = re.match(r"(\d{1,2})\s+([A-Za-z]{3,9})", raw)
+    if short:
+        month = _MONTH_ABBR.get(short.group(2).lower()[:3])
+        if month:
+            try:
+                return date(datetime.today().year, month, int(short.group(1)))
+            except ValueError:
+                return None
+    return None
+
+
+def _parse_long_date(value: str):
+    raw = (value or "").strip()
+    if not raw:
+        return None
+    for fmt in ("%d %B %Y", "%d %b %Y", "%d/%m/%Y", "%Y-%m-%d"):
         try:
             return datetime.strptime(raw, fmt).date()
         except ValueError:
@@ -24,8 +65,38 @@ def _parse_fnb_date(value: str):
     return None
 
 
+def _infer_tx_year(month: int, period_start: date | None, period_end: date | None) -> int:
+    if period_end:
+        year = period_end.year
+        if period_start and period_start.year < year:
+            if month < period_start.month:
+                return year
+            if month > period_end.month:
+                return period_start.year
+        return year
+    return datetime.today().year
+
+
+def _parse_dd_mon(value: str, period_start: date | None, period_end: date | None):
+    raw = (value or "").strip()
+    parsed = _parse_fnb_date(raw)
+    if parsed and re.match(r"\d{4}-\d{2}-\d{2}", raw):
+        return parsed
+    match = re.match(r"(\d{1,2})\s+([A-Za-z]{3})", raw)
+    if not match:
+        return None
+    month = _MONTH_ABBR.get(match.group(2).lower())
+    if not month:
+        return None
+    year = _infer_tx_year(month, period_start, period_end)
+    try:
+        return date(year, month, int(match.group(1)))
+    except ValueError:
+        return None
+
+
 def _parse_amount(value: str):
-    raw = (value or "").strip().replace(" ", "").replace(",", "")
+    raw = (value or "").strip().replace(",", "").replace(" ", "")
     if not raw:
         return 0.0
     negative = raw.startswith("-") or raw.endswith("-")
@@ -42,15 +113,155 @@ def _normalize_header(cell: str) -> str:
 
 
 class AveaBankStatementParser:
-    """Stateless parser for bank CSV/OFX uploads."""
+    """Stateless parser for bank CSV/OFX/PDF uploads."""
 
     @classmethod
     def parse(cls, filename: str, raw_bytes: bytes) -> dict[str, Any]:
         name = (filename or "").lower()
+        if name.endswith(".pdf") or raw_bytes[:5] == b"%PDF-":
+            return cls._parse_pdf(raw_bytes)
         text = raw_bytes.decode("utf-8-sig", errors="replace")
         if name.endswith(".ofx") or text.lstrip().startswith("OFXHEADER"):
             return cls._parse_ofx(text)
         return cls._parse_csv(text, filename=name)
+
+    @classmethod
+    def _pdf_extract_text(cls, raw_bytes: bytes) -> str:
+        buffer = io.BytesIO(raw_bytes)
+        try:
+            from pdfminer.high_level import extract_text
+
+            return extract_text(buffer) or ""
+        except ImportError:
+            buffer.seek(0)
+            try:
+                import PyPDF2
+            except ImportError:
+                raise UserError(
+                    _(
+                        "PDF statements need pdfminer or PyPDF2 on the server. "
+                        "Ask your administrator to install pdfminer.six."
+                    )
+                )
+            reader = PyPDF2.PdfReader(buffer)
+            if reader.is_encrypted:
+                raise UserError(
+                    _("This PDF is password-protected. Download it without a password or use CSV/OFX.")
+                )
+            return "\n".join((page.extract_text() or "") for page in reader.pages)
+
+    @classmethod
+    def _parse_pdf(cls, raw_bytes: bytes) -> dict[str, Any]:
+        text = cls._pdf_extract_text(raw_bytes)
+        cleaned = re.sub(r"\r\n?", "\n", text)
+        if len(cleaned.strip()) < 40:
+            raise UserError(
+                _(
+                    "This PDF has no readable text (it may be a scan). "
+                    "Download the digital statement from FNB Online Banking, or export CSV/OFX "
+                    "if your profile has those formats under Statements or Scheduled Exports."
+                )
+            )
+        if cls._looks_like_fnb_pdf(cleaned):
+            return cls._parse_fnb_pdf_text(cleaned)
+        parsed = cls._parse_fnb_pdf_text(cleaned)
+        if parsed.get("transactions"):
+            return parsed
+        raise UserError(
+            _(
+                "Could not read transactions from this PDF. Use an FNB statement PDF "
+                "with Date, Description, Amount, and Balance columns, or try CSV/OFX."
+            )
+        )
+
+    @classmethod
+    def _looks_like_fnb_pdf(cls, text: str) -> bool:
+        lowered = text.lower()
+        return "first national bank" in lowered or "fnb" in lowered or "recreated statement" in lowered
+
+    @classmethod
+    def _extract_fnb_statement_period(cls, text: str) -> tuple[date | None, date | None]:
+        patterns = [
+            r"statement\s+period[:\s]*\s*(\d{1,2}\s+\w+\s+\d{4})\s*(?:to|–|-)\s*(\d{1,2}\s+\w+\s+\d{4})",
+            r"from\s+(\d{1,2}\s+\w+\s+\d{4})\s+to\s+(\d{1,2}\s+\w+\s+\d{4})",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text, flags=re.IGNORECASE)
+            if match:
+                start = _parse_long_date(match.group(1))
+                end = _parse_long_date(match.group(2))
+                return start, end
+        return None, None
+
+    @classmethod
+    def _parse_fnb_pdf_text(cls, text: str) -> dict[str, Any]:
+        period_start, period_end = cls._extract_fnb_statement_period(text)
+        meta: dict[str, Any] = {}
+        account = re.search(
+            r"account\s+(?:number|no\.?)[:\s]*([*\d]{8,15})",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if account:
+            meta["account_number"] = re.sub(r"[^\d]", "", account.group(1)) or account.group(1).strip()
+        opening = re.search(
+            r"opening\s+balance[:\s]*(-?(?:\d{1,3}(?:,\d{3})*|\d+)\.\d{2})",
+            text,
+            flags=re.IGNORECASE,
+        )
+        closing = re.search(
+            r"closing\s+balance[:\s]*(-?(?:\d{1,3}(?:,\d{3})*|\d+)\.\d{2})",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if opening:
+            meta["opening_balance"] = _parse_amount(opening.group(1))
+        if closing:
+            meta["closing_balance"] = _parse_amount(closing.group(1))
+        if period_end:
+            meta["statement_date"] = period_end
+
+        skip_fragments = (
+            "date description",
+            "accrued bank",
+            "opening balance",
+            "closing balance",
+            "statement period",
+            "page ",
+            "continued",
+            "first national bank",
+            "total debits",
+            "total credits",
+        )
+        transactions: list[dict[str, Any]] = []
+        for raw_line in text.splitlines():
+            line = re.sub(r"\s+", " ", (raw_line or "").strip())
+            if not line or len(line) < 12:
+                continue
+            lowered = line.lower()
+            if any(fragment in lowered for fragment in skip_fragments):
+                continue
+            match = _FNB_PDF_LINE_RE.match(line)
+            if not match:
+                continue
+            tx_date = _parse_dd_mon(match.group(1), period_start, period_end)
+            if not tx_date:
+                continue
+            amount = _parse_amount(match.group(3))
+            balance = _parse_amount(match.group(4))
+            if amount is None:
+                continue
+            description = match.group(2).strip()
+            transactions.append(
+                {
+                    "date": tx_date,
+                    "description": description,
+                    "reference": "",
+                    "amount": amount,
+                    "balance": balance,
+                }
+            )
+        return cls._result(meta, transactions, "fnb_pdf")
 
     @classmethod
     def _parse_csv(cls, text: str, filename: str = "") -> dict[str, Any]:

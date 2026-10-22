@@ -27,6 +27,24 @@ Effective Date,Description,Reference,Amount,Balance
         self.assertEqual(tx["amount"], -150.0)
         self.assertEqual(tx["reference"], "INV001")
 
+    def test_parse_fnb_pdf_text(self):
+        content = """
+FIRST NATIONAL BANK
+Statement period: 01 March 2024 to 31 March 2024
+Account Number: 62812345678
+Opening Balance 10 000.00
+Closing Balance 9 850.00
+
+Date Description Amount Balance Accrued Bank Charges
+01 Mar Supplier payment -150.00 9 850.00 0.00
+15 Mar Customer deposit 500.00 10 350.00 0.00
+"""
+        parsed = AveaBankStatementParser._parse_fnb_pdf_text(content)
+        self.assertEqual(parsed["source"], "fnb_pdf")
+        self.assertEqual(len(parsed["transactions"]), 2)
+        self.assertEqual(parsed["transactions"][0]["amount"], -150.0)
+        self.assertEqual(str(parsed["transactions"][0]["date"]), "2024-03-01")
+
     def test_parse_generic_header_csv(self):
         content = """Date,Description,Amount
 2024-10-05,Card purchase,-45.50

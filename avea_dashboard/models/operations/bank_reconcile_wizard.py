@@ -107,7 +107,7 @@ class AveaBankReconcileWizard(models.TransientModel):
     def action_parse_statement(self):
         self.ensure_one()
         if not self.statement_file:
-            raise UserError(_("Upload a bank statement file (FNB CSV or OFX)."))
+            raise UserError(_("Upload a bank statement file (FNB PDF, CSV, or OFX)."))
         if not self.journal_id:
             raise UserError(_("Choose the bank account to reconcile."))
         raw = base64.b64decode(self.statement_file)

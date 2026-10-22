@@ -48,7 +48,7 @@
                     <field name="state" widget="statusbar" statusbar_visible="upload,review,done"/>
                 </header>
                 <div class="alert alert-info" role="status" invisible="state != 'upload'">
-                    Upload an FNB CSV or OFX export from Online Banking. Avea will match
+                    Upload your FNB statement PDF (or CSV/OFX if available). Avea will match
                     transactions to entries already recorded (expenses, transfers, withdrawals)
                     and show anything that still needs attention.
                 </div>
