@@ -125,14 +125,16 @@ class AveaBankReconciliation(models.Model):
 
     @api.model
     def action_open_list(self):
+        list_view_id = self.env.ref(
+            "avea_till.view_avea_bank_reconciliation_list"
+        ).id
         return {
             "type": "ir.actions.act_window",
             "name": _("Bank reconciliations"),
             "res_model": self._name,
             "view_mode": "list,form",
-            "view_id": self.env.ref(
-                "avea_till.view_avea_bank_reconciliation_list"
-            ).id,
+            "views": [(list_view_id, "list"), (False, "form")],
+            "view_id": list_view_id,
             "target": "current",
         }
 
