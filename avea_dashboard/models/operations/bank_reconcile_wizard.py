@@ -158,15 +158,17 @@ class AveaBankReconciliation(models.Model):
         )
 
     def _avea_action_form(self, title=None):
+        form_view_id = self.env.ref(
+            "avea_till.view_avea_bank_reconciliation_form"
+        ).id
         return {
             "type": "ir.actions.act_window",
             "name": title or self.display_name,
             "res_model": self._name,
             "res_id": self.id,
             "view_mode": "form",
-            "view_id": self.env.ref(
-                "avea_till.view_avea_bank_reconciliation_form"
-            ).id,
+            "views": [(form_view_id, "form")],
+            "view_id": form_view_id,
             "target": "current",
         }
 

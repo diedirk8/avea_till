@@ -20,13 +20,10 @@ export class AveaBankReconciliationListController extends ListController {
     }
 
     async onClickNewReconciliation() {
-        const action = await this.orm.call(
-            "avea.bank.reconciliation",
-            "action_new_reconciliation",
-            [],
-            {}
+        // Server action so Odoo builds a full window action (views, etc.).
+        await this.actionService.doAction(
+            "avea_till.action_avea_new_bank_reconciliation"
         );
-        await this.actionService.doAction(action);
     }
 
     async createRecord() {
