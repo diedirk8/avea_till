@@ -140,6 +140,11 @@ class AveaBankReconciliation(models.Model):
 
     @api.model
     def action_new_reconciliation(self):
+        reconciliation = self.browse(self._avea_create_draft_id())
+        return reconciliation._avea_action_form(_("New bank reconciliation"))
+
+    @api.model
+    def _avea_create_draft_id(self):
         journal = self._avea_default_bank_journal()
         reconciliation = self.create(
             {
@@ -147,7 +152,7 @@ class AveaBankReconciliation(models.Model):
                 "state": "draft",
             }
         )
-        return reconciliation._avea_action_form(_("New bank reconciliation"))
+        return reconciliation.id
 
     def _avea_default_bank_journal(self):
         company = self.env.company

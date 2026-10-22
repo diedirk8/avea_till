@@ -1,5 +1,6 @@
 /** @odoo-module **/
 
+import { _t } from "@web/core/l10n/translation";
 import { ListController } from "@web/views/list/list_controller";
 import { listView } from "@web/views/list/list_view";
 import { registry } from "@web/core/registry";
@@ -20,10 +21,21 @@ export class AveaBankReconciliationListController extends ListController {
     }
 
     async onClickNewReconciliation() {
-        // Server action so Odoo builds a full window action (views, etc.).
-        await this.actionService.doAction(
-            "avea_till.action_avea_new_bank_reconciliation"
+        const resId = await this.orm.call(
+            "avea.bank.reconciliation",
+            "_avea_create_draft_id",
+            [],
+            {}
         );
+        await this.actionService.doAction({
+            type: "ir.actions.act_window",
+            name: _t("New bank reconciliation"),
+            res_model: "avea.bank.reconciliation",
+            res_id: resId,
+            view_mode: "form",
+            views: [[false, "form"]],
+            target: "current",
+        });
     }
 
     async createRecord() {
