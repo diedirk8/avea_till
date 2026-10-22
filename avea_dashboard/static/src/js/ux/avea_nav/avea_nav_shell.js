@@ -7,16 +7,9 @@ export function aveaNavSessionEnabled() {
 }
 
 /**
- * Avea sidebar only on the Avea Dashboard app — not Discuss, Accounting, etc.
+ * Avea sidebar for every screen when the user has the retail shell session.
+ * (Odoo apps like Discuss stay reachable via direct links; navigation is Avea-first.)
  */
-export function usesAveaNav(menuService) {
-    if (!aveaNavSessionEnabled()) {
-        return false;
-    }
-    const app = menuService?.getCurrentApp?.();
-    if (!app) {
-        return true;
-    }
-    const xmlid = app.xmlid || "";
-    return xmlid.startsWith("avea_till.");
+export function usesAveaNav(_menuService) {
+    return aveaNavSessionEnabled();
 }
