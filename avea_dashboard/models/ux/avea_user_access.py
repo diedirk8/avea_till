@@ -164,10 +164,7 @@ class ResUsersAveaAccess(models.Model):
                 return True
         return False
 
-    @api.depends(
-        "all_group_ids",
-        "groups_id",
-    )
+    @api.depends("all_group_ids")
     def _compute_avea_access_role(self):
         for user in self:
             if user._avea_has_group(user, "avea_till.group_avea_owner"):
@@ -189,7 +186,7 @@ class ResUsersAveaAccess(models.Model):
             user._avea_apply_role_groups(role)
             user._avea_sync_home_action()
 
-    @api.depends("all_group_ids", "groups_id", "avea_access_role")
+    @api.depends("all_group_ids", "avea_access_role")
     def _compute_avea_permissions(self):
         for user in self:
             for spec in _AVEA_CAPABILITY_FIELDS:
@@ -226,7 +223,7 @@ class ResUsersAveaAccess(models.Model):
             target = self._avea_group("avea_till.group_avea_owner")
         if target:
             commands.append((4, target.id))
-        self.with_context(avea_skip_home_action=True).write({"groups_id": commands})
+        self.with_context(avea_skip_home_action=True).write({"group_ids": commands})
         if role in ("manager", "owner"):
             self._avea_apply_manager_defaults()
         elif role == "cashier":
@@ -254,15 +251,15 @@ class ResUsersAveaAccess(models.Model):
 
     def _avea_set_group_membership(self, group, enabled):
         self.ensure_one()
-        if enabled and group not in self.groups_id:
+        if enabled and group not in self.group_ids:
             self.with_context(avea_skip_home_action=True).write(
-                {"groups_id": [(4, group.id)]}
+                {"group_ids": [(4, group.id)]}
             )
-        elif not enabled and group in self.groups_id:
+        elif not enabled and group in self.group_ids:
             if self._avea_is_role_group(group):
                 return
             self.with_context(avea_skip_home_action=True).write(
-                {"groups_id": [(3, group.id)]}
+                {"group_ids": [(3, group.id)]}
             )
 
     def _avea_check_manage_target(self):
@@ -285,7 +282,7 @@ class ResUsersAveaAccess(models.Model):
         if avea_fields.intersection(vals.keys()):
             for user in self:
                 user._avea_check_manage_target()
-        if "groups_id" in vals and not self.env.context.get("avea_skip_home_action"):
+        if "group_ids" in vals and not self.env.context.get("avea_skip_home_action"):
             for user in self:
                 if not self._avea_can_manage_users() and not self.env.su:
                     raise AccessError(_("Use Avea Users to change roles and permissions."))

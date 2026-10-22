@@ -20,7 +20,7 @@ class TestAveaUserAccess(TransactionCase):
                 "name": "Test %s" % suffix,
                 "login": "test_%s@avea.local" % suffix,
                 "email": "test_%s@avea.local" % suffix,
-                "groups_id": [(6, 0, [group.id, cls.env.ref("base.group_user").id])],
+                "group_ids": [(6, 0, [group.id, cls.env.ref("base.group_user").id])],
             }
         )
 
