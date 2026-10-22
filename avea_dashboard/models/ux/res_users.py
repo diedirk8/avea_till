@@ -15,19 +15,15 @@ class ResUsers(models.Model):
         return str(value).lower() not in ("0", "false", "no", "off")
 
     def _avea_uses_product_shell(self):
-        """Normal Avea users see Avea, not the Odoo app switcher.
+        """Avea role users get the retail shell (sidebar + filtered menus).
 
-        Settings administrators keep the full Odoo backend so operators can
-        still reach underlying functionality without it appearing in the
-        retail product navigation.
+        Users without an Avea cashier/manager/owner role keep the standard Odoo
+        backend navigation.
         """
         self.ensure_one()
         if not self._avea_product_shell_globally_enabled():
             return False
-        return (
-            not self._is_system()
-            and self.has_group("avea_till.group_avea_cashier")
-        )
+        return self.has_group("avea_till.group_avea_cashier")
 
     def _avea_home_action(self):
         """Home action for /web and /odoo when no deeper URL was requested."""

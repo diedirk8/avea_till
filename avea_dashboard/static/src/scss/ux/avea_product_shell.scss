@@ -13,8 +13,9 @@ body.o_avea_product_shell {
     // Suppress leaked Odoo navbar / systray chrome
     // -------------------------------------------------------------------------
 
-    > .o_navbar,
-    > .o_main_navbar,
+    > .o_navbar:not(:has(.o_avea_shell)),
+    > .o_main_navbar:not(:has(.o_avea_shell)),
+    .o_navbar:not(:has(.o_avea_shell)) .o_main_navbar,
     .o_menu_systray,
     .o_user_menu:not(.o_avea_user_menu),
     .o_switch_company_menu,

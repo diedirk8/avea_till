@@ -128,7 +128,7 @@ class TestAveaUxRoles(TestPoSCommon):
     def test_product_shell_flag_for_normal_users(self):
         for user in (self.cashier, self.manager, self.owner):
             self.assertTrue(user._avea_uses_product_shell())
-        self.assertFalse(self.env.ref("base.user_admin")._avea_uses_product_shell())
+        self.assertTrue(self.env.ref("base.user_admin")._avea_uses_product_shell())
 
     def test_product_shell_global_disable(self):
         param = self.env["ir.config_parameter"].sudo()
@@ -137,10 +137,10 @@ class TestAveaUxRoles(TestPoSCommon):
         param.set_param("avea_till.product_shell_enabled", "True")
         self.assertTrue(self.cashier._avea_uses_product_shell())
 
-    def test_admin_keeps_odoo_shell_despite_avea_groups(self):
+    def test_admin_with_avea_role_uses_product_shell(self):
         admin = self.env.ref("base.user_admin")
         self.assertTrue(admin.has_group("avea_till.group_avea_cashier"))
-        self.assertFalse(admin._avea_uses_product_shell())
+        self.assertTrue(admin._avea_uses_product_shell())
 
     def test_web_home_action_is_avea_dashboard(self):
         overview = self.env.ref("avea_till.action_avea_business_overview")
@@ -150,7 +150,7 @@ class TestAveaUxRoles(TestPoSCommon):
         self.assertEqual(self.owner._avea_home_action().id, overview.id)
         self.assertEqual(self.cashier.action_id.id, sessions.id)
         self.assertEqual(self.manager.action_id.id, overview.id)
-        self.assertFalse(self.env.ref("base.user_admin")._avea_home_action())
+        self.assertTrue(self.env.ref("base.user_admin")._avea_home_action())
 
     def test_sell_opens_existing_pos(self):
         action = (
