@@ -1,5 +1,6 @@
 /** @odoo-module **/
 
+import { onMounted, onWillUnmount } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import { WebClient } from "@web/webclient/webclient";
 import { AveaNav } from "./avea_nav";
@@ -15,16 +16,25 @@ patch(WebClient, {
 patch(WebClient.prototype, {
     setup() {
         super.setup(...arguments);
-        if (usesAveaNav()) {
-            document.body.classList.add("o_avea_product_shell");
+        this._syncAveaShellClass = () => {
+            const enabled = this.usesAveaNav();
+            document.body.classList.toggle("o_avea_product_shell", enabled);
             const themeColor = document.querySelector('meta[name="theme-color"]');
             if (themeColor) {
-                themeColor.content = "#c45c26";
+                themeColor.content = enabled ? "#c45c26" : "";
             }
-        }
+        };
+        onMounted(() => {
+            this._syncAveaShellClass();
+            this.env.bus.addEventListener("MENUS:APP-CHANGED", this._syncAveaShellClass);
+        });
+        onWillUnmount(() => {
+            this.env.bus.removeEventListener("MENUS:APP-CHANGED", this._syncAveaShellClass);
+            document.body.classList.remove("o_avea_product_shell");
+        });
     },
 
     usesAveaNav() {
-        return usesAveaNav();
+        return usesAveaNav(this.menuService);
     },
 });
