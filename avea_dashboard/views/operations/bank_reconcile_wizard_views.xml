@@ -5,20 +5,33 @@
         <field name="name">avea.bank.reconcile.line.list</field>
         <field name="model">avea.bank.reconcile.line</field>
         <field name="arch" type="xml">
-            <list editable="bottom" create="false" delete="false">
+            <list editable="bottom" create="false" delete="false" class="o_avea_bank_reconcile_lines">
                 <field name="sequence" column_invisible="True"/>
                 <field name="bank_date"/>
                 <field name="description"/>
-                <field name="reference" optional="show"/>
+                <field name="reference" optional="hide"/>
                 <field name="amount" widget="monetary"/>
                 <field name="match_state" widget="badge"
                     decoration-success="match_state == 'matched'"
+                    decoration-info="match_state == 'possible'"
                     decoration-warning="match_state == 'unmatched'"
-                    decoration-info="match_state == 'imported'"/>
-                <field name="match_confidence" optional="show"/>
-                <field name="match_hint" optional="hide"/>
-                <field name="statement_line_id" optional="show"/>
-                <field name="import_action" invisible="match_state != 'unmatched'"/>
+                    decoration-muted="match_state in ('imported', 'skipped')"/>
+                <field name="match_confidence" string="Match %" optional="show"/>
+                <field name="book_match_summary" string="On your books" readonly="1"/>
+                <field name="statement_line_id" string="Change match" optional="show"
+                    options="{'no_create': True, 'no_open': True}"
+                    readonly="match_state in ('imported', 'skipped')"/>
+                <field name="import_action" string="If unmatched"
+                    invisible="match_state in ('matched', 'imported')"/>
+                <button
+                    name="action_open_booking_wizard"
+                    type="object"
+                    string="Book…"
+                    class="btn-link"
+                    invisible="match_state in ('matched', 'imported', 'skipped')"
+                />
+                <field name="match_hint" column_invisible="True"/>
+                <field name="candidate_statement_line_ids" column_invisible="True"/>
                 <field name="currency_id" column_invisible="True"/>
             </list>
         </field>
@@ -48,9 +61,9 @@
                     <field name="state" widget="statusbar" statusbar_visible="upload,review,done"/>
                 </header>
                 <div class="alert alert-info" role="status" invisible="state != 'upload'">
-                    Upload your FNB statement PDF (or CSV/OFX if available). Avea will match
-                    transactions to entries already recorded (expenses, transfers, withdrawals)
-                    and show anything that still needs attention.
+                    Upload your FNB statement PDF (or CSV/OFX if available). Avea suggests matches
+                    using date, amount, and description, then you can record expenses or income
+                    for anything still unmatched.
                 </div>
                 <group invisible="state != 'upload'">
                     <group>
@@ -79,6 +92,10 @@
                             <field name="matched_count" class="oe_inline" readonly="1"/>
                             /
                             <field name="import_count" class="oe_inline" readonly="1"/>
+                        </span>
+                        <span class="me-3">
+                            <strong>Possible matches:</strong>
+                            <field name="possible_match_count" class="oe_inline" readonly="1"/>
                         </span>
                         <span class="me-3">
                             <strong>Unmatched on statement:</strong>

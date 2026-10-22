@@ -63,6 +63,11 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         required=True,
         default=lambda self: self.env.company,
     )
+    bank_reconcile_line_id = fields.Many2one(
+        "avea.bank.reconcile.line",
+        string="Bank reconcile line",
+        ondelete="set null",
+    )
 
     @api.depends("company_id")
     def _compute_available_journal_ids(self):
@@ -115,7 +120,9 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         self.ensure_one()
         self._avea_resolve_partner()
         bill = self._avea_create_vendor_bill()
-        self._avea_pay_bill(bill)
+        statement_line = self._avea_pay_bill(bill)
+        if self.bank_reconcile_line_id:
+            return self.bank_reconcile_line_id._avea_after_booked(statement_line)
         return self._avea_success_close()
 
     def _avea_resolve_partner(self):

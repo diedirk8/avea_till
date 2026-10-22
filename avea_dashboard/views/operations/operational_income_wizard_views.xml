@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_operational_income_wizard_form" model="ir.ui.view">
+        <field name="name">avea.operational.income.wizard.form</field>
+        <field name="model">avea.operational.income.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Record Income" class="o_avea_wizard">
+                <field name="company_id" invisible="1"/>
+                <field name="available_journal_ids" invisible="1"/>
+                <field name="bank_reconcile_line_id" invisible="1"/>
+                <group>
+                    <group>
+                        <field
+                            name="partner_id"
+                            placeholder="Search customer"
+                            options="{'no_open': True}"
+                            context="{'res_partner_search_mode': 'customer', 'default_customer_rank': 1}"
+                        />
+                        <field name="income_date"/>
+                        <field name="document_ref" placeholder="Invoice or reference"/>
+                    </group>
+                    <group>
+                        <field
+                            name="income_account_id"
+                            options="{'no_create': True, 'no_open': True}"
+                        />
+                        <field name="amount"/>
+                        <field
+                            name="received_in_journal_id"
+                            options="{'no_create': True, 'no_open': True}"
+                        />
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="description" placeholder="What this payment was for"/>
+                </group>
+                <footer>
+                    <button
+                        name="action_record_income"
+                        string="Record Income"
+                        type="object"
+                        class="btn-primary"
+                        data-hotkey="q"
+                    />
+                    <button string="Cancel" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

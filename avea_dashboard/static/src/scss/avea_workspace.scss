@@ -882,6 +882,17 @@
     @include avea-brand-chrome;
 }
 
+.o_avea_bank_reconcile_wizard {
+    .o_form_sheet_bg,
+    .o_content {
+        max-width: none;
+    }
+
+    .o_list_renderer.table-responsive {
+        min-height: 55vh;
+    }
+}
+
 .o_avea_wizard {
     min-width: 0;
 

@@ -7,6 +7,9 @@ from odoo.exceptions import UserError
 
 from .bank_statement_parser import AveaBankStatementParser
 
+_MATCH_AUTO = 70.0
+_MATCH_SUGGEST = 50.0
+
 
 class AveaBankReconcileWizard(models.TransientModel):
     _name = "avea.bank.reconcile.wizard"
@@ -63,6 +66,7 @@ class AveaBankReconcileWizard(models.TransientModel):
         string="On your books, not on statement",
     )
     matched_count = fields.Integer(compute="_compute_counts")
+    possible_match_count = fields.Integer(compute="_compute_counts")
     unmatched_bank_count = fields.Integer(compute="_compute_counts")
     orphan_book_count = fields.Integer(compute="_compute_counts")
     import_count = fields.Integer(compute="_compute_counts")
@@ -73,6 +77,9 @@ class AveaBankReconcileWizard(models.TransientModel):
             wizard.import_count = len(wizard.line_ids)
             wizard.matched_count = len(
                 wizard.line_ids.filtered(lambda line: line.match_state == "matched")
+            )
+            wizard.possible_match_count = len(
+                wizard.line_ids.filtered(lambda line: line.match_state == "possible")
             )
             wizard.unmatched_bank_count = len(
                 wizard.line_ids.filtered(lambda line: line.match_state == "unmatched")
@@ -101,7 +108,7 @@ class AveaBankReconcileWizard(models.TransientModel):
             "res_id": self.id,
             "view_mode": "form",
             "view_id": self.env.ref("avea_till.view_avea_bank_reconcile_wizard_form").id,
-            "target": "new",
+            "target": "current",
         }
 
     def action_parse_statement(self):
@@ -127,6 +134,13 @@ class AveaBankReconcileWizard(models.TransientModel):
                         "reference": tx["reference"],
                         "amount": tx["amount"],
                         "balance_after": tx.get("balance"),
+                        "import_action": (
+                            "expense"
+                            if tx["amount"] < 0
+                            else "income"
+                            if tx["amount"] > 0
+                            else "skip"
+                        ),
                     }
                 )
             )
@@ -156,33 +170,53 @@ class AveaBankReconcileWizard(models.TransientModel):
         self.ensure_one()
         StatementLine = self.env["account.bank.statement.line"]
         for line in self.line_ids:
+            if line.match_state in ("imported", "skipped"):
+                continue
             line.match_state = "unmatched"
             line.statement_line_id = False
             line.match_confidence = 0.0
             line.match_hint = False
+            line.candidate_statement_line_ids = [Command.clear()]
             candidates = StatementLine.search(
                 line._avea_candidate_domain(self.journal_id),
-                order="id desc",
-                limit=80,
+                order="move_id.date desc, id desc",
+                limit=120,
             )
+            scored = []
+            for candidate in candidates:
+                score, hint = line._avea_score_candidate(candidate)
+                if score >= 35.0:
+                    scored.append((score, candidate, hint))
+            scored.sort(key=lambda row: row[0], reverse=True)
+            top = scored[:20]
+            if top:
+                line.candidate_statement_line_ids = [
+                    Command.set([row[1].id for row in top])
+                ]
             best_line = False
             best_score = 0.0
             best_hint = ""
-            for candidate in candidates:
-                score, hint = line._avea_score_candidate(candidate)
-                if score > best_score:
-                    best_score = score
-                    best_line = candidate
-                    best_hint = hint
-            if best_line and best_score >= 70.0:
-                line.write(
+            if top:
+                best_score, best_line, best_hint = top[0]
+            vals = {
+                "match_confidence": best_score,
+                "match_hint": best_hint or False,
+            }
+            if best_line and best_score >= _MATCH_AUTO:
+                vals.update(
                     {
                         "statement_line_id": best_line.id,
                         "match_state": "matched",
-                        "match_confidence": best_score,
-                        "match_hint": best_hint,
                     }
                 )
+            elif best_line and best_score >= _MATCH_SUGGEST:
+                vals.update(
+                    {
+                        "statement_line_id": best_line.id,
+                        "match_state": "possible",
+                    }
+                )
+            line.write(vals)
 
     def _avea_find_orphan_book_lines(self):
         self.ensure_one()
@@ -224,7 +258,7 @@ class AveaBankReconcileWizard(models.TransientModel):
         created = 0
         matched = 0
         for line in self.line_ids:
-            if line.match_state == "matched" and line.statement_line_id:
+            if line.match_state in ("matched", "possible") and line.statement_line_id:
                 line._avea_confirm_match()
                 matched += 1
             elif line.match_state == "unmatched" and line.import_action == "create":
@@ -267,6 +301,7 @@ class AveaBankReconcileLine(models.TransientModel):
     match_state = fields.Selection(
         selection=[
             ("unmatched", "Unmatched"),
+            ("possible", "Possible match"),
             ("matched", "Matched"),
             ("imported", "Imported"),
             ("skipped", "Skipped"),
@@ -276,32 +311,81 @@ class AveaBankReconcileLine(models.TransientModel):
     )
     import_action = fields.Selection(
         selection=[
-            ("create", "Create on books"),
+            ("expense", "Record expense"),
+            ("income", "Record income"),
+            ("create", "Quick import (suspense)"),
             ("skip", "Skip"),
         ],
         string="If unmatched",
-        default="create",
+        default="expense",
         required=True,
+    )
+    candidate_statement_line_ids = fields.Many2many(
+        "account.bank.statement.line",
+        "avea_bank_reconcile_line_candidate_rel",
+        "reconcile_line_id",
+        "statement_line_id",
+        string="Candidate book entries",
     )
     statement_line_id = fields.Many2one(
         "account.bank.statement.line",
-        string="Matched entry",
-        domain="[('journal_id', '=', parent.journal_id)]",
+        string="Link to book entry",
+        domain="[('journal_id', '=', parent.journal_id), ('is_reconciled', '=', False)]",
+        context="{'avea_bank_reconcile_labels': 1}",
+    )
+    book_match_summary = fields.Char(
+        string="On your books",
+        compute="_compute_book_match_summary",
     )
     match_confidence = fields.Float(string="Match %", readonly=True)
     match_hint = fields.Char(string="Match reason", readonly=True)
     company_id = fields.Many2one(related="wizard_id.company_id")
+
+    @api.depends("statement_line_id", "match_confidence", "match_hint")
+    def _compute_book_match_summary(self):
+        for line in self:
+            if line.statement_line_id:
+                label = line.statement_line_id.avea_reconcile_display_name()
+                if line.match_state == "possible" and line.match_confidence:
+                    line.book_match_summary = _(
+                        "Possible match (%(score).0f%%): %(label)s",
+                        score=line.match_confidence,
+                        label=label,
+                    )
+                else:
+                    line.book_match_summary = label
+            elif line.match_hint and line.match_confidence >= _MATCH_SUGGEST:
+                line.book_match_summary = _(
+                    "Suggested (%(score).0f%%): %(hint)s",
+                    score=line.match_confidence,
+                    hint=line.match_hint,
+                )
+            else:
+                line.book_match_summary = False
+
+    @api.onchange("amount")
+    def _onchange_amount_default_import(self):
+        if self.amount and self.amount < 0:
+            self.import_action = "expense"
+        elif self.amount and self.amount > 0:
+            self.import_action = "income"
+
+    @api.onchange("statement_line_id")
+    def _onchange_statement_line_id(self):
+        if self.statement_line_id:
+            score, hint = self._avea_score_candidate(self.statement_line_id)
+            self.match_confidence = score
+            self.match_hint = hint
+            if score >= _MATCH_AUTO:
+                self.match_state = "matched"
+            elif score >= _MATCH_SUGGEST:
+                self.match_state = "possible"
 
     def _avea_candidate_domain(self, journal):
         self.ensure_one()
         date_from = self.bank_date - timedelta(days=5)
         date_to = self.bank_date + timedelta(days=5)
         currency = self.wizard_id.currency_id
-        amount = self.amount
-        amount_domain = [("amount", "=", amount)]
-        if currency:
-            if currency.is_zero(amount):
-                amount_domain = [("amount", "=", 0.0)]
         domain = [
             ("journal_id", "=", journal.id),
             ("company_id", "=", journal.company_id.id),
@@ -309,16 +393,29 @@ class AveaBankReconcileLine(models.TransientModel):
             ("move_id.date", ">=", date_from),
             ("move_id.date", "<=", date_to),
         ]
-        return domain + amount_domain
+        return domain
 
     def _avea_score_candidate(self, candidate):
         self.ensure_one()
         currency = self.wizard_id.currency_id
-        score = 40.0
+        score = 25.0
         hints = []
-        if currency.compare_amounts(candidate.amount, self.amount) == 0:
-            score += 35.0
+        bank_amt = self.amount
+        cand_amt = candidate.amount
+        if currency.compare_amounts(cand_amt, bank_amt) == 0:
+            score += 40.0
             hints.append(_("amount"))
+        elif currency.compare_amounts(abs(cand_amt), abs(bank_amt)) == 0:
+            score += 28.0
+            hints.append(_("amount (sign differs)"))
+        else:
+            diff = abs(cand_amt - bank_amt)
+            if currency.compare_amounts(diff, 1.0) <= 0:
+                score += 18.0
+                hints.append(_("close amount"))
+            elif bank_amt and abs(diff / bank_amt) <= 0.01:
+                score += 12.0
+                hints.append(_("near amount"))
         move_date = candidate.move_id.date
         if move_date == self.bank_date:
             score += 20.0
@@ -333,6 +430,7 @@ class AveaBankReconcileLine(models.TransientModel):
                     candidate.payment_ref or "",
                     candidate.move_id.ref or "",
                     candidate.move_id.narration or "",
+                    candidate.partner_id.display_name if candidate.partner_id else "",
                 ],
             )
         ).lower()
@@ -340,9 +438,103 @@ class AveaBankReconcileLine(models.TransientModel):
             token = (token or "").strip().lower()
             if len(token) >= 4 and token in ref_blob:
                 score += 15.0
-                hints.append(_("reference"))
+                hints.append(_("description"))
+                break
+            words = [w for w in token.split() if len(w) >= 4]
+            if any(word in ref_blob for word in words[:4]):
+                score += 10.0
+                hints.append(_("name"))
                 break
         return score, ", ".join(hints)
+
+    def _avea_default_import_action(self):
+        self.ensure_one()
+        if self.currency_id.compare_amounts(self.amount, 0.0) < 0:
+            return "expense"
+        if self.currency_id.compare_amounts(self.amount, 0.0) > 0:
+            return "income"
+        return "skip"
+
+    def action_open_booking_wizard(self):
+        self.ensure_one()
+        action = self.import_action
+        if action == "expense":
+            return self._avea_open_expense_wizard()
+        if action == "income":
+            return self._avea_open_income_wizard()
+        if action == "create":
+            self._avea_create_statement_line()
+            return self.wizard_id._avea_action_form(_("Bank reconciliation"))
+        if action == "skip":
+            self.match_state = "skipped"
+            return self.wizard_id._avea_action_form(_("Bank reconciliation"))
+        raise UserError(_("Choose what to do with this bank line."))
+
+    def _avea_open_expense_wizard(self):
+        self.ensure_one()
+        amount = abs(self.amount)
+        if self.currency_id.compare_amounts(amount, 0.0) <= 0:
+            raise UserError(_("This line is not an outgoing payment."))
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Record expense"),
+            "res_model": "avea.operational.expense.wizard",
+            "view_mode": "form",
+            "view_id": self.env.ref(
+                "avea_till.view_avea_operational_expense_wizard_form"
+            ).id,
+            "target": "new",
+            "context": {
+                **self.env.context,
+                "default_bank_reconcile_line_id": self.id,
+                "default_expense_date": self.bank_date,
+                "default_description": (self.description or _("Bank statement"))[:255],
+                "default_document_ref": self.reference,
+                "default_amount": amount,
+                "default_paid_from_journal_id": self.wizard_id.journal_id.id,
+                "default_company_id": self.wizard_id.company_id.id,
+            },
+        }
+
+    def _avea_open_income_wizard(self):
+        self.ensure_one()
+        amount = abs(self.amount)
+        if self.currency_id.compare_amounts(amount, 0.0) <= 0:
+            raise UserError(_("This line is not money received."))
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Record income"),
+            "res_model": "avea.operational.income.wizard",
+            "view_mode": "form",
+            "view_id": self.env.ref(
+                "avea_till.view_avea_operational_income_wizard_form"
+            ).id,
+            "target": "new",
+            "context": {
+                **self.env.context,
+                "default_bank_reconcile_line_id": self.id,
+                "default_income_date": self.bank_date,
+                "default_description": (self.description or _("Bank statement"))[:255],
+                "default_document_ref": self.reference,
+                "default_amount": amount,
+                "default_received_in_journal_id": self.wizard_id.journal_id.id,
+                "default_company_id": self.wizard_id.company_id.id,
+            },
+        }
+
+    def _avea_after_booked(self, statement_line):
+        self.ensure_one()
+        self.write(
+            {
+                "statement_line_id": statement_line.id,
+                "match_state": "matched",
+                "match_confidence": 100.0,
+                "match_hint": _("Recorded from Avea"),
+            }
+        )
+        wizard = self.wizard_id
+        wizard._avea_find_orphan_book_lines()
+        return wizard._avea_action_form(_("Bank reconciliation"))
 
     def _avea_confirm_match(self):
         self.ensure_one()

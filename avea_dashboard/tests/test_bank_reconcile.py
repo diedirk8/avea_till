@@ -114,3 +114,42 @@ Date Description Amount Balance Accrued Bank Charges
         score, hint = line._avea_score_candidate(st_line)
         self.assertGreaterEqual(score, 70.0)
         self.assertIn("amount", hint)
+
+    def test_possible_match_near_date(self):
+        journal = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
+            limit=1,
+        )
+        if not journal or not journal.suspense_account_id:
+            return
+        st_line = (
+            self.env["account.bank.statement.line"]
+            .sudo()
+            .with_context(no_retrieve_partner=True)
+            .create(
+                {
+                    "journal_id": journal.id,
+                    "amount": -5599.41,
+                    "date": "2026-07-02",
+                    "payment_ref": "N Mokoena Salary",
+                    "counterpart_account_id": journal.suspense_account_id.id,
+                }
+            )
+        )
+        wizard = self.env["avea.bank.reconcile.wizard"].create(
+            {"journal_id": journal.id, "state": "review"}
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "wizard_id": wizard.id,
+                "bank_date": "2026-07-01",
+                "description": "Payshap N Mokoena Salary",
+                "amount": -5599.41,
+            }
+        )
+        score, _hint = line._avea_score_candidate(st_line)
+        self.assertGreaterEqual(score, 50.0)
+        wizard._avea_match_lines()
+        line.invalidate_recordset()
+        self.assertIn(line.match_state, ("matched", "possible"))
+        self.assertTrue(line.book_match_summary)
