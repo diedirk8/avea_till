@@ -226,6 +226,7 @@ class AveaBankReconciliation(models.Model):
             }
         )
         self._avea_match_lines()
+        self._avea_apply_booking_suggestions()
         self._avea_find_orphan_book_lines()
         return self._avea_action_form()
 
@@ -436,23 +437,29 @@ class AveaBankReconcileLine(models.Model):
     match_hint = fields.Char(string="Match reason", readonly=True)
     booking_suggestion = fields.Char(
         string="Suggested booking",
-        readonly=True,
+        compute="_compute_booking_suggestion",
         help="Based on the bank description — like bank rules in Xero or QuickBooks. "
         "Click Book… to confirm; nothing is posted until you do.",
     )
     suggested_expense_account_id = fields.Many2one(
         "account.account",
         string="Suggested expense account",
-        readonly=True,
+        compute="_compute_booking_suggestion",
     )
     suggested_income_account_id = fields.Many2one(
         "account.account",
         string="Suggested income account",
-        readonly=True,
+        compute="_compute_booking_suggestion",
     )
     company_id = fields.Many2one(related="reconciliation_id.company_id")
 
-    @api.depends("statement_line_id", "match_confidence", "match_hint")
+    @api.depends(
+        "statement_line_id",
+        "match_confidence",
+        "match_hint",
+        "match_state",
+        "booking_suggestion",
+    )
     def _compute_book_match_summary(self):
         for line in self:
             if line.statement_line_id:
@@ -471,14 +478,59 @@ class AveaBankReconcileLine(models.Model):
                     score=line.match_confidence,
                     hint=line.match_hint,
                 )
+            elif line.match_state == "unmatched" and line.booking_suggestion:
+                line.book_match_summary = line.booking_suggestion
             else:
                 line.book_match_summary = False
 
-    @api.onchange("amount", "description", "reference")
+    @api.depends(
+        "description",
+        "reference",
+        "amount",
+        "bank_date",
+        "match_state",
+        "company_id",
+        "currency_id",
+    )
+    def _compute_booking_suggestion(self):
+        Account = self.env["account.account"]
+        for line in self:
+            line.booking_suggestion = False
+            line.suggested_expense_account_id = False
+            line.suggested_income_account_id = False
+            if line.match_state in ("matched", "imported", "skipped"):
+                continue
+            inferred = line._avea_infer_booking()
+            line.booking_suggestion = inferred["booking_suggestion"]
+            if inferred["suggested_expense_account_id"]:
+                line.suggested_expense_account_id = Account.browse(
+                    inferred["suggested_expense_account_id"]
+                )
+            if inferred["suggested_income_account_id"]:
+                line.suggested_income_account_id = Account.browse(
+                    inferred["suggested_income_account_id"]
+                )
+
+    def _avea_infer_booking(self):
+        self.ensure_one()
+        return AveaBankReconcileBookingRules.infer(
+            self.env,
+            company=self.company_id,
+            description=self.description,
+            reference=self.reference,
+            amount=self.amount,
+            bank_date=self.bank_date,
+            currency=self.currency_id,
+        )
+
+    @api.onchange("amount", "description", "reference", "match_state")
     def _onchange_amount_default_import(self):
-        if self.reconciliation_id:
-            self._avea_apply_booking_suggestion()
-        elif self.amount and self.amount < 0:
+        if self.reconciliation_id and self.match_state == "unmatched":
+            inferred = self._avea_infer_booking()
+            if inferred.get("import_action"):
+                self.import_action = inferred["import_action"]
+                return
+        if self.amount and self.amount < 0:
             self.import_action = "expense"
         elif self.amount and self.amount > 0:
             self.import_action = "income"
@@ -487,27 +539,9 @@ class AveaBankReconcileLine(models.Model):
         for line in self:
             if line.match_state in ("matched", "imported", "skipped"):
                 continue
-            inferred = AveaBankReconcileBookingRules.infer(
-                line.env,
-                company=line.company_id,
-                description=line.description,
-                reference=line.reference,
-                amount=line.amount,
-                bank_date=line.bank_date,
-                currency=line.currency_id,
-            )
-            line.write(
-                {
-                    "booking_suggestion": inferred["booking_suggestion"],
-                    "import_action": inferred["import_action"],
-                    "suggested_expense_account_id": inferred[
-                        "suggested_expense_account_id"
-                    ],
-                    "suggested_income_account_id": inferred[
-                        "suggested_income_account_id"
-                    ],
-                }
-            )
+            inferred = line._avea_infer_booking()
+            if inferred.get("import_action"):
+                line.import_action = inferred["import_action"]
 
     @api.onchange("statement_line_id")
     def _onchange_statement_line_id(self):

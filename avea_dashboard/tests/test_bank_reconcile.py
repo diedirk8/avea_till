@@ -177,8 +177,8 @@ Date Description Amount Balance Accrued Bank Charges
                 "amount": -1.07,
             }
         )
-        line._avea_apply_booking_suggestion()
         self.assertIn("bank charge", (line.booking_suggestion or "").lower())
+        line._avea_apply_booking_suggestion()
         self.assertEqual(line.import_action, "expense")
 
     def test_booking_suggestion_fuel_and_salary(self):
