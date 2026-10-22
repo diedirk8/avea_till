@@ -1,0 +1,20 @@
+.o_avea_workspace--users {
+    .o_avea_users_title_field {
+        font: inherit;
+        color: inherit;
+        border: none;
+        background: transparent;
+        padding: 0;
+        width: 100%;
+        max-width: 28rem;
+
+        &:focus {
+            outline: none;
+            box-shadow: none;
+        }
+    }
+
+    .o_avea_users_list .o_data_row {
+        cursor: pointer;
+    }
+}

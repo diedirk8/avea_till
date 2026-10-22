@@ -114,6 +114,15 @@
     />
 
     <menuitem
+        id="menu_avea_settings_users"
+        name="Avea Users"
+        parent="menu_avea_settings"
+        action="action_avea_users"
+        groups="avea_till.group_avea_user_admin,base.group_system"
+        sequence="30"
+    />
+
+    <menuitem
         id="menu_avea_cash_up"
         name="Cash Ups"
         parent="menu_avea_root"

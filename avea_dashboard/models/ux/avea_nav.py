@@ -223,6 +223,10 @@ class AveaNavMixin(models.AbstractModel):
                     "label": "Printed Receipts",
                     "menu_xmlid": "avea_till.menu_avea_settings_printed",
                 },
+                {
+                    "label": "Avea Users",
+                    "menu_xmlid": "avea_till.menu_avea_settings_users",
+                },
             ],
         }
 

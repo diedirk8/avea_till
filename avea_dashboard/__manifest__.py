@@ -21,7 +21,7 @@ Features:
 - Receive Stock, Return Stock, and Stock Take
 - Avea Promotions (wrapper over Odoo Discount & Loyalty), including Combo Price
 """,
-    "version": "19.0.3.14.84",
+    "version": "19.0.3.14.85",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -39,6 +39,7 @@ Features:
         "security/credit/credit_security.xml",
         "security/till/cash_up_security.xml",
         "security/till/correct_payment_security.xml",
+        "security/ux/user_admin_security.xml",
         "security/ux/role_security.xml",
         "data/ux/product_shell_config.xml",
         "security/till/ir.model.access.csv",
@@ -90,6 +91,7 @@ Features:
         "views/customer/customer_merge_views.xml",
         "views/customer/customer_views.xml",
         "views/customer/customer_menu.xml",
+        "views/ux/avea_users_views.xml",
         "views/ux/branding.xml",
         "views/menu.xml",
         "views/till/till_menu.xml",
@@ -128,6 +130,7 @@ Features:
             "avea_till/static/src/scss/_avea_brand_chrome.scss",
             "avea_till/static/src/scss/ux/avea_backend.scss",
             "avea_till/static/src/scss/ux/avea_nav.scss",
+            "avea_till/static/src/scss/ux/avea_users.scss",
             "avea_till/static/src/scss/ux/avea_product_shell.scss",
             "avea_till/static/src/js/ux/product_shell.js",
             "avea_till/static/src/js/ux/avea_nav/avea_nav.xml",

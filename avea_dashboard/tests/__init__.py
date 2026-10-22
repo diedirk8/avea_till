@@ -28,4 +28,5 @@ from . import test_pos_exchange
 from . import test_loyalty_points_display
 from . import test_cash_up
 from . import test_avea_nav
+from . import test_avea_user_access
 from . import test_customer_centre

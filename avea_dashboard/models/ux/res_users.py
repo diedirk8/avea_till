@@ -1,4 +1,5 @@
-from odoo import api, models
+from odoo import _, api, models
+from odoo.exceptions import AccessError
 
 
 class ResUsers(models.Model):
@@ -52,7 +53,13 @@ class ResUsers(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if any(vals.get("avea_access_role") for vals in vals_list) and not self._avea_can_manage_users():
+            raise AccessError(_("You do not have permission to create Avea users."))
         users = super().create(vals_list)
+        for user, vals in zip(users, vals_list):
+            role = vals.get("avea_access_role")
+            if role and role != "none":
+                user._avea_apply_role_groups(role)
         users._avea_sync_home_action()
         return users
 
