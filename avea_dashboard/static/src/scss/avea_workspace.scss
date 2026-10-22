@@ -891,6 +891,11 @@
     .o_list_renderer.table-responsive {
         min-height: 55vh;
     }
+
+    header .o_statusbar_status + button,
+    header button.oe_highlight {
+        margin-right: 0.25rem;
+    }
 }
 
 .o_avea_wizard {

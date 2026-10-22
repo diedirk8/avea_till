@@ -99,12 +99,12 @@ Date Description Amount Balance Accrued Bank Charges
                 }
             )
         )
-        wizard = self.env["avea.bank.reconcile.wizard"].create(
-            {"journal_id": journal.id, "state": "review"}
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress"}
         )
         line = self.env["avea.bank.reconcile.line"].create(
             {
-                "wizard_id": wizard.id,
+                "reconciliation_id": reconciliation.id,
                 "bank_date": "2026-10-01",
                 "description": "FNB TEST PAYMENT",
                 "reference": "ABC",
@@ -136,12 +136,12 @@ Date Description Amount Balance Accrued Bank Charges
                 }
             )
         )
-        wizard = self.env["avea.bank.reconcile.wizard"].create(
-            {"journal_id": journal.id, "state": "review"}
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress"}
         )
         line = self.env["avea.bank.reconcile.line"].create(
             {
-                "wizard_id": wizard.id,
+                "reconciliation_id": reconciliation.id,
                 "bank_date": "2026-07-01",
                 "description": "Payshap N Mokoena Salary",
                 "amount": -5599.41,
@@ -149,7 +149,7 @@ Date Description Amount Balance Accrued Bank Charges
         )
         score, _hint = line._avea_score_candidate(st_line)
         self.assertGreaterEqual(score, 50.0)
-        wizard._avea_match_lines()
+        reconciliation._avea_match_lines()
         line.invalidate_recordset()
         self.assertIn(line.match_state, ("matched", "possible"))
         self.assertTrue(line.book_match_summary)

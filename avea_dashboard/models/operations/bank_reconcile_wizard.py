@@ -11,17 +11,26 @@ _MATCH_AUTO = 70.0
 _MATCH_SUGGEST = 50.0
 
 
-class AveaBankReconcileWizard(models.TransientModel):
-    _name = "avea.bank.reconcile.wizard"
+class AveaBankReconciliation(models.Model):
+    _name = "avea.bank.reconciliation"
     _description = "Bank Reconciliation"
+    _order = "write_date desc, id desc"
 
+    name = fields.Char(string="Reference", compute="_compute_name", store=True)
     state = fields.Selection(
         selection=[
-            ("upload", "Upload"),
-            ("review", "Review"),
-            ("done", "Done"),
+            ("draft", "Draft"),
+            ("in_progress", "In progress"),
+            ("done", "Completed"),
+            ("cancelled", "Cancelled"),
         ],
-        default="upload",
+        default="draft",
+        required=True,
+    )
+    user_id = fields.Many2one(
+        "res.users",
+        string="Owner",
+        default=lambda self: self.env.user,
         required=True,
     )
     company_id = fields.Many2one(
@@ -35,7 +44,7 @@ class AveaBankReconcileWizard(models.TransientModel):
         required=True,
         domain="[('type', '=', 'bank'), ('company_id', '=', company_id)]",
     )
-    statement_file = fields.Binary(string="Statement file", attachment=False)
+    statement_file = fields.Binary(string="Statement file", attachment=True)
     statement_filename = fields.Char(string="Filename")
     source_format = fields.Char(string="Detected format", readonly=True)
     account_number = fields.Char(string="Bank account number", readonly=True)
@@ -57,12 +66,12 @@ class AveaBankReconcileWizard(models.TransientModel):
     )
     line_ids = fields.One2many(
         "avea.bank.reconcile.line",
-        "wizard_id",
+        "reconciliation_id",
         string="Bank transactions",
     )
     book_line_ids = fields.One2many(
         "avea.bank.reconcile.book.line",
-        "wizard_id",
+        "reconciliation_id",
         string="On your books, not on statement",
     )
     matched_count = fields.Integer(compute="_compute_counts")
@@ -71,26 +80,59 @@ class AveaBankReconcileWizard(models.TransientModel):
     orphan_book_count = fields.Integer(compute="_compute_counts")
     import_count = fields.Integer(compute="_compute_counts")
 
+    @api.depends(
+        "journal_id",
+        "date_from",
+        "date_to",
+        "statement_filename",
+        "state",
+    )
+    def _compute_name(self):
+        for rec in self:
+            parts = [rec.journal_id.display_name or _("Bank")]
+            if rec.date_from and rec.date_to:
+                parts.append(
+                    "%s – %s"
+                    % (
+                        fields.Date.to_string(rec.date_from),
+                        fields.Date.to_string(rec.date_to),
+                    )
+                )
+            elif rec.statement_filename:
+                parts.append(rec.statement_filename)
+            rec.name = " · ".join(parts)
+
     @api.depends("line_ids.match_state", "book_line_ids")
     def _compute_counts(self):
-        for wizard in self:
-            wizard.import_count = len(wizard.line_ids)
-            wizard.matched_count = len(
-                wizard.line_ids.filtered(lambda line: line.match_state == "matched")
+        for reconciliation in self:
+            reconciliation.import_count = len(reconciliation.line_ids)
+            reconciliation.matched_count = len(
+                reconciliation.line_ids.filtered(
+                    lambda line: line.match_state == "matched"
+                )
             )
-            wizard.possible_match_count = len(
-                wizard.line_ids.filtered(lambda line: line.match_state == "possible")
+            reconciliation.possible_match_count = len(
+                reconciliation.line_ids.filtered(
+                    lambda line: line.match_state == "possible"
+                )
             )
-            wizard.unmatched_bank_count = len(
-                wizard.line_ids.filtered(lambda line: line.match_state == "unmatched")
+            reconciliation.unmatched_bank_count = len(
+                reconciliation.line_ids.filtered(
+                    lambda line: line.match_state == "unmatched"
+                )
             )
-            wizard.orphan_book_count = len(wizard.book_line_ids)
+            reconciliation.orphan_book_count = len(reconciliation.book_line_ids)
 
     @api.model
-    def action_open_wizard(self):
-        journal = self._avea_default_bank_journal()
-        wizard = self.create({"journal_id": journal.id if journal else False})
-        return wizard._avea_action_form(_("Bank reconciliation"))
+    def action_open_list(self):
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Bank reconciliations"),
+            "res_model": self._name,
+            "view_mode": "list,form",
+            "target": "current",
+            "context": {"search_default_filter_in_progress": 1},
+        }
 
     def _avea_default_bank_journal(self):
         company = self.env.company
@@ -100,14 +142,16 @@ class AveaBankReconcileWizard(models.TransientModel):
             limit=1,
         )
 
-    def _avea_action_form(self, title):
+    def _avea_action_form(self, title=None):
         return {
             "type": "ir.actions.act_window",
-            "name": title,
+            "name": title or self.display_name,
             "res_model": self._name,
             "res_id": self.id,
             "view_mode": "form",
-            "view_id": self.env.ref("avea_till.view_avea_bank_reconcile_wizard_form").id,
+            "view_id": self.env.ref(
+                "avea_till.view_avea_bank_reconciliation_form"
+            ).id,
             "target": "current",
         }
 
@@ -153,18 +197,18 @@ class AveaBankReconcileWizard(models.TransientModel):
                 "opening_balance": parsed.get("opening_balance") or 0.0,
                 "closing_balance": parsed.get("closing_balance") or 0.0,
                 "line_ids": line_vals,
-                "state": "review",
+                "state": "in_progress",
             }
         )
         self._avea_match_lines()
         self._avea_find_orphan_book_lines()
-        return self._avea_action_form(_("Bank reconciliation"))
+        return self._avea_action_form()
 
     def action_refresh_matches(self):
         self.ensure_one()
         self._avea_match_lines()
         self._avea_find_orphan_book_lines()
-        return self._avea_action_form(_("Bank reconciliation"))
+        return self._avea_action_form()
 
     def _avea_match_lines(self):
         self.ensure_one()
@@ -241,7 +285,7 @@ class AveaBankReconcileWizard(models.TransientModel):
         for st_line in statement_lines:
             rows.append(
                 {
-                    "wizard_id": self.id,
+                    "reconciliation_id": self.id,
                     "statement_line_id": st_line.id,
                     "book_date": st_line.move_id.date,
                     "label": st_line.payment_ref or st_line.move_id.ref or st_line.move_id.name,
@@ -253,8 +297,8 @@ class AveaBankReconcileWizard(models.TransientModel):
 
     def action_apply_reconciliation(self):
         self.ensure_one()
-        if self.state != "review":
-            raise UserError(_("Upload and review the statement before applying."))
+        if self.state != "in_progress":
+            raise UserError(_("Upload and review the statement before completing."))
         created = 0
         matched = 0
         for line in self.line_ids:
@@ -269,27 +313,46 @@ class AveaBankReconcileWizard(models.TransientModel):
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": _("Bank reconciliation applied"),
+                "title": _("Bank reconciliation completed"),
                 "message": _(
                     "%(matched)s matched to existing entries, %(created)s new bank lines created.",
                     matched=matched,
                     created=created,
                 ),
                 "type": "success",
-                "next": {"type": "ir.actions.act_window_close"},
+                "next": self.env["avea.bank.reconciliation"].action_open_list(),
             },
         }
 
+    def action_cancel_reconciliation(self):
+        self.write({"state": "cancelled"})
+        return self.env["avea.bank.reconciliation"].action_open_list()
 
-class AveaBankReconcileLine(models.TransientModel):
+
+class AveaBankReconcileWizard(models.TransientModel):
+    """Legacy entry point — opens the persisted reconciliation list."""
+
+    _name = "avea.bank.reconcile.wizard"
+    _description = "Bank Reconciliation (launcher)"
+
+    @api.model
+    def action_open_wizard(self):
+        return self.env["avea.bank.reconciliation"].action_open_list()
+
+
+class AveaBankReconcileLine(models.Model):
     _name = "avea.bank.reconcile.line"
     _description = "Bank reconciliation import line"
     _order = "sequence, id"
 
-    wizard_id = fields.Many2one(
-        "avea.bank.reconcile.wizard",
+    reconciliation_id = fields.Many2one(
+        "avea.bank.reconciliation",
         required=True,
         ondelete="cascade",
+    )
+    journal_id = fields.Many2one(
+        related="reconciliation_id.journal_id",
+        string="Bank journal",
     )
     sequence = fields.Integer(default=10)
     bank_date = fields.Date(string="Date", required=True)
@@ -297,7 +360,7 @@ class AveaBankReconcileLine(models.TransientModel):
     reference = fields.Char()
     amount = fields.Monetary(currency_field="currency_id", required=True)
     balance_after = fields.Monetary(string="Bank balance", currency_field="currency_id")
-    currency_id = fields.Many2one(related="wizard_id.currency_id")
+    currency_id = fields.Many2one(related="reconciliation_id.currency_id")
     match_state = fields.Selection(
         selection=[
             ("unmatched", "Unmatched"),
@@ -330,7 +393,7 @@ class AveaBankReconcileLine(models.TransientModel):
     statement_line_id = fields.Many2one(
         "account.bank.statement.line",
         string="Link to book entry",
-        domain="[('journal_id', '=', parent.journal_id), ('is_reconciled', '=', False)]",
+        domain="[('journal_id', '=', journal_id), ('is_reconciled', '=', False)]",
         context="{'avea_bank_reconcile_labels': 1}",
     )
     book_match_summary = fields.Char(
@@ -339,7 +402,7 @@ class AveaBankReconcileLine(models.TransientModel):
     )
     match_confidence = fields.Float(string="Match %", readonly=True)
     match_hint = fields.Char(string="Match reason", readonly=True)
-    company_id = fields.Many2one(related="wizard_id.company_id")
+    company_id = fields.Many2one(related="reconciliation_id.company_id")
 
     @api.depends("statement_line_id", "match_confidence", "match_hint")
     def _compute_book_match_summary(self):
@@ -385,7 +448,7 @@ class AveaBankReconcileLine(models.TransientModel):
         self.ensure_one()
         date_from = self.bank_date - timedelta(days=5)
         date_to = self.bank_date + timedelta(days=5)
-        currency = self.wizard_id.currency_id
+        currency = self.reconciliation_id.currency_id
         domain = [
             ("journal_id", "=", journal.id),
             ("company_id", "=", journal.company_id.id),
@@ -397,7 +460,7 @@ class AveaBankReconcileLine(models.TransientModel):
 
     def _avea_score_candidate(self, candidate):
         self.ensure_one()
-        currency = self.wizard_id.currency_id
+        currency = self.reconciliation_id.currency_id
         score = 25.0
         hints = []
         bank_amt = self.amount
@@ -464,10 +527,10 @@ class AveaBankReconcileLine(models.TransientModel):
             return self._avea_open_income_wizard()
         if action == "create":
             self._avea_create_statement_line()
-            return self.wizard_id._avea_action_form(_("Bank reconciliation"))
+            return self.reconciliation_id._avea_action_form()
         if action == "skip":
             self.match_state = "skipped"
-            return self.wizard_id._avea_action_form(_("Bank reconciliation"))
+            return self.reconciliation_id._avea_action_form()
         raise UserError(_("Choose what to do with this bank line."))
 
     def _avea_open_expense_wizard(self):
@@ -491,8 +554,8 @@ class AveaBankReconcileLine(models.TransientModel):
                 "default_description": (self.description or _("Bank statement"))[:255],
                 "default_document_ref": self.reference,
                 "default_amount": amount,
-                "default_paid_from_journal_id": self.wizard_id.journal_id.id,
-                "default_company_id": self.wizard_id.company_id.id,
+                "default_paid_from_journal_id": self.reconciliation_id.journal_id.id,
+                "default_company_id": self.reconciliation_id.company_id.id,
             },
         }
 
@@ -517,8 +580,8 @@ class AveaBankReconcileLine(models.TransientModel):
                 "default_description": (self.description or _("Bank statement"))[:255],
                 "default_document_ref": self.reference,
                 "default_amount": amount,
-                "default_received_in_journal_id": self.wizard_id.journal_id.id,
-                "default_company_id": self.wizard_id.company_id.id,
+                "default_received_in_journal_id": self.reconciliation_id.journal_id.id,
+                "default_company_id": self.reconciliation_id.company_id.id,
             },
         }
 
@@ -532,9 +595,9 @@ class AveaBankReconcileLine(models.TransientModel):
                 "match_hint": _("Recorded from Avea"),
             }
         )
-        wizard = self.wizard_id
-        wizard._avea_find_orphan_book_lines()
-        return wizard._avea_action_form(_("Bank reconciliation"))
+        reconciliation = self.reconciliation_id
+        reconciliation._avea_find_orphan_book_lines()
+        return reconciliation._avea_action_form()
 
     def _avea_confirm_match(self):
         self.ensure_one()
@@ -553,8 +616,8 @@ class AveaBankReconcileLine(models.TransientModel):
 
     def _avea_create_statement_line(self):
         self.ensure_one()
-        wizard = self.wizard_id
-        journal = wizard.journal_id
+        reconciliation = self.reconciliation_id
+        journal = reconciliation.journal_id
         suspense = journal.suspense_account_id
         if not suspense:
             raise UserError(
@@ -585,7 +648,7 @@ class AveaBankReconcileLine(models.TransientModel):
         )
         details = {
             "avea_bank_reconcile": {
-                "source": wizard.source_format,
+                "source": reconciliation.source_format,
                 "bank_reference": self.reference,
                 "imported": True,
             }
@@ -599,12 +662,12 @@ class AveaBankReconcileLine(models.TransientModel):
         )
 
 
-class AveaBankReconcileBookLine(models.TransientModel):
+class AveaBankReconcileBookLine(models.Model):
     _name = "avea.bank.reconcile.book.line"
     _description = "Book entry missing from bank statement"
 
-    wizard_id = fields.Many2one(
-        "avea.bank.reconcile.wizard",
+    reconciliation_id = fields.Many2one(
+        "avea.bank.reconciliation",
         required=True,
         ondelete="cascade",
     )
@@ -612,4 +675,4 @@ class AveaBankReconcileBookLine(models.TransientModel):
     book_date = fields.Date()
     label = fields.Char()
     amount = fields.Monetary(currency_field="currency_id")
-    currency_id = fields.Many2one(related="wizard_id.currency_id")
+    currency_id = fields.Many2one(related="reconciliation_id.currency_id")

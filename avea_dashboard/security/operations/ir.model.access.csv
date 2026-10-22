@@ -6,6 +6,7 @@ access_avea_account_balance_wizard,access.avea.account.balance.wizard,model_avea
 access_avea_account_balance_line,access.avea.account.balance.line,model_avea_account_balance_line,,1,1,1,1
 access_avea_manual_journal_wizard,access.avea.manual.journal.wizard,model_avea_manual_journal_wizard,,1,1,1,1
 access_avea_withdraw_cash_wizard,access.avea.withdraw.cash.wizard,model_avea_withdraw_cash_wizard,,1,1,1,1
+access_avea_bank_reconciliation,access.avea.bank.reconciliation,model_avea_bank_reconciliation,,1,1,1,1
 access_avea_bank_reconcile_wizard,access.avea.bank.reconcile.wizard,model_avea_bank_reconcile_wizard,,1,1,1,1
 access_avea_bank_reconcile_line,access.avea.bank.reconcile.line,model_avea_bank_reconcile_line,,1,1,1,1
 access_avea_bank_reconcile_book_line,access.avea.bank.reconcile.book.line,model_avea_bank_reconcile_book_line,,1,1,1,1

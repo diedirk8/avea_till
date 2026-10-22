@@ -1,12 +1,68 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
+    <record id="view_avea_bank_reconciliation_list" model="ir.ui.view">
+        <field name="name">avea.bank.reconciliation.list</field>
+        <field name="model">avea.bank.reconciliation</field>
+        <field name="arch" type="xml">
+            <list string="Bank reconciliations">
+                <field name="name"/>
+                <field name="journal_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="matched_count" string="Matched"/>
+                <field name="unmatched_bank_count" string="Unmatched"/>
+                <field name="state" widget="badge"
+                    decoration-success="state == 'done'"
+                    decoration-info="state == 'in_progress'"
+                    decoration-muted="state == 'cancelled'"/>
+                <field name="user_id" widget="many2one_avatar_user" optional="show"/>
+                <field name="write_date" string="Last updated"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_bank_reconciliation_search" model="ir.ui.view">
+        <field name="name">avea.bank.reconciliation.search</field>
+        <field name="model">avea.bank.reconciliation</field>
+        <field name="arch" type="xml">
+            <search string="Bank reconciliations">
+                <field name="name"/>
+                <field name="journal_id"/>
+                <field name="account_number"/>
+                <filter
+                    name="filter_in_progress"
+                    string="In progress"
+                    domain="[('state', '=', 'in_progress')]"
+                />
+                <filter
+                    name="filter_draft"
+                    string="Draft"
+                    domain="[('state', '=', 'draft')]"
+                />
+                <filter
+                    name="filter_done"
+                    string="Completed"
+                    domain="[('state', '=', 'done')]"
+                />
+                <separator/>
+                <filter
+                    name="filter_my"
+                    string="My reconciliations"
+                    domain="[('user_id', '=', uid)]"
+                />
+            </search>
+        </field>
+    </record>
+
     <record id="view_avea_bank_reconcile_line_list" model="ir.ui.view">
         <field name="name">avea.bank.reconcile.line.list</field>
         <field name="model">avea.bank.reconcile.line</field>
         <field name="arch" type="xml">
             <list editable="bottom" create="false" delete="false" class="o_avea_bank_reconcile_lines">
                 <field name="sequence" column_invisible="True"/>
+                <field name="journal_id" column_invisible="True"/>
                 <field name="bank_date"/>
                 <field name="description"/>
                 <field name="reference" optional="hide"/>
@@ -50,30 +106,60 @@
         </field>
     </record>
 
-    <record id="view_avea_bank_reconcile_wizard_form" model="ir.ui.view">
-        <field name="name">avea.bank.reconcile.wizard.form</field>
-        <field name="model">avea.bank.reconcile.wizard</field>
+    <record id="view_avea_bank_reconciliation_form" model="ir.ui.view">
+        <field name="name">avea.bank.reconciliation.form</field>
+        <field name="model">avea.bank.reconciliation</field>
         <field name="arch" type="xml">
             <form string="Bank reconciliation" class="o_avea_wizard o_avea_bank_reconcile_wizard">
                 <field name="company_id" invisible="1"/>
                 <field name="currency_id" invisible="1"/>
                 <header>
-                    <field name="state" widget="statusbar" statusbar_visible="upload,review,done"/>
+                    <button
+                        name="action_parse_statement"
+                        string="Upload statement"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state != 'draft'"
+                        data-hotkey="q"
+                    />
+                    <button
+                        name="action_refresh_matches"
+                        string="Refresh matches"
+                        type="object"
+                        invisible="state != 'in_progress'"
+                    />
+                    <button
+                        name="action_apply_reconciliation"
+                        string="Complete reconciliation"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state != 'in_progress'"
+                        data-hotkey="shift+q"
+                    />
+                    <button
+                        name="action_cancel_reconciliation"
+                        string="Cancel"
+                        type="object"
+                        invisible="state not in ('draft', 'in_progress')"
+                    />
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
                 </header>
-                <div class="alert alert-info" role="status" invisible="state != 'upload'">
-                    Upload your FNB statement PDF (or CSV/OFX if available). Avea suggests matches
-                    using date, amount, and description, then you can record expenses or income
-                    for anything still unmatched.
+                <div class="alert alert-info" role="status" invisible="state != 'draft'">
+                    Choose your bank account, attach your FNB statement PDF (or CSV/OFX), then
+                    click <strong>Upload statement</strong>. Your work is saved automatically —
+                    close anytime and reopen it from <strong>Money → Bank reconciliation</strong>.
                 </div>
-                <group invisible="state != 'upload'">
+                <group invisible="state != 'draft'">
                     <group>
+                        <field name="name" readonly="1"/>
                         <field name="journal_id" options="{'no_create': True, 'no_open': True}"/>
                         <field name="statement_file" filename="statement_filename"/>
                         <field name="statement_filename" invisible="1"/>
                     </group>
                 </group>
-                <group invisible="state == 'upload'">
+                <group invisible="state == 'draft'">
                     <group>
+                        <field name="name" readonly="1"/>
                         <field name="journal_id" readonly="1"/>
                         <field name="source_format" readonly="1"/>
                         <field name="account_number" readonly="1"/>
@@ -85,7 +171,7 @@
                         <field name="closing_balance" readonly="1" widget="monetary"/>
                     </group>
                 </group>
-                <group invisible="state != 'review'">
+                <group invisible="state != 'in_progress'">
                     <div class="o_row">
                         <span class="me-3">
                             <strong>Matched:</strong>
@@ -107,7 +193,7 @@
                         </span>
                     </div>
                 </group>
-                <notebook invisible="state != 'review'">
+                <notebook invisible="state != 'in_progress'">
                     <page string="Bank statement" name="bank_lines">
                         <field name="line_ids" nolabel="1"/>
                     </page>
@@ -119,33 +205,25 @@
                         <field name="book_line_ids" nolabel="1"/>
                     </page>
                 </notebook>
-                <footer>
-                    <button
-                        name="action_parse_statement"
-                        string="Load statement"
-                        type="object"
-                        class="btn-primary"
-                        invisible="state != 'upload'"
-                        data-hotkey="q"
-                    />
-                    <button
-                        name="action_refresh_matches"
-                        string="Refresh matches"
-                        type="object"
-                        class="btn-secondary"
-                        invisible="state != 'review'"
-                    />
-                    <button
-                        name="action_apply_reconciliation"
-                        string="Apply"
-                        type="object"
-                        class="btn-primary"
-                        invisible="state != 'review'"
-                        data-hotkey="q"
-                    />
-                    <button string="Close" special="cancel" data-hotkey="x"/>
-                </footer>
             </form>
+        </field>
+    </record>
+
+    <record id="action_avea_bank_reconciliation" model="ir.actions.act_window">
+        <field name="name">Bank reconciliations</field>
+        <field name="res_model">avea.bank.reconciliation</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_bank_reconciliation_search"/>
+        <field name="target">current</field>
+        <field name="context">{'search_default_filter_in_progress': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Start a new bank reconciliation
+            </p>
+            <p>
+                Upload an FNB statement, match transactions to your books, and record
+                expenses or income for anything still missing.
+            </p>
         </field>
     </record>
 
@@ -154,6 +232,10 @@
         <field name="model_id" ref="model_avea_bank_reconcile_wizard"/>
         <field name="state">code</field>
         <field name="code">action = model.action_open_wizard()</field>
+    </record>
+
+    <record id="menu_avea_operations_bank_reconcile" model="ir.ui.menu">
+        <field name="action" ref="action_avea_bank_reconciliation"/>
     </record>
 
 </odoo>
