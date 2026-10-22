@@ -10,28 +10,12 @@
                 <field name="available_journal_ids" invisible="1"/>
                 <group>
                     <group>
-                        <div class="o_row o_avea_wizard_supplier_toggle">
-                            <field name="add_new_supplier" nolabel="1"/>
-                            <label for="add_new_supplier">Add a new supplier</label>
-                        </div>
                         <field
                             name="partner_id"
-                            invisible="add_new_supplier"
-                            required="not add_new_supplier"
-                            placeholder="Search supplier or create a new one"
+                            widget="avea_expense_supplier_many2one"
+                            placeholder="Search supplier"
                             options="{'no_open': True, 'no_create_edit': True}"
-                            context="{'res_partner_search_mode': 'supplier', 'default_supplier_rank': 1, 'default_is_company': True}"
-                        />
-                        <field
-                            name="new_supplier_name"
-                            invisible="not add_new_supplier"
-                            required="add_new_supplier"
-                            placeholder="Supplier name"
-                        />
-                        <field
-                            name="new_supplier_vat"
-                            invisible="not add_new_supplier"
-                            placeholder="Tax number (optional)"
+                            context="{'res_partner_search_mode': 'supplier', 'avea_operational_expense_supplier': 1, 'default_supplier_rank': 1, 'default_is_company': True}"
                         />
                         <field name="expense_date"/>
                         <field

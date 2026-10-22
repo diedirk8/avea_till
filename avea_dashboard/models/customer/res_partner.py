@@ -4,6 +4,7 @@ from datetime import timedelta
 from statistics import median
 
 from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class ResPartner(models.Model):
@@ -403,3 +404,28 @@ class ResPartner(models.Model):
                 ctx["avea_customer_workspace"] = True
                 action["context"] = ctx
         return action
+
+    @api.model
+    def name_search(self, name="", args=None, operator="ilike", limit=100):
+        args = list(args or [])
+        if self.env.context.get("avea_operational_expense_supplier"):
+            args.append(("supplier_rank", ">", 0))
+        return super().name_search(name, args, operator, limit)
+
+    @api.model
+    def name_create(self, name):
+        """Quick-create a supplier from the operational expense wizard."""
+        if self.env.context.get("avea_operational_expense_supplier"):
+            clean_name = (name or "").strip()
+            if not clean_name:
+                raise ValidationError(_("Enter a supplier name."))
+            partner = self.sudo().create(
+                {
+                    "name": clean_name,
+                    "supplier_rank": 1,
+                    "is_company": True,
+                    "company_id": self.env.company.id,
+                }
+            )
+            return partner.id, partner.display_name
+        return super().name_create(name)
