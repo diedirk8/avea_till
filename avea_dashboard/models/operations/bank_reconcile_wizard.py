@@ -246,7 +246,7 @@ class AveaBankReconciliation(models.Model):
             line.candidate_statement_line_ids = [Command.clear()]
             candidates = StatementLine.search(
                 line._avea_candidate_domain(self.journal_id),
-                order="move_id.date desc, id desc",
+                order="date desc, id desc",
                 limit=120,
             )
             scored = []
