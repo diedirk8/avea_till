@@ -130,6 +130,9 @@ class AveaBankReconciliation(models.Model):
             "name": _("Bank reconciliations"),
             "res_model": self._name,
             "view_mode": "list,form",
+            "view_id": self.env.ref(
+                "avea_till.view_avea_bank_reconciliation_list"
+            ).id,
             "target": "current",
         }
 

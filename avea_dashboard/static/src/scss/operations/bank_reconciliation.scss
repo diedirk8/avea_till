@@ -1,0 +1,23 @@
+.o_avea_workspace--bank-recon {
+    .o_avea_bank_recon_list_shell {
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_bank_recon_list_hero {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .o_avea_bank_recon_list_actions {
+        flex-shrink: 0;
+
+        .btn-primary {
+            min-height: 2.75rem;
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
+        }
+    }
+}

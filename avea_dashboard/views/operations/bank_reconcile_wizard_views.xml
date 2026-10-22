@@ -5,16 +5,12 @@
         <field name="name">avea.bank.reconciliation.list</field>
         <field name="model">avea.bank.reconciliation</field>
         <field name="arch" type="xml">
-            <list string="Bank reconciliations" class="o_avea_bank_reconciliation_list">
-                <header>
-                    <button
-                        name="action_new_reconciliation"
-                        type="object"
-                        string="New reconciliation"
-                        class="btn-primary"
-                        display="always"
-                    />
-                </header>
+            <list
+                string="Bank reconciliations"
+                class="o_avea_bank_reconciliation_list"
+                js_class="avea_bank_reconciliation_list"
+                create="1"
+            >
                 <field name="name"/>
                 <field name="journal_id"/>
                 <field name="date_from"/>
@@ -150,6 +146,12 @@
                         string="Cancel"
                         type="object"
                         invisible="state not in ('draft', 'in_progress')"
+                    />
+                    <button
+                        name="action_open_list"
+                        string="All reconciliations"
+                        type="object"
+                        class="btn-secondary"
                     />
                     <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
                 </header>
