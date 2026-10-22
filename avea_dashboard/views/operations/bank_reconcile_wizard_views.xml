@@ -121,7 +121,7 @@
                 <header>
                     <button
                         name="action_parse_statement"
-                        string="Upload statement"
+                        string="Load &amp; match"
                         type="object"
                         class="oe_highlight"
                         invisible="state != 'draft'"
@@ -156,15 +156,19 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
                 </header>
                 <div class="alert alert-info" role="status" invisible="state != 'draft'">
-                    Choose your bank account, attach your FNB statement PDF (or CSV/OFX), then
-                    click <strong>Upload statement</strong>. Your work is saved automatically —
-                    close anytime and reopen it from <strong>Money → Bank reconciliation</strong>.
+                    Choose your bank account, attach your FNB statement below, then use
+                    <strong>Load &amp; match</strong> in the header (orange button). Your work is
+                    saved automatically — reopen anytime from <strong>Money → Bank reconciliations</strong>.
                 </div>
                 <group invisible="state != 'draft'">
                     <group>
                         <field name="name" readonly="1"/>
                         <field name="journal_id" options="{'no_create': True, 'no_open': True}"/>
-                        <field name="statement_file" filename="statement_filename"/>
+                        <field
+                            name="statement_file"
+                            filename="statement_filename"
+                            string="Statement file (PDF, CSV, or OFX)"
+                        />
                         <field name="statement_filename" invisible="1"/>
                     </group>
                 </group>
@@ -206,7 +210,11 @@
                 </group>
                 <notebook invisible="state != 'in_progress'">
                     <page string="Bank statement" name="bank_lines">
-                        <field name="line_ids" nolabel="1"/>
+                        <field
+                            name="line_ids"
+                            nolabel="1"
+                            context="{'avea_bank_reconcile_labels': True}"
+                        />
                     </page>
                     <page string="Missing from bank" name="book_lines">
                         <p class="text-muted">

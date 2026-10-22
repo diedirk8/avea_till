@@ -176,6 +176,7 @@ class AveaBankReconciliation(models.Model):
             "views": [(form_view_id, "form")],
             "view_id": form_view_id,
             "target": "current",
+            "context": {"avea_bank_reconcile_labels": True},
         }
 
     def action_parse_statement(self):
@@ -299,8 +300,8 @@ class AveaBankReconciliation(models.Model):
                 ("journal_id", "=", self.journal_id.id),
                 ("company_id", "=", self.company_id.id),
                 ("is_reconciled", "=", False),
-                ("move_id.date", ">=", date_from),
-                ("move_id.date", "<=", date_to),
+                ("date", ">=", date_from),
+                ("date", "<=", date_to),
                 ("id", "not in", list(matched_ids) or [0]),
             ]
         )
@@ -310,7 +311,7 @@ class AveaBankReconciliation(models.Model):
                 {
                     "reconciliation_id": self.id,
                     "statement_line_id": st_line.id,
-                    "book_date": st_line.move_id.date,
+                    "book_date": st_line.date or st_line.move_id.date,
                     "label": st_line.payment_ref or st_line.move_id.ref or st_line.move_id.name,
                     "amount": st_line.amount,
                 }
@@ -412,12 +413,13 @@ class AveaBankReconcileLine(models.Model):
         "reconcile_line_id",
         "statement_line_id",
         string="Candidate book entries",
+        context={"avea_bank_reconcile_labels": True},
     )
     statement_line_id = fields.Many2one(
         "account.bank.statement.line",
         string="Link to book entry",
         domain="[('journal_id', '=', journal_id), ('is_reconciled', '=', False)]",
-        context="{'avea_bank_reconcile_labels': 1}",
+        context={"avea_bank_reconcile_labels": True},
     )
     book_match_summary = fields.Char(
         string="On your books",
@@ -476,8 +478,8 @@ class AveaBankReconcileLine(models.Model):
             ("journal_id", "=", journal.id),
             ("company_id", "=", journal.company_id.id),
             ("is_reconciled", "=", False),
-            ("move_id.date", ">=", date_from),
-            ("move_id.date", "<=", date_to),
+            ("date", ">=", date_from),
+            ("date", "<=", date_to),
         ]
         return domain
 

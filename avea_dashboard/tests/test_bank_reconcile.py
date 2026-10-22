@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import base64
+
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -153,3 +155,29 @@ Date Description Amount Balance Accrued Bank Charges
         line.invalidate_recordset()
         self.assertIn(line.match_state, ("matched", "possible"))
         self.assertTrue(line.book_match_summary)
+
+    def test_parse_statement_csv_and_read_lines(self):
+        journal = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
+            limit=1,
+        )
+        if not journal:
+            return
+        csv_body = """Date,Description,Amount
+2024-10-05,Card purchase,-45.50
+"""
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "draft",
+                "statement_file": base64.b64encode(csv_body.encode()),
+                "statement_filename": "statement.csv",
+            }
+        )
+        reconciliation.action_parse_statement()
+        self.assertEqual(reconciliation.state, "in_progress")
+        self.assertEqual(len(reconciliation.line_ids), 1)
+        data = reconciliation.with_context(
+            avea_bank_reconcile_labels=True
+        ).line_ids.read(["statement_line_id", "book_match_summary"])
+        self.assertEqual(len(data), 1)
