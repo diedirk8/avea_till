@@ -140,11 +140,12 @@ class AveaBankReconciliation(models.Model):
 
     @api.model
     def action_new_reconciliation(self):
-        reconciliation = self.browse(self._avea_create_draft_id())
+        reconciliation = self.browse(self.action_create_draft())
         return reconciliation._avea_action_form(_("New bank reconciliation"))
 
     @api.model
-    def _avea_create_draft_id(self):
+    def action_create_draft(self):
+        """Public RPC entry: create an empty draft reconciliation and return its id."""
         journal = self._avea_default_bank_journal()
         reconciliation = self.create(
             {

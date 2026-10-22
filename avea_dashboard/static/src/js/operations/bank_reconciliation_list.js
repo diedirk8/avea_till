@@ -23,7 +23,7 @@ export class AveaBankReconciliationListController extends ListController {
     async onClickNewReconciliation() {
         const resId = await this.orm.call(
             "avea.bank.reconciliation",
-            "_avea_create_draft_id",
+            "action_create_draft",
             [],
             {}
         );
