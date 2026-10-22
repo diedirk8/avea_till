@@ -68,6 +68,20 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         string="Bank reconcile line",
         ondelete="set null",
     )
+    booking_partner_role = fields.Selection(
+        selection=[
+            ("supplier", "Supplier"),
+            ("employee", "Employee"),
+            ("bank", "Bank"),
+            ("merchant", "Merchant"),
+        ],
+        string="Payee type",
+        readonly=True,
+    )
+    partner_hint = fields.Text(
+        string="Payee help",
+        readonly=True,
+    )
 
     @api.depends("company_id")
     def _compute_available_journal_ids(self):
@@ -80,12 +94,19 @@ class AveaOperationalExpenseWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         values = super().default_get(fields_list)
+        ctx = self.env.context
         if "paid_from_journal_id" in fields_list and not values.get(
             "paid_from_journal_id"
         ):
             journal = self._avea_default_paid_from_journal(self.env.company)
             if journal:
                 values["paid_from_journal_id"] = journal.id
+        role = ctx.get("avea_booking_partner_role")
+        if role and "booking_partner_role" in fields_list:
+            values["booking_partner_role"] = role
+        hint = ctx.get("default_partner_hint")
+        if hint and "partner_hint" in fields_list:
+            values["partner_hint"] = hint
         return values
 
     @api.constrains("amount")

@@ -419,11 +419,12 @@ class ResPartner(models.Model):
             clean_name = (name or "").strip()
             if not clean_name:
                 raise ValidationError(_("Enter a supplier name."))
+            as_person = bool(self.env.context.get("avea_expense_payee_person"))
             partner = self.sudo().create(
                 {
                     "name": clean_name,
                     "supplier_rank": 1,
-                    "is_company": True,
+                    "is_company": not as_person,
                     "company_id": self.env.company.id,
                 }
             )

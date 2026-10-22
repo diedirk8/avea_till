@@ -35,6 +35,7 @@ _KEYWORD_RULES = (
         "import_action": "expense",
         "account_codes": (),
         "account_names": ("bank charge", "bank fee", "bank cost", "finance charge"),
+        "partner_role": "bank",
     },
     {
         "keys": ("salary", "wages", "payroll", "payshap"),
@@ -43,6 +44,7 @@ _KEYWORD_RULES = (
         "account_codes": (SALARY_WAGES_ACCOUNT_CODE,),
         "account_names": ("salary", "wages", "payroll"),
         "require_any": ("salary", "wages", "payroll"),
+        "partner_role": "employee",
     },
     {
         "keys": (
@@ -60,6 +62,7 @@ _KEYWORD_RULES = (
         "import_action": "expense",
         "account_codes": (),
         "account_names": ("fuel", "petrol", "diesel", "vehicle"),
+        "partner_role": "merchant",
     },
     {
         "keys": (
@@ -164,6 +167,8 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
             "import_action": False,
             "suggested_expense_account_id": False,
             "suggested_income_account_id": False,
+            "partner_role": "supplier",
+            "matched_rule": None,
         }
         if currency.compare_amounts(amount, 0.0) == 0:
             result["import_action"] = "skip"
@@ -199,6 +204,8 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
 
         result["import_action"] = matched_rule["import_action"]
         result["booking_suggestion"] = _(matched_rule["label"])
+        result["partner_role"] = matched_rule.get("partner_role", "supplier")
+        result["matched_rule"] = matched_rule
         Account = env["account.account"].sudo()
         if matched_rule.get("income"):
             account = cls._avea_resolve_account(
@@ -236,3 +243,99 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
             if account:
                 return account
         return Account.browse()
+
+    @classmethod
+    def _avea_extract_employee_name(cls, description):
+        text = re.sub(r"(?i)payshap account off-us", "", (description or "")).strip()
+        text = re.sub(r"(?i)payshap", "", text).strip()
+        text = re.sub(r"(?i)\b(salary|wages|payroll)\b", "", text).strip()
+        text = re.sub(r"\s+", " ", text)
+        return text if len(text) >= 2 else False
+
+    @classmethod
+    def _avea_extract_merchant_name(cls, description):
+        text = (description or "").strip()
+        match = re.search(r"(?i)pos purchase\s+(.+)", text)
+        if match:
+            return match.group(1).strip()
+        match = re.search(r"(?i)(?:payment to|paid to)\s+(.+)", text)
+        if match:
+            return match.group(1).strip()
+        return False
+
+    @classmethod
+    def suggest_partner(cls, env, *, company, partner_role, description, reference):
+        """Best-effort payee for vendor bill + bank payment (not a product supplier)."""
+        Partner = env["res.partner"].sudo()
+        company_domain = [
+            "|",
+            ("company_id", "=", False),
+            ("company_id", "in", company.id),
+        ]
+
+        def _search_name(name, *, prefer_supplier=False, prefer_person=False):
+            if not name or len(name) < 2:
+                return Partner.browse()
+            domain = company_domain + [("name", "ilike", name)]
+            if prefer_supplier:
+                domain.append(("supplier_rank", ">", 0))
+            candidates = Partner.search(domain, limit=8)
+            if prefer_person:
+                people = candidates.filtered(lambda partner: not partner.is_company)
+                if people:
+                    return people[0]
+            exact = candidates.filtered(
+                lambda partner: partner.name.strip().lower() == name.lower()
+            )
+            if exact:
+                return exact[0]
+            return candidates[:1]
+
+        if partner_role == "employee":
+            payee = cls._avea_extract_employee_name(description)
+            if payee:
+                partner = _search_name(payee, prefer_person=True)
+                if partner:
+                    return partner
+                if " " in payee:
+                    partner = _search_name(payee.split()[-1], prefer_person=True)
+                    if partner:
+                        return partner
+            return Partner.browse()
+
+        if partner_role == "bank":
+            for term in ("First National Bank", "FNB"):
+                partner = _search_name(term, prefer_supplier=True)
+                if partner:
+                    return partner
+            return Partner.browse()
+
+        if partner_role == "merchant":
+            merchant = cls._avea_extract_merchant_name(description)
+            if merchant:
+                partner = _search_name(merchant, prefer_supplier=True)
+                if partner:
+                    return partner
+                token = merchant.split()[0].strip("*")
+                if len(token) >= 3:
+                    partner = _search_name(token, prefer_supplier=True)
+                    if partner:
+                        return partner
+            return Partner.browse()
+
+        return Partner.browse()
+
+    @classmethod
+    def partner_hint_for_role(cls, partner_role):
+        if partner_role == "employee":
+            return _(
+                "Salary is paid to a person, not a shop. Choose the employee "
+                "(or type their name to add them). Odoo needs a payee contact "
+                "to post the payment."
+            )
+        if partner_role == "bank":
+            return _(
+                "Bank charges are usually posted to your bank as payee "
+                "(e.g. FNB). Search FNB or add them once if missing."
+            )
+        return False

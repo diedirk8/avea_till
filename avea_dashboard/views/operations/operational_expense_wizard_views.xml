@@ -9,12 +9,21 @@
                 <field name="company_id" invisible="1"/>
                 <field name="available_journal_ids" invisible="1"/>
                 <field name="bank_reconcile_line_id" invisible="1"/>
+                <field name="booking_partner_role" invisible="1"/>
+                <div
+                    class="alert alert-secondary mb-0 py-2"
+                    role="note"
+                    invisible="not partner_hint"
+                >
+                    <field name="partner_hint" nolabel="1" readonly="1"/>
+                </div>
                 <group>
                     <group>
                         <field
                             name="partner_id"
+                            string="Paid to"
                             widget="avea_expense_supplier_many2one"
-                            placeholder="Search supplier"
+                            placeholder="Search payee"
                             options="{'no_open': True, 'no_create_edit': True}"
                             context="{'res_partner_search_mode': 'supplier', 'avea_operational_expense_supplier': 1, 'default_supplier_rank': 1, 'default_is_company': True}"
                         />

@@ -511,6 +511,29 @@ class AveaBankReconcileLine(models.Model):
                     inferred["suggested_income_account_id"]
                 )
 
+    def _avea_expense_wizard_payee_context(self):
+        self.ensure_one()
+        inferred = self._avea_infer_booking()
+        role = inferred.get("partner_role") or "supplier"
+        partner = AveaBankReconcileBookingRules.suggest_partner(
+            self.env,
+            company=self.company_id,
+            partner_role=role,
+            description=self.description,
+            reference=self.reference,
+        )
+        hint = AveaBankReconcileBookingRules.partner_hint_for_role(role)
+        ctx = {
+            "avea_booking_partner_role": role,
+            "default_partner_hint": hint,
+        }
+        if role == "employee":
+            ctx["avea_expense_payee_person"] = True
+            ctx["default_is_company"] = False
+        if partner:
+            ctx["default_partner_id"] = partner.id
+        return ctx
+
     def _avea_infer_booking(self):
         self.ensure_one()
         return AveaBankReconcileBookingRules.infer(
@@ -661,6 +684,7 @@ class AveaBankReconcileLine(models.Model):
             }
         if self.suggested_expense_account_id:
             ctx["default_expense_account_id"] = self.suggested_expense_account_id.id
+        ctx.update(self._avea_expense_wizard_payee_context())
         return {
             "type": "ir.actions.act_window",
             "name": title,

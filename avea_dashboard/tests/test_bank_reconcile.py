@@ -205,6 +205,12 @@ Date Description Amount Balance Accrued Bank Charges
         )
         self.assertIn("salary", salary["booking_suggestion"].lower())
 
+    def test_extract_salary_payee_name(self):
+        name = AveaBankReconcileBookingRules._avea_extract_employee_name(
+            "Payshap Account Off-Us N Mokoena Salary"
+        )
+        self.assertEqual(name, "N Mokoena")
+
     def test_parse_statement_csv_and_read_lines(self):
         journal = self.env["account.journal"].search(
             [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
