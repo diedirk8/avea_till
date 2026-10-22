@@ -79,6 +79,10 @@
                     decoration-muted="match_state in ('imported', 'skipped')"/>
                 <field name="match_confidence" string="Match %" optional="show"/>
                 <field name="book_match_summary" string="On your books" readonly="1"/>
+                <field name="booking_suggestion" string="Suggested" readonly="1"
+                    invisible="match_state in ('matched', 'imported', 'skipped')"/>
+                <field name="suggested_expense_account_id" column_invisible="True"/>
+                <field name="suggested_income_account_id" column_invisible="True"/>
                 <field name="statement_line_id" string="Change match" optional="show"
                     options="{'no_create': True, 'no_open': True}"
                     readonly="match_state in ('imported', 'skipped')"/>

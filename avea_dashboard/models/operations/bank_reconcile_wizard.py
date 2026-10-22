@@ -5,6 +5,7 @@ from datetime import timedelta
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError
 
+from .bank_reconcile_booking_rules import AveaBankReconcileBookingRules
 from .bank_statement_parser import AveaBankStatementParser
 
 _MATCH_AUTO = 70.0
@@ -231,8 +232,14 @@ class AveaBankReconciliation(models.Model):
     def action_refresh_matches(self):
         self.ensure_one()
         self._avea_match_lines()
+        self._avea_apply_booking_suggestions()
         self._avea_find_orphan_book_lines()
         return self._avea_action_form()
+
+    def _avea_apply_booking_suggestions(self):
+        self.ensure_one()
+        for line in self.line_ids:
+            line._avea_apply_booking_suggestion()
 
     def _avea_match_lines(self):
         self.ensure_one()
@@ -427,6 +434,22 @@ class AveaBankReconcileLine(models.Model):
     )
     match_confidence = fields.Float(string="Match %", readonly=True)
     match_hint = fields.Char(string="Match reason", readonly=True)
+    booking_suggestion = fields.Char(
+        string="Suggested booking",
+        readonly=True,
+        help="Based on the bank description — like bank rules in Xero or QuickBooks. "
+        "Click Book… to confirm; nothing is posted until you do.",
+    )
+    suggested_expense_account_id = fields.Many2one(
+        "account.account",
+        string="Suggested expense account",
+        readonly=True,
+    )
+    suggested_income_account_id = fields.Many2one(
+        "account.account",
+        string="Suggested income account",
+        readonly=True,
+    )
     company_id = fields.Many2one(related="reconciliation_id.company_id")
 
     @api.depends("statement_line_id", "match_confidence", "match_hint")
@@ -451,12 +474,40 @@ class AveaBankReconcileLine(models.Model):
             else:
                 line.book_match_summary = False
 
-    @api.onchange("amount")
+    @api.onchange("amount", "description", "reference")
     def _onchange_amount_default_import(self):
-        if self.amount and self.amount < 0:
+        if self.reconciliation_id:
+            self._avea_apply_booking_suggestion()
+        elif self.amount and self.amount < 0:
             self.import_action = "expense"
         elif self.amount and self.amount > 0:
             self.import_action = "income"
+
+    def _avea_apply_booking_suggestion(self):
+        for line in self:
+            if line.match_state in ("matched", "imported", "skipped"):
+                continue
+            inferred = AveaBankReconcileBookingRules.infer(
+                line.env,
+                company=line.company_id,
+                description=line.description,
+                reference=line.reference,
+                amount=line.amount,
+                bank_date=line.bank_date,
+                currency=line.currency_id,
+            )
+            line.write(
+                {
+                    "booking_suggestion": inferred["booking_suggestion"],
+                    "import_action": inferred["import_action"],
+                    "suggested_expense_account_id": inferred[
+                        "suggested_expense_account_id"
+                    ],
+                    "suggested_income_account_id": inferred[
+                        "suggested_income_account_id"
+                    ],
+                }
+            )
 
     @api.onchange("statement_line_id")
     def _onchange_statement_line_id(self):
@@ -563,16 +614,8 @@ class AveaBankReconcileLine(models.Model):
         amount = abs(self.amount)
         if self.currency_id.compare_amounts(amount, 0.0) <= 0:
             raise UserError(_("This line is not an outgoing payment."))
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("Record expense"),
-            "res_model": "avea.operational.expense.wizard",
-            "view_mode": "form",
-            "view_id": self.env.ref(
-                "avea_till.view_avea_operational_expense_wizard_form"
-            ).id,
-            "target": "new",
-            "context": {
+        title = self.booking_suggestion or _("Record expense")
+        ctx = {
                 **self.env.context,
                 "default_bank_reconcile_line_id": self.id,
                 "default_expense_date": self.bank_date,
@@ -581,7 +624,19 @@ class AveaBankReconcileLine(models.Model):
                 "default_amount": amount,
                 "default_paid_from_journal_id": self.reconciliation_id.journal_id.id,
                 "default_company_id": self.reconciliation_id.company_id.id,
-            },
+            }
+        if self.suggested_expense_account_id:
+            ctx["default_expense_account_id"] = self.suggested_expense_account_id.id
+        return {
+            "type": "ir.actions.act_window",
+            "name": title,
+            "res_model": "avea.operational.expense.wizard",
+            "view_mode": "form",
+            "view_id": self.env.ref(
+                "avea_till.view_avea_operational_expense_wizard_form"
+            ).id,
+            "target": "new",
+            "context": ctx,
         }
 
     def _avea_open_income_wizard(self):
@@ -589,16 +644,8 @@ class AveaBankReconcileLine(models.Model):
         amount = abs(self.amount)
         if self.currency_id.compare_amounts(amount, 0.0) <= 0:
             raise UserError(_("This line is not money received."))
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("Record income"),
-            "res_model": "avea.operational.income.wizard",
-            "view_mode": "form",
-            "view_id": self.env.ref(
-                "avea_till.view_avea_operational_income_wizard_form"
-            ).id,
-            "target": "new",
-            "context": {
+        title = self.booking_suggestion or _("Record income")
+        ctx = {
                 **self.env.context,
                 "default_bank_reconcile_line_id": self.id,
                 "default_income_date": self.bank_date,
@@ -607,7 +654,19 @@ class AveaBankReconcileLine(models.Model):
                 "default_amount": amount,
                 "default_received_in_journal_id": self.reconciliation_id.journal_id.id,
                 "default_company_id": self.reconciliation_id.company_id.id,
-            },
+            }
+        if self.suggested_income_account_id:
+            ctx["default_income_account_id"] = self.suggested_income_account_id.id
+        return {
+            "type": "ir.actions.act_window",
+            "name": title,
+            "res_model": "avea.operational.income.wizard",
+            "view_mode": "form",
+            "view_id": self.env.ref(
+                "avea_till.view_avea_operational_income_wizard_form"
+            ).id,
+            "target": "new",
+            "context": ctx,
         }
 
     def _avea_after_booked(self, statement_line):

@@ -1,5 +1,6 @@
 from . import account_balance_wizard
 from . import account_bank_statement_line
+from . import bank_reconcile_booking_rules
 from . import bank_reconcile_wizard
 from . import bank_statement_parser
 from . import manual_journal_wizard

@@ -4,6 +4,9 @@ import base64
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
+from odoo.addons.avea_till.models.operations.bank_reconcile_booking_rules import (
+    AveaBankReconcileBookingRules,
+)
 from odoo.addons.avea_till.models.operations.bank_statement_parser import (
     AveaBankStatementParser,
 )
@@ -155,6 +158,52 @@ Date Description Amount Balance Accrued Bank Charges
         line.invalidate_recordset()
         self.assertIn(line.match_state, ("matched", "possible"))
         self.assertTrue(line.book_match_summary)
+
+    def test_booking_suggestion_bank_fee_date_only(self):
+        journal = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
+            limit=1,
+        )
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress"}
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-07-09",
+                "description": "09 Jul",
+                "amount": -1.07,
+            }
+        )
+        line._avea_apply_booking_suggestion()
+        self.assertIn("bank charge", (line.booking_suggestion or "").lower())
+        self.assertEqual(line.import_action, "expense")
+
+    def test_booking_suggestion_fuel_and_salary(self):
+        company = self.env.company
+        currency = company.currency_id
+        fuel = AveaBankReconcileBookingRules.infer(
+            self.env,
+            company=company,
+            description="POS Purchase Engen Garage",
+            reference="",
+            amount=-450.0,
+            bank_date="2026-07-10",
+            currency=currency,
+        )
+        self.assertIn("fuel", fuel["booking_suggestion"].lower())
+        salary = AveaBankReconcileBookingRules.infer(
+            self.env,
+            company=company,
+            description="Payshap N Mokoena Salary",
+            reference="",
+            amount=-5599.41,
+            bank_date="2026-07-01",
+            currency=currency,
+        )
+        self.assertIn("salary", salary["booking_suggestion"].lower())
 
     def test_parse_statement_csv_and_read_lines(self):
         journal = self.env["account.journal"].search(
