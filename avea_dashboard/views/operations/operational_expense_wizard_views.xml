@@ -12,7 +12,7 @@
                 <field name="booking_partner_role" invisible="1"/>
                 <div
                     class="alert alert-secondary mb-0 py-2"
-                    role="note"
+                    role="status"
                     invisible="not partner_hint"
                 >
                     <field name="partner_hint" nolabel="1" readonly="1"/>
