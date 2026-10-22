@@ -16,6 +16,6 @@ Whenever you change anything under `avea_dashboard/` (Python, XML, JS, SCSS, mig
 ### Rules
 
 - **DEV only** by default: database `petsempire_dev`, container `odoo-dev`, code at `/opt/odoo/dev/avea_till`.
-- **Do not upgrade production** (`petsempire`, `odoo-odoo-1`) unless the user explicitly asks in that conversation.
+- **Production** only when the user explicitly asks: `bash scripts/avea_upgrade_prod.sh` (rsync dev checkout → `/opt/odoo/addons/avea_till`, then `-u avea_till` on `petsempire`).
 - Requires runtime secret `PETSEMPIRE_SSH_PRIVATE_KEY` (SSH user defaults to `root`; override with `PETSEMPIRE_SSH_USER` if needed).
 - After upgrade, remind the user to hard-refresh the browser on dev (`http://178.105.141.142:8070`) if they test UI assets.
