@@ -9,8 +9,16 @@ class AveaOperationalExpenseWizard(models.TransientModel):
     partner_id = fields.Many2one(
         "res.partner",
         string="Supplier",
-        required=True,
         domain="[('supplier_rank', '>', 0)]",
+    )
+    add_new_supplier = fields.Boolean(
+        string="Add a new supplier",
+    )
+    new_supplier_name = fields.Char(
+        string="Supplier name",
+    )
+    new_supplier_vat = fields.Char(
+        string="VAT number",
     )
     expense_date = fields.Date(
         string="Date",
@@ -90,6 +98,11 @@ class AveaOperationalExpenseWizard(models.TransientModel):
             if wizard.currency_id.compare_amounts(wizard.amount, 0.0) <= 0:
                 raise ValidationError(_("Amount must be greater than zero."))
 
+    @api.onchange("add_new_supplier")
+    def _onchange_add_new_supplier(self):
+        if self.add_new_supplier:
+            self.partner_id = False
+
     @api.onchange("company_id")
     def _onchange_company_id_paid_from(self):
         journal = self.paid_from_journal_id
@@ -114,9 +127,51 @@ class AveaOperationalExpenseWizard(models.TransientModel):
 
     def action_record_expense(self):
         self.ensure_one()
+        self._avea_resolve_partner()
         bill = self._avea_create_vendor_bill()
         self._avea_pay_bill(bill)
         return self._avea_success_close()
+
+    def _avea_resolve_partner(self):
+        """Use an existing supplier, quick-created partner, or new supplier fields."""
+        self.ensure_one()
+        if self.add_new_supplier:
+            name = (self.new_supplier_name or "").strip()
+            if not name:
+                raise ValidationError(_("Enter the new supplier's name."))
+            vat = (self.new_supplier_vat or "").strip() or False
+            vals = {
+                "name": name,
+                "vat": vat,
+                "supplier_rank": 1,
+                "company_id": self.company_id.id,
+                "is_company": True,
+            }
+            try:
+                partner = self.env["res.partner"].sudo().create(vals)
+            except ValidationError:
+                if not vat:
+                    raise
+                vals.pop("vat")
+                partner = self.env["res.partner"].sudo().create(vals)
+                partner.message_post(
+                    body=_(
+                        "VAT number %(vat)s was not saved because it is not valid.",
+                        vat=vat,
+                    )
+                )
+            self.partner_id = partner
+            self.add_new_supplier = False
+            self.new_supplier_name = False
+            self.new_supplier_vat = False
+        partner = self.partner_id
+        if not partner:
+            raise UserError(
+                _("Choose a supplier from the list, pick Create to add a new one, or tick Add a new supplier.")
+            )
+        if partner.supplier_rank < 1:
+            partner.sudo().write({"supplier_rank": 1})
+        return partner
 
     def _avea_create_vendor_bill(self):
         self.ensure_one()
