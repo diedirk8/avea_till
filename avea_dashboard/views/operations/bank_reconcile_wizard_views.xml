@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_bank_reconcile_line_list" model="ir.ui.view">
+        <field name="name">avea.bank.reconcile.line.list</field>
+        <field name="model">avea.bank.reconcile.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom" create="false" delete="false">
+                <field name="sequence" column_invisible="True"/>
+                <field name="bank_date"/>
+                <field name="description"/>
+                <field name="reference" optional="show"/>
+                <field name="amount" widget="monetary"/>
+                <field name="match_state" widget="badge"
+                    decoration-success="match_state == 'matched'"
+                    decoration-warning="match_state == 'unmatched'"
+                    decoration-info="match_state == 'imported'"/>
+                <field name="match_confidence" optional="show"/>
+                <field name="match_hint" optional="hide"/>
+                <field name="statement_line_id" optional="show"/>
+                <field name="import_action" invisible="match_state != 'unmatched'"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_bank_reconcile_book_line_list" model="ir.ui.view">
+        <field name="name">avea.bank.reconcile.book.line.list</field>
+        <field name="model">avea.bank.reconcile.book.line</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" edit="false">
+                <field name="book_date"/>
+                <field name="label"/>
+                <field name="amount" widget="monetary"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_bank_reconcile_wizard_form" model="ir.ui.view">
+        <field name="name">avea.bank.reconcile.wizard.form</field>
+        <field name="model">avea.bank.reconcile.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Bank reconciliation" class="o_avea_wizard o_avea_bank_reconcile_wizard">
+                <field name="company_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="upload,review,done"/>
+                </header>
+                <div class="alert alert-info" role="status" invisible="state != 'upload'">
+                    Upload an FNB CSV or OFX export from Online Banking. Avea will match
+                    transactions to entries already recorded (expenses, transfers, withdrawals)
+                    and show anything that still needs attention.
+                </div>
+                <group invisible="state != 'upload'">
+                    <group>
+                        <field name="journal_id" options="{'no_create': True, 'no_open': True}"/>
+                        <field name="statement_file" filename="statement_filename"/>
+                        <field name="statement_filename" invisible="1"/>
+                    </group>
+                </group>
+                <group invisible="state == 'upload'">
+                    <group>
+                        <field name="journal_id" readonly="1"/>
+                        <field name="source_format" readonly="1"/>
+                        <field name="account_number" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="date_from" readonly="1"/>
+                        <field name="date_to" readonly="1"/>
+                        <field name="opening_balance" readonly="1" widget="monetary"/>
+                        <field name="closing_balance" readonly="1" widget="monetary"/>
+                    </group>
+                </group>
+                <group invisible="state != 'review'">
+                    <div class="o_row">
+                        <span class="me-3">
+                            <strong>Matched:</strong>
+                            <field name="matched_count" class="oe_inline" readonly="1"/>
+                            /
+                            <field name="import_count" class="oe_inline" readonly="1"/>
+                        </span>
+                        <span class="me-3">
+                            <strong>Unmatched on statement:</strong>
+                            <field name="unmatched_bank_count" class="oe_inline" readonly="1"/>
+                        </span>
+                        <span>
+                            <strong>On books, not on statement:</strong>
+                            <field name="orphan_book_count" class="oe_inline" readonly="1"/>
+                        </span>
+                    </div>
+                </group>
+                <notebook invisible="state != 'review'">
+                    <page string="Bank statement" name="bank_lines">
+                        <field name="line_ids" nolabel="1"/>
+                    </page>
+                    <page string="Missing from bank" name="book_lines">
+                        <p class="text-muted">
+                            These unreconciled entries are already on your books for this bank
+                            account but were not found on the uploaded statement.
+                        </p>
+                        <field name="book_line_ids" nolabel="1"/>
+                    </page>
+                </notebook>
+                <footer>
+                    <button
+                        name="action_parse_statement"
+                        string="Load statement"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'upload'"
+                        data-hotkey="q"
+                    />
+                    <button
+                        name="action_refresh_matches"
+                        string="Refresh matches"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="state != 'review'"
+                    />
+                    <button
+                        name="action_apply_reconciliation"
+                        string="Apply"
+                        type="object"
+                        class="btn-primary"
+                        invisible="state != 'review'"
+                        data-hotkey="q"
+                    />
+                    <button string="Close" special="cancel" data-hotkey="x"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_bank_reconcile_wizard" model="ir.actions.server">
+        <field name="name">Bank reconciliation</field>
+        <field name="model_id" ref="model_avea_bank_reconcile_wizard"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_wizard()</field>
+    </record>
+
+</odoo>

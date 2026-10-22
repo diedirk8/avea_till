@@ -23,6 +23,15 @@
     />
 
     <menuitem
+        id="menu_avea_operations_bank_reconcile"
+        name="Bank reconciliation"
+        parent="menu_avea_operations"
+        action="action_avea_bank_reconcile_wizard"
+        groups="avea_till.group_avea_manager"
+        sequence="7"
+    />
+
+    <menuitem
         id="menu_avea_operations_expense"
         name="Add Operational Expense"
         parent="menu_avea_operations"
