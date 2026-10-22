@@ -131,8 +131,18 @@ class AveaBankReconciliation(models.Model):
             "res_model": self._name,
             "view_mode": "list,form",
             "target": "current",
-            "context": {"search_default_filter_in_progress": 1},
         }
+
+    @api.model
+    def action_new_reconciliation(self):
+        journal = self._avea_default_bank_journal()
+        reconciliation = self.create(
+            {
+                "journal_id": journal.id if journal else False,
+                "state": "draft",
+            }
+        )
+        return reconciliation._avea_action_form(_("New bank reconciliation"))
 
     def _avea_default_bank_journal(self):
         company = self.env.company

@@ -23,8 +23,17 @@
     />
 
     <menuitem
+        id="menu_avea_operations_bank_reconcile_new"
+        name="New bank reconciliation"
+        parent="menu_avea_operations"
+        action="action_avea_new_bank_reconciliation"
+        groups="avea_till.group_avea_manager"
+        sequence="6"
+    />
+
+    <menuitem
         id="menu_avea_operations_bank_reconcile"
-        name="Bank reconciliation"
+        name="Bank reconciliations"
         parent="menu_avea_operations"
         action="action_avea_bank_reconciliation"
         groups="avea_till.group_avea_manager"

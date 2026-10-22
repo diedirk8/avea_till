@@ -5,7 +5,16 @@
         <field name="name">avea.bank.reconciliation.list</field>
         <field name="model">avea.bank.reconciliation</field>
         <field name="arch" type="xml">
-            <list string="Bank reconciliations">
+            <list string="Bank reconciliations" class="o_avea_bank_reconciliation_list">
+                <header>
+                    <button
+                        name="action_new_reconciliation"
+                        type="object"
+                        string="New reconciliation"
+                        class="btn-primary"
+                        display="always"
+                    />
+                </header>
                 <field name="name"/>
                 <field name="journal_id"/>
                 <field name="date_from"/>
@@ -215,16 +224,23 @@
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_avea_bank_reconciliation_search"/>
         <field name="target">current</field>
-        <field name="context">{'search_default_filter_in_progress': 1}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Start a new bank reconciliation
+                No bank reconciliations yet
             </p>
             <p>
-                Upload an FNB statement, match transactions to your books, and record
-                expenses or income for anything still missing.
+                Click <strong>New reconciliation</strong> above the list (or use
+                <strong>Money → New bank reconciliation</strong>), then upload your FNB
+                statement PDF.
             </p>
         </field>
+    </record>
+
+    <record id="action_avea_new_bank_reconciliation" model="ir.actions.server">
+        <field name="name">New bank reconciliation</field>
+        <field name="model_id" ref="model_avea_bank_reconciliation"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_new_reconciliation()</field>
     </record>
 
     <record id="action_avea_bank_reconcile_wizard" model="ir.actions.server">
