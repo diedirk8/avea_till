@@ -31,6 +31,20 @@ _FNB_PDF_LINE_RE = re.compile(
     rf"^(\d{{1,2}}\s+[A-Za-z]{{3}}|\d{{4}}-\d{{2}}-\d{{2}})\s+"
     rf"(.+?)\s+({_AMOUNT_RE})\s+({_AMOUNT_RE})(?:\s+({_AMOUNT_RE}))?\s*$"
 )
+_FNB_TX_DATE_RE = re.compile(
+    r"^(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec))"
+    r"(?:\s+(.*))?$",
+    re.IGNORECASE,
+)
+_FNB_PDF_AMOUNT_LINE_RE = re.compile(r"^-?[\d,]+\.\d{2}(?:Cr|Dr)?\s*$", re.IGNORECASE)
+_FNB_REF_LINE_RE = re.compile(
+    r"^(Pets Empire|Petshop|Pets79|Petsempire|Pem402|\d{6}\*)",
+    re.IGNORECASE,
+)
+_FNB_TRANSACTIONS_SECTION_RE = re.compile(
+    r"Transactions in RAND \(ZAR\)\s*:?\s*\d*",
+    re.IGNORECASE,
+)
 
 
 def _parse_fnb_date(value: str):
@@ -108,6 +122,33 @@ def _parse_amount(value: str):
     return -amount if negative else amount
 
 
+def _normalize_pdf_token(value: str) -> str:
+    return re.sub(r"\s+", "", (value or "").strip())
+
+
+def _parse_fnb_pdf_amount(value: str):
+    """Parse FNB PDF amount tokens (optional Cr/Dr suffix, thousands separators)."""
+    raw = _normalize_pdf_token(value)
+    if not raw:
+        return None
+    is_credit = raw.lower().endswith("cr")
+    is_debit = raw.lower().endswith("dr")
+    raw = re.sub(r"(?i)(cr|dr)$", "", raw)
+    negative = raw.startswith("-")
+    raw = raw.lstrip("-")
+    try:
+        amount = float(raw.replace(",", ""))
+    except ValueError:
+        return None
+    if is_credit:
+        return amount
+    if is_debit:
+        return -amount
+    if negative:
+        return -amount
+    return -abs(amount)
+
+
 def _normalize_header(cell: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", (cell or "").strip().lower()).strip("_")
 
@@ -182,6 +223,7 @@ class AveaBankStatementParser:
     @classmethod
     def _extract_fnb_statement_period(cls, text: str) -> tuple[date | None, date | None]:
         patterns = [
+            r"Statement\s+Period\s*:\s*(\d{1,2}\s+\w+\s+\d{4})\s+to\s+(\d{1,2}\s+\w+\s+\d{4})",
             r"statement\s+period[:\s]*\s*(\d{1,2}\s+\w+\s+\d{4})\s*(?:to|–|-)\s*(\d{1,2}\s+\w+\s+\d{4})",
             r"from\s+(\d{1,2}\s+\w+\s+\d{4})\s+to\s+(\d{1,2}\s+\w+\s+\d{4})",
         ]
@@ -194,33 +236,40 @@ class AveaBankStatementParser:
         return None, None
 
     @classmethod
-    def _parse_fnb_pdf_text(cls, text: str) -> dict[str, Any]:
-        period_start, period_end = cls._extract_fnb_statement_period(text)
+    def _parse_fnb_pdf_meta(cls, text: str, period_end: date | None) -> dict[str, Any]:
         meta: dict[str, Any] = {}
         account = re.search(
-            r"account\s+(?:number|no\.?)[:\s]*([*\d]{8,15})",
+            r"(?:Gold Business Account|account\s+(?:number|no\.?))\s*:?\s*([*\d]{8,15})",
             text,
             flags=re.IGNORECASE,
         )
         if account:
             meta["account_number"] = re.sub(r"[^\d]", "", account.group(1)) or account.group(1).strip()
         opening = re.search(
-            r"opening\s+balance[:\s]*(-?(?:\d{1,3}(?:,\d{3})*|\d+)\.\d{2})",
+            r"Opening\s+Balance\s+([\d,]+\.\d{2}(?:Cr|Dr)?)",
             text,
             flags=re.IGNORECASE,
         )
         closing = re.search(
-            r"closing\s+balance[:\s]*(-?(?:\d{1,3}(?:,\d{3})*|\d+)\.\d{2})",
+            r"Closing\s+Balance\s+([\d,]+\.\d{2}(?:Cr|Dr)?)",
             text,
             flags=re.IGNORECASE,
         )
         if opening:
-            meta["opening_balance"] = _parse_amount(opening.group(1))
+            meta["opening_balance"] = _parse_fnb_pdf_amount(opening.group(1))
         if closing:
-            meta["closing_balance"] = _parse_amount(closing.group(1))
+            meta["closing_balance"] = _parse_fnb_pdf_amount(closing.group(1))
         if period_end:
             meta["statement_date"] = period_end
+        return meta
 
+    @classmethod
+    def _parse_fnb_pdf_single_line_rows(
+        cls,
+        text: str,
+        period_start: date | None,
+        period_end: date | None,
+    ) -> list[dict[str, Any]]:
         skip_fragments = (
             "date description",
             "accrued bank",
@@ -232,6 +281,7 @@ class AveaBankStatementParser:
             "first national bank",
             "total debits",
             "total credits",
+            "transactions in rand",
         )
         transactions: list[dict[str, Any]] = []
         for raw_line in text.splitlines():
@@ -247,20 +297,119 @@ class AveaBankStatementParser:
             tx_date = _parse_dd_mon(match.group(1), period_start, period_end)
             if not tx_date:
                 continue
-            amount = _parse_amount(match.group(3))
-            balance = _parse_amount(match.group(4))
+            amount = _parse_fnb_pdf_amount(match.group(3))
+            balance = _parse_fnb_pdf_amount(match.group(4))
             if amount is None:
                 continue
-            description = match.group(2).strip()
             transactions.append(
                 {
                     "date": tx_date,
-                    "description": description,
+                    "description": match.group(2).strip(),
                     "reference": "",
                     "amount": amount,
                     "balance": balance,
                 }
             )
+        return transactions
+
+    @classmethod
+    def _parse_fnb_gold_business_pdf(cls, text: str, period_start: date | None, period_end: date | None):
+        """FNB Gold Business PDFs export table columns separately (not one row per line)."""
+        if not _FNB_TRANSACTIONS_SECTION_RE.search(text):
+            return []
+        default_year = period_end.year if period_end else datetime.today().year
+        transactions: list[dict[str, Any]] = []
+        for part in _FNB_TRANSACTIONS_SECTION_RE.split(text)[1:]:
+            part = re.split(r"\nPage \d+ of", part, maxsplit=1)[0]
+            lines = [line.strip() for line in part.splitlines() if line.strip()]
+            filtered = [
+                line
+                for line in lines
+                if line.lower() not in ("date", "description", "amount", "balance")
+                and not line.lower().startswith("accrued")
+            ]
+            descriptions: list[tuple[str, str]] = []
+            amount_tokens: list[str] = []
+            mode = "desc"
+            seen_description = False
+            index = 0
+            while index < len(filtered):
+                line = filtered[index]
+                if mode == "desc":
+                    match = _FNB_TX_DATE_RE.match(line)
+                    if match:
+                        date_label = match.group(1)
+                        description = (match.group(2) or "").strip()
+                        if not description:
+                            index += 1
+                            if index >= len(filtered):
+                                break
+                            description = filtered[index].strip()
+                        if _FNB_REF_LINE_RE.match(description):
+                            index += 1
+                            continue
+                        descriptions.append((date_label, description))
+                        seen_description = True
+                        index += 1
+                        continue
+                    if seen_description and _FNB_PDF_AMOUNT_LINE_RE.match(_normalize_pdf_token(line)):
+                        mode = "amt"
+                        amount_tokens.append(line)
+                        index += 1
+                        continue
+                    index += 1
+                    continue
+                if _FNB_PDF_AMOUNT_LINE_RE.match(_normalize_pdf_token(line)):
+                    amount_tokens.append(line)
+                    index += 1
+                    continue
+                if _FNB_TX_DATE_RE.match(line):
+                    mode = "desc"
+                    continue
+                if line.startswith("Closing") or line.startswith("Turnover"):
+                    break
+                index += 1
+            row_count = len(descriptions)
+            if not row_count or len(amount_tokens) < row_count:
+                continue
+            amount_lines = amount_tokens[:row_count]
+            balance_lines = (
+                amount_tokens[row_count : row_count * 2]
+                if len(amount_tokens) >= row_count * 2
+                else [None] * row_count
+            )
+            for row_index, (date_label, description) in enumerate(descriptions):
+                tx_date = _parse_dd_mon(date_label, period_start, period_end) or _parse_fnb_date(
+                    f"{date_label} {default_year}"
+                )
+                if not tx_date:
+                    continue
+                amount = _parse_fnb_pdf_amount(amount_lines[row_index])
+                if amount is None:
+                    continue
+                balance = (
+                    _parse_fnb_pdf_amount(balance_lines[row_index])
+                    if balance_lines[row_index]
+                    else None
+                )
+                transactions.append(
+                    {
+                        "date": tx_date,
+                        "description": description,
+                        "reference": "",
+                        "amount": amount,
+                        "balance": balance,
+                    }
+                )
+        return transactions
+
+    @classmethod
+    def _parse_fnb_pdf_text(cls, text: str) -> dict[str, Any]:
+        period_start, period_end = cls._extract_fnb_statement_period(text)
+        meta = cls._parse_fnb_pdf_meta(text, period_end)
+        transactions = cls._parse_fnb_gold_business_pdf(text, period_start, period_end)
+        if not transactions:
+            transactions = cls._parse_fnb_pdf_single_line_rows(text, period_start, period_end)
         return cls._result(meta, transactions, "fnb_pdf")
 
     @classmethod

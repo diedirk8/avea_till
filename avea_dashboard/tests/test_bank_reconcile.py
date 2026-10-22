@@ -27,6 +27,30 @@ Effective Date,Description,Reference,Amount,Balance
         self.assertEqual(tx["amount"], -150.0)
         self.assertEqual(tx["reference"], "INV001")
 
+    def test_parse_fnb_gold_business_columnar_pdf(self):
+        content = """
+Gold Business Account : 62920038462
+Statement Period : 30 June 2026 to 31 July 2026
+Transactions in RAND (ZAR)
+
+Date
+Description
+Amount
+Balance
+
+01 Jul Payshap Account Off-Us N Mokoena Salary
+01 Jul
+FNB App Payment From Cash
+5,599.41
+1,000.00Cr
+2,307.97Cr
+3,307.97Cr
+"""
+        parsed = AveaBankStatementParser._parse_fnb_pdf_text(content)
+        self.assertGreaterEqual(len(parsed["transactions"]), 2)
+        self.assertEqual(parsed["transactions"][0]["amount"], -5599.41)
+        self.assertEqual(parsed["transactions"][1]["amount"], 1000.0)
+
     def test_parse_fnb_pdf_text(self):
         content = """
 FIRST NATIONAL BANK
