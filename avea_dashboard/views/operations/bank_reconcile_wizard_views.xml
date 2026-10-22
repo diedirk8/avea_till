@@ -264,8 +264,4 @@
         <field name="code">action = model.action_open_wizard()</field>
     </record>
 
-    <record id="menu_avea_operations_bank_reconcile" model="ir.ui.menu">
-        <field name="action" ref="action_avea_bank_reconciliation"/>
-    </record>
-
 </odoo>
