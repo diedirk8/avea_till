@@ -197,7 +197,29 @@ patch(ProductScreen.prototype, {
     },
 
     async addProductToOrder(product) {
-        await super.addProductToOrder(...arguments);
+        const options = {};
+        const variants = product.product_variant_ids || [];
+        if (variants.length === 1) {
+            options.presetVariant = variants[0];
+        }
+        if (this.searchWord && product.isConfigurable()) {
+            const searchWord = this.searchWord;
+            const searchedProduct = variants.filter(
+                (p) =>
+                    (p.barcode && p.barcode.includes(searchWord)) ||
+                    (p.default_code && p.default_code.includes(searchWord))
+            );
+            if (searchedProduct.length === 1) {
+                options.presetVariant = searchedProduct[0];
+            }
+        }
+        const line = await this.pos.addLineToCurrentOrder(
+            { product_tmpl_id: product },
+            options
+        );
+        if (line) {
+            this.showOptionalProductPopupIfNeeded(product);
+        }
         const recent = (this.pos.aveaRecentProductIds || []).filter((id) => id !== product.id);
         recent.unshift(product.id);
         this.pos.aveaRecentProductIds = recent.slice(0, 50);
