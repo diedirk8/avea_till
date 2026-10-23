@@ -90,6 +90,14 @@ class ResUsersAveaAccess(models.Model):
         store=True,
         help="Primary job profile. Cashiers sell; managers run the business; owners have full Avea access.",
     )
+    avea_access_role_label = fields.Char(
+        string="Role label",
+        compute="_compute_avea_access_role_label",
+    )
+    avea_is_odoo_administrator = fields.Boolean(
+        string="Odoo administrator",
+        compute="_compute_avea_access_role_label",
+    )
     avea_perm_pos_manager = fields.Boolean(
         string="POS manager at till",
         compute="_compute_avea_permissions",
