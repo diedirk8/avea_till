@@ -164,6 +164,28 @@ class ResUsersAveaAccess(models.Model):
         )
 
     @api.model
+    def _avea_users_action_context(self, extra=None):
+        ctx = {
+            "avea_users_workspace": True,
+            "default_avea_access_role": "cashier",
+            "default_company_ids": [(6, 0, self.env.company.ids)],
+            "default_company_id": self.env.company.id,
+        }
+        if extra:
+            ctx.update(extra)
+        return ctx
+
+    @api.model
+    def _avea_merge_action_context(self, action, extra=None):
+        ctx = action.get("context") or {}
+        if isinstance(ctx, str):
+            ctx = safe_eval(ctx, ctx={}) or {}
+        if not isinstance(ctx, dict):
+            ctx = {}
+        ctx.update(self._avea_users_action_context(extra))
+        return ctx
+
+    @api.model
     def _avea_group(self, xmlid):
         return self.env.ref(xmlid, raise_if_not_found=False)
 
@@ -351,10 +373,10 @@ class ResUsersAveaAccess(models.Model):
         if self.with_user(user)._avea_use_users_workspace_form():
             view_id = self.env.ref("avea_till.view_avea_users_form").id
             action["views"] = [(view_id, "form")]
-            action["context"] = dict(
-                action.get("context") or {},
-                avea_users_workspace=True,
-            )
+            action["context"] = {
+                **self._avea_action_context(action),
+                "avea_users_workspace": True,
+            }
         return action
 
     @api.model
@@ -387,12 +409,12 @@ class ResUsersAveaAccess(models.Model):
             "avea_till.action_avea_users_window"
         )
         action["domain"] = self._avea_users_domain()
-        action["context"] = dict(
-            action.get("context") or {},
-            default_company_ids=[(6, 0, self.env.company.ids)],
-            default_company_id=self.env.company.id,
-            default_avea_access_role="cashier",
-        )
+        action["context"] = {
+            **self._avea_action_context(action),
+            "default_company_ids": [(6, 0, self.env.company.ids)],
+            "default_company_id": self.env.company.id,
+            "default_avea_access_role": "cashier",
+        }
         return action
 
     @api.model
@@ -411,12 +433,12 @@ class ResUsersAveaAccess(models.Model):
                 ],
                 "res_id": False,
                 "domain": self._avea_users_domain(),
-                "context": dict(
-                    action.get("context") or {},
-                    default_company_ids=[(6, 0, self.env.company.ids)],
-                    default_company_id=self.env.company.id,
-                    default_avea_access_role="cashier",
-                ),
+                "context": {
+                    **self._avea_action_context(action),
+                    "default_company_ids": [(6, 0, self.env.company.ids)],
+                    "default_company_id": self.env.company.id,
+                    "default_avea_access_role": "cashier",
+                },
             }
         )
         return action
