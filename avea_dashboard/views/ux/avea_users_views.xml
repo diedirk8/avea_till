@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_users_search" model="ir.ui.view">
+        <field name="name">res.users.avea.search</field>
+        <field name="model">res.users</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <search string="Avea Users">
+                <field name="name"/>
+                <field name="login"/>
+                <field name="avea_access_role"/>
+                <filter name="filter_active" string="Active" domain="[('active', '=', True)]"/>
+                <filter name="filter_inactive" string="Inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_users_list" model="ir.ui.view">
+        <field name="name">res.users.avea.list</field>
+        <field name="model">res.users</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <list
+                string="Avea Users"
+                class="o_avea_users_list"
+                js_class="avea_users_list"
+                create="true"
+            >
+                <field name="name"/>
+                <field name="login"/>
+                <field name="avea_access_role_label" string="Role"/>
+                <field name="avea_access_role" column_invisible="True"/>
+                <field name="avea_is_odoo_administrator" column_invisible="True"/>
+                <field name="company_id" optional="show"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_users_form" model="ir.ui.view">
+        <field name="name">res.users.avea.form</field>
+        <field name="model">res.users</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <form string="Avea User" class="o_avea_workspace o_avea_workspace--users">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="share" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Settings</span>
+                            <h1 class="o_avea_workspace_title">
+                                <field name="name" placeholder="Full name" class="o_avea_users_title_field"/>
+                            </h1>
+                            <p class="o_avea_workspace_lead">
+                                Choose what this person can see and do in Avea — roles and permissions for your team.
+                            </p>
+                        </div>
+                        <div class="o_avea_settings_hero_actions">
+                            <button
+                                name="action_avea_cancel_user"
+                                type="object"
+                                string="Cancel"
+                                class="btn btn-secondary"
+                                data-hotkey="x"
+                            />
+                            <button
+                                name="action_avea_save_user"
+                                type="object"
+                                string="Save user"
+                                class="btn btn-primary"
+                                icon="fa-save"
+                                data-hotkey="s"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="o_avea_settings_sections">
+                        <section class="o_avea_workspace_info_card o_avea_settings_section">
+                            <h2 class="o_avea_settings_section_title">Account</h2>
+                            <div class="o_avea_settings_field_grid">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Email / login</span>
+                                    <field name="login" placeholder="name@company.co.za"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Set password</span>
+                                    <field
+                                        name="avea_password"
+                                        password="True"
+                                        string="Set password"
+                                        placeholder="Set password (required for new users)"
+                                    />
+                                    <div class="o_avea_settings_field_hint">
+                                        Set the password here. Leave blank when editing to keep the existing password.
+                                    </div>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_settings_field_grid_span">
+                                    <span class="o_avea_workspace_info_label">Avea role</span>
+                                    <field
+                                        name="avea_is_odoo_administrator"
+                                        invisible="1"
+                                    />
+                                    <p
+                                        class="o_avea_settings_section_help mb-2"
+                                        invisible="not avea_is_odoo_administrator"
+                                    >
+                                        This login is an Odoo administrator (full technical access via Settings).
+                                        Change that only in Odoo Settings → Users, not here.
+                                    </p>
+                                    <field
+                                        name="avea_access_role"
+                                        widget="radio"
+                                        invisible="avea_is_odoo_administrator"
+                                    />
+                                    <p
+                                        class="o_avea_settings_section_help mb-0"
+                                        invisible="avea_is_odoo_administrator"
+                                    >
+                                        <strong>Cashier</strong> — sell and cash up own till.
+                                        <strong>Manager</strong> — stock, money, customers, Avea settings (incl. users).
+                                        <strong>Owner</strong> — same as manager plus highest Avea role (assign only if you are owner/admin).
+                                        This is not the same as Odoo administrator.
+                                    </p>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Active</span>
+                                    <field name="active" widget="boolean_toggle"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_settings_field_grid_span">
+                                    <span class="o_avea_workspace_info_label">Companies</span>
+                                    <field
+                                        name="company_ids"
+                                        widget="many2many_tags"
+                                        options="{'no_create': True}"
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section
+                            class="o_avea_workspace_info_card o_avea_settings_section"
+                            invisible="avea_access_role == 'none'"
+                        >
+                            <h2 class="o_avea_settings_section_title">Sell &amp; till</h2>
+                            <p class="o_avea_settings_section_help">
+                                Day-to-day selling and till controls. Cashiers always get their own till and cash up.
+                            </p>
+                            <div class="o_avea_settings_toggle_grid">
+                                <div class="o_avea_settings_toggle_item">
+                                    <span class="o_avea_settings_toggle_label">POS manager at till</span>
+                                    <field name="avea_perm_pos_manager" widget="boolean_toggle" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_settings_toggle_item">
+                                    <span class="o_avea_settings_toggle_label">Correct payment method</span>
+                                    <field name="avea_perm_correct_payment" widget="boolean_toggle" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_settings_toggle_item">
+                                    <span class="o_avea_settings_toggle_label">Cash up any till</span>
+                                    <field name="avea_perm_cash_up_all" widget="boolean_toggle" nolabel="1"/>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section
+                            class="o_avea_workspace_info_card o_avea_settings_section"
+                            invisible="avea_access_role == 'none'"
+                        >
+                            <h2 class="o_avea_settings_section_title">Customers</h2>
+                            <div class="o_avea_settings_toggle_grid">
+                                <div class="o_avea_settings_toggle_item">
+                                    <span class="o_avea_settings_toggle_label">Issue store credit</span>
+                                    <field name="avea_perm_store_credit" widget="boolean_toggle" nolabel="1"/>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section
+                            class="o_avea_workspace_info_card o_avea_settings_section"
+                            invisible="avea_access_role not in ('manager', 'owner')"
+                        >
+                            <h2 class="o_avea_settings_section_title">Manager capabilities</h2>
+                            <p class="o_avea_settings_section_help">
+                                Included with Manager and Owner roles. Turn off only by changing the role to Cashier.
+                            </p>
+                            <div class="o_avea_settings_toggle_grid">
+                                <div class="o_avea_settings_toggle_item">
+                                    <span class="o_avea_settings_toggle_label">Business overview</span>
+                                    <field name="avea_perm_overview" widget="boolean_toggle" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_settings_toggle_item">
+                                    <span class="o_avea_settings_toggle_label">Stock workspace</span>
+                                    <field name="avea_perm_stock" widget="boolean_toggle" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_settings_toggle_item">
+                                    <span class="o_avea_settings_toggle_label">Money &amp; bank</span>
+                                    <field name="avea_perm_money" widget="boolean_toggle" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_settings_toggle_item">
+                                    <span class="o_avea_settings_toggle_label">Promotions</span>
+                                    <field name="avea_perm_promotions" widget="boolean_toggle" nolabel="1" readonly="1"/>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_users_window" model="ir.actions.act_window">
+        <field name="name">Avea Users</field>
+        <field name="res_model">res.users</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_users_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_users_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_users_form')}),
+        ]"/>
+        <field name="domain">[('share', '=', False)]</field>
+        <field name="context">{
+            'avea_users_workspace': True,
+            'default_avea_access_role': 'cashier',
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first staff member
+            </p>
+            <p>
+                Set roles and permissions for people who use Avea tills and workspaces.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_avea_users" model="ir.actions.server">
+        <field name="name">Avea Users</field>
+        <field name="model_id" ref="base.model_res_users"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_avea_users()</field>
+    </record>
+
+</odoo>

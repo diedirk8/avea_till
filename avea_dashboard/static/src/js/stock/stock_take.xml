@@ -15,26 +15,29 @@
                         <p class="o_avea_stock_take_lead">Count what is on the shelf, review differences, then complete.</p>
                     </div>
 
-                    <div class="o_avea_stock_take_scope_toggle" role="tablist">
+                    <div class="o_avea_stock_take_mode_grid" role="tablist" aria-label="Count mode">
                         <button
                             type="button"
-                            t-att-class="'o_avea_stock_take_scope_btn' + (state.form.scope_mode === 'everything' ? ' is-active' : '')"
+                            t-att-class="'o_avea_stock_take_mode_card' + (state.form.scope_mode === 'everything' ? ' is-active' : '')"
                             t-on-click="() => this.onScopeChange('everything')"
                         >
-                            Full Count
+                            <span class="o_avea_stock_take_mode_title">Full Count</span>
+                            <span class="o_avea_stock_take_mode_copy">Count every active product in stock.</span>
                         </button>
                         <button
                             type="button"
-                            t-att-class="'o_avea_stock_take_scope_btn' + (state.form.scope_mode === 'partial' ? ' is-active' : '')"
+                            t-att-class="'o_avea_stock_take_mode_card' + (state.form.scope_mode === 'partial' ? ' is-active' : '')"
                             t-on-click="() => this.onScopeChange('partial')"
                         >
-                            Partial Count
+                            <span class="o_avea_stock_take_mode_title">Partial Count</span>
+                            <span class="o_avea_stock_take_mode_copy">Choose a subset by filter or selection.</span>
                         </button>
                     </div>
 
-                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--search" t-if="isPartial">
+                    <div class="o_avea_stock_take_partial_layout" t-if="isPartial">
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--search">
                         <h2 class="o_avea_stock_take_section_title">Find products</h2>
-                        <p class="o_avea_stock_take_hint">Search below, tick items in the results, then search again to add more.</p>
+                        <p class="o_avea_stock_take_hint">Use the filters below, then tick products in the search results.</p>
                         <div class="o_avea_stock_take_filters o_avea_stock_take_filters--compact">
                             <div class="o_avea_workspace_info_item">
                                 <label class="o_avea_workspace_info_label">Category</label>
@@ -76,24 +79,39 @@
                         </p>
                     </div>
 
-                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--pick" t-if="isPartial and hasPartialFilter">
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--pick o_avea_stock_take_panel--primary" t-if="hasPartialFilter">
                         <div class="o_avea_stock_take_pick_header">
                             <div>
                                 <h2 class="o_avea_stock_take_section_title">Search results</h2>
-                                <p class="o_avea_stock_take_pick_meta">
-                                    <strong t-esc="visibleSelectedCount"/> of <strong t-esc="state.matchedCount or 0"/> in this search selected
-                                    <t t-if="state.matchedTruncated"> (first 500 shown)</t>
+                                <p class="o_avea_stock_take_pick_meta" t-if="state.matchedCount">
+                                    <strong t-esc="state.matchedCount"/> products match these filters.
+                                    <t t-if="state.matchedProducts.length">
+                                        Showing <strong t-esc="matchedRangeStart"/>–<strong t-esc="matchedRangeEnd"/>.
+                                    </t>
+                                    <t t-if="pageSelectedCount">
+                                        <span> <strong t-esc="pageSelectedCount"/> selected on this page.</span>
+                                    </t>
                                 </p>
                             </div>
-                            <button
-                                type="button"
-                                class="btn btn-link btn-sm"
-                                t-att-disabled="!state.matchedProducts.length"
-                                t-on-click="onToggleSelectAllVisible"
-                            >
-                                <t t-if="allVisibleSelected">Remove visible</t>
-                                <t t-else="">Add all visible</t>
-                            </button>
+                            <div class="o_avea_stock_take_toolbar_actions">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-primary btn-sm"
+                                    t-att-disabled="!state.matchedCount or state.productsLoading"
+                                    t-on-click="onAddAllMatching"
+                                >
+                                    Add all <t t-esc="state.matchedCount"/> found
+                                </button>
+                                <button
+                                    type="button"
+                                    class="btn btn-link btn-sm"
+                                    t-att-disabled="!state.matchedProducts.length"
+                                    t-on-click="onToggleSelectAllPage"
+                                >
+                                    <t t-if="allPageSelected">Clear this page</t>
+                                    <t t-else="">Select this page</t>
+                                </button>
+                            </div>
                         </div>
                         <div class="o_avea_stock_take_pick_loading" t-if="state.productsLoading">Loading products...</div>
                         <div class="o_avea_stock_take_pick_empty" t-elif="!state.matchedProducts.length">No products match these filters.</div>
@@ -104,13 +122,14 @@
                                         <th class="o_avea_stock_take_col_check">
                                             <input
                                                 type="checkbox"
-                                                t-att-checked="allVisibleSelected ? 'checked' : undefined"
-                                                t-on-change="onToggleSelectAllVisible"
+                                                t-att-checked="allPageSelected ? 'checked' : undefined"
+                                                t-on-change="onToggleSelectAllPage"
                                             />
                                         </th>
                                         <th>Product</th>
                                         <th>SKU</th>
                                         <th class="text-end">On hand</th>
+                                        <th class="o_avea_stock_take_col_actions"/>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -129,14 +148,47 @@
                                             <td t-esc="product.name"/>
                                             <td t-esc="product.default_code or '—'"/>
                                             <td class="text-end" t-esc="formatQty(product.qty_available)"/>
+                                            <td class="o_avea_stock_take_col_actions text-end" t-on-click.stop="">
+                                                <button
+                                                    type="button"
+                                                    class="btn btn-link btn-sm o_avea_stock_take_zero_archive_btn"
+                                                    t-on-click="(ev) => this.onZeroAndArchiveProduct(product, ev)"
+                                                >
+                                                    Zero &amp; Archive
+                                                </button>
+                                            </td>
                                         </tr>
                                     </t>
                                 </tbody>
                             </table>
                         </div>
+                        <div
+                            class="o_avea_stock_take_pick_pager d-flex align-items-center justify-content-between gap-2 mt-2"
+                            t-if="state.matchedCount and state.matchedProducts.length"
+                        >
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                t-att-disabled="!canGoToPreviousResultsPage or state.productsLoading"
+                                t-on-click="onPreviousResultsPage"
+                            >
+                                Previous
+                            </button>
+                            <span class="o_avea_stock_take_pick_meta mb-0">
+                                Page <strong t-esc="matchedRangeStart"/>–<strong t-esc="matchedRangeEnd"/> of <strong t-esc="state.matchedCount"/>
+                            </span>
+                            <button
+                                type="button"
+                                class="btn btn-outline-secondary btn-sm"
+                                t-att-disabled="!state.matchedHasMore or state.productsLoading"
+                                t-on-click="onNextResultsPage"
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--selected" t-if="isPartial">
+                    <div class="o_avea_stock_take_panel o_avea_stock_take_panel--compact o_avea_stock_take_panel--selected">
                         <div class="o_avea_stock_take_pick_header">
                             <div>
                                 <h2 class="o_avea_stock_take_section_title">Selected products</h2>
@@ -173,6 +225,13 @@
                                             <td class="o_avea_stock_take_col_remove text-end">
                                                 <button
                                                     type="button"
+                                                    class="btn btn-link btn-sm o_avea_stock_take_zero_archive_btn"
+                                                    t-on-click="() => this.onZeroAndArchiveProduct(product)"
+                                                >
+                                                    Zero &amp; Archive
+                                                </button>
+                                                <button
+                                                    type="button"
                                                     class="btn btn-link btn-sm text-danger o_avea_stock_take_row_remove"
                                                     t-on-click="() => this.onRemoveSelected(product.id)"
                                                 >
@@ -184,6 +243,7 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
                     </div>
 
                     <div class="o_avea_stock_take_start_bar">
@@ -261,17 +321,18 @@
                                 <tr>
                                     <th>Product</th>
                                     <th class="text-end">Counted</th>
+                                    <th class="o_avea_stock_take_col_actions" t-if="isPartialScope"/>
                                 </tr>
                             </thead>
                             <tbody>
                                 <t t-if="!filteredLines.length">
                                     <tr>
-                                        <td colspan="2" class="o_avea_stock_take_lines_empty">No products match your search.</td>
+                                        <td t-att-colspan="isPartialScope ? 3 : 2" class="o_avea_stock_take_lines_empty">No products match your search.</td>
                                     </tr>
                                 </t>
                                 <t t-foreach="filteredLines" t-as="line" t-key="line.id">
                                     <tr
-                                        t-att-class="'o_avea_stock_take_row' + (line.id === state.activeLineId ? ' is-active' : '') + (line.is_counted ? ' is-counted' : '')"
+                                        t-att-class="'o_avea_stock_take_row' + (line.id === state.activeLineId ? ' is-active' : '') + (line.is_counted ? ' is-counted' : '') + (line.is_applied ? ' is-applied' : '')"
                                         t-on-click="() => this.onSelectLine(line)"
                                     >
                                         <td>
@@ -284,6 +345,16 @@
                                         <td class="text-end">
                                             <t t-if="line.is_counted" t-esc="formatQty(line.counted_qty)"/>
                                             <t t-else="">—</t>
+                                        </td>
+                                        <td class="o_avea_stock_take_col_actions text-end" t-if="isPartialScope" t-on-click.stop="">
+                                            <button
+                                                type="button"
+                                                class="btn btn-link btn-sm o_avea_stock_take_zero_archive_btn"
+                                                t-att-disabled="line.is_applied ? 'disabled' : undefined"
+                                                t-on-click="(ev) => this.onZeroAndArchiveLine(line, ev)"
+                                            >
+                                                Zero &amp; Archive
+                                            </button>
                                         </td>
                                     </tr>
                                 </t>

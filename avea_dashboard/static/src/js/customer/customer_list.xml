@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.CustomerList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_customer_list_shell">
+                <div class="o_avea_workspace_sheet o_avea_customer_list_sheet">
+                    <div class="o_avea_workspace_hero o_avea_customer_list_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Customers</span>
+                            <h1 class="o_avea_workspace_title" t-esc="listTitle"/>
+                            <p class="o_avea_workspace_subtitle" t-esc="listSubtitle"/>
+                        </div>
+                        <div class="o_avea_customer_list_actions">
+                            <button
+                                t-if="duplicateReviewActive"
+                                type="button"
+                                class="btn btn-secondary"
+                                t-on-click="() => this.onClickAllCustomers()"
+                            >
+                                All customers
+                            </button>
+                            <button
+                                t-else=""
+                                type="button"
+                                class="btn btn-secondary"
+                                t-on-click="() => this.onClickPossibleDuplicates()"
+                            >
+                                Possible duplicates
+                            </button>
+                            <button type="button" class="btn btn-primary" t-on-click="() => this.onClickCreateCustomer()">
+                                New customer
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_customer_list_filters">
+                        <div class="o_avea_workspace_info_item o_avea_customer_filter_search">
+                            <label class="o_avea_workspace_info_label" for="avea_customer_filter_search">
+                                Search
+                            </label>
+                            <input
+                                id="avea_customer_filter_search"
+                                type="search"
+                                class="o_avea_customer_filter_input form-control"
+                                placeholder="Name, email, or phone"
+                                t-att-value="filterState.searchText"
+                                t-on-input="(ev) => this.onFilterInputChange('searchText', ev)"
+                            />
+                        </div>
+                        <div class="o_avea_workspace_info_item o_avea_customer_filter_sort">
+                            <label class="o_avea_workspace_info_label" for="avea_customer_filter_sort">
+                                Sort by
+                            </label>
+                            <select
+                                id="avea_customer_filter_sort"
+                                class="o_avea_customer_filter_select form-select"
+                                t-att-value="filterState.sortBy"
+                                t-on-change="(ev) => this.onFilterSelectChange('sortBy', ev)"
+                            >
+                                <t t-foreach="sortOptions" t-as="opt" t-key="opt.value">
+                                    <option t-att-value="opt.value" t-esc="opt.label"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="o_avea_workspace_info_item o_avea_customer_filter_span_full">
+                            <span class="o_avea_workspace_info_label">Show</span>
+                            <div class="o_avea_period_selector o_avea_customer_list_status">
+                                <t t-foreach="statusOptions" t-as="opt" t-key="opt.value">
+                                    <button
+                                        type="button"
+                                        t-att-class="this._statusButtonClass(opt.value)"
+                                        t-on-click="() => this.onStatusClick(opt.value)"
+                                        t-esc="opt.label"
+                                    />
+                                </t>
+                            </div>
+                            <p
+                                t-if="activeStatusHint"
+                                class="o_avea_customer_filter_hint"
+                                t-esc="activeStatusHint"
+                            />
+                        </div>
+                    </div>
+                    <div t-if="hasSelectedCustomers" class="o_avea_customer_selection_bar">
+                        <span class="o_avea_customer_selection_count">
+                            <t t-esc="selectedCustomerIds.length"/> selected
+                        </span>
+                        <button
+                            type="button"
+                            class="btn btn-primary btn-sm"
+                            t-att-disabled="!canMergeSelection"
+                            t-on-click="() => this.onClickMergeCustomers()"
+                        >
+                            Merge
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-link btn-sm"
+                            t-on-click="() => this.onClickClearSelection()"
+                        >
+                            Clear selection
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div class="o_avea_customer_list_footer">
+                <div
+                    t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                    class="o_avea_customer_list_pager o_cp_pager text-nowrap"
+                >
+                    <Pager t-props="env.config.pagerProps"/>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

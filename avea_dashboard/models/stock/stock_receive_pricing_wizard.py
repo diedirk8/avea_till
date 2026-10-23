@@ -62,6 +62,9 @@ class AveaStockReceivePricingWizard(models.TransientModel):
     )
     new_markup = fields.Float(string="Markup %", digits=(16, 2))
     new_margin = fields.Float(string="Margin %", digits=(16, 2))
+    # UI may fire markup/margin onchange with pre-retail values after new_retail edits.
+    avea_stale_markup_guard = fields.Float(string="Stale markup guard", digits=(16, 2))
+    avea_stale_margin_guard = fields.Float(string="Stale margin guard", digits=(16, 2))
 
     preview_note = fields.Char(compute="_compute_preview_note")
 
@@ -134,6 +137,49 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         self.new_markup = markup
         self.new_margin = margin
 
+    def _avea_new_retail_from_markup_percent(self, markup_percent):
+        self.ensure_one()
+        template = self.product_tmpl_id
+        mixin = self._avea_mixin()
+        cost = mixin._avea_round_product_cost(self.new_cost or 0.0)
+        retail_ex = cost * (1.0 + (markup_percent or 0.0) / 100.0)
+        return mixin._avea_round_product_cost(
+            template._avea_retail_inc_vat_from_ex(retail_ex)
+        )
+
+    def _avea_new_retail_from_margin_percent(self, margin_percent):
+        self.ensure_one()
+        template = self.product_tmpl_id
+        margin = margin_percent or 0.0
+        mixin = self._avea_mixin()
+        cost = mixin._avea_round_product_cost(self.new_cost or 0.0)
+        retail_ex = cost / (1.0 - margin / 100.0) if margin < 100.0 else 0.0
+        return mixin._avea_round_product_cost(
+            template._avea_retail_inc_vat_from_ex(retail_ex)
+        )
+
+    def _avea_stale_markup_or_margin_change(self, driver, driver_value):
+        """Retail was edited; ignore a trailing onchange with the previous markup/margin."""
+        self.ensure_one()
+        if driver == "markup":
+            guard = self.avea_stale_markup_guard
+        else:
+            guard = self.avea_stale_margin_guard
+        if float_compare(driver_value or 0.0, guard or 0.0, precision_digits=2) != 0:
+            return False
+        template = self.product_tmpl_id
+        if not template:
+            return False
+        mixin = self._avea_mixin()
+        current = mixin._avea_round_product_cost(self.new_retail or 0.0)
+        if driver == "markup":
+            from_driver = self._avea_new_retail_from_markup_percent(driver_value)
+        else:
+            from_driver = self._avea_new_retail_from_margin_percent(driver_value)
+        if float_compare(current, from_driver, precision_digits=2) != 0:
+            return True
+        return False
+
     @api.onchange("new_cost")
     def _onchange_new_cost(self):
         if self.env.context.get("avea_pricing_guard"):
@@ -146,22 +192,21 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         if self.env.context.get("avea_pricing_guard"):
             return
         self = self.with_context(avea_pricing_guard=True)
+        self.avea_stale_markup_guard = self.new_markup
+        self.avea_stale_margin_guard = self.new_margin
         self._avea_recompute_from_cost_retail()
 
     @api.onchange("new_markup")
     def _onchange_new_markup(self):
         if self.env.context.get("avea_pricing_guard"):
             return
-        self = self.with_context(avea_pricing_guard=True)
-        template = self.product_tmpl_id
-        if not template:
+        if self._avea_stale_markup_or_margin_change("markup", self.new_markup):
+            self.avea_stale_markup_guard = 0.0
+            self._avea_recompute_from_cost_retail()
             return
-        mixin = self._avea_mixin()
-        cost = mixin._avea_round_product_cost(self.new_cost or 0.0)
-        retail_ex = cost * (1.0 + (self.new_markup or 0.0) / 100.0)
-        self.new_retail = mixin._avea_round_product_cost(
-            template._avea_retail_inc_vat_from_ex(retail_ex)
-        )
+        self = self.with_context(avea_pricing_guard=True)
+        self.avea_stale_markup_guard = 0.0
+        self.new_retail = self._avea_new_retail_from_markup_percent(self.new_markup)
         self._avea_recompute_from_cost_retail()
 
     @api.onchange("new_margin")
@@ -176,16 +221,13 @@ class AveaStockReceivePricingWizard(models.TransientModel):
                     "message": _("Margin must be less than 100%."),
                 }
             }
-        self = self.with_context(avea_pricing_guard=True)
-        template = self.product_tmpl_id
-        if not template:
+        if self._avea_stale_markup_or_margin_change("margin", margin):
+            self.avea_stale_margin_guard = 0.0
+            self._avea_recompute_from_cost_retail()
             return
-        mixin = self._avea_mixin()
-        cost = mixin._avea_round_product_cost(self.new_cost or 0.0)
-        retail_ex = cost / (1.0 - margin / 100.0) if margin < 100.0 else 0.0
-        self.new_retail = mixin._avea_round_product_cost(
-            template._avea_retail_inc_vat_from_ex(retail_ex)
-        )
+        self = self.with_context(avea_pricing_guard=True)
+        self.avea_stale_margin_guard = 0.0
+        self.new_retail = self._avea_new_retail_from_margin_percent(margin)
         self._avea_recompute_from_cost_retail()
 
     def action_keep_current_pricing(self):
@@ -227,7 +269,7 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         cost = self._avea_resolve_new_cost()
         retail = mixin._avea_round_product_cost(self.new_retail or 0.0)
         template._avea_apply_catalog_cost(cost)
-        template.list_price = retail
+        template.write({"list_price": retail})
         self.line_id.with_context(avea_skip_pricing_wizard=True).write(
             {
                 "avea_pricing_choice": "cost_and_pricing",

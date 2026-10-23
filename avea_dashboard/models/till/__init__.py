@@ -6,12 +6,15 @@ from . import pos_order
 from . import pos_receipt_email
 from . import ir_mail_server
 from . import performance_analytics
+from . import reporting_workspace
+from . import financial_reports
 from . import pos_order_line
 from . import pos_payment_method
 from . import till_movement
 from . import pos_session
 from . import pos_config
 from . import payment_correction_wizard
+from . import business_reporting_platform
 from . import business_overview
 from . import business_performance
 from . import business_transaction

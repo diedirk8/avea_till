@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_stock_receive_pay_wizard_form" model="ir.ui.view">
+        <field name="name">avea.stock.receive.pay.wizard.form</field>
+        <field name="model">avea.stock.receive.pay.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Pay vendor bill" class="o_avea_workspace o_avea_workspace--stock">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="available_journal_ids" invisible="1"/>
+                    <field name="has_supplier_credit" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock</span>
+                            <h1 class="o_avea_workspace_title">Pay vendor bill</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Record payment for
+                                <field name="partner_id" nolabel="1" readonly="1" class="oe_inline"/>
+                                —
+                                <field name="amount_due" nolabel="1" widget="monetary" readonly="1" class="oe_inline"/>
+                                due
+                            </p>
+                        </div>
+                    </div>
+                    <div class="o_avea_stock_panel o_avea_stock_panel--payment">
+                        <h2 class="o_avea_workspace_section_title">Payment</h2>
+                        <div class="o_avea_workspace_info_grid o_avea_stock_side_grid">
+                            <div class="o_avea_workspace_info_item o_avea_stock_check_row" invisible="not has_supplier_credit">
+                                <field name="use_supplier_credit" nolabel="1"/>
+                                <span class="o_avea_workspace_info_label">Apply supplier credit</span>
+                            </div>
+                            <div class="o_avea_workspace_info_item" invisible="not has_supplier_credit">
+                                <span class="o_avea_workspace_info_label">Credit available</span>
+                                <field name="supplier_credit_available" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Pay from</span>
+                                <field
+                                    name="journal_id"
+                                    nolabel="1"
+                                    options="{'no_create': True, 'no_open': True}"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <footer class="o_avea_stock_footer">
+                        <button string="Cancel" special="cancel" class="btn-secondary"/>
+                        <button name="action_pay" type="object" string="Record payment" class="btn-primary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

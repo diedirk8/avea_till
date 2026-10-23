@@ -52,6 +52,17 @@
                                 domain="[('type', 'in', ('cash', 'bank')), ('company_id', '=', company_id), ('name', 'not ilike', 'store credit')]"
                             />
                         </setting>
+                        <setting
+                            id="avea_register_closure_report_email"
+                            string="Register Closure Report Email"
+                            company_dependent="1"
+                            help="Email Odoo's built-in Sales Details (Z) report after each POS Cash Up. Leave blank to disable. Separate multiple addresses with commas."
+                        >
+                            <field
+                                name="avea_register_closure_report_email"
+                                placeholder="accounts@yourbusiness.com"
+                            />
+                        </setting>
                     </block>
                 </app>
             </xpath>

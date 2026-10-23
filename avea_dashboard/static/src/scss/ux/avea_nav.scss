@@ -1,0 +1,546 @@
+/* Avea sidebar navigation shell */
+
+:root {
+    --avea-sidebar-width: 15rem;
+    --avea-sidebar-collapsed-width: 3.5rem;
+    --avea-topbar-height: 3.25rem;
+    --avea-nav-bg: #fafafa;
+    --avea-nav-surface: #ffffff;
+    --avea-nav-border: #e8eaed;
+    --avea-nav-text: #1f2937;
+    --avea-nav-muted: #6b7280;
+    --avea-nav-brand: #c45c26;
+    --avea-nav-brand-soft: #fff7f3;
+    --avea-nav-brand-hover: #a34a1f;
+}
+
+body.o_avea_product_shell {
+    .o_action_manager {
+        margin-left: var(--avea-sidebar-width);
+        margin-top: var(--avea-topbar-height);
+        min-height: calc(100vh - var(--avea-topbar-height));
+        transition: margin-left 0.2s ease;
+    }
+
+    &.o_avea_sidebar_collapsed .o_action_manager {
+        margin-left: var(--avea-sidebar-collapsed-width);
+    }
+}
+
+.o_avea_shell {
+    position: relative;
+    z-index: 1000;
+}
+
+/* Sidebar */
+
+.o_avea_sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: var(--avea-sidebar-width);
+    display: flex;
+    flex-direction: column;
+    background: var(--avea-nav-bg);
+    border-right: 1px solid var(--avea-nav-border);
+    transition: width 0.2s ease, transform 0.2s ease;
+    z-index: 1002;
+}
+
+.o_avea_sidebar_header {
+    flex-shrink: 0;
+    padding: 1rem 1rem 0.75rem;
+}
+
+.o_avea_sidebar_brand {
+    display: inline-flex;
+    align-items: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--avea-nav-brand);
+    text-decoration: none;
+
+    &:hover {
+        color: var(--avea-nav-brand-hover);
+    }
+}
+
+.o_avea_sidebar_brand_short {
+    display: none;
+}
+
+.o_avea_sidebar_body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0 0.75rem 0.75rem;
+}
+
+.o_avea_sidebar_sell {
+    appearance: none;
+    border: none;
+    width: 100%;
+    margin-bottom: 1rem;
+    background: var(--avea-nav-brand);
+    color: #fff;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    padding: 0.625rem 1rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.1s ease;
+
+    &:hover {
+        background: var(--avea-nav-brand-hover);
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+}
+
+.o_avea_sidebar_nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.o_avea_sidebar_link {
+    appearance: none;
+    border: none;
+    background: transparent;
+    display: block;
+    width: 100%;
+    text-align: left;
+    color: var(--avea-nav-text);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+
+    &:hover {
+        background: #f3f4f6;
+    }
+
+    &.o_avea_sidebar_link_active {
+        color: var(--avea-nav-brand);
+        background: var(--avea-nav-brand-soft);
+        border-left-color: var(--avea-nav-brand);
+    }
+}
+
+.o_avea_sidebar_home {
+    margin-bottom: 0.5rem;
+}
+
+.o_avea_sidebar_section {
+    margin-top: 0.25rem;
+}
+
+.o_avea_sidebar_section_toggle,
+.o_avea_sidebar_group_toggle,
+.o_avea_sidebar_settings_toggle {
+    appearance: none;
+    border: none;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    text-align: left;
+    color: var(--avea-nav-muted);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    text-transform: none;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: color 0.15s ease, background-color 0.15s ease;
+
+    &:hover {
+        color: var(--avea-nav-text);
+        background: #f3f4f6;
+    }
+}
+
+.o_avea_sidebar_section_active > .o_avea_sidebar_section_toggle {
+    color: var(--avea-nav-brand);
+}
+
+.o_avea_sidebar_chevron {
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform 0.15s ease;
+    margin-left: 0.5rem;
+    flex-shrink: 0;
+}
+
+.o_avea_sidebar_section_toggle_open .o_avea_sidebar_chevron,
+.o_avea_sidebar_group_toggle_open .o_avea_sidebar_chevron,
+.o_avea_sidebar_settings_toggle.o_avea_sidebar_section_toggle_open .o_avea_sidebar_chevron {
+    transform: rotate(45deg);
+}
+
+.o_avea_sidebar_section_items,
+.o_avea_sidebar_group_items {
+    display: flex;
+    flex-direction: column;
+    gap: 0.0625rem;
+    padding: 0.125rem 0 0.25rem 0.5rem;
+}
+
+.o_avea_sidebar_link_nested {
+    font-size: 0.875rem;
+    font-weight: 450;
+    color: var(--avea-nav-muted);
+
+    &:hover {
+        color: var(--avea-nav-text);
+    }
+}
+
+.o_avea_sidebar_group_toggle {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--avea-nav-text);
+    padding-left: 0.75rem;
+}
+
+/* Settings footer — visually separated from business areas */
+
+.o_avea_sidebar_footer {
+    flex-shrink: 0;
+    padding: 0 0.75rem 0.75rem;
+}
+
+.o_avea_sidebar_footer_divider {
+    height: 1px;
+    background: var(--avea-nav-border);
+    margin: 0 0.25rem 0.75rem;
+}
+
+.o_avea_sidebar_settings {
+    margin-bottom: 0.5rem;
+
+    .o_avea_sidebar_settings_toggle {
+        color: var(--avea-nav-muted);
+        font-size: 0.8125rem;
+    }
+
+    &.o_avea_sidebar_settings_active .o_avea_sidebar_settings_toggle {
+        color: var(--avea-nav-text);
+    }
+}
+
+.o_avea_sidebar_collapse_btn {
+    appearance: none;
+    border: 1px solid var(--avea-nav-border);
+    background: var(--avea-nav-surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 2rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    color: var(--avea-nav-muted);
+    transition: background-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+        color: var(--avea-nav-text);
+        background: #f3f4f6;
+    }
+}
+
+.o_avea_sidebar_collapse_icon {
+    display: block;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-left: 2px solid currentColor;
+    border-bottom: 2px solid currentColor;
+}
+
+.o_avea_sidebar_collapse_icon_collapse {
+    transform: translateX(2px) rotate(45deg);
+}
+
+.o_avea_sidebar_collapse_icon_expand {
+    transform: translateX(-2px) rotate(-135deg);
+}
+
+/* Collapsed desktop sidebar */
+
+.o_avea_sidebar_collapsed {
+    width: var(--avea-sidebar-collapsed-width);
+
+    .o_avea_sidebar_brand_full {
+        display: none;
+    }
+
+    .o_avea_sidebar_brand_short {
+        display: inline;
+    }
+
+    .o_avea_sidebar_header {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        text-align: center;
+    }
+
+    .o_avea_sidebar_sell_label {
+        font-size: 0;
+    }
+
+    .o_avea_sidebar_sell_label::before {
+        content: "S";
+        font-size: 0.9375rem;
+    }
+
+    .o_avea_sidebar_nav,
+    .o_avea_sidebar_footer .o_avea_sidebar_settings,
+    .o_avea_sidebar_footer_divider {
+        display: none;
+    }
+
+    .o_avea_sidebar_sell {
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+/* Top bar */
+
+.o_avea_topbar {
+    position: fixed;
+    top: 0;
+    left: var(--avea-sidebar-width);
+    right: 0;
+    height: var(--avea-topbar-height);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 1rem;
+    background: var(--avea-nav-surface);
+    border-bottom: 1px solid var(--avea-nav-border);
+    transition: left 0.2s ease;
+    z-index: 1001;
+}
+
+body.o_avea_sidebar_collapsed .o_avea_topbar {
+    left: var(--avea-sidebar-collapsed-width);
+}
+
+.o_avea_topbar_company {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--avea-nav-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Avea user menu (replaces Odoo systray) */
+
+.o_avea_user_menu {
+    flex-shrink: 0;
+    margin-left: auto;
+    position: relative;
+}
+
+.o_avea_user_menu_trigger {
+    appearance: none;
+    border: none;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.35rem;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+        background: #f3f4f6;
+    }
+}
+
+.o_avea_user_menu_avatar,
+.o_avea_user_menu_header_avatar {
+    align-items: center;
+    background: var(--avea-nav-brand);
+    border-radius: 999px;
+    color: #fff;
+    display: inline-flex;
+    font-size: 0.75rem;
+    font-weight: 700;
+    height: 2rem;
+    justify-content: center;
+    letter-spacing: 0.02em;
+    width: 2rem;
+}
+
+.o_avea_user_menu_header_avatar {
+    flex-shrink: 0;
+    height: 2.25rem;
+    width: 2.25rem;
+}
+
+.o_avea_user_menu_name {
+    color: var(--avea-nav-text);
+    font-size: 0.875rem;
+    font-weight: 500;
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.o_avea_user_menu_panel {
+    background: var(--avea-nav-surface);
+    border: 1px solid var(--avea-nav-border);
+    border-radius: 0.65rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12);
+    min-width: 13rem;
+    padding: 0.25rem 0;
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.35rem);
+    z-index: 1003;
+}
+
+.o_avea_user_menu_item {
+    appearance: none;
+    background: transparent;
+    border: none;
+    color: var(--avea-nav-text);
+    cursor: pointer;
+    display: block;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    text-align: left;
+    width: 100%;
+
+    &:hover {
+        background: #f3f4f6;
+    }
+}
+
+.o_avea_user_menu_header {
+    align-items: center;
+    display: flex;
+    gap: 0.65rem;
+    padding: 0.5rem 1rem 0.75rem;
+}
+
+.o_avea_user_menu_header_name {
+    color: var(--avea-nav-text);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.o_avea_user_menu_section_label {
+    color: var(--avea-nav-muted);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    padding: 0.35rem 1rem 0.25rem;
+    text-transform: uppercase;
+}
+
+.o_avea_user_menu_company_active {
+    color: var(--avea-nav-brand);
+    font-weight: 600;
+}
+
+.o_avea_user_menu_divider {
+    border-top: 1px solid var(--avea-nav-border);
+    margin: 0.35rem 0;
+}
+
+.o_avea_user_menu_logout {
+    color: var(--avea-nav-text);
+    font-weight: 500;
+}
+
+.o_avea_topbar_menu_btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.3rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.o_avea_topbar_menu_bar {
+    display: block;
+    height: 2px;
+    width: 100%;
+    background: var(--avea-nav-text);
+    border-radius: 1px;
+}
+
+.o_avea_topbar_sell {
+    appearance: none;
+    border: none;
+    background: var(--avea-nav-brand);
+    color: #fff;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    padding: 0.375rem 0.875rem;
+    border-radius: 999px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.o_avea_sidebar_backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.35);
+    z-index: 1001;
+}
+
+/* Mobile / tablet */
+
+@media (max-width: 991.98px) {
+    body.o_avea_product_shell .o_action_manager {
+        margin-left: 0;
+    }
+
+    .o_avea_topbar {
+        left: 0;
+    }
+
+    .o_avea_sidebar {
+        width: 88vw;
+        max-width: 18rem;
+        transform: translateX(-100%);
+    }
+
+    .o_avea_sidebar_mobile_open {
+        transform: translateX(0);
+        box-shadow: 0 10px 40px rgba(15, 23, 42, 0.15);
+    }
+
+    body.o_avea_sidebar_collapsed .o_action_manager {
+        margin-left: 0;
+    }
+}

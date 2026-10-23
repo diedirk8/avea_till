@@ -30,14 +30,22 @@ class ProductTemplate(models.Model):
     avea_markup_percent = fields.Float(
         string="Markup %",
         compute="_compute_avea_pricing",
-        inverse="_inverse_avea_markup_percent",
         digits=(16, 2),
     )
     avea_margin_percent = fields.Float(
         string="Margin %",
         compute="_compute_avea_pricing",
-        inverse="_inverse_avea_margin_percent",
         digits=(16, 2),
+    )
+    avea_cost_incl_tax = fields.Float(
+        string="Cost INCL Tax",
+        compute="_compute_avea_pricing",
+        digits="Product Price",
+    )
+    avea_profit_incl_tax = fields.Float(
+        string="Profit INCL Tax",
+        compute="_compute_avea_pricing",
+        digits="Product Price",
     )
 
     # ---- Stock status ----
@@ -170,6 +178,12 @@ class ProductTemplate(models.Model):
             retail_ex or 0.0, currency
         )["total_included"]
 
+    def _avea_cost_incl_tax_from_ex(self, cost_ex):
+        """Convert purchasing cost EX tax → INC tax using the product's sales taxes."""
+        self.ensure_one()
+        mixin = self.env["avea.stock.mixin"]
+        return mixin._avea_round_product_cost(self._avea_retail_inc_vat_from_ex(cost_ex))
+
     def _avea_pricing_tuple(self):
         """Return (cost_ex, retail_inc, retail_ex, markup%, margin%)."""
         self.ensure_one()
@@ -187,11 +201,17 @@ class ProductTemplate(models.Model):
         "taxes_id.price_include",
     )
     def _compute_avea_pricing(self):
+        mixin = self.env["avea.stock.mixin"]
         for product in self:
-            _cost, _inc, retail_ex, markup, margin = product._avea_pricing_tuple()
+            cost, retail_inc, retail_ex, markup, margin = product._avea_pricing_tuple()
+            cost_incl = product._avea_cost_incl_tax_from_ex(cost)
             product.avea_retail_ex_vat = retail_ex
             product.avea_markup_percent = markup
             product.avea_margin_percent = margin
+            product.avea_cost_incl_tax = cost_incl
+            product.avea_profit_incl_tax = mixin._avea_round_product_cost(
+                (retail_inc or 0.0) - cost_incl
+            )
 
     def _avea_apply_retail_ex(self, retail_ex):
         """Set list_price (INC VAT) from an EX-VAT retail target."""
@@ -200,33 +220,74 @@ class ProductTemplate(models.Model):
             retail_inc = product._avea_retail_inc_vat_from_ex(retail_ex)
             product.list_price = mixin._avea_round_product_cost(retail_inc)
 
-    def _inverse_avea_markup_percent(self):
-        for product in self:
-            cost = product._avea_get_cost_ex_tax()
-            retail_ex = cost * (1.0 + (product.avea_markup_percent or 0.0) / 100.0)
-            product._avea_apply_retail_ex(retail_ex)
-        self._compute_avea_pricing()
+    def _avea_retail_inc_from_markup_percent(self, markup_percent):
+        self.ensure_one()
+        cost = self._avea_get_cost_ex_tax()
+        retail_ex = cost * (1.0 + (markup_percent or 0.0) / 100.0)
+        mixin = self.env["avea.stock.mixin"]
+        return mixin._avea_round_product_cost(self._avea_retail_inc_vat_from_ex(retail_ex))
 
-    def _inverse_avea_margin_percent(self):
-        for product in self:
-            cost = product._avea_get_cost_ex_tax()
-            margin = product.avea_margin_percent or 0.0
-            if margin >= 100.0:
-                raise UserError(_("Margin must be less than 100%."))
-            if float_is_zero(100.0 - margin, precision_digits=4):
-                raise UserError(_("Margin must be less than 100%."))
-            retail_ex = cost / (1.0 - margin / 100.0) if margin < 100.0 else 0.0
-            product._avea_apply_retail_ex(retail_ex)
-        self._compute_avea_pricing()
+    def _avea_retail_inc_from_margin_percent(self, margin_percent):
+        self.ensure_one()
+        margin = margin_percent or 0.0
+        cost = self._avea_get_cost_ex_tax()
+        retail_ex = cost / (1.0 - margin / 100.0) if margin < 100.0 else 0.0
+        mixin = self.env["avea.stock.mixin"]
+        return mixin._avea_round_product_cost(self._avea_retail_inc_vat_from_ex(retail_ex))
 
-    @api.onchange("avea_cost_ex_tax", "standard_price", "list_price", "taxes_id")
+    def _avea_user_edited_retail_not_markup(self, driver_field, driver_value):
+        """True when retail INC tax was edited and a stale markup/margin onchange fired."""
+        self.ensure_one()
+        mixin = self.env["avea.stock.mixin"]
+        current = mixin._avea_round_product_cost(self.list_price or 0.0)
+        if driver_field == "markup":
+            from_driver = self._avea_retail_inc_from_markup_percent(driver_value)
+        else:
+            from_driver = self._avea_retail_inc_from_margin_percent(driver_value)
+        if float_compare(current, from_driver, precision_digits=2) != 0:
+            _, _, _, implied_markup, implied_margin = self._avea_pricing_tuple()
+            implied = implied_markup if driver_field == "markup" else implied_margin
+            if float_compare(driver_value or 0.0, implied or 0.0, precision_digits=2) != 0:
+                return False
+            return True
+        return False
+
+    def _avea_list_price_from_markup_percent(self, markup_percent):
+        self.ensure_one()
+        cost = self._avea_get_cost_ex_tax()
+        retail_ex = cost * (1.0 + (markup_percent or 0.0) / 100.0)
+        return self.env["avea.stock.mixin"]._avea_round_product_cost(
+            self._avea_retail_inc_vat_from_ex(retail_ex)
+        )
+
+    def _avea_list_price_from_margin_percent(self, margin_percent):
+        self.ensure_one()
+        margin = margin_percent or 0.0
+        if margin >= 100.0:
+            raise UserError(_("Margin must be less than 100%."))
+        if float_is_zero(100.0 - margin, precision_digits=4):
+            raise UserError(_("Margin must be less than 100%."))
+        cost = self._avea_get_cost_ex_tax()
+        retail_ex = cost / (1.0 - margin / 100.0)
+        return self.env["avea.stock.mixin"]._avea_round_product_cost(
+            self._avea_retail_inc_vat_from_ex(retail_ex)
+        )
+
+    @api.onchange("avea_cost_ex_tax", "standard_price", "taxes_id")
     def _onchange_avea_pricing_fields(self):
-        # Recompute display fields immediately while editing.
+        self._compute_avea_pricing()
+
+    @api.onchange("list_price")
+    def _onchange_list_price_avea(self):
+        """Retail INC tax is authoritative; refresh markup/margin without reverting retail."""
         self._compute_avea_pricing()
 
     @api.onchange("avea_markup_percent")
     def _onchange_avea_markup_percent(self):
         if self.env.context.get("avea_pricing_guard"):
+            return
+        if self._avea_user_edited_retail_not_markup("markup", self.avea_markup_percent):
+            self._compute_avea_pricing()
             return
         self = self.with_context(avea_pricing_guard=True)
         cost = self._avea_get_cost_ex_tax()
@@ -246,6 +307,9 @@ class ProductTemplate(models.Model):
                     "message": _("Margin must be less than 100%."),
                 }
             }
+        if self._avea_user_edited_retail_not_markup("margin", margin):
+            self._compute_avea_pricing()
+            return
         self = self.with_context(avea_pricing_guard=True)
         cost = self._avea_get_cost_ex_tax()
         retail_ex = cost / (1.0 - margin / 100.0)
@@ -510,33 +574,6 @@ class ProductTemplate(models.Model):
                 ", ".join(product.pos_categ_ids.mapped("name")) or _("Not set")
             )
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        mixin = self.env["avea.stock.mixin"]
-        for vals in vals_list:
-            if vals.get("avea_cost_ex_tax") is None and vals.get("standard_price") is not None:
-                vals["avea_cost_ex_tax"] = mixin._avea_round_supplier_cost(
-                    vals["standard_price"]
-                )
-            elif vals.get("standard_price") is None and vals.get("avea_cost_ex_tax") is not None:
-                vals["standard_price"] = mixin._avea_round_product_cost(
-                    vals["avea_cost_ex_tax"]
-                )
-        return super().create(vals_list)
-
-    def write(self, vals):
-        mixin = self.env["avea.stock.mixin"]
-        if (
-            "avea_cost_ex_tax" in vals
-            and "standard_price" not in vals
-            and len(self) == 1
-            and self.cost_method == "standard"
-        ):
-            vals = dict(vals)
-            vals["standard_price"] = mixin._avea_round_product_cost(vals["avea_cost_ex_tax"])
-        res = super().write(vals)
-        return res
-
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -693,7 +730,16 @@ class ProductTemplate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        mixin = self.env["avea.stock.mixin"]
         for vals in vals_list:
+            if vals.get("avea_cost_ex_tax") is None and vals.get("standard_price") is not None:
+                vals["avea_cost_ex_tax"] = mixin._avea_round_supplier_cost(
+                    vals["standard_price"]
+                )
+            elif vals.get("standard_price") is None and vals.get("avea_cost_ex_tax") is not None:
+                vals["standard_price"] = mixin._avea_round_product_cost(
+                    vals["avea_cost_ex_tax"]
+                )
             if self.env.context.get("avea_stock_workspace"):
                 vals.setdefault("sale_ok", True)
                 vals.setdefault("purchase_ok", True)
@@ -702,7 +748,6 @@ class ProductTemplate(models.Model):
                     vals["sale_ok"] = True
                 if vals.get("is_storable"):
                     vals["type"] = "consu"
-                # Carry product category onto POS category when POS cats were not set.
                 if vals.get("categ_id") and not vals.get("pos_categ_ids"):
                     categ = self.env["product.category"].browse(vals["categ_id"])
                     pos_categ = self._avea_pos_category_for_product_category(categ)
@@ -711,8 +756,17 @@ class ProductTemplate(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        mixin = self.env["avea.stock.mixin"]
+        vals = dict(vals)
+        if (
+            "avea_cost_ex_tax" in vals
+            and "standard_price" not in vals
+            and len(self) == 1
+            and self.cost_method == "standard"
+        ):
+            vals["standard_price"] = mixin._avea_round_product_cost(vals["avea_cost_ex_tax"])
         if self.env.context.get("avea_stock_workspace") and vals.get("is_storable"):
-            vals = dict(vals, type="consu")
+            vals["type"] = "consu"
         if (
             self.env.context.get("avea_stock_workspace")
             and vals.get("categ_id")
@@ -721,5 +775,40 @@ class ProductTemplate(models.Model):
             categ = self.env["product.category"].browse(vals["categ_id"])
             pos_categ = self._avea_pos_category_for_product_category(categ)
             if pos_categ:
-                vals = dict(vals, pos_categ_ids=[(6, 0, pos_categ.ids)])
+                vals["pos_categ_ids"] = [(6, 0, pos_categ.ids)]
+        if "list_price" in vals:
+            vals.pop("avea_markup_percent", None)
+            vals.pop("avea_margin_percent", None)
+        elif "avea_markup_percent" in vals and len(self) == 1:
+            vals["list_price"] = self._avea_list_price_from_markup_percent(
+                vals.pop("avea_markup_percent")
+            )
+            vals.pop("avea_margin_percent", None)
+        elif "avea_margin_percent" in vals and len(self) == 1:
+            vals["list_price"] = self._avea_list_price_from_margin_percent(
+                vals.pop("avea_margin_percent")
+            )
+            vals.pop("avea_markup_percent", None)
         return super().write(vals)
+
+    @api.model
+    def get_formview_id(self, access_uid=None):
+        """Keep Avea Stock Item form on browser refresh for product-shell users."""
+        user = self.env.user
+        if hasattr(user, "_avea_uses_product_shell") and user._avea_uses_product_shell():
+            view = self.env.ref("avea_till.view_avea_stock_product_form", raise_if_not_found=False)
+            if view:
+                return view.id
+        return super().get_formview_id(access_uid=access_uid)
+
+    def get_formview_action(self, access_uid=None):
+        self.ensure_one()
+        user = self.env["res.users"].browse(access_uid) if access_uid else self.env.user
+        if hasattr(user, "_avea_uses_product_shell") and user._avea_uses_product_shell() and self.sale_ok:
+            return self.with_user(user).action_avea_open_stock_item()
+        return super().get_formview_action(access_uid=access_uid)
+
+    @api.model
+    def _load_pos_data_fields(self, config):
+        fields_list = super()._load_pos_data_fields(config)
+        return fields_list + ["avea_stock_qty", "avea_stock_status"]
