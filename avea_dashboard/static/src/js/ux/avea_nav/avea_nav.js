@@ -248,9 +248,18 @@ export class AveaNav extends Component {
         this.state.activeSectionId = sectionId;
         this.state.activeGroupId = groupId;
         this.state.activeMenuXmlid = xmlid;
+        this.state.activeSettingsActionId = null;
         this.state.settingsOpen = settings;
         this.state.mobileOpen = false;
         await this.menuService.selectMenu(menu);
+    }
+
+    async openActionId(actionId, { settings = false } = {}) {
+        this.state.activeMenuXmlid = null;
+        this.state.activeSettingsActionId = actionId;
+        this.state.settingsOpen = settings;
+        this.state.mobileOpen = false;
+        await this.actionService.doAction(actionId);
     }
 
     async onHomeClick() {

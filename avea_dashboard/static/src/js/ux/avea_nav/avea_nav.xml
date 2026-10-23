@@ -119,7 +119,7 @@
                             <i class="o_avea_sidebar_chevron" aria-hidden="true"/>
                         </button>
                         <div t-if="state.settingsOpen" class="o_avea_sidebar_section_items">
-                            <t t-foreach="settingsNav.items" t-as="item" t-key="item.menu_xmlid">
+                            <t t-foreach="settingsNav.items" t-as="item" t-key="item.menu_xmlid || item.action_id">
                                 <button
                                     type="button"
                                     class="o_avea_sidebar_link"

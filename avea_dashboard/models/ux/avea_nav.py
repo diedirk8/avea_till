@@ -211,23 +211,36 @@ class AveaNavMixin(models.AbstractModel):
         ]
 
     def _avea_nav_settings_definition(self):
+        self.ensure_one()
+        items = [
+            {
+                "label": "Email Receipts",
+                "menu_xmlid": "avea_till.menu_avea_settings_email",
+            },
+            {
+                "label": "Printed Receipts",
+                "menu_xmlid": "avea_till.menu_avea_settings_printed",
+            },
+            {
+                "label": "Avea Users",
+                "menu_xmlid": "avea_till.menu_avea_settings_users",
+            },
+        ]
+        if self.has_group("base.group_system"):
+            admin_menu = self.env.ref(
+                "base.menu_administration", raise_if_not_found=False
+            )
+            if admin_menu and admin_menu.action:
+                items.append(
+                    {
+                        "label": "Odoo Settings",
+                        "action_id": admin_menu.action.id,
+                    }
+                )
         return {
             "label": "Settings",
             "min_role": "manager",
-            "items": [
-                {
-                    "label": "Email Receipts",
-                    "menu_xmlid": "avea_till.menu_avea_settings_email",
-                },
-                {
-                    "label": "Printed Receipts",
-                    "menu_xmlid": "avea_till.menu_avea_settings_printed",
-                },
-                {
-                    "label": "Avea Users",
-                    "menu_xmlid": "avea_till.menu_avea_settings_users",
-                },
-            ],
+            "items": items,
         }
 
     def _avea_nav_sell_action(self):
