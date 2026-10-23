@@ -55,7 +55,7 @@
                                 <field name="name" placeholder="Full name" class="o_avea_users_title_field"/>
                             </h1>
                             <p class="o_avea_workspace_lead">
-                                Choose what this person can see and do in Avea — like Lightspeed staff permissions.
+                                Choose what this person can see and do in Avea — roles and permissions for your team.
                             </p>
                         </div>
                         <div class="o_avea_settings_hero_actions">

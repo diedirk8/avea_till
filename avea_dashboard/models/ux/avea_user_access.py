@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Avea user roles and Lightspeed-style capability toggles on res.users."""
+"""Avea user roles and staff capability toggles on res.users."""
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
 from odoo.tools.safe_eval import safe_eval

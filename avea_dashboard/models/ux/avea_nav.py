@@ -279,6 +279,17 @@ class AveaNavMixin(models.AbstractModel):
                     }
                 )
                 continue
+            action_id = item.get("action_id")
+            if action_id:
+                if not self.has_group("base.group_system"):
+                    continue
+                filtered.append(
+                    {
+                        "label": item["label"],
+                        "action_id": action_id,
+                    }
+                )
+                continue
             if not self._avea_nav_menu_visible(item["menu_xmlid"]):
                 continue
             filtered.append(

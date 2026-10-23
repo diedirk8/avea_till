@@ -28,6 +28,7 @@ export class AveaNav extends Component {
             activeSectionId: null,
             activeGroupId: null,
             activeMenuXmlid: null,
+            activeSettingsActionId: null,
             expandedSectionId: null,
             expandedGroupIds: {},
             settingsOpen: false,
@@ -309,6 +310,9 @@ export class AveaNav extends Component {
     }
 
     isItemActive(item) {
+        if (item.action_id) {
+            return this.state.activeSettingsActionId === item.action_id;
+        }
         return item.menu_xmlid && this.state.activeMenuXmlid === item.menu_xmlid;
     }
 
@@ -350,6 +354,10 @@ export class AveaNav extends Component {
     }
 
     async onSettingsItemClick(item) {
+        if (item.action_id) {
+            await this.openActionId(item.action_id, { settings: true });
+            return;
+        }
         await this.openMenuXmlid(item.menu_xmlid, { settings: true });
     }
 
