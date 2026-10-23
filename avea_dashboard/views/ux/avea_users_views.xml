@@ -77,10 +77,11 @@
                                     <field name="login" placeholder="name@company.co.za"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
-                                    <span class="o_avea_workspace_info_label">Password</span>
+                                    <span class="o_avea_workspace_info_label">Set password</span>
                                     <field
                                         name="avea_password"
                                         password="True"
+                                        string="Set password"
                                         placeholder="Set password (required for new users)"
                                     />
                                     <div class="o_avea_settings_field_hint">
