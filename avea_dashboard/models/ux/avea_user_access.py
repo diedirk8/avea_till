@@ -2,6 +2,7 @@
 """Avea user roles and Lightspeed-style capability toggles on res.users."""
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
+from odoo.osv import expression
 
 _AVEA_ROLE_XMLIDS = (
     "avea_till.group_avea_cashier",
@@ -177,6 +178,20 @@ class ResUsersAveaAccess(models.Model):
                 return True
         return False
 
+    @api.depends("all_group_ids", "avea_access_role")
+    def _compute_avea_access_role_label(self):
+        role_names = dict(self._fields["avea_access_role"].selection)
+        for user in self:
+            user.avea_is_odoo_administrator = user._avea_has_group(
+                user, "base.group_system"
+            )
+            if user.avea_is_odoo_administrator:
+                user.avea_access_role_label = _("Odoo administrator")
+            else:
+                user.avea_access_role_label = role_names.get(
+                    user.avea_access_role, _("No Avea access")
+                )
+
     @api.depends("all_group_ids")
     def _compute_avea_access_role(self):
         for user in self:
@@ -301,6 +316,60 @@ class ResUsersAveaAccess(models.Model):
                     raise AccessError(_("Use Avea Users to change roles and permissions."))
         return super().write(vals)
 
+    def _avea_use_users_workspace_form(self):
+        """Use the Avea Users workspace form (survives browser refresh)."""
+        self.ensure_one()
+        actor = self.env.user
+        if not actor._avea_uses_product_shell() or not self._avea_can_manage_users():
+            return False
+        if self.env.context.get("avea_users_workspace"):
+            return True
+        return bool(self.filtered_domain(self._avea_users_domain()))
+
+    @api.model
+    def get_formview_id(self, access_uid=None):
+        user = self.env.user
+        if access_uid:
+            user = self.env["res.users"].browse(access_uid)
+        if (
+            len(self) == 1
+            and self.with_user(user)._avea_use_users_workspace_form()
+        ):
+            view = self.env.ref(
+                "avea_till.view_avea_users_form", raise_if_not_found=False
+            )
+            if view:
+                return view.id
+        return super().get_formview_id(access_uid=access_uid)
+
+    def get_formview_action(self, access_uid=None):
+        self.ensure_one()
+        action = super().get_formview_action(access_uid=access_uid)
+        user = self.env.user
+        if access_uid:
+            user = self.env["res.users"].browse(access_uid)
+        if self.with_user(user)._avea_use_users_workspace_form():
+            view_id = self.env.ref("avea_till.view_avea_users_form").id
+            action["views"] = [(view_id, "form")]
+            action["context"] = dict(
+                action.get("context") or {},
+                avea_users_workspace=True,
+            )
+        return action
+
+    @api.model
+    def _search(self, domain, offset=0, limit=None, order=None):
+        if self.env.context.get("avea_users_workspace") and not self.env.user.has_group(
+            "base.group_system"
+        ):
+            domain = expression.AND(
+                [
+                    domain,
+                    [("id", "not in", self._avea_system_user_ids())],
+                ]
+            )
+        return super()._search(domain, offset=offset, limit=limit, order=order)
+
     @api.model
     def _avea_users_domain(self):
         company_ids = self.env.companies.ids
@@ -327,44 +396,43 @@ class ResUsersAveaAccess(models.Model):
     def action_open_avea_users(self):
         if not self._avea_can_manage_users():
             raise AccessError(_("You do not have permission to manage Avea users."))
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("Avea Users"),
-            "res_model": "res.users",
-            "view_mode": "list,form",
-            "domain": self._avea_users_domain(),
-            "context": {
-                "avea_users_workspace": True,
-                "default_company_ids": [(6, 0, self.env.company.ids)],
-                "default_company_id": self.env.company.id,
-                "default_avea_access_role": "cashier",
-            },
-            "search_view_id": self.env.ref("avea_till.view_avea_users_search").id,
-            "views": [
-                (self.env.ref("avea_till.view_avea_users_list").id, "list"),
-                (self.env.ref("avea_till.view_avea_users_form").id, "form"),
-            ],
-            "target": "current",
-        }
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_users_window"
+        )
+        action["domain"] = self._avea_users_domain()
+        action["context"] = dict(
+            action.get("context") or {},
+            default_company_ids=[(6, 0, self.env.company.ids)],
+            default_company_id=self.env.company.id,
+            default_avea_access_role="cashier",
+        )
+        return action
 
     @api.model
     def action_avea_new_user(self):
         if not self._avea_can_manage_users():
             raise AccessError(_("You do not have permission to manage Avea users."))
-        return {
-            "type": "ir.actions.act_window",
-            "name": _("New Avea user"),
-            "res_model": "res.users",
-            "view_mode": "form",
-            "views": [(self.env.ref("avea_till.view_avea_users_form").id, "form")],
-            "target": "current",
-            "context": {
-                "avea_users_workspace": True,
-                "default_company_ids": [(6, 0, self.env.company.ids)],
-                "default_company_id": self.env.company.id,
-                "default_avea_access_role": "cashier",
-            },
-        }
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_users_window"
+        )
+        action.update(
+            {
+                "name": _("New Avea user"),
+                "view_mode": "form",
+                "views": [
+                    (self.env.ref("avea_till.view_avea_users_form").id, "form")
+                ],
+                "res_id": False,
+                "domain": self._avea_users_domain(),
+                "context": dict(
+                    action.get("context") or {},
+                    default_company_ids=[(6, 0, self.env.company.ids)],
+                    default_company_id=self.env.company.id,
+                    default_avea_access_role="cashier",
+                ),
+            }
+        )
+        return action
 
     @api.model
     def _avea_system_user_ids(self):
@@ -378,6 +446,9 @@ class ResUsersAveaAccess(models.Model):
         if not password:
             return
         self.sudo().with_context(no_reset_password=True).write({"password": password})
+
+    def action_avea_cancel_user(self):
+        return self.env["res.users"].action_open_avea_users()
 
     def action_avea_save_user(self):
         self.ensure_one()

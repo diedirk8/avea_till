@@ -60,6 +60,13 @@
                         </div>
                         <div class="o_avea_settings_hero_actions">
                             <button
+                                name="action_avea_cancel_user"
+                                type="object"
+                                string="Cancel"
+                                class="btn btn-secondary"
+                                data-hotkey="x"
+                            />
+                            <button
                                 name="action_avea_save_user"
                                 type="object"
                                 string="Save user"
@@ -90,9 +97,33 @@
                                         Set the password here. Leave blank when editing to keep the existing password.
                                     </div>
                                 </div>
-                                <div class="o_avea_workspace_info_item">
+                                <div class="o_avea_workspace_info_item o_avea_settings_field_grid_span">
                                     <span class="o_avea_workspace_info_label">Avea role</span>
-                                    <field name="avea_access_role" widget="radio"/>
+                                    <field
+                                        name="avea_is_odoo_administrator"
+                                        invisible="1"
+                                    />
+                                    <p
+                                        class="o_avea_settings_section_help mb-2"
+                                        invisible="not avea_is_odoo_administrator"
+                                    >
+                                        This login is an Odoo administrator (full technical access via Settings).
+                                        Change that only in Odoo Settings → Users, not here.
+                                    </p>
+                                    <field
+                                        name="avea_access_role"
+                                        widget="radio"
+                                        invisible="avea_is_odoo_administrator"
+                                    />
+                                    <p
+                                        class="o_avea_settings_section_help mb-0"
+                                        invisible="avea_is_odoo_administrator"
+                                    >
+                                        <strong>Cashier</strong> — sell and cash up own till.
+                                        <strong>Manager</strong> — stock, money, customers, Avea settings (incl. users).
+                                        <strong>Owner</strong> — same as manager plus highest Avea role (assign only if you are owner/admin).
+                                        This is not the same as Odoo administrator.
+                                    </p>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Active</span>
@@ -176,6 +207,37 @@
                     </div>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <record id="action_avea_users_window" model="ir.actions.act_window">
+        <field name="name">Avea Users</field>
+        <field name="res_model">res.users</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_users_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_users_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_users_form')}),
+        ]"/>
+        <field name="domain" eval="[
+            ('share', '=', False),
+            '|', '|', '|',
+            ('company_ids', 'in', company_ids),
+            ('company_id', 'in', company_ids),
+            ('group_ids', 'in', [ref('group_avea_cashier'), ref('group_avea_manager'), ref('group_avea_owner')]),
+            ('company_id', '=', False),
+        ]"/>
+        <field name="context">{
+            'avea_users_workspace': True,
+            'default_avea_access_role': 'cashier',
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first staff member
+            </p>
+            <p>
+                Set roles and permissions for people who use Avea tills and workspaces.
+            </p>
         </field>
     </record>
 

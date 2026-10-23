@@ -117,7 +117,7 @@
         id="menu_avea_settings_users"
         name="Avea Users"
         parent="menu_avea_settings"
-        action="action_avea_users"
+        action="action_avea_users_window"
         groups="avea_till.group_avea_user_admin,base.group_system"
         sequence="30"
     />

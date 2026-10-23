@@ -27,6 +27,20 @@ class TestAveaUserAccess(TransactionCase):
     def test_manager_can_open_avea_users_action(self):
         action = self.manager.action_open_avea_users()
         self.assertEqual(action["res_model"], "res.users")
+        self.assertTrue(action.get("context", {}).get("avea_users_workspace"))
+
+    def test_users_workspace_form_on_refresh(self):
+        staff = self.env["res.users"].with_user(self.manager).create(
+            {
+                "name": "Refresh Staff",
+                "login": "refresh_staff@avea.local",
+                "email": "refresh_staff@avea.local",
+                "avea_access_role": "cashier",
+            }
+        )
+        view_id = staff.with_user(self.manager).get_formview_id()
+        expected = self.env.ref("avea_till.view_avea_users_form").id
+        self.assertEqual(view_id, expected)
 
     def test_cashier_cannot_open_avea_users_action(self):
         with self.assertRaises(AccessError):
