@@ -2,7 +2,6 @@
 """Avea user roles and Lightspeed-style capability toggles on res.users."""
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError, UserError
-from odoo.osv import expression
 
 _AVEA_ROLE_XMLIDS = (
     "avea_till.group_avea_cashier",
@@ -356,21 +355,6 @@ class ResUsersAveaAccess(models.Model):
                 avea_users_workspace=True,
             )
         return action
-
-    @api.model
-    def _search(self, domain, offset=0, limit=None, order=None, **kwargs):
-        if self.env.context.get("avea_users_workspace") and not self.env.user.has_group(
-            "base.group_system"
-        ):
-            domain = expression.AND(
-                [
-                    domain,
-                    [("id", "not in", self._avea_system_user_ids())],
-                ]
-            )
-        return super()._search(
-            domain, offset=offset, limit=limit, order=order, **kwargs
-        )
 
     @api.model
     def _avea_users_domain(self):

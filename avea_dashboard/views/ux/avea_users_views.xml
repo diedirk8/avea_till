@@ -219,14 +219,13 @@
             (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_users_list')}),
             (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_users_form')}),
         ]"/>
-        <field name="domain" eval="[
+        <field name="domain">[
             ('share', '=', False),
-            '|', '|', '|',
+            '|', '|',
             ('company_ids', 'in', company_ids),
             ('company_id', 'in', company_ids),
-            ('group_ids', 'in', [ref('group_avea_cashier'), ref('group_avea_manager'), ref('group_avea_owner')]),
             ('company_id', '=', False),
-        ]"/>
+        ]</field>
         <field name="context">{
             'avea_users_workspace': True,
             'default_avea_access_role': 'cashier',
