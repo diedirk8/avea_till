@@ -131,6 +131,10 @@ export class AveaNav extends Component {
         return this.companies.length > 1;
     }
 
+    get showOdooSettings() {
+        return Boolean(session.avea_odoo_settings_url || session.avea_odoo_settings_action_id);
+    }
+
     isActiveCompany(company) {
         return company.id === user.activeCompany?.id;
     }
@@ -160,6 +164,17 @@ export class AveaNav extends Component {
     onLogout() {
         this.closeUserMenu();
         window.location.href = "/web/session/logout?redirect=/web/login";
+    }
+
+    async onOpenOdooSettings() {
+        this.closeUserMenu();
+        if (session.avea_odoo_settings_action_id) {
+            await this.actionService.doAction(session.avea_odoo_settings_action_id);
+            return;
+        }
+        if (session.avea_odoo_settings_url) {
+            window.location.href = session.avea_odoo_settings_url;
+        }
     }
 
     get isCashier() {
@@ -356,6 +371,12 @@ export class AveaNav extends Component {
     async onSettingsItemClick(item) {
         if (item.action_id) {
             await this.openActionId(item.action_id, { settings: true });
+            return;
+        }
+        if (item.external_url) {
+            this.state.settingsOpen = true;
+            this.state.mobileOpen = false;
+            window.location.href = item.external_url;
             return;
         }
         await this.openMenuXmlid(item.menu_xmlid, { settings: true });

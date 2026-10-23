@@ -17,6 +17,11 @@ class IrHttp(models.AbstractModel):
             action = user._avea_home_action()
             if action:
                 result["home_action_id"] = action.id
+            if user.has_group("base.group_system"):
+                settings_action_id = user._avea_odoo_settings_action_id()
+                if settings_action_id:
+                    result["avea_odoo_settings_action_id"] = settings_action_id
+                result["avea_odoo_settings_url"] = "/odoo/settings"
         return result
 
     def webclient_rendering_context(self):

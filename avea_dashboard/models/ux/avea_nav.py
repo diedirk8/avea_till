@@ -210,6 +210,36 @@ class AveaNavMixin(models.AbstractModel):
             },
         ]
 
+    def _avea_odoo_settings_action_id(self):
+        """Action that opens Odoo Settings (parent menu often has no action in Odoo 19)."""
+        self.ensure_one()
+        if not self.has_group("base.group_system"):
+            return False
+        for xmlid in (
+            "base.action_res_config_settings",
+            "base_setup.action_general_configuration",
+        ):
+            action = self.env.ref(xmlid, raise_if_not_found=False)
+            if action and action._name == "ir.actions.act_window":
+                return action.id
+        admin_menu = self.env.ref(
+            "base.menu_administration", raise_if_not_found=False
+        )
+        if admin_menu:
+            if admin_menu.action:
+                return admin_menu.action.id
+            child = self.env["ir.ui.menu"].search(
+                [
+                    ("parent_id", "child_of", admin_menu.id),
+                    ("action", "!=", False),
+                ],
+                limit=1,
+                order="sequence, id",
+            )
+            if child.action:
+                return child.action.id
+        return False
+
     def _avea_nav_settings_definition(self):
         self.ensure_one()
         items = [
@@ -227,16 +257,14 @@ class AveaNavMixin(models.AbstractModel):
             },
         ]
         if self.has_group("base.group_system"):
-            admin_menu = self.env.ref(
-                "base.menu_administration", raise_if_not_found=False
-            )
-            if admin_menu and admin_menu.action:
-                items.append(
-                    {
-                        "label": "Odoo Settings",
-                        "action_id": admin_menu.action.id,
-                    }
-                )
+            odoo_settings = {
+                "label": "Odoo Settings",
+                "external_url": "/odoo/settings",
+            }
+            action_id = self._avea_odoo_settings_action_id()
+            if action_id:
+                odoo_settings["action_id"] = action_id
+            items.append(odoo_settings)
         return {
             "label": "Settings",
             "min_role": "manager",
@@ -279,16 +307,15 @@ class AveaNavMixin(models.AbstractModel):
                     }
                 )
                 continue
-            action_id = item.get("action_id")
-            if action_id:
+            if item.get("external_url") or item.get("action_id"):
                 if not self.has_group("base.group_system"):
                     continue
-                filtered.append(
-                    {
-                        "label": item["label"],
-                        "action_id": action_id,
-                    }
-                )
+                entry = {"label": item["label"]}
+                if item.get("action_id"):
+                    entry["action_id"] = item["action_id"]
+                if item.get("external_url"):
+                    entry["external_url"] = item["external_url"]
+                filtered.append(entry)
                 continue
             if not self._avea_nav_menu_visible(item["menu_xmlid"]):
                 continue

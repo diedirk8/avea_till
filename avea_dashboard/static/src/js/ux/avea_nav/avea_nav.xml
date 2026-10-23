@@ -119,7 +119,7 @@
                             <i class="o_avea_sidebar_chevron" aria-hidden="true"/>
                         </button>
                         <div t-if="state.settingsOpen" class="o_avea_sidebar_section_items">
-                            <t t-foreach="settingsNav.items" t-as="item" t-key="item.menu_xmlid || item.action_id">
+                            <t t-foreach="settingsNav.items" t-as="item" t-key="item.menu_xmlid || item.action_id || item.external_url">
                                 <button
                                     type="button"
                                     class="o_avea_sidebar_link"
@@ -206,6 +206,15 @@
                             </t>
                             <div class="o_avea_user_menu_divider"/>
                         </t>
+
+                        <button
+                            t-if="showOdooSettings"
+                            type="button"
+                            class="o_avea_user_menu_item"
+                            t-on-click="onOpenOdooSettings"
+                        >
+                            Odoo Settings
+                        </button>
 
                         <button
                             type="button"
