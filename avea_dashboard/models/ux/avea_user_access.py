@@ -207,12 +207,19 @@ class ResUsersAveaAccess(models.Model):
             user.avea_is_odoo_administrator = user._avea_has_group(
                 user, "base.group_system"
             )
+            avea_label = role_names.get(
+                user.avea_access_role, _("No Avea access")
+            )
             if user.avea_is_odoo_administrator:
-                user.avea_access_role_label = _("Odoo administrator")
+                if user.avea_access_role in ("cashier", "manager", "owner"):
+                    user.avea_access_role_label = _(
+                        "%(avea)s · Odoo administrator",
+                        avea=avea_label,
+                    )
+                else:
+                    user.avea_access_role_label = _("Odoo administrator")
             else:
-                user.avea_access_role_label = role_names.get(
-                    user.avea_access_role, _("No Avea access")
-                )
+                user.avea_access_role_label = avea_label
 
     @api.depends("all_group_ids")
     def _compute_avea_access_role(self):
