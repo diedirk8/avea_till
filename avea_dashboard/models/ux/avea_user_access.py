@@ -373,10 +373,7 @@ class ResUsersAveaAccess(models.Model):
         if self.with_user(user)._avea_use_users_workspace_form():
             view_id = self.env.ref("avea_till.view_avea_users_form").id
             action["views"] = [(view_id, "form")]
-            action["context"] = {
-                **self._avea_action_context(action),
-                "avea_users_workspace": True,
-            }
+            action["context"] = self._avea_merge_action_context(action)
         return action
 
     @api.model
@@ -405,25 +402,17 @@ class ResUsersAveaAccess(models.Model):
     def action_open_avea_users(self):
         if not self._avea_can_manage_users():
             raise AccessError(_("You do not have permission to manage Avea users."))
-        action = self.env["ir.actions.act_window"]._for_xml_id(
-            "avea_till.action_avea_users_window"
-        )
+        window = self.env.ref("avea_till.action_avea_users_window")
+        action = window._get_action_dict()
         action["domain"] = self._avea_users_domain()
-        action["context"] = {
-            **self._avea_action_context(action),
-            "default_company_ids": [(6, 0, self.env.company.ids)],
-            "default_company_id": self.env.company.id,
-            "default_avea_access_role": "cashier",
-        }
+        action["context"] = self._avea_users_action_context()
         return action
 
     @api.model
     def action_avea_new_user(self):
         if not self._avea_can_manage_users():
             raise AccessError(_("You do not have permission to manage Avea users."))
-        action = self.env["ir.actions.act_window"]._for_xml_id(
-            "avea_till.action_avea_users_window"
-        )
+        action = self.action_open_avea_users()
         action.update(
             {
                 "name": _("New Avea user"),
@@ -432,13 +421,6 @@ class ResUsersAveaAccess(models.Model):
                     (self.env.ref("avea_till.view_avea_users_form").id, "form")
                 ],
                 "res_id": False,
-                "domain": self._avea_users_domain(),
-                "context": {
-                    **self._avea_action_context(action),
-                    "default_company_ids": [(6, 0, self.env.company.ids)],
-                    "default_company_id": self.env.company.id,
-                    "default_avea_access_role": "cashier",
-                },
             }
         )
         return action
