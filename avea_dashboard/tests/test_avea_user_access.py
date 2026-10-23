@@ -44,6 +44,21 @@ class TestAveaUserAccess(TransactionCase):
         self.assertTrue(staff.has_group("avea_till.group_avea_cashier"))
         self.assertFalse(staff.has_group("avea_till.group_avea_manager"))
 
+    def test_users_domain_includes_avea_group_without_company(self):
+        orphan = self.env["res.users"].with_user(self.manager).create(
+            {
+                "name": "Orphan Cashier",
+                "login": "orphan_cash@avea.local",
+                "email": "orphan_cash@avea.local",
+                "company_id": False,
+                "company_ids": [(5, 0, 0)],
+                "avea_access_role": "cashier",
+            }
+        )
+        domain = self.env["res.users"]._avea_users_domain()
+        matched = self.env["res.users"].search(domain)
+        self.assertIn(orphan, matched)
+
     def test_cashier_extra_pos_manager_toggle(self):
         staff = self.env["res.users"].with_user(self.manager).create(
             {

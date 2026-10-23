@@ -60,6 +60,9 @@ class ResUsers(models.Model):
             role = vals.get("avea_access_role")
             if role and role != "none":
                 user._avea_apply_role_groups(role)
+            password = (vals.get("avea_password") or "").strip()
+            if password:
+                user._avea_set_password(password)
         users._avea_sync_home_action()
         return users
 

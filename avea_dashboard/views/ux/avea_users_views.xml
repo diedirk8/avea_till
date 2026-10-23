@@ -1,12 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
+    <record id="view_avea_users_search" model="ir.ui.view">
+        <field name="name">res.users.avea.search</field>
+        <field name="model">res.users</field>
+        <field name="priority">90</field>
+        <field name="arch" type="xml">
+            <search string="Avea Users">
+                <field name="name"/>
+                <field name="login"/>
+                <field name="avea_access_role"/>
+                <filter name="filter_active" string="Active" domain="[('active', '=', True)]"/>
+                <filter name="filter_inactive" string="Inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
     <record id="view_avea_users_list" model="ir.ui.view">
         <field name="name">res.users.avea.list</field>
         <field name="model">res.users</field>
         <field name="priority">90</field>
         <field name="arch" type="xml">
-            <list string="Avea Users" class="o_avea_users_list">
+            <list
+                string="Avea Users"
+                class="o_avea_users_list"
+                js_class="avea_users_list"
+                create="true"
+            >
                 <field name="name"/>
                 <field name="login"/>
                 <field name="avea_access_role" string="Role"/>
@@ -55,6 +75,17 @@
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Email / login</span>
                                     <field name="login" placeholder="name@company.co.za"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Password</span>
+                                    <field
+                                        name="avea_password"
+                                        password="True"
+                                        placeholder="Set password (required for new users)"
+                                    />
+                                    <div class="o_avea_settings_field_hint">
+                                        Set the password here. Leave blank when editing to keep the existing password.
+                                    </div>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Avea role</span>

@@ -22,12 +22,14 @@
     <record id="rule_res_users_avea_admin_company" model="ir.rule">
         <field name="name">Avea user admin: company users</field>
         <field name="model_id" ref="base.model_res_users"/>
-        <field name="domain_force">[
+        <field name="domain_force" eval="[
             ('share', '=', False),
-            '|',
-            ('company_id', 'in', company_ids),
+            '|', '|', '|',
             ('company_ids', 'in', company_ids),
-        ]</field>
+            ('company_id', 'in', company_ids),
+            ('group_ids', 'in', [ref('group_avea_cashier'), ref('group_avea_manager'), ref('group_avea_owner')]),
+            ('company_id', '=', False),
+        ]"/>
         <field name="groups" eval="[(4, ref('group_avea_user_admin'))]"/>
     </record>
 

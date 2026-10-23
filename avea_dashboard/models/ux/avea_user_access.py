@@ -130,6 +130,11 @@ class ResUsersAveaAccess(models.Model):
         compute="_compute_avea_permissions",
         inverse="_inverse_avea_permissions",
     )
+    avea_password = fields.Char(
+        string="Password",
+        copy=False,
+        help="Set or reset the login password. Leave blank to keep the current password.",
+    )
 
     @api.model
     def _avea_role_rank(self, user=None):
@@ -289,6 +294,28 @@ class ResUsersAveaAccess(models.Model):
         return super().write(vals)
 
     @api.model
+    def _avea_users_domain(self):
+        company_ids = self.env.companies.ids
+        avea_groups = [
+            self.env.ref("avea_till.group_avea_cashier").id,
+            self.env.ref("avea_till.group_avea_manager").id,
+            self.env.ref("avea_till.group_avea_owner").id,
+        ]
+        domain = [
+            ("share", "=", False),
+            "|",
+            "|",
+            "|",
+            ("company_ids", "in", company_ids),
+            ("company_id", "in", company_ids),
+            ("group_ids", "in", avea_groups),
+            ("company_id", "=", False),
+        ]
+        if not self.env.user.has_group("base.group_system"):
+            domain.append(("id", "not in", self._avea_system_user_ids()))
+        return domain
+
+    @api.model
     def action_open_avea_users(self):
         if not self._avea_can_manage_users():
             raise AccessError(_("You do not have permission to manage Avea users."))
@@ -297,19 +324,38 @@ class ResUsersAveaAccess(models.Model):
             "name": _("Avea Users"),
             "res_model": "res.users",
             "view_mode": "list,form",
-            "domain": [
-                ("share", "=", False),
-                ("id", "not in", self._avea_system_user_ids()),
-            ],
+            "domain": self._avea_users_domain(),
             "context": {
                 "avea_users_workspace": True,
                 "default_company_ids": [(6, 0, self.env.company.ids)],
+                "default_company_id": self.env.company.id,
+                "default_avea_access_role": "cashier",
             },
+            "search_view_id": self.env.ref("avea_till.view_avea_users_search").id,
             "views": [
                 (self.env.ref("avea_till.view_avea_users_list").id, "list"),
                 (self.env.ref("avea_till.view_avea_users_form").id, "form"),
             ],
             "target": "current",
+        }
+
+    @api.model
+    def action_avea_new_user(self):
+        if not self._avea_can_manage_users():
+            raise AccessError(_("You do not have permission to manage Avea users."))
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("New Avea user"),
+            "res_model": "res.users",
+            "view_mode": "form",
+            "views": [(self.env.ref("avea_till.view_avea_users_form").id, "form")],
+            "target": "current",
+            "context": {
+                "avea_users_workspace": True,
+                "default_company_ids": [(6, 0, self.env.company.ids)],
+                "default_company_id": self.env.company.id,
+                "default_avea_access_role": "cashier",
+            },
         }
 
     @api.model
@@ -319,16 +365,29 @@ class ResUsersAveaAccess(models.Model):
             return []
         return system_group.all_user_ids.ids
 
+    def _avea_set_password(self, password):
+        self.ensure_one()
+        if not password:
+            return
+        self.sudo().with_context(no_reset_password=True).write({"password": password})
+
     def action_avea_save_user(self):
         self.ensure_one()
         self._avea_check_manage_target()
+        password = (self.avea_password or "").strip()
+        if password:
+            self._avea_set_password(password)
+            self.avea_password = False
         self._avea_sync_home_action()
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
                 "title": _("User saved"),
-                "message": _("%(name)s has been updated.", name=self.display_name),
+                "message": _(
+                    "%(name)s has been saved.",
+                    name=self.display_name,
+                ),
                 "type": "success",
                 "sticky": False,
             },
