@@ -148,6 +148,14 @@ class AveaStockInternalUse(models.TransientModel):
         wizard = self.create({"user_id": self.env.user.id})
         return self._avea_form_action(wizard)
 
+    def action_cancel_scrap(self):
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_stock_workspace"
+        )
+        action["target"] = "main"
+        action["context"] = dict(self.env.context, clear_breadcrumbs=True)
+        return action
+
     def _avea_lines_to_use(self):
         self.ensure_one()
         lines = self.line_ids.filtered(

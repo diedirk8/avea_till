@@ -79,6 +79,13 @@
                     </div>
                     <div class="o_avea_stock_footer">
                         <button
+                            name="action_cancel_scrap"
+                            type="object"
+                            string="Cancel"
+                            class="btn-secondary"
+                            data-hotkey="x"
+                        />
+                        <button
                             name="action_use_stock"
                             type="object"
                             string="Scrap Stock"

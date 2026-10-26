@@ -118,3 +118,9 @@ class TestAveaStockInternalUse(TransactionCase):
         self.assertEqual(action["target"], "main")
         wizard = self.env["avea.stock.internal_use"].browse(action["res_id"])
         self.assertEqual(wizard.user_id, self.env.user)
+
+    def test_action_cancel_scrap_returns_to_products(self):
+        wizard = self.env["avea.stock.internal_use"].create(self._wizard_vals())
+        action = wizard.action_cancel_scrap()
+        self.assertEqual(action["res_model"], "product.template")
+        self.assertEqual(action["target"], "main")
