@@ -60,7 +60,10 @@
                                     class="o_avea_sidebar_section_items"
                                 >
                                     <t t-foreach="section.items" t-as="item" t-key="item_index">
-                                        <t t-if="isLinkItem(item)">
+                                        <t t-if="isHeadingItem(item)">
+                                            <div class="o_avea_sidebar_heading" t-esc="item.label"/>
+                                        </t>
+                                        <t t-elif="isLinkItem(item)">
                                             <button
                                                 type="button"
                                                 class="o_avea_sidebar_link"

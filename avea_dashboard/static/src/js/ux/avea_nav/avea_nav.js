@@ -345,6 +345,10 @@ export class AveaNav extends Component {
         return Boolean(item.menu_xmlid);
     }
 
+    isHeadingItem(item) {
+        return Boolean(item.heading);
+    }
+
     isGroupItem(item) {
         return Boolean(item.items);
     }

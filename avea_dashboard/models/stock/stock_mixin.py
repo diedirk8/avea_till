@@ -7,7 +7,7 @@ from odoo.tools.float_utils import float_compare, float_round
 
 AVEA_RECEIVE_ORIGIN = "Avea Receive Stock"
 AVEA_STOCK_TAKE_ORIGIN = "Avea Stock Take"
-AVEA_INTERNAL_USE_ORIGIN = "Avea Use Stock"
+AVEA_INTERNAL_USE_ORIGIN = "Avea Scrap Stock"
 AVEA_SUPPLIER_COST_PRECISION = "Avea Supplier Cost"
 AVEA_PRODUCT_COST_PRECISION = "Product Price"
 
