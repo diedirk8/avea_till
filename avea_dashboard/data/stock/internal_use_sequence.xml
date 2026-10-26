@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo noupdate="1">
     <record id="seq_avea_stock_internal_use" model="ir.sequence">
-        <field name="name">Avea Use Stock</field>
+        <field name="name">Avea Scrap Stock</field>
         <field name="code">avea.stock.internal_use</field>
         <field name="prefix">US/%(year)s/</field>
         <field name="padding">4</field>

@@ -68,6 +68,23 @@ class TestAveaNav(TestPoSCommon):
         labels = {item["label"] for item in business["items"]}
         self.assertEqual(labels, {"Performance", "Transactions"})
 
+    def test_stock_section_uses_hierarchy(self):
+        nav = self.manager._avea_nav_structure()
+        stock = next(section for section in nav["sections"] if section["id"] == "stock")
+        labels = [item["label"] for item in stock["items"]]
+        self.assertEqual(labels[0], "Products")
+        self.assertIn("Scrap Stock", labels)
+        self.assertNotIn("Use Stock", labels)
+        self.assertNotIn("Receive history", labels)
+        heading = next(item for item in stock["items"] if item.get("heading"))
+        self.assertEqual(heading["label"], "Movements")
+        history = next(item for item in stock["items"] if item.get("items"))
+        self.assertEqual(history["label"], "History")
+        self.assertEqual(
+            [item["label"] for item in history["items"]],
+            ["Receive", "Return", "Stock take", "Scrap"],
+        )
+
     def test_customers_and_money_use_nested_groups(self):
         nav = self.manager._avea_nav_structure()
         customers = next(s for s in nav["sections"] if s["id"] == "customers")

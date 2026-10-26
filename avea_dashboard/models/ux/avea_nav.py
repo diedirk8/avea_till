@@ -83,36 +83,47 @@ class AveaNavMixin(models.AbstractModel):
                         "menu_xmlid": "avea_till.menu_avea_stock_products",
                     },
                     {
-                        "label": "Receive Stock",
-                        "menu_xmlid": "avea_till.menu_avea_stock_receive",
+                        "id": "movements_heading",
+                        "label": "Movements",
+                        "heading": True,
                     },
                     {
-                        "label": "Stock Take",
-                        "menu_xmlid": "avea_till.menu_avea_stock_count",
+                        "label": "Receive Stock",
+                        "menu_xmlid": "avea_till.menu_avea_stock_receive",
                     },
                     {
                         "label": "Return Stock",
                         "menu_xmlid": "avea_till.menu_avea_stock_return",
                     },
                     {
-                        "label": "Use Stock",
+                        "label": "Scrap Stock",
                         "menu_xmlid": "avea_till.menu_avea_stock_internal_use",
                     },
                     {
-                        "label": "Receive history",
-                        "menu_xmlid": "avea_till.menu_avea_stock_receive_history",
+                        "label": "Stock Take",
+                        "menu_xmlid": "avea_till.menu_avea_stock_count",
                     },
                     {
-                        "label": "Return history",
-                        "menu_xmlid": "avea_till.menu_avea_stock_return_history",
-                    },
-                    {
-                        "label": "Stock take history",
-                        "menu_xmlid": "avea_till.menu_avea_stock_take_history",
-                    },
-                    {
-                        "label": "Use stock history",
-                        "menu_xmlid": "avea_till.menu_avea_stock_internal_use_history",
+                        "id": "history",
+                        "label": "History",
+                        "items": [
+                            {
+                                "label": "Receive",
+                                "menu_xmlid": "avea_till.menu_avea_stock_receive_history",
+                            },
+                            {
+                                "label": "Return",
+                                "menu_xmlid": "avea_till.menu_avea_stock_return_history",
+                            },
+                            {
+                                "label": "Stock take",
+                                "menu_xmlid": "avea_till.menu_avea_stock_take_history",
+                            },
+                            {
+                                "label": "Scrap",
+                                "menu_xmlid": "avea_till.menu_avea_stock_internal_use_history",
+                            },
+                        ],
                     },
                 ],
             },
@@ -302,6 +313,15 @@ class AveaNavMixin(models.AbstractModel):
             item_rank = _AVEA_ROLE_RANK.get(item.get("min_role", "cashier"), 1)
             if role_rank < item_rank:
                 continue
+            if item.get("heading"):
+                filtered.append(
+                    {
+                        "id": item.get("id"),
+                        "label": item["label"],
+                        "heading": True,
+                    }
+                )
+                continue
             nested = item.get("items")
             if nested:
                 children = self._avea_nav_filter_items(nested, role_rank)
@@ -333,7 +353,21 @@ class AveaNavMixin(models.AbstractModel):
                     "menu_xmlid": item["menu_xmlid"],
                 }
             )
-        return filtered
+        return self._avea_nav_drop_orphan_headings(filtered)
+
+    def _avea_nav_drop_orphan_headings(self, items):
+        """Keep a heading only when a link or group follows it."""
+        cleaned = []
+        pending_heading = None
+        for item in items:
+            if item.get("heading"):
+                pending_heading = item
+                continue
+            if pending_heading:
+                cleaned.append(pending_heading)
+                pending_heading = None
+            cleaned.append(item)
+        return cleaned
 
     def _avea_nav_filter_home(self, role_rank):
         home = self._avea_nav_home_definition()

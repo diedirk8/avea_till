@@ -52,7 +52,7 @@
 
     <menuitem
         id="menu_avea_stock_internal_use"
-        name="Use Stock"
+        name="Scrap Stock"
         parent="menu_avea_stock"
         action="action_avea_stock_internal_use"
         groups="avea_till.group_avea_manager"
@@ -88,7 +88,7 @@
 
     <menuitem
         id="menu_avea_stock_internal_use_history"
-        name="Use stock history"
+        name="Scrap history"
         parent="menu_avea_stock"
         action="action_avea_stock_internal_use_history"
         groups="avea_till.group_avea_manager"

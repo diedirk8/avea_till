@@ -1083,9 +1083,14 @@
 // Stock catalogue (product list)
 // =============================================================================
 
+.o_list_view.o_avea_workspace.o_avea_workspace--stock-catalogue {
+    overflow-x: hidden;
+}
+
 .o_avea_workspace--stock-catalogue {
     background-color: var(--o-webclient-background-color, #f8f9fa);
     min-width: 0;
+    overflow-x: hidden;
 
     .o_avea_workspace_sheet,
     .o_avea_stock_catalogue_sheet {
@@ -1203,18 +1208,36 @@
         margin: 0 auto 1.5rem;
         max-width: 1680px;
         min-width: 0;
+        overflow-x: auto !important;
+        overflow-y: visible;
         padding: 0 !important;
         width: calc(100% - 3rem);
+        -webkit-overflow-scrolling: touch;
+        scrollbar-gutter: stable;
+        scrollbar-width: auto !important;
+        -ms-overflow-style: auto !important;
+
+        &::-webkit-scrollbar {
+            display: block !important;
+            height: 12px;
+            width: 12px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: rgba(73, 80, 87, 0.45);
+            border-radius: 999px;
+        }
 
         .o_list_renderer {
             border: none;
             border-radius: 0;
             box-shadow: none;
+            display: block;
             margin: 0;
-            max-width: 100%;
+            max-width: none;
             min-width: 0;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            overflow: visible;
+            width: max-content;
         }
     }
 }
@@ -1222,6 +1245,9 @@
 .o_avea_stock_catalogue_list {
     .o_list_table {
         @include avea-compact-table-base;
+        min-width: 88rem;
+        table-layout: auto;
+        width: max-content;
 
         th[data-name="name"],
         td[name="name"],

@@ -646,10 +646,11 @@
         <field name="name">avea.stock.internal_use.history.search</field>
         <field name="model">avea.stock.internal_use.history</field>
         <field name="arch" type="xml">
-            <search string="Use stock history">
+            <search string="Scrap history">
                 <field name="name" string="Reference"/>
                 <field name="notes"/>
-                <field name="user_id" string="Recorded by"/>
+                <field name="reason_tag_id" string="Reason"/>
+                <field name="user_id" string="Scrapped by"/>
                 <field name="location_id" string="Location"/>
                 <separator/>
                 <filter name="avea_stock_hist_last_7" string="Last 7 days" domain="[('use_date', '&gt;=', (context_today() - relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
@@ -664,7 +665,7 @@
         <field name="model">avea.stock.internal_use.history</field>
         <field name="arch" type="xml">
             <list
-                string="Use stock history"
+                string="Scrap history"
                 create="false"
                 delete="false"
                 default_order="use_date desc"
@@ -673,11 +674,12 @@
             >
                 <field name="use_date" string="Date"/>
                 <field name="name" string="Reference"/>
+                <field name="reason_tag_id" string="Reason" optional="show"/>
                 <field name="product_count" string="Products"/>
-                <field name="quantity_total" string="Qty used"/>
+                <field name="quantity_total" string="Qty scrapped"/>
                 <field name="location_id" string="Location" optional="show"/>
                 <field name="notes" string="Notes" optional="show"/>
-                <field name="user_id" string="By" optional="hide"/>
+                <field name="user_id" string="Scrapped by" optional="show"/>
             </list>
         </field>
     </record>
@@ -687,7 +689,7 @@
         <field name="model">avea.stock.internal_use.history</field>
         <field name="arch" type="xml">
             <form
-                string="Use stock history"
+                string="Scrap history"
                 create="false"
                 delete="false"
                 edit="false"
@@ -699,7 +701,7 @@
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">Stock</span>
-                            <h1 class="o_avea_workspace_title">Stock used</h1>
+                            <h1 class="o_avea_workspace_title">Stock scrapped</h1>
                             <p class="o_avea_workspace_section_subtitle">
                                 <field name="name" nolabel="1" readonly="1" class="oe_inline"/>
                             </p>
@@ -718,12 +720,12 @@
                                 <field name="location_id" nolabel="1" readonly="1"/>
                             </div>
                             <div class="o_avea_workspace_info_item">
-                                <span class="o_avea_workspace_info_label">Recorded by</span>
+                                <span class="o_avea_workspace_info_label">Scrapped by</span>
                                 <field name="user_id" nolabel="1" readonly="1"/>
                             </div>
                             <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
                                 <span class="o_avea_workspace_info_label">Reason</span>
-                                <field name="reason_tag_ids" nolabel="1" readonly="1" widget="many2many_tags"/>
+                                <field name="reason_tag_id" nolabel="1" readonly="1"/>
                             </div>
                             <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
                                 <span class="o_avea_workspace_info_label">Notes</span>
@@ -733,7 +735,7 @@
                     </div>
 
                     <div class="o_avea_stock_panel o_avea_stock_panel--products">
-                        <h2 class="o_avea_workspace_section_title">Products used</h2>
+                        <h2 class="o_avea_workspace_section_title">Products scrapped</h2>
                         <div class="o_avea_stock_list_surface">
                             <field name="line_ids" nolabel="1" readonly="1">
                                 <list create="false" delete="false" edit="false">
@@ -766,7 +768,7 @@
     </record>
 
     <record id="action_avea_stock_internal_use_history" model="ir.actions.act_window">
-        <field name="name">Use stock history</field>
+        <field name="name">Scrap history</field>
         <field name="res_model">avea.stock.internal_use.history</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_avea_stock_internal_use_history_search"/>

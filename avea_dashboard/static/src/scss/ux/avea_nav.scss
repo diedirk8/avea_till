@@ -199,6 +199,20 @@ body.o_avea_product_shell {
     padding: 0.125rem 0 0.25rem 0.5rem;
 }
 
+.o_avea_sidebar_heading {
+    margin: 0.75rem 0 0.125rem;
+    padding: 0.25rem 0.75rem 0.125rem;
+    color: var(--avea-nav-muted);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.o_avea_sidebar_heading ~ .o_avea_sidebar_link {
+    padding-left: 1rem;
+}
+
 .o_avea_sidebar_link_nested {
     font-size: 0.875rem;
     font-weight: 450;
@@ -209,11 +223,27 @@ body.o_avea_product_shell {
     }
 }
 
+.o_avea_sidebar_group {
+    margin-top: 0.75rem;
+    padding-top: 0.375rem;
+    border-top: 1px solid var(--avea-nav-border);
+}
+
 .o_avea_sidebar_group_toggle {
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--avea-nav-muted);
+    padding: 0.375rem 0.75rem;
+
+    &:hover {
+        color: var(--avea-nav-text);
+    }
+}
+
+.o_avea_sidebar_group_toggle_open {
     color: var(--avea-nav-text);
-    padding-left: 0.75rem;
 }
 
 /* Settings footer — visually separated from business areas */

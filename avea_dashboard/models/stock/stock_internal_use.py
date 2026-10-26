@@ -5,14 +5,28 @@ from odoo.tools.float_utils import float_compare, float_is_zero
 from .stock_mixin import AVEA_INTERNAL_USE_ORIGIN
 
 
+class StockScrapReasonTag(models.Model):
+    _inherit = "stock.scrap.reason.tag"
+
+    @api.model
+    def name_create(self, name):
+        label = (name or "").strip()
+        if not label:
+            return super().name_create(name)
+        existing = self.search([("name", "=ilike", label)], limit=1)
+        if existing:
+            return existing.id, existing.display_name
+        return super().name_create(label)
+
+
 class AveaStockInternalUseLine(models.TransientModel):
     _name = "avea.stock.internal_use.line"
-    _description = "Use Stock Line"
+    _description = "Scrap Stock Line"
     _order = "id"
 
     use_id = fields.Many2one(
         "avea.stock.internal_use",
-        string="Use Stock",
+        string="Scrap Stock",
         required=True,
         ondelete="cascade",
     )
@@ -58,9 +72,10 @@ class AveaStockInternalUseLine(models.TransientModel):
         for line in self:
             line.lot_id = False
 
+
 class AveaStockInternalUse(models.TransientModel):
     _name = "avea.stock.internal_use"
-    _description = "Use Stock"
+    _description = "Scrap Stock"
     _inherit = ["avea.stock.mixin"]
 
     company_id = fields.Many2one(
@@ -84,14 +99,21 @@ class AveaStockInternalUse(models.TransientModel):
         required=True,
         default=fields.Date.context_today,
     )
+    user_id = fields.Many2one(
+        "res.users",
+        string="Scrapped by",
+        required=True,
+        default=lambda self: self.env.user,
+        domain="[('share', '=', False)]",
+    )
     notes = fields.Char(
         string="Notes",
         help="Optional reference, e.g. demo cage or staff feeding.",
     )
-    reason_tag_ids = fields.Many2many(
+    reason_tag_id = fields.Many2one(
         "stock.scrap.reason.tag",
         string="Reason",
-        help="Same reason tags as Odoo inventory scrap / internal use.",
+        help="Why this stock is being scrapped. Type a new name to add a reason.",
     )
     line_ids = fields.One2many(
         "avea.stock.internal_use.line",
@@ -111,7 +133,7 @@ class AveaStockInternalUse(models.TransientModel):
         view_id = self.env.ref("avea_till.view_avea_stock_internal_use_form").id
         return {
             "type": "ir.actions.act_window",
-            "name": _("Use Stock"),
+            "name": _("Scrap Stock"),
             "res_model": self._name,
             "view_mode": "form",
             "views": [(view_id, "form")],
@@ -123,8 +145,16 @@ class AveaStockInternalUse(models.TransientModel):
 
     @api.model
     def action_open_internal_use(self):
-        wizard = self.create({})
+        wizard = self.create({"user_id": self.env.user.id})
         return self._avea_form_action(wizard)
+
+    def action_cancel_scrap(self):
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_stock_workspace"
+        )
+        action["target"] = "main"
+        action["context"] = dict(self.env.context, clear_breadcrumbs=True)
+        return action
 
     def _avea_lines_to_use(self):
         self.ensure_one()
@@ -132,7 +162,9 @@ class AveaStockInternalUse(models.TransientModel):
             lambda line: line.product_id and line.quantity > 0
         )
         if not lines:
-            raise ValidationError(_("Add at least one product with a quantity to use."))
+            raise ValidationError(_("Add at least one product with a quantity to scrap."))
+        if not self.reason_tag_id:
+            raise ValidationError(_("Choose a scrap reason, or type a new one to add it."))
         for line in lines:
             rounding = line.product_id.uom_id.rounding
             if float_is_zero(line.quantity, precision_rounding=rounding):
@@ -168,7 +200,7 @@ class AveaStockInternalUse(models.TransientModel):
             "scrap_qty": line.quantity,
             "location_id": self.location_id.id,
             "origin": origin,
-            "scrap_reason_tag_ids": [Command.set(self.reason_tag_ids.ids)],
+            "scrap_reason_tag_ids": [Command.set(self.reason_tag_id.ids)],
         }
         if line.lot_id:
             scrap_vals["lot_id"] = line.lot_id.id
@@ -176,7 +208,7 @@ class AveaStockInternalUse(models.TransientModel):
         if not scrap.check_available_qty():
             raise ValidationError(
                 _(
-                    "Not enough %(product)s on hand to use %(qty)s.",
+                    "Not enough %(product)s on hand to scrap %(qty)s.",
                     product=line.product_id.display_name,
                     qty=line.quantity,
                 )
@@ -191,11 +223,11 @@ class AveaStockInternalUse(models.TransientModel):
                 "name": self.env["ir.sequence"].next_by_code("avea.stock.internal_use")
                 or _("New"),
                 "company_id": self.company_id.id,
-                "user_id": self.env.user.id,
+                "user_id": self.user_id.id,
                 "location_id": self.location_id.id,
                 "use_date": self.use_date,
                 "notes": self.notes,
-                "reason_tag_ids": [Command.set(self.reason_tag_ids.ids)],
+                "reason_tag_id": self.reason_tag_id.id,
                 "scrap_ids": [Command.set(scrap_records.ids)],
                 "line_ids": [
                     Command.create(
@@ -223,9 +255,9 @@ class AveaStockInternalUse(models.TransientModel):
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": _("Stock used"),
+                "title": _("Stock scrapped"),
                 "message": _(
-                    "%(count)s product line(s) removed from stock (%(ref)s).",
+                    "%(count)s product line(s) scrapped (%(ref)s).",
                     count=product_count,
                     ref=history.name,
                 ),
@@ -237,24 +269,24 @@ class AveaStockInternalUse(models.TransientModel):
 
 class AveaStockInternalUseHistoryLine(models.Model):
     _name = "avea.stock.internal_use.history.line"
-    _description = "Use Stock History Line"
+    _description = "Scrap Stock History Line"
     _order = "id"
 
     history_id = fields.Many2one(
         "avea.stock.internal_use.history",
-        string="Use Stock",
+        string="Scrap Stock",
         required=True,
         ondelete="cascade",
     )
     product_id = fields.Many2one("product.product", string="Product", required=True)
-    quantity = fields.Float(string="Quantity used", digits="Product Unit", required=True)
+    quantity = fields.Float(string="Quantity scrapped", digits="Product Unit", required=True)
     lot_id = fields.Many2one("stock.lot", string="Lot / serial", ondelete="set null")
     scrap_id = fields.Many2one("stock.scrap", string="Scrap record", ondelete="set null")
 
 
 class AveaStockInternalUseHistory(models.Model):
     _name = "avea.stock.internal_use.history"
-    _description = "Use Stock History"
+    _description = "Scrap Stock History"
     _inherit = ["avea.stock.mixin"]
     _order = "use_date desc, id desc"
 
@@ -266,7 +298,7 @@ class AveaStockInternalUseHistory(models.Model):
     )
     user_id = fields.Many2one(
         "res.users",
-        string="Recorded by",
+        string="Scrapped by",
         required=True,
         default=lambda self: self.env.user,
     )
@@ -278,7 +310,7 @@ class AveaStockInternalUseHistory(models.Model):
     )
     use_date = fields.Date(string="Date", required=True)
     notes = fields.Char(string="Notes")
-    reason_tag_ids = fields.Many2many("stock.scrap.reason.tag", string="Reason")
+    reason_tag_id = fields.Many2one("stock.scrap.reason.tag", string="Reason")
     scrap_ids = fields.Many2many("stock.scrap", string="Odoo scrap records", readonly=True)
     line_ids = fields.One2many(
         "avea.stock.internal_use.history.line",

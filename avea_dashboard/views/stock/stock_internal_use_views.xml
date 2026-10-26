@@ -5,17 +5,16 @@
         <field name="name">avea.stock.internal_use.form</field>
         <field name="model">avea.stock.internal_use</field>
         <field name="arch" type="xml">
-            <form string="Use Stock" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock">
+            <form string="Scrap Stock" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="company_id" invisible="1"/>
 
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">Stock</span>
-                            <h1 class="o_avea_workspace_title">Use Stock</h1>
+                            <h1 class="o_avea_workspace_title">Scrap Stock</h1>
                             <p class="o_avea_workspace_section_subtitle">
-                                Record internal use of products — demos, store feeding, samples, or other consumption.
-                                Stock is removed the same way as Odoo scrap / internal use.
+                                Remove damaged, expired, demo, or internally used products from on-hand stock.
                             </p>
                         </div>
                     </div>
@@ -27,6 +26,14 @@
                                 <span class="o_avea_workspace_info_label">Date</span>
                                 <field name="use_date" nolabel="1"/>
                             </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Scrapped by</span>
+                                <field
+                                    name="user_id"
+                                    nolabel="1"
+                                    options="{'no_create': True, 'no_create_edit': True}"
+                                />
+                            </div>
                             <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
                                 <span class="o_avea_workspace_info_label">From location</span>
                                 <field name="location_id" nolabel="1" options="{'no_create': True}"/>
@@ -34,15 +41,16 @@
                             <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
                                 <span class="o_avea_workspace_info_label">Reason</span>
                                 <field
-                                    name="reason_tag_ids"
+                                    name="reason_tag_id"
                                     nolabel="1"
-                                    widget="many2many_tags"
-                                    options="{'color_field': 'color', 'no_create_edit': False}"
+                                    required="1"
+                                    placeholder="Select a reason, or type to add one"
+                                    options="{'no_quick_create': False, 'no_create_edit': False, 'no_open': True}"
                                 />
                             </div>
                             <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
                                 <span class="o_avea_workspace_info_label">Notes</span>
-                                <field name="notes" nolabel="1" placeholder="e.g. Demo bird cage, staff use"/>
+                                <field name="notes" nolabel="1" placeholder="e.g. Demo bird cage, broken bag"/>
                             </div>
                             <div class="o_avea_workspace_info_item" groups="base.group_multi_company">
                                 <span class="o_avea_workspace_info_label">Company</span>
@@ -52,7 +60,7 @@
                     </div>
 
                     <div class="o_avea_stock_panel o_avea_stock_panel--products">
-                        <h2 class="o_avea_workspace_section_title">Products to use</h2>
+                        <h2 class="o_avea_workspace_section_title">Products to scrap</h2>
                         <p class="o_avea_workspace_section_subtitle mb-3">
                             Add each product and quantity to remove from stock. Tracked items need a lot or serial number.
                         </p>
@@ -71,9 +79,17 @@
                     </div>
                     <div class="o_avea_stock_footer">
                         <button
+                            name="action_cancel_scrap"
+                            type="object"
+                            special="cancel"
+                            string="Cancel"
+                            class="btn-secondary"
+                            data-hotkey="x"
+                        />
+                        <button
                             name="action_use_stock"
                             type="object"
-                            string="Use Stock"
+                            string="Scrap Stock"
                             class="btn-primary"
                             data-hotkey="q"
                         />
@@ -84,7 +100,7 @@
     </record>
 
     <record id="action_avea_stock_internal_use" model="ir.actions.server">
-        <field name="name">Use Stock</field>
+        <field name="name">Scrap Stock</field>
         <field name="model_id" ref="model_avea_stock_internal_use"/>
         <field name="state">code</field>
         <field name="code">action = env['avea.stock.internal_use'].action_open_internal_use()</field>
