@@ -95,6 +95,10 @@ class AveaNavMixin(models.AbstractModel):
                         "menu_xmlid": "avea_till.menu_avea_stock_return",
                     },
                     {
+                        "label": "Use Stock",
+                        "menu_xmlid": "avea_till.menu_avea_stock_internal_use",
+                    },
+                    {
                         "label": "Receive history",
                         "menu_xmlid": "avea_till.menu_avea_stock_receive_history",
                     },
@@ -105,6 +109,10 @@ class AveaNavMixin(models.AbstractModel):
                     {
                         "label": "Stock take history",
                         "menu_xmlid": "avea_till.menu_avea_stock_take_history",
+                    },
+                    {
+                        "label": "Use stock history",
+                        "menu_xmlid": "avea_till.menu_avea_stock_internal_use_history",
                     },
                 ],
             },

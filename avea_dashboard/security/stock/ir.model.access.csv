@@ -10,3 +10,7 @@ access_avea_stock_take,access.avea.stock.take,model_avea_stock_take,,1,1,1,1
 access_avea_stock_take_line,access.avea.stock.take.line,model_avea_stock_take_line,,1,1,1,1
 access_avea_stock_receive_pricing_wizard,access.avea.stock.receive.pricing.wizard,model_avea_stock_receive_pricing_wizard,,1,1,1,1
 access_avea_stock_receive_pay_wizard,access.avea.stock.receive.pay.wizard,model_avea_stock_receive_pay_wizard,,1,1,1,1
+access_avea_stock_internal_use,access.avea.stock.internal_use,model_avea_stock_internal_use,,1,1,1,1
+access_avea_stock_internal_use_line,access.avea.stock.internal_use.line,model_avea_stock_internal_use_line,,1,1,1,1
+access_avea_stock_internal_use_history,access.avea.stock.internal_use.history,model_avea_stock_internal_use_history,,1,0,0,0
+access_avea_stock_internal_use_history_line,access.avea.stock.internal_use.history.line,model_avea_stock_internal_use_history_line,,1,0,0,0

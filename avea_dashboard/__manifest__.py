@@ -18,10 +18,10 @@ Features:
 - POS Cash Up
 - Correct payment method on open POS sessions
 - Stock Workspace (product catalogue, pricing, New Stock Item)
-- Receive Stock, Return Stock, and Stock Take
+- Receive Stock, Return Stock, Stock Take, and Use Stock (internal consumption)
 - Avea Promotions (wrapper over Odoo Discount & Loyalty), including Combo Price
 """,
-    "version": "19.0.3.14.100",
+    "version": "19.0.3.14.101",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -52,6 +52,7 @@ Features:
         "data/stock/product_label_print_config.xml",
         "data/stock/product_label_print_enable.xml",
         "data/stock/stock_take_sequence.xml",
+        "data/stock/internal_use_sequence.xml",
         "data/promotion/combo_discount_product_data.xml",
         "data/sales_platform/mr_d_platform_data.xml",
         "data/credit/sequence.xml",
@@ -108,6 +109,7 @@ Features:
         "views/stock/stock_receive_pricing_wizard_views.xml",
         "views/stock/stock_receive_pay_wizard_views.xml",
         "views/stock/stock_return_views.xml",
+        "views/stock/stock_internal_use_views.xml",
         "views/stock/stock_history_views.xml",
         "views/stock/stock_product_views.xml",
         "views/stock/stock_take_views.xml",

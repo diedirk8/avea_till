@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+    <record id="seq_avea_stock_internal_use" model="ir.sequence">
+        <field name="name">Avea Use Stock</field>
+        <field name="code">avea.stock.internal_use</field>
+        <field name="prefix">US/%(year)s/</field>
+        <field name="padding">4</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="scrap_reason_store_use" model="stock.scrap.reason.tag">
+        <field name="name">Store / internal use</field>
+        <field name="sequence">10</field>
+        <field name="color">#2563eb</field>
+    </record>
+    <record id="scrap_reason_demo" model="stock.scrap.reason.tag">
+        <field name="name">Demo / display</field>
+        <field name="sequence">20</field>
+        <field name="color">#7c3aed</field>
+    </record>
+    <record id="scrap_reason_sample" model="stock.scrap.reason.tag">
+        <field name="name">Sample / tasting</field>
+        <field name="sequence">30</field>
+        <field name="color">#059669</field>
+    </record>
+    <record id="scrap_reason_damaged" model="stock.scrap.reason.tag">
+        <field name="name">Damaged / spoiled</field>
+        <field name="sequence">40</field>
+        <field name="color">#dc2626</field>
+    </record>
+</odoo>

@@ -642,4 +642,139 @@
         <field name="target">main</field>
     </record>
 
+    <record id="view_avea_stock_internal_use_history_search" model="ir.ui.view">
+        <field name="name">avea.stock.internal_use.history.search</field>
+        <field name="model">avea.stock.internal_use.history</field>
+        <field name="arch" type="xml">
+            <search string="Use stock history">
+                <field name="name" string="Reference"/>
+                <field name="notes"/>
+                <field name="user_id" string="Recorded by"/>
+                <field name="location_id" string="Location"/>
+                <separator/>
+                <filter name="avea_stock_hist_last_7" string="Last 7 days" domain="[('use_date', '&gt;=', (context_today() - relativedelta(days=7)).strftime('%Y-%m-%d'))]"/>
+                <filter name="avea_stock_hist_last_30" string="Last 30 days" domain="[('use_date', '&gt;=', (context_today() - relativedelta(days=30)).strftime('%Y-%m-%d'))]"/>
+                <filter name="avea_stock_hist_last_90" string="Last 90 days" domain="[('use_date', '&gt;=', (context_today() - relativedelta(days=90)).strftime('%Y-%m-%d'))]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_stock_internal_use_history_list" model="ir.ui.view">
+        <field name="name">avea.stock.internal_use.history.list</field>
+        <field name="model">avea.stock.internal_use.history</field>
+        <field name="arch" type="xml">
+            <list
+                string="Use stock history"
+                create="false"
+                delete="false"
+                default_order="use_date desc"
+                class="o_avea_stock_history_list o_avea_stock_internal_use_history_list"
+                js_class="avea_stock_internal_use_history_list"
+            >
+                <field name="use_date" string="Date"/>
+                <field name="name" string="Reference"/>
+                <field name="product_count" string="Products"/>
+                <field name="quantity_total" string="Qty used"/>
+                <field name="location_id" string="Location" optional="show"/>
+                <field name="notes" string="Notes" optional="show"/>
+                <field name="user_id" string="By" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_stock_internal_use_history_form" model="ir.ui.view">
+        <field name="name">avea.stock.internal_use.history.form</field>
+        <field name="model">avea.stock.internal_use.history</field>
+        <field name="arch" type="xml">
+            <form
+                string="Use stock history"
+                create="false"
+                delete="false"
+                edit="false"
+                class="o_avea_workspace o_avea_workspace--stock"
+                js_class="avea_stock_history_form"
+            >
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="scrap_ids" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock</span>
+                            <h1 class="o_avea_workspace_title">Stock used</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                <field name="name" nolabel="1" readonly="1" class="oe_inline"/>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_panel">
+                        <h2 class="o_avea_workspace_section_title">Summary</h2>
+                        <div class="o_avea_workspace_info_grid o_avea_stock_side_grid">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Date</span>
+                                <field name="use_date" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Location</span>
+                                <field name="location_id" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Recorded by</span>
+                                <field name="user_id" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
+                                <span class="o_avea_workspace_info_label">Reason</span>
+                                <field name="reason_tag_ids" nolabel="1" readonly="1" widget="many2many_tags"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
+                                <span class="o_avea_workspace_info_label">Notes</span>
+                                <field name="notes" nolabel="1" readonly="1"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_panel o_avea_stock_panel--products">
+                        <h2 class="o_avea_workspace_section_title">Products used</h2>
+                        <div class="o_avea_stock_list_surface">
+                            <field name="line_ids" nolabel="1" readonly="1">
+                                <list create="false" delete="false" edit="false">
+                                    <field name="product_id"/>
+                                    <field name="lot_id" optional="show"/>
+                                    <field name="quantity"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_stock_footer">
+                        <button
+                            name="action_back_to_internal_use_history"
+                            type="object"
+                            string="Back to list"
+                            class="btn-secondary"
+                        />
+                        <button
+                            name="action_open_scrap_records"
+                            type="object"
+                            string="Odoo scrap records"
+                            class="btn-link"
+                            invisible="not scrap_ids"
+                        />
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_stock_internal_use_history" model="ir.actions.act_window">
+        <field name="name">Use stock history</field>
+        <field name="res_model">avea.stock.internal_use.history</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_stock_internal_use_history_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_stock_internal_use_history_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_stock_internal_use_history_form')})]"/>
+        <field name="context">{'create': False, 'clear_breadcrumbs': True, 'avea_stock_history_readonly': True}</field>
+        <field name="target">main</field>
+    </record>
+
 </odoo>

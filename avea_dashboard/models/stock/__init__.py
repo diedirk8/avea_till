@@ -6,6 +6,7 @@ from . import stock_receive_pricing_wizard
 from . import stock_receive_pay_wizard
 from . import stock_return
 from . import stock_return_history
+from . import stock_internal_use
 from . import purchase_order_line
 from . import product_template
 from . import product_product
