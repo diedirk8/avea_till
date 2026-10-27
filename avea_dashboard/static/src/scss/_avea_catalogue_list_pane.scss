@@ -1,0 +1,83 @@
+// Customer + Stock catalogue lists: keep filters/header fixed in the pane and scroll
+// only the table region so horizontal scrollbars are visible without scrolling the page.
+
+body.o_avea_product_shell {
+    .o_action_manager.o_avea_customer_list_action_manager,
+    .o_action_manager.o_avea_stock_catalogue_action_manager {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - var(--avea-topbar-height, 3.25rem));
+        max-height: calc(100vh - var(--avea-topbar-height, 3.25rem));
+        overflow: hidden !important;
+        overscroll-behavior: contain;
+
+        > .o_action,
+        .o_action {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .o_view_controller {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
+        }
+    }
+}
+
+.o_list_view.o_avea_workspace--customer-list,
+.o_list_view.o_avea_workspace--stock-catalogue-list {
+    flex: 1 1 auto;
+    max-height: 100%;
+    min-height: 0;
+    overflow: hidden;
+
+    .o_avea_customer_list_shell,
+    .o_avea_stock_catalogue_shell {
+        flex-shrink: 0;
+    }
+
+    > .o_content,
+    .o_content {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+
+        .o_list_renderer {
+            flex: 1 1 auto;
+            max-height: none !important;
+            min-height: 0;
+            overflow: auto !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-gutter: stable;
+
+            &::-webkit-scrollbar {
+                display: block;
+                height: 12px;
+                width: 12px;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: rgba(73, 80, 87, 0.45);
+                border-radius: 999px;
+            }
+        }
+
+        .o_avea_customer_list_footer,
+        .o_avea_stock_catalogue_footer {
+            flex-shrink: 0;
+        }
+    }
+
+    > .o_avea_customer_list_footer,
+    > .o_avea_stock_catalogue_footer {
+        flex-shrink: 0;
+    }
+}
