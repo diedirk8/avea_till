@@ -1083,16 +1083,39 @@
 // Stock catalogue (product list)
 // =============================================================================
 
+.o_action_manager.o_avea_stock_catalogue_action_manager {
+    -ms-overflow-style: auto !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: auto !important;
+
+    &::-webkit-scrollbar {
+        display: block !important;
+        height: 12px;
+        width: 12px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background: rgba(73, 80, 87, 0.45);
+        border-radius: 999px;
+    }
+}
+
 .o_avea_workspace--stock-catalogue {
     background-color: var(--o-webclient-background-color, #f8f9fa);
     min-width: 0;
+    overflow-x: visible;
 
     .o_avea_workspace_sheet,
     .o_avea_stock_catalogue_sheet {
-        margin: 0 auto;
-        max-width: 1680px;
+        box-sizing: border-box;
+        margin: 0;
+        max-width: none;
         min-width: 0;
-        padding: 1rem 1.5rem 0.75rem;
+        padding: 1rem 1rem 0.75rem;
         width: 100%;
     }
 
@@ -1164,10 +1187,11 @@
         background: transparent;
         border: none;
         box-shadow: none;
-        margin: 0 auto;
-        max-width: 1680px;
+        box-sizing: border-box;
+        margin: 0;
+        max-width: none;
         min-width: 0;
-        padding: 0.35rem 1.5rem 0.85rem;
+        padding: 0.35rem 1rem 0.85rem;
         width: 100%;
 
         .o_control_panel_main {
@@ -1200,21 +1224,35 @@
         border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
         border-radius: var(--border-radius-lg, 0.5rem);
         box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
-        margin: 0 auto 1.5rem;
-        max-width: 1680px;
+        box-sizing: border-box;
+        margin: 0 1rem 1.5rem;
+        max-width: none;
         min-width: 0;
         padding: 0 !important;
-        width: calc(100% - 3rem);
+        width: auto;
 
         .o_list_renderer {
             border: none;
             border-radius: 0;
             box-shadow: none;
             margin: 0;
-            max-width: 100%;
+            max-height: calc(100vh - 17.5rem);
+            max-width: none;
             min-width: 0;
-            overflow-x: auto;
+            overflow: auto;
             -webkit-overflow-scrolling: touch;
+            scrollbar-gutter: stable;
+
+            &::-webkit-scrollbar {
+                display: block;
+                height: 12px;
+                width: 12px;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: rgba(73, 80, 87, 0.45);
+                border-radius: 999px;
+            }
         }
     }
 }
@@ -1224,7 +1262,9 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 0.75rem 1.25rem;
-    margin: 0 0 0.75rem;
+    box-sizing: border-box;
+    margin: 0 1rem 0.75rem;
+    width: auto;
     padding: 0.65rem 1rem;
     border-radius: 0.5rem;
     background: rgba(var(--avea-brand-rgb, 37, 99, 235), 0.08);
@@ -1245,14 +1285,36 @@
 .o_avea_stock_catalogue_list {
     .o_list_table {
         @include avea-compact-table-base;
+        min-width: 76rem;
+        width: max-content;
+
+        th,
+        td {
+            max-width: 16rem;
+        }
 
         th[data-name="name"],
-        td[name="name"],
+        td[name="name"] {
+            min-width: 10rem;
+            max-width: 18rem;
+        }
+
         th[data-name="categ_id"],
         td[name="categ_id"],
         th[data-name="avea_supplier_id"],
         td[name="avea_supplier_id"] {
+            min-width: 7rem;
             max-width: 14rem;
+        }
+
+        th[data-name="avea_stock_status"],
+        td[name="avea_stock_status"],
+        th[data-name="default_code"],
+        td[name="default_code"],
+        th[data-name="barcode"],
+        td[name="barcode"] {
+            max-width: none;
+            white-space: nowrap;
         }
 
         td[name="name"] .o_field_widget input {
@@ -1287,7 +1349,14 @@
         }
 
         > .o_content {
-            width: calc(100% - 1.5rem);
+            margin-left: 0.75rem;
+            margin-right: 0.75rem;
+            width: auto;
+        }
+
+        .o_avea_stock_catalogue_selection_bar {
+            margin-left: 0.75rem;
+            margin-right: 0.75rem;
         }
     }
 }

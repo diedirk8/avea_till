@@ -7,7 +7,9 @@ import { registry } from "@web/core/registry";
 import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
 import { debounce } from "@web/core/utils/timing";
-import { useState, onMounted } from "@odoo/owl";
+import { useState, onMounted, onWillUnmount } from "@odoo/owl";
+
+const ACTION_MANAGER_SCROLL_CLASS = "o_avea_stock_catalogue_action_manager";
 
 const BASE_DOMAIN = [
     ["sale_ok", "=", true],
@@ -79,7 +81,23 @@ export class AveaStockCatalogueController extends ListController {
             categories: [],
         });
         this._applyFiltersDebounced = debounce(() => this.applyFilters(), 300);
-        onMounted(() => this._onFiltersMounted());
+        onMounted(() => {
+            this._setupScrollShell();
+            this._onFiltersMounted();
+        });
+        onWillUnmount(() => this._teardownScrollShell());
+    }
+
+    _actionManagerEl() {
+        return document.querySelector(".o_action_manager");
+    }
+
+    _setupScrollShell() {
+        this._actionManagerEl()?.classList.add(ACTION_MANAGER_SCROLL_CLASS);
+    }
+
+    _teardownScrollShell() {
+        this._actionManagerEl()?.classList.remove(ACTION_MANAGER_SCROLL_CLASS);
     }
 
     get className() {
