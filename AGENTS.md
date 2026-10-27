@@ -14,6 +14,8 @@ Whenever you change anything under `avea_dashboard/` (Python, XML, JS, SCSS, mig
 
 3. Report the git commit, manifest version, and `ir_module_module.latest_version` from the script output for each environment.
 
+**Layout / CSS:** Odoo recompiles `web.assets_web` differently on prod vs dev when you run `-u avea_till`. The dev upgrade script always runs `avea_sync_prod_assets_from_dev.sh` so prod keeps dev’s compiled CSS. If catalogue lists show a grey gutter, run `bash scripts/avea_sync_prod_assets_from_dev.sh` and hard-refresh.
+
 ### Rules
 
 - **DEV only** by default: database `petsempire_dev`, container `odoo-dev`, code at `/opt/odoo/dev/avea_till`.

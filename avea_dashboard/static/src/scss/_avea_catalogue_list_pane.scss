@@ -7,6 +7,31 @@
 $o_avea_catalogue_list_views: ".o_list_view.o_avea_workspace--customer-list, .o_list_view.o_avea_customer_list, .o_list_view.o_avea_workspace--stock-catalogue-list, .o_list_view.o_avea_stock_catalogue_list";
 
 body.o_avea_product_shell {
+    // Apply even before JS adds the scroll-shell class (e.g. right after asset reload).
+    .o_action_manager:has(.o_avea_customer_list),
+    .o_action_manager:has(.o_avea_stock_catalogue_list),
+    .o_action_manager:has(.o_avea_workspace--customer-list),
+    .o_action_manager:has(.o_avea_workspace--stock-catalogue-list),
+    .o_action_manager.o_avea_customer_list_action_manager,
+    .o_action_manager.o_avea_stock_catalogue_action_manager {
+        padding: 0 !important;
+
+        > .o_action,
+        .o_action {
+            margin: 0 !important;
+            max-width: none !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        .o_action > .o_content {
+            margin: 0 !important;
+            max-width: none !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+    }
+
     .o_action_manager {
         #{$o_avea_catalogue_list_views} {
             box-sizing: border-box;
@@ -22,8 +47,7 @@ body.o_avea_product_shell {
                 margin-left: 0 !important;
                 margin-right: 0 !important;
                 max-width: none !important;
-                padding-left: 0 !important;
-                padding-right: 0 !important;
+                padding: 0 !important;
                 width: 100% !important;
             }
         }
@@ -36,10 +60,11 @@ body.o_avea_product_shell {
         height: calc(100vh - var(--avea-topbar-height, 3.25rem));
         max-height: calc(100vh - var(--avea-topbar-height, 3.25rem));
         margin-right: 0;
+        max-width: none;
         overflow: hidden !important;
         overscroll-behavior: contain;
         padding: 0 !important;
-        width: auto;
+        width: 100%;
 
         > .o_action,
         .o_action {
@@ -79,6 +104,7 @@ body.o_avea_product_shell {
     overflow-x: visible !important;
     --ListRenderer-table-padding-x: #{$table-cell-padding-x-sm};
 
+    background: #fff !important;
     box-sizing: border-box;
     display: flex;
     flex: 1 1 auto;

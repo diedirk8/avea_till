@@ -112,7 +112,7 @@
         }
     }
 
-    background-color: var(--o-webclient-background-color, #f4f5f7);
+    background-color: #fff;
     display: flex;
     flex-direction: column;
     min-height: min(100%, 100%);
@@ -143,8 +143,9 @@
 
     .o_avea_customer_list_sheet {
         background: #fff;
-        border: 1px solid var(--o-gray-300, #dee2e6);
-        border-radius: 0.75rem 0.75rem 0 0;
+        border: none;
+        border-bottom: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0;
         overflow: hidden;
         padding: 0;
     }
