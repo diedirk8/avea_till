@@ -636,6 +636,63 @@ class ProductTemplate(models.Model):
     def action_avea_open_stock_count(self):
         return self.env["avea.stock.take"].action_open_stock_take()
 
+    def action_avea_bulk_archive(self):
+        archived = self.filtered("active")
+        if not archived:
+            raise UserError(_("None of the selected products are active."))
+        archived.write({"active": False})
+        return True
+
+    def action_avea_bulk_unarchive(self):
+        records = self.filtered(lambda t: not t.active)
+        if not records:
+            raise UserError(_("None of the selected products are archived."))
+        records.write({"active": True})
+        return True
+
+    def action_avea_bulk_delete(self):
+        if not self:
+            raise UserError(_("Select at least one product."))
+        names = ", ".join(self.mapped("display_name")[:5])
+        if len(self) > 5:
+            names += _("…")
+        self.unlink()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Products deleted"),
+                "message": names,
+                "type": "success",
+                "sticky": False,
+            },
+        }
+
+    def action_avea_bulk_enable_pos(self):
+        self.write({"available_in_pos": True})
+        return True
+
+    def action_avea_bulk_disable_pos(self):
+        self.write({"available_in_pos": False})
+        return True
+
+    def action_avea_open_merge_wizard(self):
+        if len(self) < 2:
+            raise UserError(_("Select at least two products to merge."))
+        view = self.env.ref("avea_till.view_avea_stock_product_merge_form")
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Merge products"),
+            "res_model": "avea.stock.product.merge",
+            "view_mode": "form",
+            "views": [(view.id, "form")],
+            "target": "new",
+            "context": {
+                "default_product_tmpl_ids": [(6, 0, self.ids)],
+                "default_dst_product_tmpl_id": self.ids[0],
+            },
+        }
+
     @api.model
     def action_avea_new_stock_item(self):
         quick = bool(

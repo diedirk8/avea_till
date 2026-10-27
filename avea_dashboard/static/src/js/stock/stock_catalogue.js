@@ -96,9 +96,21 @@ export class AveaStockCatalogueController extends ListController {
             ...display,
             controlPanel: {
                 ...display.controlPanel,
-                layoutActions: false,
+                // Show Odoo's selection bar (Actions, Export, Archive, …) when rows are selected.
+                layoutActions: this.hasSelectedRecords,
             },
         };
+    }
+
+    get selectedCount() {
+        if (this.isDomainSelected) {
+            return this.model.root.count;
+        }
+        return this.model.root.selection.length;
+    }
+
+    discardCatalogueSelection() {
+        this.discardSelection();
     }
 
     get stockStatusOptions() {

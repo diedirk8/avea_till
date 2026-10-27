@@ -1219,6 +1219,29 @@
     }
 }
 
+.o_avea_stock_catalogue_selection_bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.25rem;
+    margin: 0 0 0.75rem;
+    padding: 0.65rem 1rem;
+    border-radius: 0.5rem;
+    background: rgba(var(--avea-brand-rgb, 37, 99, 235), 0.08);
+    border: 1px solid rgba(var(--avea-brand-rgb, 37, 99, 235), 0.2);
+
+    .o_avea_stock_catalogue_selection_count {
+        font-weight: 600;
+        color: var(--avea-text, #1e293b);
+    }
+
+    .o_avea_stock_catalogue_selection_hint {
+        flex: 1 1 12rem;
+        font-size: 0.875rem;
+        color: var(--avea-text-muted, #64748b);
+    }
+}
+
 .o_avea_stock_catalogue_list {
     .o_list_table {
         @include avea-compact-table-base;

@@ -115,6 +115,32 @@
                 </div>
             </div>
         </xpath>
+        <xpath expr="//Layout" position="before">
+            <div
+                t-if="hasSelectedRecords"
+                class="o_avea_stock_catalogue_selection_bar"
+                role="status"
+            >
+                <span class="o_avea_stock_catalogue_selection_count">
+                    <t t-if="isDomainSelected">
+                        <t t-esc="selectedCount"/> products selected (all matching filters)
+                    </t>
+                    <t t-else="">
+                        <t t-esc="selectedCount"/> selected
+                    </t>
+                </span>
+                <span class="o_avea_stock_catalogue_selection_hint">
+                    Use the buttons above the list or the Actions menu to archive, merge, print labels, and more.
+                </span>
+                <button
+                    type="button"
+                    class="btn btn-link btn-sm o_avea_stock_catalogue_selection_clear"
+                    t-on-click="() => this.discardCatalogueSelection()"
+                >
+                    Clear selection
+                </button>
+            </div>
+        </xpath>
         <xpath expr="//button[hasclass('o_list_button_add')]" position="replace">
             <button
                 t-if="!editedRecord and activeActions.create and props.showButtons"

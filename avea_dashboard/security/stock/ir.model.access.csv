@@ -14,3 +14,4 @@ access_avea_stock_internal_use,access.avea.stock.internal_use,model_avea_stock_i
 access_avea_stock_internal_use_line,access.avea.stock.internal_use.line,model_avea_stock_internal_use_line,,1,1,1,1
 access_avea_stock_internal_use_history,access.avea.stock.internal_use.history,model_avea_stock_internal_use_history,,1,0,0,0
 access_avea_stock_internal_use_history_line,access.avea.stock.internal_use.history.line,model_avea_stock_internal_use_history_line,,1,0,0,0
+access_avea_stock_product_merge,access.avea.stock.product.merge,model_avea_stock_product_merge,,1,1,1,1

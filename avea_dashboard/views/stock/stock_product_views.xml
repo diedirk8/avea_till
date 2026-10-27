@@ -47,8 +47,8 @@
                 multi_edit="1"
                 js_class="avea_stock_catalogue_list"
                 create="1"
-                delete="0"
-                duplicate="0"
+                delete="1"
+                duplicate="1"
             >
                 <header>
                     <button
@@ -64,6 +64,56 @@
                         string="Stock Take"
                         class="btn-secondary"
                         display="always"
+                    />
+                    <button
+                        name="action_avea_bulk_archive"
+                        type="object"
+                        string="Archive"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_bulk_unarchive"
+                        type="object"
+                        string="Restore"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_open_merge_wizard"
+                        type="object"
+                        string="Merge"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_open_label_layout"
+                        type="object"
+                        string="Print labels"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_bulk_enable_pos"
+                        type="object"
+                        string="Sell on POS"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_bulk_disable_pos"
+                        type="object"
+                        string="Remove from POS"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_bulk_delete"
+                        type="object"
+                        string="Delete"
+                        class="btn-danger"
+                        display="selected"
+                        confirm="Permanently delete the selected products? This cannot be undone."
                     />
                 </header>
                 <field name="currency_id" column_invisible="True"/>
