@@ -1287,7 +1287,9 @@
         th[data-name="default_code"],
         td[name="default_code"],
         th[data-name="barcode"],
-        td[name="barcode"] {
+        td[name="barcode"],
+        th[data-name="avea_barcode_sort"],
+        td[name="avea_barcode_sort"] {
             max-width: none;
             white-space: nowrap;
         }

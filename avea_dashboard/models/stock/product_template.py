@@ -101,6 +101,16 @@ class ProductTemplate(models.Model):
         inverse="_inverse_avea_supplier_uom_id",
     )
 
+    # Stored mirror of variant barcode so the stock catalogue list can sort (core
+    # product.template.barcode is computed-only and not orderable in list views).
+    avea_barcode_sort = fields.Char(
+        string="Barcode",
+        compute="_compute_avea_barcode_sort",
+        inverse="_inverse_avea_barcode_sort",
+        store=True,
+        index=True,
+    )
+
     # ---- Review summary (form right panel) ----
     avea_summary_name = fields.Char(compute="_compute_avea_summary")
     avea_summary_sku = fields.Char(compute="_compute_avea_summary")
@@ -533,6 +543,15 @@ class ProductTemplate(models.Model):
 
     def _search_avea_supplier_id(self, operator, value):
         return [("seller_ids.partner_id", operator, value)]
+
+    @api.depends("product_variant_ids.barcode")
+    def _compute_avea_barcode_sort(self):
+        for template in self:
+            template.avea_barcode_sort = template.barcode or False
+
+    def _inverse_avea_barcode_sort(self):
+        for template in self:
+            template.barcode = template.avea_barcode_sort or False
 
     # -------------------------------------------------------------------------
     # Summary panel

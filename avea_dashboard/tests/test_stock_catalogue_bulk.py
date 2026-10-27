@@ -23,3 +23,24 @@ class TestAveaStockCatalogueBulk(TransactionCase):
         )
         with self.assertRaises(Exception):
             one.action_avea_open_merge_wizard()
+
+    def test_barcode_sort_field_orders_blank_first(self):
+        with_barcode = self.env["product.template"].create(
+            {
+                "name": "With barcode",
+                "sale_ok": True,
+                "is_storable": True,
+                "barcode": "6009709470001",
+            }
+        )
+        without_barcode = self.env["product.template"].create(
+            {"name": "Without barcode", "sale_ok": True, "is_storable": True}
+        )
+        self.assertEqual(with_barcode.avea_barcode_sort, "6009709470001")
+        self.assertFalse(without_barcode.avea_barcode_sort)
+        ordered = self.env["product.template"].search(
+            [("id", "in", [with_barcode.id, without_barcode.id])],
+            order="avea_barcode_sort asc",
+        )
+        self.assertEqual(ordered[0], without_barcode)
+        self.assertEqual(ordered[1], with_barcode)

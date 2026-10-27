@@ -128,7 +128,7 @@
                 />
                 <field name="name" string="Product"/>
                 <field name="default_code" string="SKU" optional="show"/>
-                <field name="barcode" string="Barcode" optional="show"/>
+                <field name="avea_barcode_sort" string="Barcode" optional="show"/>
                 <field name="categ_id" string="Category" optional="show" options="{'no_create': True}"/>
                 <field name="avea_supplier_id" string="Supplier" optional="show" options="{'no_create': True, 'no_open': True}"/>
                 <field name="avea_stock_qty" string="Current Stock" sum="Total"/>

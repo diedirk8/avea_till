@@ -32,6 +32,8 @@ const ARRANGE_OPTIONS = [
     { value: "name_desc", label: "Product Z–A" },
     { value: "stock_asc", label: "Stock Low–High" },
     { value: "stock_desc", label: "Stock High–Low" },
+    { value: "barcode_asc", label: "Barcode A–Z (blank first)" },
+    { value: "barcode_desc", label: "Barcode Z–A" },
 ];
 
 const ORDER_BY_MAP = {
@@ -41,6 +43,8 @@ const ORDER_BY_MAP = {
     name_desc: [{ name: "name", asc: false }],
     stock_asc: [{ name: "avea_stock_qty", asc: true }],
     stock_desc: [{ name: "avea_stock_qty", asc: false }],
+    barcode_asc: [{ name: "avea_barcode_sort", asc: true }],
+    barcode_desc: [{ name: "avea_barcode_sort", asc: false }],
 };
 
 /**
