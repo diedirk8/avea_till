@@ -194,3 +194,31 @@ body.o_avea_product_shell {
         border-right: none;
     }
 }
+
+// Catalogue lists carry o_avea_workspace for brand chrome but must not inherit the
+// centred 1680px sheet layout from generic workspace forms.
+body.o_avea_product_shell .o_action_manager #{$o_avea_catalogue_list_views} {
+    &.o_avea_workspace {
+        background: #fff !important;
+        max-width: none !important;
+        overflow-x: visible !important;
+
+        .o_avea_workspace_sheet {
+            margin: 0 !important;
+            max-width: none !important;
+            overflow-x: visible !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+    }
+
+    .o_view_controller,
+    .o_content,
+    .o_list_renderer.o_list_renderer {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        max-width: none !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+}

@@ -16,14 +16,19 @@
 
 body.o_avea_product_shell {
     .o_action_manager {
+        box-sizing: border-box;
         margin-left: var(--avea-sidebar-width);
         margin-top: var(--avea-topbar-height);
+        max-width: calc(100vw - var(--avea-sidebar-width));
         min-height: calc(100vh - var(--avea-topbar-height));
-        transition: margin-left 0.2s ease;
+        transition: margin-left 0.2s ease, max-width 0.2s ease;
+        width: calc(100vw - var(--avea-sidebar-width));
     }
 
     &.o_avea_sidebar_collapsed .o_action_manager {
         margin-left: var(--avea-sidebar-collapsed-width);
+        max-width: calc(100vw - var(--avea-sidebar-collapsed-width));
+        width: calc(100vw - var(--avea-sidebar-collapsed-width));
     }
 }
 

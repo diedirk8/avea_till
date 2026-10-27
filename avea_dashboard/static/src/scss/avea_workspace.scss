@@ -2,7 +2,7 @@
 // Brand mixins: _avea_brand_chrome.scss (loaded earlier in web.assets_backend).
 
 .o_form_view.o_avea_workspace,
-.o_list_view.o_avea_workspace {
+.o_list_view.o_avea_workspace:not(.o_avea_workspace--customer-list):not(.o_avea_customer_list):not(.o_avea_workspace--stock-catalogue-list):not(.o_avea_stock_catalogue_list) {
     @include avea-brand-chrome;
 }
 
@@ -24,7 +24,7 @@
     }
 }
 
-.o_avea_workspace {
+.o_avea_workspace:not(.o_avea_workspace--customer-list):not(.o_avea_customer_list):not(.o_avea_workspace--stock-catalogue-list):not(.o_avea_stock_catalogue_list) {
     @include avea-brand-chrome;
 
     --avea-info: #01666b;
