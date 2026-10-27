@@ -4,7 +4,6 @@
     --avea-brand-hover: #a84d1f;
     --avea-brand-soft: rgba(196, 92, 38, 0.12);
     --avea-brand-border: rgba(196, 92, 38, 0.35);
-    --avea-customer-shell-width: min(1680px, calc(100vw - 3rem));
 }
 
 .o_action_manager.o_avea_customer_list_action_manager {
@@ -34,8 +33,9 @@
     }
 
     .o_list_table {
+        min-width: 72rem;
         table-layout: auto;
-        width: 100%;
+        width: max-content;
 
         tbody td {
             vertical-align: top;
@@ -137,30 +137,36 @@
     flex-direction: column;
     min-height: min(100%, 100%);
     min-width: 0;
-    padding: 1.25rem 1.5rem 2rem;
+    overflow-x: visible;
+    padding: 1rem 1rem 1.5rem;
+    width: 100%;
 
     > .o_control_panel {
         display: none !important;
     }
 
     .o_avea_customer_list_shell {
-        margin: 0 auto;
-        max-width: var(--avea-customer-shell-width);
+        margin: 0;
+        max-width: none;
+        min-width: 0;
         width: 100%;
     }
 
     .o_avea_customer_list_hero {
-        background: #fff;
-        border: 1px solid var(--o-gray-300, #dee2e6);
-        border-bottom: none;
-        border-radius: 0.75rem 0.75rem 0 0;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--o-gray-200, #e9ecef);
+        border-radius: 0;
         margin: 0;
-        padding: 1.25rem 1.35rem 1rem;
+        padding: 1.15rem 1.25rem 1rem;
     }
 
     .o_avea_customer_list_sheet {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
         border-radius: 0.75rem 0.75rem 0 0;
         overflow: hidden;
+        padding: 0;
     }
 
     .o_avea_workspace_eyebrow {
@@ -184,15 +190,14 @@
     }
 
     .o_avea_customer_list_filters {
-        background: #fff;
-        border: 1px solid var(--o-gray-300, #dee2e6);
-        border-radius: 0 0 0.75rem 0.75rem;
-        border-top: none;
+        background: transparent;
+        border: none;
+        border-radius: 0;
         display: grid;
         gap: 0.65rem 0.75rem;
         grid-template-columns: minmax(0, 2fr) minmax(12rem, 1fr);
         margin-top: 0;
-        padding: 1rem 1.35rem 1.1rem;
+        padding: 1rem 1.25rem 1.1rem;
 
         .o_avea_workspace_info_item {
             min-width: 0;
@@ -249,8 +254,8 @@
         display: flex;
         flex-wrap: wrap;
         gap: 0.5rem 0.75rem;
-        margin-top: 0.75rem;
-        padding-top: 0.75rem;
+        margin-top: 0;
+        padding: 0.75rem 1.25rem;
     }
 
     .o_avea_customer_selection_count {
@@ -276,10 +281,12 @@
     > .o_content {
         background: #fff;
         border: 1px solid var(--o-gray-300, #dee2e6);
-        border-radius: 0.75rem;
+        border-radius: 0 0 0.75rem 0.75rem;
+        border-top: none;
+        box-sizing: border-box;
         flex: 0 0 auto;
-        margin: 1rem auto 0;
-        max-width: var(--avea-customer-shell-width);
+        margin: 0;
+        max-width: none;
         min-width: 0;
         overflow-x: auto;
         overflow-y: visible;
@@ -290,16 +297,29 @@
             border: none;
             box-shadow: none;
             margin: 0;
-            max-width: 100%;
+            max-height: calc(100vh - 20rem);
+            max-width: none;
             min-width: 0;
-            overflow: visible;
+            overflow: auto;
             -webkit-overflow-scrolling: touch;
+            scrollbar-gutter: stable;
+
+            &::-webkit-scrollbar {
+                display: block;
+                height: 12px;
+                width: 12px;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: rgba(73, 80, 87, 0.45);
+                border-radius: 999px;
+            }
         }
     }
 
     .o_avea_customer_list_footer {
-        margin: 0 auto;
-        max-width: var(--avea-customer-shell-width);
+        margin: 0;
+        max-width: none;
         width: 100%;
     }
 

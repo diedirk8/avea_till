@@ -1,8 +1,10 @@
 /** @odoo-module **/
 
 import { FormController } from "@web/views/form/form_controller";
+import { Pager } from "@web/core/pager/pager";
 import { ListController } from "@web/views/list/list_controller";
 import { listView } from "@web/views/list/list_view";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { registry } from "@web/core/registry";
 import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
@@ -63,10 +65,13 @@ patch(FormController.prototype, {
 
 export class AveaStockCatalogueController extends ListController {
     static template = "avea_till.StockCatalogueList";
+    static components = { ...ListController.components, Pager };
 
     setup() {
         super.setup();
         this.orm = useService("orm");
+        this.actionService = useService("action");
+        this.dialog = useService("dialog");
         this.filterState = useState({
             productName: "",
             sku: "",
@@ -102,7 +107,7 @@ export class AveaStockCatalogueController extends ListController {
 
     get className() {
         const base = this.props.className || "";
-        return `${base} o_avea_workspace o_avea_workspace--stock-catalogue`.trim();
+        return `${base} o_avea_workspace o_avea_workspace--stock o_avea_workspace--stock-catalogue o_avea_workspace--stock-catalogue-list`.trim();
     }
 
     get display() {
@@ -129,6 +134,82 @@ export class AveaStockCatalogueController extends ListController {
 
     discardCatalogueSelection() {
         this.discardSelection();
+    }
+
+    async _selectedTemplateIds() {
+        return await this.model.root.getResIds(true);
+    }
+
+    async _callBulk(method) {
+        const ids = await this._selectedTemplateIds();
+        if (!ids.length) {
+            return;
+        }
+        const result = await this.orm.call("product.template", method, [ids]);
+        await this.model.load();
+        this.discardCatalogueSelection();
+        if (result && typeof result === "object" && result.type === "ir.actions.act_window") {
+            await this.actionService.doAction(result);
+        }
+    }
+
+    async onBulkArchive() {
+        await this._callBulk("action_avea_bulk_archive");
+    }
+
+    async onBulkRestore() {
+        await this._callBulk("action_avea_bulk_unarchive");
+    }
+
+    async onBulkEnablePos() {
+        await this._callBulk("action_avea_bulk_enable_pos");
+    }
+
+    async onBulkDisablePos() {
+        await this._callBulk("action_avea_bulk_disable_pos");
+    }
+
+    async onBulkMerge() {
+        const ids = await this._selectedTemplateIds();
+        if (ids.length < 2) {
+            return;
+        }
+        const action = await this.orm.call(
+            "product.template",
+            "action_avea_open_merge_wizard",
+            [ids]
+        );
+        await this.actionService.doAction(action);
+    }
+
+    async onBulkPrintLabels() {
+        const ids = await this._selectedTemplateIds();
+        if (!ids.length) {
+            return;
+        }
+        const action = await this.orm.call(
+            "product.template",
+            "action_open_label_layout",
+            [ids]
+        );
+        await this.actionService.doAction(action);
+    }
+
+    async onBulkDelete() {
+        const ids = await this._selectedTemplateIds();
+        if (!ids.length) {
+            return;
+        }
+        this.dialog.add(ConfirmationDialog, {
+            title: "Delete products",
+            body: `Permanently delete ${ids.length} selected product(s)? This cannot be undone.`,
+            confirm: async () => {
+                await this.orm.call("product.template", "action_avea_bulk_delete", [ids]);
+                await this.model.load();
+                this.discardCatalogueSelection();
+            },
+            cancel: () => {},
+        });
     }
 
     get stockStatusOptions() {

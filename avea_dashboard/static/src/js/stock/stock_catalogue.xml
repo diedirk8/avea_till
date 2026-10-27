@@ -3,155 +3,180 @@
 
     <t t-name="avea_till.StockCatalogueList" t-inherit="web.ListView" t-inherit-mode="primary">
         <xpath expr="//Layout" position="before">
-            <div class="o_avea_workspace_sheet o_avea_stock_catalogue_sheet">
-                <div class="o_avea_stock_catalogue_header">
-                    <h1 class="o_avea_stock_catalogue_title">Stock</h1>
-                    <p class="o_avea_stock_catalogue_lead">
-                        See what you sell, what it costs, what you make, and what is on the shelf.
-                    </p>
-                </div>
-                <div class="o_avea_stock_catalogue_filters">
-                    <div class="o_avea_workspace_info_item">
-                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_name">
-                            Search Product Name
-                        </label>
-                        <input
-                            id="avea_stock_filter_name"
-                            type="search"
-                            class="o_avea_stock_filter_input form-control"
-                            placeholder="Product name"
-                            t-att-value="filterState.productName"
-                            t-on-input="(ev) => this.onFilterInputChange('productName', ev)"
-                        />
+            <div class="o_avea_stock_catalogue_shell">
+                <div class="o_avea_workspace_sheet o_avea_stock_catalogue_sheet">
+                    <div class="o_avea_stock_catalogue_hero">
+                        <div class="o_avea_stock_catalogue_header">
+                            <h1 class="o_avea_stock_catalogue_title">Stock</h1>
+                            <p class="o_avea_stock_catalogue_lead">
+                                See what you sell, what it costs, what you make, and what is on the shelf.
+                            </p>
+                        </div>
+                        <div class="o_avea_stock_catalogue_actions">
+                            <button
+                                type="button"
+                                class="btn btn-primary"
+                                t-on-click="onClickCreate"
+                            >
+                                + New Stock Item
+                            </button>
+                        </div>
                     </div>
-                    <div class="o_avea_workspace_info_item">
-                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_sku">
-                            SKU / Reference
-                        </label>
-                        <input
-                            id="avea_stock_filter_sku"
-                            type="search"
-                            class="o_avea_stock_filter_input form-control"
-                            placeholder="SKU or reference"
-                            t-att-value="filterState.sku"
-                            t-on-input="(ev) => this.onFilterInputChange('sku', ev)"
-                        />
+                    <div class="o_avea_stock_catalogue_filters">
+                        <div class="o_avea_workspace_info_item">
+                            <label class="o_avea_workspace_info_label" for="avea_stock_filter_name">
+                                Search Product Name
+                            </label>
+                            <input
+                                id="avea_stock_filter_name"
+                                type="search"
+                                class="o_avea_stock_filter_input form-control"
+                                placeholder="Product name"
+                                t-att-value="filterState.productName"
+                                t-on-input="(ev) => this.onFilterInputChange('productName', ev)"
+                            />
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <label class="o_avea_workspace_info_label" for="avea_stock_filter_sku">
+                                SKU / Reference
+                            </label>
+                            <input
+                                id="avea_stock_filter_sku"
+                                type="search"
+                                class="o_avea_stock_filter_input form-control"
+                                placeholder="SKU or reference"
+                                t-att-value="filterState.sku"
+                                t-on-input="(ev) => this.onFilterInputChange('sku', ev)"
+                            />
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <label class="o_avea_workspace_info_label" for="avea_stock_filter_barcode">
+                                Barcode
+                            </label>
+                            <input
+                                id="avea_stock_filter_barcode"
+                                type="search"
+                                class="o_avea_stock_filter_input form-control"
+                                placeholder="Barcode"
+                                t-att-value="filterState.barcode"
+                                t-on-input="(ev) => this.onFilterInputChange('barcode', ev)"
+                            />
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <label class="o_avea_workspace_info_label" for="avea_stock_filter_supplier">
+                                Supplier
+                            </label>
+                            <select
+                                id="avea_stock_filter_supplier"
+                                class="o_avea_stock_filter_select form-select"
+                                t-att-value="filterState.supplierId"
+                                t-on-change="(ev) => this.onFilterSelectChange('supplierId', ev)"
+                            >
+                                <option value="">All suppliers</option>
+                                <t t-foreach="filterOptions.suppliers" t-as="supplier" t-key="supplier.id">
+                                    <option t-att-value="supplier.id" t-esc="supplier.display_name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <label class="o_avea_workspace_info_label" for="avea_stock_filter_category">
+                                Category
+                            </label>
+                            <select
+                                id="avea_stock_filter_category"
+                                class="o_avea_stock_filter_select form-select"
+                                t-att-value="filterState.categoryId"
+                                t-on-change="(ev) => this.onFilterSelectChange('categoryId', ev)"
+                            >
+                                <option value="">All categories</option>
+                                <t t-foreach="filterOptions.categories" t-as="category" t-key="category.id">
+                                    <option t-att-value="category.id" t-esc="category.display_name"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <label class="o_avea_workspace_info_label" for="avea_stock_filter_status">
+                                Stock Status
+                            </label>
+                            <select
+                                id="avea_stock_filter_status"
+                                class="o_avea_stock_filter_select form-select"
+                                t-att-value="filterState.stockStatus"
+                                t-on-change="(ev) => this.onFilterSelectChange('stockStatus', ev)"
+                            >
+                                <t t-foreach="stockStatusOptions" t-as="option" t-key="option.value">
+                                    <option t-att-value="option.value" t-esc="option.label"/>
+                                </t>
+                            </select>
+                        </div>
+                        <div class="o_avea_workspace_info_item">
+                            <label class="o_avea_workspace_info_label" for="avea_stock_filter_arrange">
+                                Arrange By
+                            </label>
+                            <select
+                                id="avea_stock_filter_arrange"
+                                class="o_avea_stock_filter_select form-select"
+                                t-att-value="filterState.arrangeBy"
+                                t-on-change="(ev) => this.onFilterSelectChange('arrangeBy', ev)"
+                            >
+                                <t t-foreach="arrangeOptions" t-as="option" t-key="option.value">
+                                    <option t-att-value="option.value" t-esc="option.label"/>
+                                </t>
+                            </select>
+                        </div>
                     </div>
-                    <div class="o_avea_workspace_info_item">
-                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_barcode">
-                            Barcode
-                        </label>
-                        <input
-                            id="avea_stock_filter_barcode"
-                            type="search"
-                            class="o_avea_stock_filter_input form-control"
-                            placeholder="Barcode"
-                            t-att-value="filterState.barcode"
-                            t-on-input="(ev) => this.onFilterInputChange('barcode', ev)"
-                        />
-                    </div>
-                    <div class="o_avea_workspace_info_item">
-                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_supplier">
-                            Supplier
-                        </label>
-                        <select
-                            id="avea_stock_filter_supplier"
-                            class="o_avea_stock_filter_select form-select"
-                            t-att-value="filterState.supplierId"
-                            t-on-change="(ev) => this.onFilterSelectChange('supplierId', ev)"
-                        >
-                            <option value="">All suppliers</option>
-                            <t t-foreach="filterOptions.suppliers" t-as="supplier" t-key="supplier.id">
-                                <option t-att-value="supplier.id" t-esc="supplier.display_name"/>
-                            </t>
-                        </select>
-                    </div>
-                    <div class="o_avea_workspace_info_item">
-                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_category">
-                            Category
-                        </label>
-                        <select
-                            id="avea_stock_filter_category"
-                            class="o_avea_stock_filter_select form-select"
-                            t-att-value="filterState.categoryId"
-                            t-on-change="(ev) => this.onFilterSelectChange('categoryId', ev)"
-                        >
-                            <option value="">All categories</option>
-                            <t t-foreach="filterOptions.categories" t-as="category" t-key="category.id">
-                                <option t-att-value="category.id" t-esc="category.display_name"/>
-                            </t>
-                        </select>
-                    </div>
-                    <div class="o_avea_workspace_info_item">
-                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_status">
-                            Stock Status
-                        </label>
-                        <select
-                            id="avea_stock_filter_status"
-                            class="o_avea_stock_filter_select form-select"
-                            t-att-value="filterState.stockStatus"
-                            t-on-change="(ev) => this.onFilterSelectChange('stockStatus', ev)"
-                        >
-                            <t t-foreach="stockStatusOptions" t-as="option" t-key="option.value">
-                                <option t-att-value="option.value" t-esc="option.label"/>
-                            </t>
-                        </select>
-                    </div>
-                    <div class="o_avea_workspace_info_item">
-                        <label class="o_avea_workspace_info_label" for="avea_stock_filter_arrange">
-                            Arrange By
-                        </label>
-                        <select
-                            id="avea_stock_filter_arrange"
-                            class="o_avea_stock_filter_select form-select"
-                            t-att-value="filterState.arrangeBy"
-                            t-on-change="(ev) => this.onFilterSelectChange('arrangeBy', ev)"
-                        >
-                            <t t-foreach="arrangeOptions" t-as="option" t-key="option.value">
-                                <option t-att-value="option.value" t-esc="option.label"/>
-                            </t>
-                        </select>
+                    <div t-if="hasSelectedRecords" class="o_avea_stock_catalogue_selection_bar" role="status">
+                        <span class="o_avea_stock_catalogue_selection_count">
+                            <t t-esc="selectedCount"/> selected
+                        </span>
+                        <div class="o_avea_stock_catalogue_selection_actions">
+                            <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.onBulkArchive()">
+                                Archive
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.onBulkRestore()">
+                                Restore
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary btn-sm"
+                                t-att-disabled="selectedCount &lt; 2"
+                                t-on-click="() => this.onBulkMerge()"
+                            >
+                                Merge
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.onBulkPrintLabels()">
+                                Print labels
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.onBulkEnablePos()">
+                                Sell on POS
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.onBulkDisablePos()">
+                                Remove from POS
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm" t-on-click="() => this.onBulkDelete()">
+                                Delete
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-link btn-sm"
+                                t-on-click="() => this.discardCatalogueSelection()"
+                            >
+                                Clear
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </xpath>
-        <xpath expr="//Layout" position="before">
-            <div
-                t-if="hasSelectedRecords"
-                class="o_avea_stock_catalogue_selection_bar"
-                role="status"
-            >
-                <span class="o_avea_stock_catalogue_selection_count">
-                    <t t-if="isDomainSelected">
-                        <t t-esc="selectedCount"/> products selected (all matching filters)
-                    </t>
-                    <t t-else="">
-                        <t t-esc="selectedCount"/> selected
-                    </t>
-                </span>
-                <span class="o_avea_stock_catalogue_selection_hint">
-                    Use the buttons above the list or the Actions menu to archive, merge, print labels, and more.
-                </span>
-                <button
-                    type="button"
-                    class="btn btn-link btn-sm o_avea_stock_catalogue_selection_clear"
-                    t-on-click="() => this.discardCatalogueSelection()"
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div class="o_avea_stock_catalogue_footer">
+                <div
+                    t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                    class="o_avea_stock_catalogue_pager o_cp_pager text-nowrap"
                 >
-                    Clear selection
-                </button>
+                    <Pager t-props="env.config.pagerProps"/>
+                </div>
             </div>
-        </xpath>
-        <xpath expr="//button[hasclass('o_list_button_add')]" position="replace">
-            <button
-                t-if="!editedRecord and activeActions.create and props.showButtons"
-                type="button"
-                class="btn btn-primary o_list_button_add"
-                data-hotkey="c"
-                t-on-click="onClickCreate"
-                data-bounce-button=""
-            >
-                + New Stock Item
-            </button>
         </xpath>
     </t>
 

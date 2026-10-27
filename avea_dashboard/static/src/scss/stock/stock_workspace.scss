@@ -1085,7 +1085,7 @@
 
 .o_action_manager.o_avea_stock_catalogue_action_manager {
     -ms-overflow-style: auto !important;
-    overflow-x: auto !important;
+    overflow-x: hidden !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: auto;
@@ -1104,26 +1104,51 @@
     }
 }
 
-.o_avea_workspace--stock-catalogue {
-    background-color: var(--o-webclient-background-color, #f8f9fa);
+.o_list_view.o_avea_workspace--stock-catalogue-list {
+    background-color: var(--o-webclient-background-color, #f4f5f7);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    min-height: min(100%, 100%);
     min-width: 0;
     overflow-x: visible;
+    padding: 1rem 1rem 1.5rem;
+    width: 100%;
+    box-sizing: border-box;
 
-    .o_avea_workspace_sheet,
-    .o_avea_stock_catalogue_sheet {
-        box-sizing: border-box;
+    > .o_control_panel {
+        display: none !important;
+    }
+
+    .o_avea_stock_catalogue_shell {
         margin: 0;
         max-width: none;
         min-width: 0;
-        padding: 1rem 1rem 0.75rem;
         width: 100%;
     }
 
-    .o_avea_stock_catalogue_header {
-        margin-bottom: 0.15rem;
+    .o_avea_stock_catalogue_sheet {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0.75rem 0.75rem 0 0;
+        overflow: hidden;
+        padding: 0;
     }
 
-    .o_avea_workspace_title,
+    .o_avea_stock_catalogue_hero {
+        align-items: flex-start;
+        border-bottom: 1px solid var(--o-gray-200, #e9ecef);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem 1rem;
+        justify-content: space-between;
+        padding: 1.15rem 1.25rem 1rem;
+    }
+
+    .o_avea_stock_catalogue_header {
+        min-width: 0;
+    }
+
     .o_avea_stock_catalogue_title {
         font-size: 1.45rem;
         font-weight: 700;
@@ -1132,7 +1157,6 @@
         margin: 0 0 0.25rem;
     }
 
-    .o_avea_workspace_section_subtitle,
     .o_avea_stock_catalogue_lead {
         color: var(--o-gray-600, #6c757d);
         font-size: 0.9rem;
@@ -1141,12 +1165,17 @@
         max-width: 42rem;
     }
 
+    .o_avea_stock_catalogue_actions .btn-primary {
+        background: var(--avea-info, #01666b);
+        border-color: var(--avea-info, #01666b);
+        font-weight: 700;
+    }
+
     .o_avea_stock_catalogue_filters {
-        @include avea-compact-panel;
         display: grid;
         gap: 0.65rem 0.75rem;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        margin-top: 0.85rem;
+        padding: 1rem 1.25rem 1.1rem;
 
         .o_avea_workspace_info_item {
             min-width: 0;
@@ -1154,6 +1183,7 @@
 
         .o_avea_workspace_info_label {
             color: var(--o-gray-600, #6c757d);
+            display: block;
             font-size: 0.78rem;
             font-weight: 600;
             margin-bottom: 0.28rem;
@@ -1183,60 +1213,50 @@
         }
     }
 
-    > .o_control_panel {
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        box-sizing: border-box;
-        margin: 0;
-        max-width: none;
+    .o_avea_stock_catalogue_selection_bar {
+        align-items: center;
+        border-top: 1px solid var(--o-gray-200, #e9ecef);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 0.75rem;
+        padding: 0.75rem 1.25rem;
+    }
+
+    .o_avea_stock_catalogue_selection_count {
+        color: var(--o-gray-700, #495057);
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .o_avea_stock_catalogue_selection_actions {
+        display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        gap: 0.35rem 0.5rem;
+        justify-content: flex-end;
         min-width: 0;
-        padding: 0.35rem 1rem 0.85rem;
-        width: 100%;
-
-        .o_control_panel_main {
-            align-items: center;
-        }
-
-        .o_control_panel_actions {
-            display: none !important;
-        }
-
-        .o_list_button_add {
-            background: var(--avea-info, #01666b);
-            border-color: var(--avea-info, #01666b);
-            font-weight: 700;
-
-            &:hover,
-            &:focus {
-                background: #01494d;
-                border-color: #01494d;
-            }
-        }
-
-        .o_list_button_save {
-            font-weight: 700;
-        }
     }
 
     > .o_content {
-        background: var(--o-view-background-color, #fff);
-        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
-        border-radius: var(--border-radius-lg, 0.5rem);
-        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0 0 0.75rem 0.75rem;
+        border-top: none;
         box-sizing: border-box;
-        margin: 0 1rem 1.5rem;
+        flex: 0 0 auto;
+        margin: 0;
         max-width: none;
         min-width: 0;
+        overflow-x: auto;
+        overflow-y: visible;
         padding: 0 !important;
-        width: auto;
+        width: 100%;
 
         .o_list_renderer {
             border: none;
-            border-radius: 0;
             box-shadow: none;
             margin: 0;
-            max-height: calc(100vh - 17.5rem);
+            max-height: calc(100vh - 20rem);
             max-width: none;
             min-width: 0;
             overflow: auto;
@@ -1255,30 +1275,21 @@
             }
         }
     }
-}
 
-.o_avea_stock_catalogue_selection_bar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem 1.25rem;
-    box-sizing: border-box;
-    margin: 0 1rem 0.75rem;
-    width: auto;
-    padding: 0.65rem 1rem;
-    border-radius: 0.5rem;
-    background: rgba(var(--avea-brand-rgb, 37, 99, 235), 0.08);
-    border: 1px solid rgba(var(--avea-brand-rgb, 37, 99, 235), 0.2);
-
-    .o_avea_stock_catalogue_selection_count {
-        font-weight: 600;
-        color: var(--avea-text, #1e293b);
+    .o_avea_stock_catalogue_footer {
+        margin: 0;
+        width: 100%;
     }
 
-    .o_avea_stock_catalogue_selection_hint {
-        flex: 1 1 12rem;
-        font-size: 0.875rem;
-        color: var(--avea-text-muted, #64748b);
+    .o_avea_stock_catalogue_pager {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0 0 0.75rem 0.75rem;
+        border-top: 1px solid var(--o-gray-200, #e9ecef);
+        display: flex;
+        justify-content: flex-end;
+        margin: 0;
+        padding: 0.65rem 1rem 0.75rem;
     }
 }
 
@@ -1325,38 +1336,21 @@
 }
 
 @media (max-width: 1199.98px) {
-    .o_avea_workspace--stock-catalogue .o_avea_stock_catalogue_filters {
+    .o_list_view.o_avea_workspace--stock-catalogue-list .o_avea_stock_catalogue_filters {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
 @media (max-width: 767.98px) {
-    .o_avea_workspace--stock-catalogue {
-        .o_avea_workspace_sheet,
-        .o_avea_stock_catalogue_sheet {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-        }
+    .o_list_view.o_avea_workspace--stock-catalogue-list {
+        padding: 0.75rem 0.75rem 1.25rem;
 
         .o_avea_stock_catalogue_filters {
             grid-template-columns: 1fr;
-            padding: 0.85rem 0.9rem 0.95rem;
         }
 
-        > .o_control_panel {
-            padding-left: 0.75rem;
-            padding-right: 0.75rem;
-        }
-
-        > .o_content {
-            margin-left: 0.75rem;
-            margin-right: 0.75rem;
-            width: auto;
-        }
-
-        .o_avea_stock_catalogue_selection_bar {
-            margin-left: 0.75rem;
-            margin-right: 0.75rem;
+        .o_avea_stock_catalogue_selection_actions {
+            justify-content: flex-start;
         }
     }
 }
