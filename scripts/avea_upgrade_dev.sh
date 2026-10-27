@@ -43,8 +43,4 @@ echo "==> Upgrade ${MODULE} on ${DEV_DB}"
 echo "==> Installed version"
 "${SSH[@]}" "docker exec odoo-db-1 psql -U odoo -d ${DEV_DB} -t -c \"SELECT state, latest_version FROM ir_module_module WHERE name='${MODULE}';\""
 
-echo "==> Sync compiled web assets DEV -> PROD (prevents layout drift after dev-only upgrades)"
-bash "$(dirname "$0")/avea_sync_prod_assets_from_dev.sh"
-bash "$(dirname "$0")/avea_verify_web_assets_sync.sh"
-
-echo "==> Done (DEV upgraded; PROD assets synced)."
+echo "==> Done (DEV only). Run avea_upgrade_prod.sh to deploy code + module upgrade on production."

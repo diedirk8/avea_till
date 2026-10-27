@@ -42,7 +42,7 @@ echo "==> Upgrade ${MODULE} on ${PROD_DB}"
 
 echo "==> Rebuild web assets on DEV (remote), then copy blobs to PROD (local SSH)"
 "${SSH[@]}" "bash ${DEV_REPO}/scripts/avea_regenerate_web_assets.sh odoo-dev petsempire_dev"
-bash "$(dirname "$0")/avea_sync_prod_assets_from_dev.sh"
+AVEA_SYNC_PROD_ADDON_CODE=0 bash "$(dirname "$0")/avea_sync_prod_assets_from_dev.sh"
 bash "$(dirname "$0")/avea_verify_web_assets_sync.sh"
 
 echo "==> Installed version"

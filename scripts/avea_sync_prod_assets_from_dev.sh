@@ -23,11 +23,13 @@ chmod 600 "$KEYFILE"
 SSH=(ssh -i "$KEYFILE" -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new
   "${SSH_USER}@${SSH_HOST}")
 
-echo "==> Sync addon files (git -> prod addons, same tree dev container uses)"
-"${SSH[@]}" "set -e
-  rsync -a --delete /opt/odoo/dev/avea_till/avea_dashboard/ /opt/odoo/addons/avea_till/
-  echo \"commit: \$(cd /opt/odoo/dev/avea_till && git rev-parse --short HEAD)\"
-"
+if [[ "${AVEA_SYNC_PROD_ADDON_CODE:-0}" == "1" ]]; then
+  echo "==> Sync addon files (git -> prod addons; only with prod module upgrade)"
+  "${SSH[@]}" "set -e
+    rsync -a --delete /opt/odoo/dev/avea_till/avea_dashboard/ /opt/odoo/addons/avea_till/
+    echo \"commit: \$(cd /opt/odoo/dev/avea_till && git rev-parse --short HEAD)\"
+  "
+fi
 
 echo "==> Copy latest web.assets_web.min.js/.css blobs DEV -> PROD (prod URLs unchanged)"
 "${SSH[@]}" "PROD_CONTAINER=${PROD_CONTAINER} DEV_CONTAINER=${DEV_CONTAINER} PROD_DB=${PROD_DB} DEV_DB=${DEV_DB} bash -s" <<'EOF'

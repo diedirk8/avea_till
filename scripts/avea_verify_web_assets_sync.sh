@@ -29,17 +29,29 @@ lookup() {
   docker exec odoo-db-1 psql -U odoo -d "$db" -t -A -c \
     "SELECT store_fname FROM ir_attachment WHERE url LIKE '%/web.assets_web.min.${ext}' ORDER BY id DESC LIMIT 1;"
 }
+DEV_JS=$(lookup "$DEV_DB" js)
+PROD_JS=$(lookup "$PROD_DB" js)
 DEV_CSS=$(lookup "$DEV_DB" css)
 PROD_CSS=$(lookup "$PROD_DB" css)
-DEV_PATH=/var/lib/odoo/.local/share/Odoo/filestore/${DEV_DB}/$DEV_CSS
-PROD_PATH=/var/lib/odoo/.local/share/Odoo/filestore/${PROD_DB}/$PROD_CSS
-DEV_MD5=$(docker exec "$DEV_CONTAINER" md5sum "$DEV_PATH" | awk '{print $1}')
-PROD_MD5=$(docker exec "$PROD_CONTAINER" md5sum "$PROD_PATH" | awk '{print $1}')
-echo "dev css  $DEV_CSS  md5=$DEV_MD5"
-echo "prod css $PROD_CSS md5=$PROD_MD5"
-if [[ "$DEV_MD5" != "$PROD_MD5" ]]; then
-  echo "error: DEV and PROD web.assets_web.min.css filestore blobs differ (run avea_sync_prod_assets_from_dev.sh)." >&2
+DEV_JS_PATH=/var/lib/odoo/.local/share/Odoo/filestore/${DEV_DB}/$DEV_JS
+PROD_JS_PATH=/var/lib/odoo/.local/share/Odoo/filestore/${PROD_DB}/$PROD_JS
+DEV_CSS_PATH=/var/lib/odoo/.local/share/Odoo/filestore/${DEV_DB}/$DEV_CSS
+PROD_CSS_PATH=/var/lib/odoo/.local/share/Odoo/filestore/${PROD_DB}/$PROD_CSS
+DEV_JS_MD5=$(docker exec "$DEV_CONTAINER" md5sum "$DEV_JS_PATH" | awk '{print $1}')
+PROD_JS_MD5=$(docker exec "$PROD_CONTAINER" md5sum "$PROD_JS_PATH" | awk '{print $1}')
+DEV_CSS_MD5=$(docker exec "$DEV_CONTAINER" md5sum "$DEV_CSS_PATH" | awk '{print $1}')
+PROD_CSS_MD5=$(docker exec "$PROD_CONTAINER" md5sum "$PROD_CSS_PATH" | awk '{print $1}')
+echo "dev js   $DEV_JS   md5=$DEV_JS_MD5"
+echo "prod js  $PROD_JS  md5=$PROD_JS_MD5"
+echo "dev css  $DEV_CSS  md5=$DEV_CSS_MD5"
+echo "prod css $PROD_CSS md5=$PROD_CSS_MD5"
+if [[ "$DEV_JS_MD5" != "$PROD_JS_MD5" ]]; then
+  echo "error: DEV and PROD web.assets_web.min.js blobs differ (run avea_sync_prod_assets_from_dev.sh after dev asset regen)." >&2
   exit 1
 fi
-echo "ok: DEV and PROD CSS blobs match."
+if [[ "$DEV_CSS_MD5" != "$PROD_CSS_MD5" ]]; then
+  echo "error: DEV and PROD web.assets_web.min.css blobs differ (run avea_sync_prod_assets_from_dev.sh)." >&2
+  exit 1
+fi
+echo "ok: DEV and PROD JS/CSS blobs match."
 EOF
