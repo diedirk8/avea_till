@@ -38,8 +38,12 @@ echo "==> Pull ${GIT_BRANCH} and rsync to ${PROD_ADDON}"
 echo "==> Upgrade ${MODULE} on ${PROD_DB}"
 "${SSH[@]}" "set -e
   docker exec ${PROD_CONTAINER} odoo -u ${MODULE} -d ${PROD_DB} --stop-after-init --log-level=warn
-  bash ${DEV_REPO}/scripts/avea_regenerate_web_assets.sh ${PROD_CONTAINER} ${PROD_DB}
-  docker restart ${PROD_CONTAINER}
+"
+
+echo "==> Rebuild web assets on DEV, then copy blobs to PROD (layout matches dev)"
+"${SSH[@]}" "set -e
+  bash ${DEV_REPO}/scripts/avea_regenerate_web_assets.sh odoo-dev petsempire_dev
+  bash ${DEV_REPO}/scripts/avea_sync_prod_assets_from_dev.sh
 "
 
 echo "==> Installed version"
