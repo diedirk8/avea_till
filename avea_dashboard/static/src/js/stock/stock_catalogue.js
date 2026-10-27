@@ -12,6 +12,7 @@ import { debounce } from "@web/core/utils/timing";
 import { useState, onMounted, onWillUnmount } from "@odoo/owl";
 
 const ACTION_MANAGER_SCROLL_CLASS = "o_avea_stock_catalogue_action_manager";
+const BODY_PAGE_CLASS = "o_avea_stock_catalogue_page";
 
 const BASE_DOMAIN = [
     ["sale_ok", "=", true],
@@ -91,10 +92,14 @@ export class AveaStockCatalogueController extends ListController {
         });
         this._applyFiltersDebounced = debounce(() => this.applyFilters(), 300);
         onMounted(() => {
+            document.body.classList.add(BODY_PAGE_CLASS);
             this._setupScrollShell();
             this._onFiltersMounted();
         });
-        onWillUnmount(() => this._teardownScrollShell());
+        onWillUnmount(() => {
+            document.body.classList.remove(BODY_PAGE_CLASS);
+            this._teardownScrollShell();
+        });
     }
 
     _actionManagerEl() {

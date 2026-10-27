@@ -11,6 +11,7 @@ import { useService } from "@web/core/utils/hooks";
 
 const BASE_DOMAIN = [["customer_rank", ">", 0]];
 const ACTION_MANAGER_SCROLL_CLASS = "o_avea_customer_list_action_manager";
+const BODY_PAGE_CLASS = "o_avea_customer_list_page";
 
 const STATUS_OPTIONS = [
     { value: "all", label: "All" },
@@ -64,7 +65,10 @@ export class AveaCustomerListController extends ListController {
         });
         this._applyFiltersDebounced = debounce(() => this.applyFilters(), 300);
         onMounted(() => this._onFiltersMounted());
-        onWillUnmount(() => this._teardownScrollShell());
+        onWillUnmount(() => {
+            document.body.classList.remove(BODY_PAGE_CLASS);
+            this._teardownScrollShell();
+        });
     }
 
     get className() {
@@ -151,6 +155,7 @@ export class AveaCustomerListController extends ListController {
     }
 
     async _onFiltersMounted() {
+        document.body.classList.add(BODY_PAGE_CLASS);
         this._setupScrollShell();
         await this.applyFilters();
     }

@@ -6,6 +6,27 @@
 
 $o_avea_catalogue_list_views: ".o_list_view.o_avea_workspace--customer-list, .o_list_view.o_avea_customer_list, .o_list_view.o_avea_workspace--stock-catalogue-list, .o_list_view.o_avea_stock_catalogue_list";
 
+// Set from list controllers on mount (reliable vs :has when assets are stale).
+body.o_avea_product_shell.o_avea_customer_list_page,
+body.o_avea_product_shell.o_avea_stock_catalogue_page {
+    .o_action_manager {
+        margin-right: 0 !important;
+        max-width: none !important;
+        padding: 0 !important;
+        width: auto;
+
+        > .o_action,
+        .o_action,
+        .o_action > .o_content,
+        .o_view_controller {
+            margin: 0 !important;
+            max-width: none !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+    }
+}
+
 body.o_avea_product_shell {
     // Apply even before JS adds the scroll-shell class (e.g. right after asset reload).
     .o_action_manager:has(.o_avea_customer_list),
