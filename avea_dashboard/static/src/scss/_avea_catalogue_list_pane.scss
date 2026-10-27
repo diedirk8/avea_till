@@ -60,6 +60,11 @@ body.o_avea_product_shell.o_avea_stock_catalogue_page {
     }
 }
 
+body.o_avea_product_shell .o_action_manager:has(.o_avea_catalogue_flush) {
+    @include o_avea_catalogue_action_manager_shell;
+    background-color: #fff;
+}
+
 body.o_avea_product_shell {
     .o_action_manager.o_avea_customer_list_action_manager,
     .o_action_manager.o_avea_stock_catalogue_action_manager {
@@ -189,11 +194,23 @@ body.o_avea_product_shell {
         width: 100%;
     }
 
+    > .o_content,
+    main.o_content {
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
     .o_avea_customer_list_pager,
     .o_avea_stock_catalogue_pager {
-        border-left: none;
-        border-radius: 0;
-        border-right: none;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .o_avea_workspace_sheet.o_avea_customer_list_sheet,
+    .o_avea_workspace_sheet.o_avea_stock_catalogue_sheet {
+        padding: 0 !important;
     }
 
     .o_view_controller,

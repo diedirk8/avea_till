@@ -261,9 +261,9 @@
 
     > .o_content {
         background: #fff;
-        border: 1px solid var(--o-gray-300, #dee2e6);
-        border-radius: 0 0 0.75rem 0.75rem;
-        border-top: none;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
         box-sizing: border-box;
         flex: 1 1 auto;
         margin: 0;
@@ -290,9 +290,10 @@
 
     .o_avea_customer_list_pager {
         background: #fff;
-        border: 1px solid var(--o-gray-300, #dee2e6);
-        border-radius: 0 0 0.75rem 0.75rem;
+        border: none;
+        border-radius: 0;
         border-top: 1px solid var(--o-gray-200, #e9ecef);
+        box-shadow: none;
         display: flex;
         justify-content: flex-end;
         margin: 0;
