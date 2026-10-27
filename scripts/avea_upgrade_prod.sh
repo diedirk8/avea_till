@@ -6,7 +6,7 @@ SSH_HOST="${PETSEMPIRE_SSH_HOST:-178.105.141.142}"
 SSH_USER="${PETSEMPIRE_SSH_USER:-root}"
 GIT_BRANCH="${AVEA_GIT_BRANCH:-develop}"
 DEV_REPO="/opt/odoo/dev/avea_till"
-PROD_ADDON="/opt/odoo/addons/avea_till"
+DEV_AVEA_ADDON="${DEV_REPO}/avea_dashboard"
 PROD_CONTAINER="odoo-odoo-1"
 PROD_DB="petsempire"
 MODULE="avea_till"
@@ -24,15 +24,15 @@ chmod 600 "$KEYFILE"
 SSH=(ssh -i "$KEYFILE" -o BatchMode=yes -o ConnectTimeout=20 -o StrictHostKeyChecking=accept-new
   "${SSH_USER}@${SSH_HOST}")
 
-echo "==> Pull ${GIT_BRANCH} and rsync to ${PROD_ADDON}"
+echo "==> Pull ${GIT_BRANCH} (prod container mounts ${DEV_AVEA_ADDON} -> /mnt/custom-addons/avea_till)"
 "${SSH[@]}" "set -e
   cd ${DEV_REPO}
   git fetch origin ${GIT_BRANCH}
   git checkout ${GIT_BRANCH}
   git pull origin ${GIT_BRANCH}
   echo \"commit: \$(git rev-parse --short HEAD)\"
-  rsync -a --delete ${DEV_REPO}/avea_dashboard/ ${PROD_ADDON}/
-  grep '\"version\"' ${PROD_ADDON}/__manifest__.py | head -1
+  grep '\"version\"' ${DEV_AVEA_ADDON}/__manifest__.py | head -1
+  docker exec ${PROD_CONTAINER} python3 -c \"import ast; ast.literal_eval(open('/mnt/custom-addons/avea_till/__manifest__.py').read()); print('manifest parse ok')\"
 "
 
 echo "==> Upgrade ${MODULE} on ${PROD_DB}"
