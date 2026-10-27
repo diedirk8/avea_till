@@ -104,7 +104,7 @@ class ProductTemplate(models.Model):
     # Stored mirror of variant barcode so the stock catalogue list can sort (core
     # product.template.barcode is computed-only and not orderable in list views).
     avea_barcode_sort = fields.Char(
-        string="Barcode",
+        string="Barcode Sort",
         compute="_compute_avea_barcode_sort",
         inverse="_inverse_avea_barcode_sort",
         store=True,
