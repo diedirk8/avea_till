@@ -1,5 +1,5 @@
-// Customer + Stock catalogue lists: keep filters/header fixed in the pane and scroll
-// only the table region so horizontal scrollbars are visible without scrolling the page.
+// Customer + Stock catalogue lists: full-width in the action pane, header fixed,
+// table region scrolls (horizontal bar at the bottom of the visible table area).
 
 body.o_avea_product_shell {
     .o_action_manager.o_avea_customer_list_action_manager,
@@ -8,8 +8,11 @@ body.o_avea_product_shell {
         flex-direction: column;
         height: calc(100vh - var(--avea-topbar-height, 3.25rem));
         max-height: calc(100vh - var(--avea-topbar-height, 3.25rem));
+        margin-right: 0;
         overflow: hidden !important;
         overscroll-behavior: contain;
+        padding: 0 !important;
+        width: auto;
 
         > .o_action,
         .o_action {
@@ -18,6 +21,19 @@ body.o_avea_product_shell {
             flex-direction: column;
             min-height: 0;
             overflow: hidden;
+            padding: 0 !important;
+            width: 100%;
+        }
+
+        // Odoo wraps the list in an outer .o_content that otherwise scrolls the whole view.
+        .o_action > .o_content {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 0;
+            overflow: hidden !important;
+            padding: 0 !important;
+            width: 100%;
         }
 
         .o_view_controller {
@@ -26,35 +42,68 @@ body.o_avea_product_shell {
             flex-direction: column;
             min-height: 0;
             overflow: hidden;
+            width: 100%;
         }
     }
 }
 
 .o_list_view.o_avea_workspace--customer-list,
 .o_list_view.o_avea_workspace--stock-catalogue-list {
+    --ListRenderer-margin-x: 0;
+    --ListRenderer-table-padding-x: #{$table-cell-padding-x-sm};
+
+    box-sizing: border-box;
+    display: flex;
     flex: 1 1 auto;
+    flex-direction: column;
+    height: 100%;
+    margin: 0;
     max-height: 100%;
+    max-width: none;
     min-height: 0;
     overflow: hidden;
+    padding: 0 !important;
+    width: 100%;
 
     .o_avea_customer_list_shell,
     .o_avea_stock_catalogue_shell {
         flex-shrink: 0;
+        margin: 0;
+        max-width: none;
+        width: 100%;
     }
 
+    .o_avea_customer_list_sheet,
+    .o_avea_stock_catalogue_sheet {
+        border-left: none;
+        border-radius: 0;
+        border-right: none;
+        max-width: none;
+        width: 100%;
+    }
+
+    > main.o_content,
     > .o_content,
-    .o_content {
+    main.o_content {
         display: flex;
         flex: 1 1 auto;
         flex-direction: column;
+        margin: 0;
+        max-width: none;
         min-height: 0;
         overflow: hidden;
+        padding: 0 !important;
+        width: 100%;
 
         .o_list_renderer {
             flex: 1 1 auto;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
             max-height: none !important;
+            max-width: none !important;
             min-height: 0;
             overflow: auto !important;
+            width: 100% !important;
             -webkit-overflow-scrolling: touch;
             scrollbar-gutter: stable;
 
@@ -73,11 +122,22 @@ body.o_avea_product_shell {
         .o_avea_customer_list_footer,
         .o_avea_stock_catalogue_footer {
             flex-shrink: 0;
+            margin: 0;
+            max-width: none;
+            width: 100%;
         }
     }
 
     > .o_avea_customer_list_footer,
     > .o_avea_stock_catalogue_footer {
         flex-shrink: 0;
+        width: 100%;
+    }
+
+    .o_avea_customer_list_pager,
+    .o_avea_stock_catalogue_pager {
+        border-left: none;
+        border-radius: 0;
+        border-right: none;
     }
 }
