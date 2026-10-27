@@ -2031,9 +2031,7 @@
     }
 
     .o_avea_stock_take_loading {
-        color: var(--o-gray-600, #6c757d);
         padding: 2rem 0;
-        text-align: center;
     }
 
     .o_avea_stock_take_pick_header {
@@ -2050,7 +2048,10 @@
         margin: 0.2rem 0 0;
     }
 
-    .o_avea_stock_take_pick_loading,
+    .o_avea_stock_take_pick_loading {
+        padding: 0.75rem 0;
+    }
+
     .o_avea_stock_take_pick_empty {
         color: var(--o-gray-600, #6c757d);
         font-size: 0.9rem;

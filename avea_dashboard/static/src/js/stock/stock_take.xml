@@ -6,7 +6,7 @@
         <div class="o_avea_workspace o_avea_workspace--stock o_avea_workspace--stock-take o_avea_workspace--stock-take-v2">
             <div class="o_avea_stock_take_sheet">
                 <t t-if="state.loading and !stockTake">
-                    <div class="o_avea_stock_take_loading">Loading...</div>
+                    <div class="o_avea_stock_take_loading o_avea_loading_hint">Loading…</div>
                 </t>
 
                 <t t-elif="state.step === 'start'">
@@ -113,7 +113,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div class="o_avea_stock_take_pick_loading" t-if="state.productsLoading">Loading products...</div>
+                        <div class="o_avea_stock_take_pick_loading o_avea_loading_hint" t-if="state.productsLoading">Loading products…</div>
                         <div class="o_avea_stock_take_pick_empty" t-elif="!state.matchedProducts.length">No products match these filters.</div>
                         <div class="o_avea_stock_take_pick_table_wrap" t-else="">
                             <table class="o_avea_stock_take_table o_avea_stock_take_table--compact table table-sm">
