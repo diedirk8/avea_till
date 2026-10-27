@@ -9,7 +9,9 @@
 // Wide catalogue lists live in the sidebar-offset action pane. Do not size them with
 // raw 100vw (that exceeds the pane and gets clipped by overflow-x: clip below).
 .o_list_view.o_avea_workspace--customer-list,
-.o_list_view.o_avea_workspace--stock-catalogue-list {
+.o_list_view.o_avea_customer_list,
+.o_list_view.o_avea_workspace--stock-catalogue-list,
+.o_list_view.o_avea_stock_catalogue_list {
     box-sizing: border-box;
     min-width: 0;
     overflow-x: visible;

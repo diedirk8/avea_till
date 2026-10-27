@@ -1,7 +1,34 @@
 // Customer + Stock catalogue lists: full-width in the action pane, header fixed,
 // table region scrolls (horizontal bar at the bottom of the visible table area).
+//
+// Match both JS workspace modifiers and the XML list class names so production
+// stays flush even when an older web.assets_web bundle omits controller className.
+
+$o_avea_catalogue_list_views: ".o_list_view.o_avea_workspace--customer-list, .o_list_view.o_avea_customer_list, .o_list_view.o_avea_workspace--stock-catalogue-list, .o_list_view.o_avea_stock_catalogue_list";
 
 body.o_avea_product_shell {
+    .o_action_manager {
+        #{$o_avea_catalogue_list_views} {
+            box-sizing: border-box;
+            margin: 0 !important;
+            max-width: none !important;
+            min-width: 0;
+            padding: 0 !important;
+            width: 100% !important;
+
+            .o_avea_workspace_sheet,
+            .o_avea_customer_list_sheet,
+            .o_avea_stock_catalogue_sheet {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                max-width: none !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                width: 100% !important;
+            }
+        }
+    }
+
     .o_action_manager.o_avea_customer_list_action_manager,
     .o_action_manager.o_avea_stock_catalogue_action_manager {
         display: flex;
@@ -47,8 +74,7 @@ body.o_avea_product_shell {
     }
 }
 
-.o_list_view.o_avea_workspace--customer-list,
-.o_list_view.o_avea_workspace--stock-catalogue-list {
+#{$o_avea_catalogue_list_views} {
     --ListRenderer-margin-x: 0;
     overflow-x: visible !important;
     --ListRenderer-table-padding-x: #{$table-cell-padding-x-sm};

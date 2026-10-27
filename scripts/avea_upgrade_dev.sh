@@ -36,6 +36,7 @@ echo "==> Pull ${GIT_BRANCH} on ${SSH_HOST}"
 echo "==> Upgrade ${MODULE} on ${DEV_DB}"
 "${SSH[@]}" "set -e
   docker exec ${DEV_CONTAINER} odoo -u ${MODULE} -d ${DEV_DB} --stop-after-init --log-level=warn
+  bash ${DEV_REPO}/scripts/avea_regenerate_web_assets.sh ${DEV_CONTAINER} ${DEV_DB}
   docker restart ${DEV_CONTAINER}
 "
 

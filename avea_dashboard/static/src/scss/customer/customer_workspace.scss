@@ -6,7 +6,8 @@
     --avea-brand-border: rgba(196, 92, 38, 0.35);
 }
 
-.o_avea_workspace--customer-list {
+.o_avea_workspace--customer-list,
+.o_list_view.o_avea_customer_list {
     .o_list_renderer {
         overflow-x: auto;
     }
