@@ -65,6 +65,7 @@ export class AveaCustomerListController extends ListController {
         });
         this._applyFiltersDebounced = debounce(() => this.applyFilters(), 300);
         onMounted(() => this._onFiltersMounted());
+        queueMicrotask(() => this._setupScrollShell());
         onWillUnmount(() => {
             document.body.classList.remove(BODY_PAGE_CLASS);
             this._teardownScrollShell();
@@ -73,7 +74,7 @@ export class AveaCustomerListController extends ListController {
 
     get className() {
         const base = this.props.className || "";
-        return `${base} o_avea_workspace o_avea_workspace--customer o_avea_workspace--customer-list`.trim();
+        return `${base} o_avea_catalogue_flush o_avea_workspace o_avea_workspace--customer o_avea_workspace--customer-list`.trim();
     }
 
     get display() {
