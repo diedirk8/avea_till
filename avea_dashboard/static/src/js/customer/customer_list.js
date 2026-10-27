@@ -8,7 +8,7 @@ import { debounce } from "@web/core/utils/timing";
 import { useState, onMounted, onWillUnmount } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
-import { bindCatalogueFlush } from "@avea_till/js/ux/catalogue_pane_flush";
+import { bindCatalogueFlush } from "../ux/catalogue_pane_flush";
 
 const BASE_DOMAIN = [["customer_rank", ">", 0]];
 const ACTION_MANAGER_SCROLL_CLASS = "o_avea_customer_list_action_manager";
