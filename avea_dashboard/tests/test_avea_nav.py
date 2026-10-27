@@ -85,3 +85,31 @@ class TestAveaNav(TestPoSCommon):
         record_labels = {item["label"] for item in record_group["items"]}
         self.assertIn("Manual Entry", record_labels)
         self.assertIn("Add Expense", record_labels)
+
+    def test_stock_history_nested_group(self):
+        nav = self.manager._avea_nav_structure()
+        stock = next(s for s in nav["sections"] if s["id"] == "stock")
+        op_labels = [item["label"] for item in stock["items"][:5]]
+        self.assertEqual(
+            op_labels,
+            [
+                "Products",
+                "Receive Stock",
+                "Stock Take",
+                "Return Stock",
+                "Use Stock",
+            ],
+        )
+        history = stock["items"][5]
+        self.assertEqual(history["label"], "History")
+        self.assertIn("items", history)
+        history_labels = [item["label"] for item in history["items"]]
+        self.assertEqual(
+            history_labels,
+            [
+                "Receive history",
+                "Return history",
+                "Stock take history",
+                "Use stock history",
+            ],
+        )
