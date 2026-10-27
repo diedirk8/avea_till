@@ -10,6 +10,7 @@ import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
 import { debounce } from "@web/core/utils/timing";
 import { useState, onMounted, onWillUnmount } from "@odoo/owl";
+import { bindCatalogueFlush } from "@avea_till/js/ux/catalogue_pane_flush";
 
 const ACTION_MANAGER_SCROLL_CLASS = "o_avea_stock_catalogue_action_manager";
 
@@ -89,8 +90,12 @@ export class AveaStockCatalogueController extends ListController {
         onMounted(() => {
             this._setupScrollShell();
             this._onFiltersMounted();
+            this._flushCleanup = bindCatalogueFlush(this.rootRef.el);
         });
-        onWillUnmount(() => this._teardownScrollShell());
+        onWillUnmount(() => {
+            this._flushCleanup?.();
+            this._teardownScrollShell();
+        });
     }
 
     _actionManagerEl() {

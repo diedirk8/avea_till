@@ -8,6 +8,7 @@ import { debounce } from "@web/core/utils/timing";
 import { useState, onMounted, onWillUnmount } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { useService } from "@web/core/utils/hooks";
+import { bindCatalogueFlush } from "@avea_till/js/ux/catalogue_pane_flush";
 
 const BASE_DOMAIN = [["customer_rank", ">", 0]];
 const ACTION_MANAGER_SCROLL_CLASS = "o_avea_customer_list_action_manager";
@@ -63,8 +64,14 @@ export class AveaCustomerListController extends ListController {
             sortBy: "name_asc",
         });
         this._applyFiltersDebounced = debounce(() => this.applyFilters(), 300);
-        onMounted(() => this._onFiltersMounted());
-        onWillUnmount(() => this._teardownScrollShell());
+        onMounted(() => {
+            this._onFiltersMounted();
+            this._flushCleanup = bindCatalogueFlush(this.rootRef.el);
+        });
+        onWillUnmount(() => {
+            this._flushCleanup?.();
+            this._teardownScrollShell();
+        });
     }
 
     get className() {

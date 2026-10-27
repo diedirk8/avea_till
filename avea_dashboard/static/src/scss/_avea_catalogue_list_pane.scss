@@ -50,6 +50,7 @@ body.o_avea_product_shell {
 .o_list_view.o_avea_workspace--customer-list,
 .o_list_view.o_avea_workspace--stock-catalogue-list {
     --ListRenderer-margin-x: 0;
+    overflow-x: visible !important;
     --ListRenderer-table-padding-x: #{$table-cell-padding-x-sm};
 
     box-sizing: border-box;
