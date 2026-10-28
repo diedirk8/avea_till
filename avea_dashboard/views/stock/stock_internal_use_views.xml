@@ -61,7 +61,11 @@
                                 <list editable="bottom" class="o_avea_stock_internal_use_list">
                                     <field name="company_id" column_invisible="True"/>
                                     <field name="product_tracking" column_invisible="True"/>
-                                    <field name="product_id" options="{'no_create': True}"/>
+                                    <field
+                                        name="product_id"
+                                        options="{'no_create': True}"
+                                        context="{'avea_rich_product_m2o': True}"
+                                    />
                                     <field name="lot_id" optional="show"/>
                                     <field name="qty_available" readonly="1"/>
                                     <field name="quantity"/>

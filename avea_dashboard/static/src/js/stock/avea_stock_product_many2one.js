@@ -1,0 +1,96 @@
+/** @odoo-module **/
+
+import { _t } from "@web/core/l10n/translation";
+import { markup } from "@odoo/owl";
+import { patch } from "@web/core/utils/patch";
+import { highlightText, odoomark } from "@web/core/utils/html";
+import { Many2One } from "@web/views/fields/many2one/many2one";
+import { Many2XAutocomplete } from "@web/views/fields/relational_utils";
+
+const RICH_PRODUCT_SPECIFICATION = {
+    display_name: {},
+    default_code: {},
+    barcode: {},
+    qty_available: {},
+};
+
+export function aveaUsesRichProductM2o(context = {}) {
+    return !!(
+        context.avea_stock_receive_create ||
+        context.avea_receive_id ||
+        context.avea_rich_product_m2o
+    );
+}
+
+function productPrimaryName(record) {
+    const raw = record.display_name || record.name || "";
+    return String(raw).split("\n")[0].trim() || _t("Unnamed");
+}
+
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function formatQty(qty) {
+    if (qty === undefined || qty === null || Number.isNaN(Number(qty))) {
+        return "";
+    }
+    const value = Number(qty);
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
+}
+
+function buildRichProductOptionMarkup(request, record) {
+    const name = productPrimaryName(record);
+    const nameHtml = highlightText(request, odoomark(name), "text-primary fw-bold");
+    const metaParts = [];
+    if (record.default_code) {
+        metaParts.push(`${_t("SKU")} ${escapeHtml(record.default_code)}`);
+    }
+    if (record.barcode) {
+        metaParts.push(`${_t("Barcode")} ${escapeHtml(record.barcode)}`);
+    }
+    const qtyLabel = formatQty(record.qty_available);
+    if (qtyLabel !== "") {
+        metaParts.push(`${_t("On hand")} ${escapeHtml(qtyLabel)}`);
+    }
+    const metaHtml = metaParts.length
+        ? `<div class="o_avea_product_m2o_meta">${metaParts.join('<span class="o_avea_product_m2o_sep">·</span>')}</div>`
+        : "";
+    return markup(
+        `<div class="o_avea_product_m2o_option"><div class="o_avea_product_m2o_name">${nameHtml}</div>${metaHtml}</div>`
+    );
+}
+
+patch(Many2One.prototype, {
+    get many2XAutocompleteProps() {
+        const props = super.many2XAutocompleteProps;
+        if (this.props.relation !== "product.product" || !aveaUsesRichProductM2o(this.props.context)) {
+            return props;
+        }
+        return {
+            ...props,
+            specification: RICH_PRODUCT_SPECIFICATION,
+        };
+    },
+});
+
+patch(Many2XAutocomplete.prototype, {
+    buildRecordSuggestion(request, record) {
+        const suggestion = super.buildRecordSuggestion(request, record);
+        if (
+            this.props.resModel !== "product.product" ||
+            !aveaUsesRichProductM2o(this.props.context)
+        ) {
+            return suggestion;
+        }
+        return {
+            ...suggestion,
+            cssClass: `${suggestion.cssClass || ""} o_avea_product_m2o_dropdown_option`.trim(),
+            label: buildRichProductOptionMarkup(request, record),
+        };
+    },
+});

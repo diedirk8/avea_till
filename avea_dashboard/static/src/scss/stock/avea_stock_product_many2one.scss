@@ -1,0 +1,44 @@
+// Rich product many2one (Receive Stock and related stock workspaces).
+
+.o_avea_workspace--stock {
+    td[name="product_id"] .o-autocomplete--dropdown-menu,
+    .o_field_many2one[name="product_id"] .o-autocomplete--dropdown-menu {
+        box-sizing: border-box;
+        max-width: min(42rem, 100vw);
+        min-width: 100%;
+        width: max-content;
+    }
+
+    .o_m2o_dropdown_option.o_avea_product_m2o_dropdown_option {
+        align-items: stretch;
+        line-height: 1.35;
+        padding-bottom: 0.45rem;
+        padding-top: 0.45rem;
+        white-space: normal;
+    }
+
+    .o_avea_product_m2o_option {
+        display: flex;
+        flex-direction: column;
+        gap: 0.2rem;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .o_avea_product_m2o_name {
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .o_avea_product_m2o_meta {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+    }
+
+    .o_avea_product_m2o_sep {
+        color: var(--o-gray-400, #ced4da);
+        padding: 0 0.35rem;
+    }
+}
