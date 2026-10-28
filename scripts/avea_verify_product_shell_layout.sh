@@ -51,6 +51,16 @@ verify_source() {
     fail "catalogue action_manager shell must not use width:100% (use o_avea_action_pane_fill)"
   fi
 
+  local manifest="$REPO_ROOT/avea_dashboard/__manifest__.py"
+  if [[ -f "$manifest" ]]; then
+    local pane_line shell_line
+    pane_line=$(grep -n '_avea_catalogue_list_pane.scss' "$manifest" | head -1 | cut -d: -f1)
+    shell_line=$(grep -n '_avea_product_shell_layout.scss' "$manifest" | head -1 | cut -d: -f1)
+    if [[ -n "$pane_line" && -n "$shell_line" && "$pane_line" -lt "$shell_line" ]]; then
+      fail "_avea_catalogue_list_pane.scss must load after _avea_product_shell_layout.scss in __manifest__.py"
+    fi
+  fi
+
   echo "ok: product shell layout SCSS invariants"
 }
 

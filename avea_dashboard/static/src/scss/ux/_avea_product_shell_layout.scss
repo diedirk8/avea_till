@@ -28,10 +28,10 @@ body.o_avea_product_shell {
         overflow-x: clip;
     }
 
-    .o_form_view.o_avea_workspace,
-    .o_list_view.o_avea_workspace,
-    .o_kanban_view.o_avea_workspace,
-    .o_avea_workspace {
+    .o_form_view.o_avea_workspace:not(.o_avea_catalogue_flush),
+    .o_list_view.o_avea_workspace:not(.o_avea_catalogue_flush),
+    .o_kanban_view.o_avea_workspace:not(.o_avea_catalogue_flush),
+    .o_avea_workspace:not(.o_avea_catalogue_flush) {
         background-color: #fff !important;
         box-sizing: border-box;
         max-width: 100% !important;
