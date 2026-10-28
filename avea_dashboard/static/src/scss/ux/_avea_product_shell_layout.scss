@@ -8,6 +8,7 @@ body.o_avea_product_shell {
     .o_action_manager {
         @include o_avea_action_pane_fill;
         background-color: #fff;
+        overflow-x: clip;
         padding: 0 !important;
     }
 
@@ -16,6 +17,7 @@ body.o_avea_product_shell {
         @include o_avea_action_pane_fill;
         background-color: #fff;
         margin: 0 !important;
+        overflow-x: clip;
         padding: 0 !important;
     }
 
@@ -23,6 +25,7 @@ body.o_avea_product_shell {
     .o_action_manager .o_view_controller {
         @include o_avea_action_pane_fill;
         background-color: #fff;
+        overflow-x: clip;
     }
 
     .o_form_view.o_avea_workspace,
@@ -30,11 +33,17 @@ body.o_avea_product_shell {
     .o_kanban_view.o_avea_workspace,
     .o_avea_workspace {
         background-color: #fff !important;
-        max-width: none !important;
+        box-sizing: border-box;
+        max-width: 100% !important;
+        min-width: 0;
+        overflow-x: clip;
 
         .o_form_sheet_bg {
             background: transparent !important;
-            max-width: none !important;
+            box-sizing: border-box;
+            max-width: 100% !important;
+            min-width: 0;
+            overflow-x: clip;
             padding: 0 !important;
         }
 
@@ -47,7 +56,8 @@ body.o_avea_product_shell {
             margin-right: 0 !important;
             max-width: 100% !important;
             min-width: 0;
-            width: auto;
+            // 100% of the action pane — not width:auto (wide tables otherwise expand the page).
+            width: 100% !important;
         }
 
         .o_avea_workspace_hero {

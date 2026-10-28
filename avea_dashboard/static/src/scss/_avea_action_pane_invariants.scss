@@ -5,8 +5,10 @@
 // outer .o_action wrapper. That sizes to the full viewport *in addition* to
 // the sidebar offset and causes horizontal overflow on every screen.
 //
-// Use this mixin on the action manager and its direct flex shell; inner
-// .o_content / list views may still use width: 100% within the pane.
+// Use this mixin only on .o_action_manager and outer .o_action wrappers.
+// Inner sheets, forms, and list views should use width:100% + max-width:100%
+// within the pane so wide tables scroll inside .o_list_renderer instead of
+// expanding the viewport.
 
 @mixin o_avea_action_pane_fill {
     box-sizing: border-box;
