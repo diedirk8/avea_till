@@ -6,31 +6,23 @@ body.o_avea_product_shell {
     --o-webclient-background-color: #fff;
 
     .o_action_manager {
+        @include o_avea_action_pane_fill;
         background-color: #fff;
-        box-sizing: border-box;
-        max-width: 100%;
-        min-width: 0;
         padding: 0 !important;
-        width: auto;
     }
 
     .o_action_manager > .o_action,
     .o_action_manager .o_action {
+        @include o_avea_action_pane_fill;
         background-color: #fff;
-        box-sizing: border-box;
         margin: 0 !important;
-        max-width: 100%;
-        min-width: 0;
         padding: 0 !important;
-        width: auto;
     }
 
     .o_action_manager .o_content,
     .o_action_manager .o_view_controller {
+        @include o_avea_action_pane_fill;
         background-color: #fff;
-        box-sizing: border-box;
-        max-width: 100%;
-        min-width: 0;
     }
 
     .o_form_view.o_avea_workspace,

@@ -13,9 +13,7 @@ $o_avea_catalogue_list_views: ".o_list_view.o_avea_workspace--customer-list, .o_
     overflow: hidden !important;
     overscroll-behavior: contain;
     padding: 0 !important;
-    // width: 100% + margin-left (sidebar) overflows the viewport; auto fills the flex pane.
-    min-width: 0;
-    width: auto;
+    @include o_avea_action_pane_fill;
 
     > .o_action,
     .o_action {

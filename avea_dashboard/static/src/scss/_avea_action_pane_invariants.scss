@@ -1,0 +1,16 @@
+// Avea product shell: .o_action_manager sits beside the fixed sidebar
+// (margin-left: var(--avea-sidebar-width) in ux/avea_nav.scss).
+//
+// INVARIANT — do not set width: 100% (or 100vw) on .o_action_manager or the
+// outer .o_action wrapper. That sizes to the full viewport *in addition* to
+// the sidebar offset and causes horizontal overflow on every screen.
+//
+// Use this mixin on the action manager and its direct flex shell; inner
+// .o_content / list views may still use width: 100% within the pane.
+
+@mixin o_avea_action_pane_fill {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    width: auto;
+}

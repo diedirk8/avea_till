@@ -33,12 +33,17 @@ echo "==> Pull ${GIT_BRANCH} on ${SSH_HOST}"
   grep '\"version\"' avea_dashboard/__manifest__.py | head -1
 "
 
+bash "$(dirname "$0")/avea_verify_product_shell_layout.sh"
+
 echo "==> Upgrade ${MODULE} on ${DEV_DB}"
 "${SSH[@]}" "set -e
   docker exec ${DEV_CONTAINER} odoo -u ${MODULE} -d ${DEV_DB} --stop-after-init --log-level=warn
   bash ${DEV_REPO}/scripts/avea_regenerate_web_assets.sh ${DEV_CONTAINER} ${DEV_DB}
   docker restart ${DEV_CONTAINER}
 "
+
+LAYOUT_VERIFY_CONTAINER="${DEV_CONTAINER}" LAYOUT_VERIFY_DB="${DEV_DB}" \
+  bash "$(dirname "$0")/avea_verify_product_shell_layout.sh" --compiled
 
 echo "==> Installed version"
 "${SSH[@]}" "docker exec odoo-db-1 psql -U odoo -d ${DEV_DB} -t -c \"SELECT state, latest_version FROM ir_module_module WHERE name='${MODULE}';\""
