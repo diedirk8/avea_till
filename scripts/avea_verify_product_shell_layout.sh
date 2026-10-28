@@ -104,8 +104,10 @@ check_rule() {
   fi
 }
 
-check_rule "product shell .o_action_manager" \
-  'body.o_avea_product_shell .o_action_manager{[^}]*background-color: #fff[^}]*width:calc\(100% - var\(--avea-sidebar-width\)\)[^}]*}'
+if ! docker exec "$PROD_CONTAINER" sh -c "grep -o 'body.o_avea_product_shell .o_action_manager{[^}]*}' '$FP' | grep -F 'background-color: #fff' | grep -F 'calc(100% - var(--avea-sidebar-width)' | grep -q ."; then
+  echo "error: compiled CSS missing product shell .o_action_manager width calc beside sidebar" >&2
+  exit 1
+fi
 check_rule "catalogue flush .o_action_manager" \
   'body.o_avea_product_shell .o_action_manager:has(.o_avea_catalogue_flush){[^}]*overflow: hidden !important[^}]*}'
 if docker exec "$PROD_CONTAINER" sh -c "grep -o 'body.o_avea_product_shell .o_action_manager{[^}]*}' '$FP' | grep -q 'max-width:100%'"; then
