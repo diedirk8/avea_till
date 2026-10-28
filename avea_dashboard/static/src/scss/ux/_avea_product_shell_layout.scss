@@ -5,16 +5,26 @@
 body.o_avea_product_shell {
     --o-webclient-background-color: #fff;
 
+    .o_webclient {
+        background-color: #fff;
+    }
+
     .o_action_manager {
         @include o_avea_action_pane_fill;
         background-color: #fff;
+        max-width: none;
         overflow-x: clip;
         padding: 0 !important;
+        width: calc(100% - var(--avea-sidebar-width));
+    }
+
+    &.o_avea_sidebar_collapsed .o_action_manager {
+        width: calc(100% - var(--avea-sidebar-collapsed-width));
     }
 
     .o_action_manager > .o_action,
     .o_action_manager .o_action {
-        @include o_avea_action_pane_fill;
+        @include o_avea_pane_inner_fill;
         background-color: #fff;
         margin: 0 !important;
         overflow-x: clip;
@@ -23,9 +33,10 @@ body.o_avea_product_shell {
 
     .o_action_manager .o_content,
     .o_action_manager .o_view_controller {
-        @include o_avea_action_pane_fill;
+        @include o_avea_pane_inner_fill;
         background-color: #fff;
         overflow-x: clip;
+        padding: 0 !important;
     }
 
     .o_form_view.o_avea_workspace:not(.o_avea_catalogue_flush),

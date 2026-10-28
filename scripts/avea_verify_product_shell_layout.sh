@@ -105,9 +105,13 @@ check_rule() {
 }
 
 check_rule "product shell .o_action_manager" \
-  'body.o_avea_product_shell .o_action_manager{[^}]*width: auto[^}]*background-color: #fff[^}]*}'
+  'body.o_avea_product_shell .o_action_manager{[^}]*width:calc\(100% - var\(--avea-sidebar-width\)\)[^}]*background-color: #fff[^}]*}'
 check_rule "catalogue flush .o_action_manager" \
-  'body.o_avea_product_shell .o_action_manager:has(.o_avea_catalogue_flush){[^}]*width: auto[^}]*}'
+  'body.o_avea_product_shell .o_action_manager:has(.o_avea_catalogue_flush){[^}]*overflow: hidden !important[^}]*}'
+if docker exec "$PROD_CONTAINER" grep -q 'body.o_avea_product_shell .o_action_manager{[^}]*max-width:100%' "$FP" 2>/dev/null; then
+  echo "error: .o_action_manager must not compile to max-width:100% (sidebar margin overflow)" >&2
+  exit 1
+fi
 echo "ok: product shell layout compiled CSS invariants"
 EOF
 }

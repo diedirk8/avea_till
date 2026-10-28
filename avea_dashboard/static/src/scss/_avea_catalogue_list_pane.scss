@@ -9,11 +9,12 @@ $o_avea_catalogue_list_views: ".o_list_view.o_avea_workspace--customer-list, .o_
     height: calc(100vh - var(--avea-topbar-height, 3.25rem));
     max-height: calc(100vh - var(--avea-topbar-height, 3.25rem));
     margin-right: 0;
-    max-width: none;
+    max-width: none !important;
     overflow: hidden !important;
     overscroll-behavior: contain;
     padding: 0 !important;
     @include o_avea_action_pane_fill;
+    width: calc(100% - var(--avea-sidebar-width));
 
     > .o_action,
     .o_action {
@@ -57,6 +58,16 @@ body.o_avea_product_shell.o_avea_customer_list_page,
 body.o_avea_product_shell.o_avea_stock_catalogue_page {
     .o_action_manager {
         @include o_avea_catalogue_action_manager_shell;
+    }
+}
+
+body.o_avea_product_shell.o_avea_sidebar_collapsed {
+    &.o_avea_customer_list_page,
+    &.o_avea_stock_catalogue_page,
+    .o_action_manager:has(.o_avea_catalogue_flush),
+    .o_action_manager.o_avea_customer_list_action_manager,
+    .o_action_manager.o_avea_stock_catalogue_action_manager {
+        width: calc(100% - var(--avea-sidebar-collapsed-width));
     }
 }
 
@@ -220,5 +231,30 @@ body.o_avea_product_shell {
         max-width: none !important;
         padding-left: 0 !important;
         padding-right: 0 !important;
+    }
+}
+
+// Win over workspace / product-shell rules (loaded earlier in the bundle).
+body.o_avea_product_shell #{$o_avea_catalogue_list_views} {
+    background: #fff !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    max-width: none !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    width: 100% !important;
+
+    .o_avea_stock_catalogue_sheet,
+    .o_avea_customer_list_sheet,
+    .o_avea_workspace_sheet {
+        background: #fff !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        max-width: none !important;
+        padding: 0 !important;
+        width: 100% !important;
     }
 }

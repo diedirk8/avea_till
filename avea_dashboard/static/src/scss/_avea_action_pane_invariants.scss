@@ -12,7 +12,13 @@
 
 @mixin o_avea_action_pane_fill {
     box-sizing: border-box;
-    max-width: 100%;
     min-width: 0;
     width: auto;
+}
+
+@mixin o_avea_pane_inner_fill {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
 }
