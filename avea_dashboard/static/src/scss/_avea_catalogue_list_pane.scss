@@ -258,3 +258,14 @@ body.o_avea_product_shell #{$o_avea_catalogue_list_views} {
         width: 100% !important;
     }
 }
+
+// Phone/tablet: the sidebar is a slide-over (margin-left is 0 in avea_nav.scss), so the
+// desktop calc(100% - sidebar) widths above would leave a narrow strip of content.
+@media (max-width: 991.98px) {
+    body.o_avea_product_shell .o_action_manager,
+    body.o_avea_product_shell.o_avea_sidebar_collapsed .o_action_manager,
+    body.o_avea_product_shell.o_avea_sidebar_collapsed .o_action_manager:has(.o_avea_catalogue_flush) {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+}
