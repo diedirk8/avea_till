@@ -5,7 +5,7 @@
         <field name="name">avea.stock.receive.form</field>
         <field name="model">avea.stock.receive</field>
         <field name="arch" type="xml">
-            <form string="Receive Stock" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock o_avea_workspace_flush" js_class="avea_stock_receive_form">
+            <form string="Receive Stock" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--stock" js_class="avea_stock_receive_form">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="company_id" invisible="1"/>
                     <field name="currency_id" invisible="1"/>

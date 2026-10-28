@@ -80,9 +80,8 @@ body.o_avea_product_shell {
         }
     }
 
-    // Keep readable insets for standard workspace pages (not flush catalogue / stock).
-    .o_avea_workspace:not(.o_avea_catalogue_flush):not(.o_avea_workspace_flush)
-        .o_avea_workspace_sheet {
+    // Keep readable insets for standard workspace pages (not flush catalogue lists).
+    .o_avea_workspace:not(.o_avea_catalogue_flush) .o_avea_workspace_sheet {
         box-sizing: border-box;
         padding: 0 1.25rem 2.5rem !important;
     }
@@ -104,74 +103,5 @@ body.o_avea_product_shell {
     .o_avea_workspace--stock-take .o_avea_workspace_sheet,
     .o_avea_workspace--stock-take-v2 .o_avea_workspace_sheet {
         max-width: none !important;
-    }
-
-    // Stock workspace forms (Receive / Use / Return / history): full-bleed pane, flat sections.
-    .o_form_view.o_avea_workspace--stock:not(.o_avea_workspace--stock-catalogue-list):not(
-            .o_avea_stock_catalogue_list
-        ),
-    .o_form_view.o_avea_workspace_flush.o_avea_workspace--stock {
-        .o_form_sheet_bg {
-            background: #fff !important;
-        }
-
-        .o_avea_workspace_sheet:not(.o_avea_stock_catalogue_sheet) {
-            box-sizing: border-box;
-            max-width: none !important;
-            padding: 0 0 2rem !important;
-            width: 100% !important;
-        }
-
-        .o_avea_workspace_hero {
-            padding: 1rem 1.25rem 0 !important;
-        }
-
-        .o_avea_stock_layout {
-            gap: 0;
-        }
-
-        .o_avea_stock_panel {
-            background: #fff;
-            border-color: rgba(16, 24, 40, 0.1);
-            border-left: none;
-            border-radius: 0;
-            border-right: none;
-            box-shadow: none;
-        }
-
-        .o_avea_stock_capture {
-            .o_avea_stock_panel--products {
-                border-color: rgba(16, 24, 40, 0.1);
-                box-shadow: none;
-            }
-
-            .o_avea_stock_panel > .o_avea_workspace_section_title,
-            .o_avea_stock_products_heading {
-                padding-left: 1.25rem;
-                padding-right: 1.25rem;
-            }
-
-            .o_avea_stock_panel--supplier > .o_avea_stock_supplier_grid,
-            .o_avea_stock_panel--totals > .o_avea_stock_totals,
-            .o_avea_stock_panel--payment > .o_avea_stock_payment,
-            .o_avea_stock_panel--products .o_avea_stock_list_surface {
-                padding-left: 1.25rem;
-                padding-right: 1.25rem;
-            }
-
-            .o_avea_stock_panel--products .o_avea_stock_products_footer {
-                margin-left: 1.25rem;
-                margin-right: 1.25rem;
-            }
-        }
-
-        .o_avea_stock_list_surface .o_list_renderer {
-            max-width: 100%;
-            overflow-x: auto;
-        }
-    }
-
-    &.o_avea_stock_workspace_page .o_action_manager.o_avea_stock_workspace_action_manager {
-        overflow-x: clip;
     }
 }
