@@ -12,7 +12,7 @@
     --bs-primary-rgb: 196, 92, 38;
     --bs-link-color: var(--avea-brand);
     --bs-link-hover-color: var(--avea-brand-hover);
-    --avea-platform-shell-width: min(1280px, 100%);
+    --avea-platform-shell-width: #{unquote("min(1280px, 100%)")};
 }
 
 .o_form_view.o_avea_workspace--sales-platform {

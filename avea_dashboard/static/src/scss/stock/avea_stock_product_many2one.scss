@@ -4,8 +4,7 @@
     td[name="product_id"] .o-autocomplete--dropdown-menu,
     .o_field_many2one[name="product_id"] .o-autocomplete--dropdown-menu {
         box-sizing: border-box;
-        max-width: unquote("min(36rem, calc(100vw - 2rem))");
-        min-width: max(100%, 16rem);
+        max-width: 36rem;
         width: max-content;
     }
 

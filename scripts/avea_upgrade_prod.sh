@@ -42,9 +42,10 @@ echo "==> Upgrade ${MODULE} on ${PROD_DB}"
   docker exec ${PROD_CONTAINER} odoo -u ${MODULE} -d ${PROD_DB} --stop-after-init --log-level=warn
 "
 
-echo "==> Rebuild web assets on DEV (remote), then copy blobs to PROD (local SSH)"
+echo "==> Rebuild web.assets_web on DEV, sync blobs to PROD, then rebuild on PROD (clean compile)"
 "${SSH[@]}" "bash ${DEV_REPO}/scripts/avea_regenerate_web_assets.sh odoo-dev petsempire_dev"
 AVEA_SYNC_PROD_ADDON_CODE=0 bash "$(dirname "$0")/avea_sync_prod_assets_from_dev.sh"
+"${SSH[@]}" "bash ${DEV_REPO}/scripts/avea_regenerate_web_assets.sh ${PROD_CONTAINER} ${PROD_DB}"
 bash "$(dirname "$0")/avea_verify_web_assets_sync.sh"
 bash "$(dirname "$0")/avea_verify_product_shell_layout.sh" --compiled
 
