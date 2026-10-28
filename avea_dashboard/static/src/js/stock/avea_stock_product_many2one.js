@@ -22,9 +22,31 @@ export function aveaUsesRichProductM2o(context = {}) {
     );
 }
 
-function productPrimaryName(record) {
-    const raw = record.display_name || record.name || "";
-    return String(raw).split("\n")[0].trim() || _t("Unnamed");
+/** Mirrors product.product._avea_plain_name (Python). */
+function productPlainName(record) {
+    const reference = String(record.default_code || "").trim();
+    const raw = String(record.display_name || record.name || "").trim();
+    if (!raw) {
+        return _t("Unnamed");
+    }
+    const bracketMatch = raw.match(/^\[([^\]]+)\]\s*([\s\S]*)/);
+    if (bracketMatch) {
+        const name = (bracketMatch[2] || "").trim();
+        if (name) {
+            return name;
+        }
+    }
+    if (reference && raw.startsWith(`[${reference}]`)) {
+        const stripped = raw.slice(`[${reference}]`.length).trim();
+        if (stripped) {
+            return stripped;
+        }
+    }
+    const lines = raw.split("\n").map((line) => line.trim()).filter(Boolean);
+    if (lines.length > 1 && /^\[[^\]]+\]$/.test(lines[0])) {
+        return lines.slice(1).join(" ");
+    }
+    return lines[0] || _t("Unnamed");
 }
 
 function escapeHtml(text) {
@@ -44,7 +66,7 @@ function formatQty(qty) {
 }
 
 function buildRichProductOptionMarkup(request, record) {
-    const name = productPrimaryName(record);
+    const name = productPlainName(record);
     const nameHtml = highlightText(request, odoomark(name), "text-primary fw-bold");
     const metaParts = [];
     if (record.default_code) {
