@@ -76,28 +76,28 @@ set -euo pipefail
 CSS=$(docker exec odoo-db-1 psql -U odoo -d "$PROD_DB" -t -A -c \
   "SELECT store_fname FROM ir_attachment WHERE url LIKE '%/web.assets_web.min.css' ORDER BY id DESC LIMIT 1;")
 FP="/var/lib/odoo/.local/share/Odoo/filestore/${PROD_DB}/${CSS}"
-RULE=$(docker exec "$PROD_CONTAINER" sh -c "grep -o 'body.o_avea_product_shell .o_action_manager{background-color: #fff[^}]*}' '$FP' | head -1" || true)
-if [[ -z "$RULE" ]]; then
-  echo "error: compiled CSS missing product shell .o_action_manager rule" >&2
-  exit 1
-fi
-if [[ "$RULE" != *"width: auto"* ]]; then
-  echo "error: product shell .o_action_manager must compile to width: auto (got: $RULE)" >&2
-  exit 1
-fi
-if [[ "$RULE" == *"width: 100%"* ]]; then
-  echo "error: product shell .o_action_manager must not compile to width: 100%" >&2
-  exit 1
-fi
-FLUSH=$(docker exec "$PROD_CONTAINER" sh -c "grep -o 'body.o_avea_product_shell .o_action_manager:has(.o_avea_catalogue_flush){[^}]*}' '$FP' | head -1" || true)
-if [[ -z "$FLUSH" ]]; then
-  echo "error: compiled CSS missing catalogue flush action_manager rule" >&2
-  exit 1
-fi
-if [[ "$FLUSH" != *"width: auto"* ]] || [[ "$FLUSH" == *"width: 100%"* ]]; then
-  echo "error: catalogue flush action_manager must use width: auto (got: $FLUSH)" >&2
-  exit 1
-fi
+check_rule() {
+  local label=$1 pattern=$2
+  local rule
+  rule=$(docker exec "$PROD_CONTAINER" sh -c "grep -o '${pattern}' '$FP' | head -1" || true)
+  if [[ -z "$rule" ]]; then
+    echo "error: compiled CSS missing ${label} (pattern: ${pattern})" >&2
+    exit 1
+  fi
+  if [[ "$rule" != *"width: auto"* ]]; then
+    echo "error: ${label} must compile to width: auto (got: $rule)" >&2
+    exit 1
+  fi
+  if echo "$rule" | grep -qE '(^|[;{[:space:]])width:[[:space:]]*100%'; then
+    echo "error: ${label} must not compile to width: 100%" >&2
+    exit 1
+  fi
+}
+
+check_rule "product shell .o_action_manager" \
+  'body.o_avea_product_shell .o_action_manager{[^}]*width: auto[^}]*background-color: #fff[^}]*}'
+check_rule "catalogue flush .o_action_manager" \
+  'body.o_avea_product_shell .o_action_manager:has(.o_avea_catalogue_flush){[^}]*width: auto[^}]*}'
 echo "ok: product shell layout compiled CSS invariants"
 EOF
 }
