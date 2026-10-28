@@ -1,0 +1,84 @@
+// Full-bleed Avea product shell: white action pane flush to the sidebar/top bar.
+// Workspace SCSS intentionally uses a grey canvas + max-width sheet; inside
+// body.o_avea_product_shell that reads as gutters on every screen.
+
+body.o_avea_product_shell {
+    --o-webclient-background-color: #fff;
+
+    .o_action_manager {
+        background-color: #fff;
+        padding: 0 !important;
+    }
+
+    .o_action_manager > .o_action,
+    .o_action_manager .o_action {
+        background-color: #fff;
+        margin: 0 !important;
+        max-width: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    .o_action_manager .o_content,
+    .o_action_manager .o_view_controller {
+        background-color: #fff;
+        max-width: none !important;
+    }
+
+    .o_form_view.o_avea_workspace,
+    .o_list_view.o_avea_workspace,
+    .o_kanban_view.o_avea_workspace,
+    .o_avea_workspace {
+        background-color: #fff !important;
+        max-width: none !important;
+
+        .o_form_sheet_bg {
+            background: transparent !important;
+            max-width: none !important;
+            padding: 0 !important;
+        }
+
+        .o_avea_workspace_sheet {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            max-width: none !important;
+            width: 100% !important;
+        }
+
+        .o_avea_workspace_hero {
+            border-left: none !important;
+            border-radius: 0 !important;
+            border-right: none !important;
+            border-top: none !important;
+            box-shadow: none !important;
+        }
+    }
+
+    // Keep readable insets for standard workspace pages (not flush catalogue lists).
+    .o_avea_workspace:not(.o_avea_catalogue_flush) .o_avea_workspace_sheet {
+        box-sizing: border-box;
+        padding: 0 1.25rem 2.5rem !important;
+    }
+
+    .o_avea_workspace--sales-ledger,
+    .o_avea_workspace--overview,
+    .o_avea_workspace--session,
+    .o_avea_workspace--stock,
+    .o_avea_workspace--customer,
+    .o_avea_workspace--credit,
+    .o_avea_sales_ledger_sheet {
+        background-color: #fff !important;
+    }
+
+    .o_avea_workspace--sales-ledger .o_avea_workspace_sheet,
+    .o_avea_workspace--sales-ledger .o_avea_sales_ledger_sheet,
+    .o_avea_workspace--customer .o_avea_workspace_sheet,
+    .o_avea_workspace--stock-product .o_avea_workspace_sheet,
+    .o_avea_workspace--stock-take .o_avea_workspace_sheet,
+    .o_avea_workspace--stock-take-v2 .o_avea_workspace_sheet {
+        max-width: none !important;
+    }
+}
