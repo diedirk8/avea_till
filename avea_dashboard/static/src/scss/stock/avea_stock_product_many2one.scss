@@ -1,13 +1,19 @@
 // Rich product many2one (Receive Stock and related stock workspaces).
 
-.o_avea_workspace--stock {
-    td[name="product_id"] .o-autocomplete--dropdown-menu,
-    .o_field_many2one[name="product_id"] .o-autocomplete--dropdown-menu {
-        box-sizing: border-box;
-        max-width: 36rem;
-        width: max-content;
-    }
+.o-autocomplete--dropdown-menu:has(.o_avea_product_m2o_option) {
+    box-sizing: border-box;
+    max-width: 42rem;
+    min-width: 26rem;
+    width: max-content;
+}
 
+.o-autocomplete--dropdown-menu .o_avea_product_m2o_dropdown_option .dropdown-item {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+}
+
+.o_avea_workspace--stock {
     .o_m2o_dropdown_option.o_avea_product_m2o_dropdown_option {
         align-items: stretch;
         line-height: 1.35;
@@ -26,6 +32,7 @@
 
     .o_avea_product_m2o_name {
         font-weight: 600;
+        white-space: normal;
         overflow-wrap: anywhere;
     }
 

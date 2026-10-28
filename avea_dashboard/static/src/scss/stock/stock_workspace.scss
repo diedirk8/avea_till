@@ -474,8 +474,8 @@
             td[name="product_id"] .o_field_widget,
             td[name="product_id"] .o_field_many2one,
             td[name="product_id"] .o_input_dropdown,
-            td[name="product_id"] .text-truncate,
-            td[name="product_id"] span {
+            td[name="product_id"] .text-truncate:not(.o-autocomplete--dropdown-menu *),
+            td[name="product_id"] span:not(.o-autocomplete--dropdown-menu *) {
                 display: -webkit-box !important;
                 -webkit-box-orient: vertical;
                 -webkit-line-clamp: 2;

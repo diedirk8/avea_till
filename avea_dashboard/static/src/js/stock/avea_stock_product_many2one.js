@@ -6,12 +6,15 @@ import { patch } from "@web/core/utils/patch";
 import { highlightText, odoomark } from "@web/core/utils/html";
 import { Many2One } from "@web/views/fields/many2one/many2one";
 import { Many2XAutocomplete } from "@web/views/fields/relational_utils";
+import { formatCurrency } from "@web/core/currency";
 
 const RICH_PRODUCT_SPECIFICATION = {
     display_name: {},
     default_code: {},
     barcode: {},
     qty_available: {},
+    avea_cost_ex_tax: {},
+    cost_currency_id: {},
 };
 
 export function aveaUsesRichProductM2o(context = {}) {
@@ -65,6 +68,19 @@ function formatQty(qty) {
     return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
+function formatCost(record) {
+    const cost = record.avea_cost_ex_tax;
+    if (cost === undefined || cost === null || Number.isNaN(Number(cost))) {
+        return "";
+    }
+    const currency = record.cost_currency_id;
+    const currencyId = currency && typeof currency === "object" ? currency.id : currency;
+    if (currencyId) {
+        return formatCurrency(Number(cost), currencyId);
+    }
+    return Number(cost).toFixed(2);
+}
+
 function buildRichProductOptionMarkup(request, record) {
     const name = productPlainName(record);
     const nameHtml = highlightText(request, odoomark(name), "text-primary fw-bold");
@@ -72,12 +88,16 @@ function buildRichProductOptionMarkup(request, record) {
     if (record.default_code) {
         metaParts.push(`${_t("SKU")} ${escapeHtml(record.default_code)}`);
     }
-    if (record.barcode) {
-        metaParts.push(`${_t("Barcode")} ${escapeHtml(record.barcode)}`);
+    const costLabel = formatCost(record);
+    if (costLabel) {
+        metaParts.push(`${_t("Cost")} <strong>${escapeHtml(costLabel)}</strong>`);
     }
     const qtyLabel = formatQty(record.qty_available);
     if (qtyLabel !== "") {
         metaParts.push(`${_t("On hand")} ${escapeHtml(qtyLabel)}`);
+    }
+    if (record.barcode) {
+        metaParts.push(`${_t("Barcode")} ${escapeHtml(record.barcode)}`);
     }
     const metaHtml = metaParts.length
         ? `<div class="o_avea_product_m2o_meta">${metaParts.join('<span class="o_avea_product_m2o_sep">·</span>')}</div>`
