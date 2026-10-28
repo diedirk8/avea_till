@@ -4,11 +4,13 @@ import { FormController } from "@web/views/form/form_controller";
 import { formView } from "@web/views/form/form_view";
 import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
-import { useEffect } from "@odoo/owl";
+import { useEffect, onMounted, onWillUnmount } from "@odoo/owl";
 import { patch } from "@web/core/utils/patch";
 import { ViewButton } from "@web/views/view_button/view_button";
 
 const PRICING_BUTTON = "action_open_pricing_wizard";
+const BODY_PAGE_CLASS = "o_avea_stock_workspace_page";
+const ACTION_MANAGER_CLASS = "o_avea_stock_workspace_action_manager";
 
 function _aveaReceiveRoot(record) {
     const root = record?.model?.root;
@@ -110,9 +112,23 @@ export class AveaStockReceiveFormController extends FormController {
         this._aveaPricingBusy = false;
         this._aveaOpenedLineIds = new Set();
 
+        onMounted(() => {
+            document.body.classList.add(BODY_PAGE_CLASS);
+            document.querySelector(".o_action_manager")?.classList.add(ACTION_MANAGER_CLASS);
+        });
+        onWillUnmount(() => {
+            document.body.classList.remove(BODY_PAGE_CLASS);
+            document.querySelector(".o_action_manager")?.classList.remove(ACTION_MANAGER_CLASS);
+        });
+
         useEffect(() => {
             this._aveaMaybeOpenPricingWizard();
         });
+    }
+
+    get className() {
+        const base = super.className || this.props.className || "";
+        return `${base} o_avea_workspace_flush`.trim();
     }
 
     async beforeExecuteActionButton(clickParams) {
