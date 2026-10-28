@@ -14,6 +14,18 @@
     --avea-nav-brand-hover: #a34a1f;
 }
 
+// muk_web_appsbar (installed on production) turns body into a two-column grid with its own
+// apps sidebar in column 1. Avea has its own fixed sidebar and offsets the action pane with
+// margin-left, so the muk column stacks a second gutter beside the table. Drop it here.
+body.o_avea_product_shell.o_web_client {
+    display: flex !important;
+    flex-direction: column !important;
+
+    .mk_apps_sidebar_panel {
+        display: none !important;
+    }
+}
+
 body.o_avea_product_shell {
     .o_action_manager {
         box-sizing: border-box;
