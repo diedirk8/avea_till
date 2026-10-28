@@ -269,3 +269,50 @@ body.o_avea_product_shell #{$o_avea_catalogue_list_views} {
         width: 100% !important;
     }
 }
+
+// Phone/tablet: filters are tall, so a fixed-viewport pane leaves the table no height.
+// Let the pane scroll vertically and give the table its own scroll region below the filters.
+@media (max-width: 991.98px) {
+    body.o_avea_product_shell .o_action_manager:has(.o_avea_catalogue_flush),
+    body.o_avea_product_shell.o_avea_customer_list_page .o_action_manager,
+    body.o_avea_product_shell.o_avea_stock_catalogue_page .o_action_manager {
+        display: block !important;
+        height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
+        max-height: none !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+
+        > .o_action,
+        .o_action,
+        .o_action > .o_content,
+        .o_view_controller {
+            display: block !important;
+            flex: none !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+
+        #{$o_avea_catalogue_list_views} {
+            display: block !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+
+            > main.o_content,
+            > .o_content,
+            main.o_content {
+                display: block !important;
+                flex: none !important;
+                height: auto !important;
+                overflow: visible !important;
+
+                .o_list_renderer {
+                    max-height: 70vh !important;
+                    min-height: 20rem;
+                }
+            }
+        }
+    }
+}
