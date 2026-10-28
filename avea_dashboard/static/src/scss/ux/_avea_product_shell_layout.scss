@@ -7,22 +7,30 @@ body.o_avea_product_shell {
 
     .o_action_manager {
         background-color: #fff;
+        box-sizing: border-box;
+        max-width: 100%;
+        min-width: 0;
         padding: 0 !important;
+        width: auto;
     }
 
     .o_action_manager > .o_action,
     .o_action_manager .o_action {
         background-color: #fff;
+        box-sizing: border-box;
         margin: 0 !important;
-        max-width: none !important;
+        max-width: 100%;
+        min-width: 0;
         padding: 0 !important;
-        width: 100% !important;
+        width: auto;
     }
 
     .o_action_manager .o_content,
     .o_action_manager .o_view_controller {
         background-color: #fff;
-        max-width: none !important;
+        box-sizing: border-box;
+        max-width: 100%;
+        min-width: 0;
     }
 
     .o_form_view.o_avea_workspace,
@@ -42,10 +50,12 @@ body.o_avea_product_shell {
             background: transparent !important;
             border: none !important;
             box-shadow: none !important;
+            box-sizing: border-box;
             margin-left: 0 !important;
             margin-right: 0 !important;
-            max-width: none !important;
-            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0;
+            width: auto;
         }
 
         .o_avea_workspace_hero {
