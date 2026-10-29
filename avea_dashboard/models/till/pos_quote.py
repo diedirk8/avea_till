@@ -202,7 +202,7 @@ class AveaPosQuote(models.Model):
         pdf_content, _report_format = report.with_context(
             report_pdf_no_attachment=True
         )._render_qweb_pdf(
-            "avea_till.report_avea_pos_quote",
+            "avea_till.report_avea_pos_quote_document",
             res_ids=self.ids,
         )
         if not pdf_content:

@@ -89,7 +89,7 @@ class TestAveaPosQuote(TransactionCase):
         self.assertTrue(pdf["filename"].endswith(".pdf"))
         self.assertTrue(pdf["pdf"])
         rendered, report_format = self.env["ir.actions.report"]._render_qweb_pdf(
-            "avea_till.report_avea_pos_quote",
+            "avea_till.report_avea_pos_quote_document",
             res_ids=quote.ids,
         )
         self.assertEqual(report_format, "pdf")
