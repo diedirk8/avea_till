@@ -37,14 +37,14 @@
                             </thead>
                             <tbody>
                                 <tr t-foreach="quote.line_ids" t-as="line">
-                                    <td t-field="line.name"/>
-                                    <td t-esc="line.default_code or ''"/>
-                                    <td class="text-end" t-field="line.quantity"/>
-                                    <td class="text-end" t-field="line.price_unit"/>
+                                    <td><span t-field="line.name"/></td>
+                                    <td><span t-esc="line.default_code or ''"/></td>
+                                    <td class="text-end"><span t-field="line.quantity"/></td>
+                                    <td class="text-end"><span t-field="line.price_unit"/></td>
                                     <td class="text-end">
                                         <span t-if="line.discount" t-field="line.discount"/>
                                     </td>
-                                    <td class="text-end" t-field="line.price_total"/>
+                                    <td class="text-end"><span t-field="line.price_total"/></td>
                                 </tr>
                             </tbody>
                         </table>
@@ -59,15 +59,15 @@
                                 <table class="table table-sm">
                                     <tr>
                                         <td>Ex tax</td>
-                                        <td class="text-end" t-field="quote.amount_untaxed"/>
+                                        <td class="text-end"><span t-field="quote.amount_untaxed"/></td>
                                     </tr>
                                     <tr>
                                         <td>Tax</td>
-                                        <td class="text-end" t-field="quote.amount_tax"/>
+                                        <td class="text-end"><span t-field="quote.amount_tax"/></td>
                                     </tr>
                                     <tr>
                                         <td><strong>Total</strong></td>
-                                        <td class="text-end"><strong t-field="quote.amount_total"/></td>
+                                        <td class="text-end"><strong><span t-field="quote.amount_total"/></strong></td>
                                     </tr>
                                 </table>
                                 <p class="text-muted">Unit prices and line totals include tax.</p>
