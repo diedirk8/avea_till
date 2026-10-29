@@ -66,6 +66,12 @@ _ISO_DATE_LINE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _INT_LINE_RE = re.compile(r"^\d{1,5}$")
 _MONEY_LINE_RE = re.compile(r"^(?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2}$")
 _LOT_LINE_RE = re.compile(r"^\d+[A-Z]\d[A-Z0-9]*\d$")
+_NOT_A_SUPPLIER = re.compile(
+    r"^(ship\s+to|customer|page\b|address|description|invoice\b|tax\s+invoice|"
+    r"your\s+reference|order\s+no|due\s+date|payment|contact|vat\b|e-?mail|"
+    r"phone|banking|no\.?\b|qty\b|unit\s+price)",
+    re.IGNORECASE,
+)
 _MONTH_DATE_RE = re.compile(
     r"\b((?:January|February|March|April|May|June|July|August|September|"
     r"October|November|December)\s+\d{1,2},\s+\d{4})\b",
@@ -138,6 +144,7 @@ class AveaSupplierInvoiceReader:
             "supplier_hint": cls._supplier_hint(cleaned),
             "vat_mode": vat_mode,
             "vat_rate": vat_rate,
+            "subtotal": cls._printed_subtotal(cleaned, lines),
             "lines": lines,
             "text": cleaned,
         }
@@ -208,15 +215,47 @@ class AveaSupplierInvoiceReader:
             candidate = re.sub(r"\s+", " ", line).strip(" -:|")
             if len(candidate) < 4 or len(candidate) > 60:
                 continue
-            if _FOOTER_RE.match(candidate) or _MONEY_RE.search(candidate):
+            if _FOOTER_RE.match(candidate) or _NOT_A_SUPPLIER.match(candidate):
                 continue
-            if re.search(r"\d{3,}", candidate):
+            if _MONEY_RE.search(candidate) or re.search(r"\d{3,}", candidate):
                 continue
             letters = re.sub(r"[^A-Za-z]", "", candidate)
             if len(letters) < 4:
                 continue
             return candidate
         return None
+
+    @classmethod
+    def _printed_subtotal(cls, text, lines):
+        """The ex-tax subtotal printed on the invoice, when it can be told apart from the line amounts."""
+        line_totals = set()
+        for row in lines or []:
+            total = round((row.get("quantity") or 0.0) * (row.get("unit_price") or 0.0), 2)
+            if total:
+                line_totals.add(total)
+        flat = re.sub(r"\s+", " ", text or "")
+        same_line = re.search(
+            r"sub\s*total[^\d]{0,30}((?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2})",
+            flat,
+            re.IGNORECASE,
+        )
+        if same_line:
+            return _to_float(same_line.group(1).replace(",", ""))
+        marker = re.search(r"sub\s*total", text or "", re.IGNORECASE)
+        if not marker:
+            return None
+        tail = re.sub(r"(?<=\d),(?=\d{3}\b)", "", (text or "")[marker.end() :])
+        amounts = []
+        for match in _MONEY_RE.finditer(tail):
+            whole = match.group(1).replace(" ", "").replace("\u00a0", "")
+            amount = _to_float(f"{whole}.{match.group(3)}")
+            if amount is None:
+                continue
+            amounts.append(round(amount, 2))
+            if len(amounts) >= 12:
+                break
+        extras = [amount for amount in amounts if amount not in line_totals]
+        return extras[0] if extras else None
 
     @classmethod
     def _parse_column_blocks(cls, text):

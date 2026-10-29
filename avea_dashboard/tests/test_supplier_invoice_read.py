@@ -34,6 +34,7 @@ Subtotal
 15% VAT
 250.25
 499.92
+750.17
 Total Amount Incl VAT
 1,350.61
 """
@@ -86,6 +87,7 @@ class TestSupplierInvoiceRead(TransactionCase):
         self.assertIn("PFD-RC-CA-0000000160", parsed["lines"][0]["codes"])
         self.assertEqual(parsed["lines"][1]["quantity"], 2.0)
         self.assertEqual(parsed["lines"][1]["unit_price"], 249.96)
+        self.assertAlmostEqual(parsed["subtotal"], 750.17, places=2)
 
     def test_parse_vat_and_skip_totals(self):
         parsed = AveaSupplierInvoiceReader.parse_text(EXCLUSIVE)
@@ -132,6 +134,76 @@ class TestSupplierInvoiceRead(TransactionCase):
         self.assertEqual(receive.invoice_number, "INV200")
         self.assertEqual(receive.line_ids.product_id, self.product)
         self.assertTrue(receive.unmatched_line_ids)
+
+    def test_same_size_wins_and_different_pack_is_only_suggested(self):
+        adult = self.env["product.product"].create(
+            {
+                "name": "Zzqx Mini Adult 2kg",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+            }
+        )
+        self.env["product.product"].create(
+            {
+                "name": "Zzqx Mini Adult 8kg",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+            }
+        )
+        pouch = self.env["product.product"].create(
+            {
+                "name": "Zzqx Puppy Wet Pouch 85g",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+            }
+        )
+        receive = self.env["avea.stock.receive"].create({})
+        product, suggestion, code = receive._avea_match_invoice_product(
+            "Zzqx Mini Adult 2kg (10403310)",
+            ["PFD-RC-CA-0000000220", "10403310"],
+            None,
+        )
+        self.assertEqual(product, adult)
+        self.assertFalse(suggestion)
+        self.assertEqual(code, "PFD-RC-CA-0000000220")
+        product, suggestion, _code = receive._avea_match_invoice_product(
+            "Zzqx Puppy Wet Pouch 12 x 85 g",
+            [],
+            None,
+        )
+        self.assertFalse(product)
+        self.assertEqual(suggestion, pouch)
+
+    def test_adding_a_line_stores_the_supplier_code(self):
+        partner = self.env["res.partner"].create(
+            {"name": "Avea Invoice Supplier", "supplier_rank": 1}
+        )
+        product = self.env["product.product"].create(
+            {
+                "name": "Avea Invoice Code Product",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+            }
+        )
+        receive = self.env["avea.stock.receive"].create({"partner_id": partner.id})
+        unmatched = self.env["avea.stock.receive.unmatched"].create(
+            {
+                "receive_id": receive.id,
+                "description": "Something 2kg",
+                "quantity": 1,
+                "price_unit": 10,
+                "supplier_code": "PFD-RC-CA-0000000999",
+                "product_id": product.id,
+            }
+        )
+        unmatched.action_add_to_receive()
+        self.assertEqual(product.product_tmpl_id.avea_supplier_id, partner)
+        self.assertEqual(product.product_tmpl_id.avea_supplier_code, "PFD-RC-CA-0000000999")
+        self.assertEqual(receive.line_ids.product_id, product)
 
     def test_refuses_to_replace_existing_lines(self):
         receive = self.env["avea.stock.receive"].create(

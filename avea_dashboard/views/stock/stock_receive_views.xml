@@ -121,7 +121,7 @@
                                 Not found on this invoice
                             </h2>
                             <p class="o_avea_workspace_section_subtitle">
-                                These lines were read but no single product matched. Choose the product, then add it. Create it with + New Stock Item if it does not exist.
+                                These lines were not filled in. Closest product is a suggestion. Press Add to use it, change it, or create the item with + New Stock Item.
                             </p>
                             <field name="unmatched_line_ids" nolabel="1">
                                 <list editable="bottom" create="false">
