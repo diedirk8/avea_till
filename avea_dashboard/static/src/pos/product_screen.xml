@@ -329,7 +329,7 @@
                     </div>
                 </div>
 
-                <div t-if="!ui.isSmall" class="avea-sale-secondary-actions">
+                <div class="avea-sale-secondary-actions">
                     <button
                         type="button"
                         class="btn btn-light avea-hold-btn"
@@ -345,6 +345,14 @@
                         t-on-click="aveaParkSale"
                     >
                         <i class="fa fa-save me-1" aria-hidden="true"/>Park Sale
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-light avea-quote-btn"
+                        t-att-disabled="currentOrder?.isEmpty() ? 'disabled' : null"
+                        t-on-click="aveaQuoteSale"
+                    >
+                        <i class="fa fa-file-text-o me-1" aria-hidden="true"/>Quote
                     </button>
                 </div>
             </section>

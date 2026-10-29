@@ -3,6 +3,7 @@ from . import avea_printed_receipt_settings
 from . import receipt_email_content
 from . import receipt_print_content
 from . import pos_order
+from . import pos_quote
 from . import pos_receipt_email
 from . import ir_mail_server
 from . import performance_analytics

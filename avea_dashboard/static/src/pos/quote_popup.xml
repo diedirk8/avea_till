@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="avea_till.AveaQuotePopup">
+        <Dialog title.translate="Quote" size="'md'">
+            <t t-if="!state.quote">
+                <p class="mb-3">
+                    This saves a quote for <strong t-esc="partnerName"/>. The sale stays on the till.
+                    It does not take payment or reserve stock.
+                </p>
+                <p class="text-muted mb-3">Valid for 14 days. Unit prices include tax.</p>
+                <div class="form-floating mb-2">
+                    <textarea
+                        class="form-control"
+                        id="avea_quote_note"
+                        placeholder="Note for the customer (optional)"
+                        t-model="state.note"
+                        style="height: 80px;"
+                    />
+                    <label for="avea_quote_note">Note for the customer (optional)</label>
+                </div>
+            </t>
+            <t t-else="">
+                <p class="mb-2">
+                    Quote <strong t-esc="state.quote.name"/> is saved for
+                    <strong t-esc="state.quote.partner_name"/>.
+                </p>
+                <p class="mb-2">
+                    Total <strong t-esc="state.quote.amount_total_display"/>.
+                    Valid until <strong t-esc="state.quote.valid_until_display"/>.
+                </p>
+                <p class="text-muted mb-2">
+                    This is a quote, not a tax invoice. The sale is still on the till if the customer wants to pay now.
+                </p>
+                <p t-if="state.emailedTo" class="mb-0">
+                    Emailed to <strong t-esc="state.emailedTo"/>.
+                </p>
+                <p t-elif="!canEmail" class="mb-0 text-muted">
+                    This customer has no email address. Download the PDF to send it yourself.
+                </p>
+            </t>
+            <t t-set-slot="footer">
+                <div t-if="!state.quote" class="d-flex gap-2 w-100">
+                    <button
+                        class="btn btn-primary btn-lg flex-grow-1"
+                        t-on-click="saveQuote"
+                        t-att-disabled="state.busy"
+                    >
+                        Save quote
+                    </button>
+                    <button class="btn btn-secondary btn-lg" t-on-click="props.close" t-att-disabled="state.busy">
+                        Cancel
+                    </button>
+                </div>
+                <div t-else="" class="d-flex flex-wrap gap-2 w-100">
+                    <button class="btn btn-primary" t-on-click="printQuote" t-att-disabled="state.busy">
+                        Print
+                    </button>
+                    <button class="btn btn-secondary" t-on-click="downloadQuote" t-att-disabled="state.busy">
+                        Download PDF
+                    </button>
+                    <button
+                        class="btn btn-secondary"
+                        t-on-click="emailQuote"
+                        t-att-disabled="state.busy or !canEmail"
+                    >
+                        Email
+                    </button>
+                    <button class="btn btn-light ms-auto" t-on-click="props.close">
+                        Close
+                    </button>
+                </div>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

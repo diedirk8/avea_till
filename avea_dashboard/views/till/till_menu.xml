@@ -132,6 +132,15 @@
     />
 
     <menuitem
+        id="menu_avea_pos_quote"
+        name="Quotes"
+        parent="menu_avea_root"
+        action="action_avea_pos_quote"
+        groups="point_of_sale.group_pos_user"
+        sequence="17"
+    />
+
+    <menuitem
         id="menu_avea_configuration"
         name="Configuration"
         parent="menu_avea_till"

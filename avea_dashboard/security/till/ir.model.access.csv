@@ -20,3 +20,5 @@ access_avea_cash_up_manager,access.avea.cash.up.manager,model_avea_cash_up,avea_
 access_avea_cash_up_payment_line_user,access.avea.cash.up.payment.line.user,model_avea_cash_up_payment_line,avea_till.group_avea_cash_up_user,1,0,0,0
 access_avea_cash_up_payment_line_manager,access.avea.cash.up.payment.line.manager,model_avea_cash_up_payment_line,avea_till.group_avea_cash_up_manager,1,1,1,1
 access_avea_payment_correction_wizard,access.avea.payment.correction.wizard,model_avea_payment_correction_wizard,avea_till.group_avea_correct_payment,1,1,1,1
+access_avea_pos_quote,access.avea.pos.quote,model_avea_pos_quote,point_of_sale.group_pos_user,1,1,1,1
+access_avea_pos_quote_line,access.avea.pos.quote.line,model_avea_pos_quote_line,point_of_sale.group_pos_user,1,1,1,1

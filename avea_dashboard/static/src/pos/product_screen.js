@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
+import { AveaQuotePopup } from "./quote_popup";
 import { AveaCategorySelector } from "./avea_category_selector";
 import { _t } from "@web/core/l10n/translation";
 import { useEffect } from "@odoo/owl";
@@ -302,6 +303,24 @@ patch(ProductScreen.prototype, {
             return;
         }
         this.pos.clickSaveOrder();
+    },
+
+    async aveaQuoteSale() {
+        const order = this.currentOrder;
+        if (!order || order.isEmpty()) {
+            return;
+        }
+        if (!order.getPartner()) {
+            await this.pos.selectPartner();
+        }
+        if (!order.getPartner()) {
+            this.env.services.notification.add(
+                _t("Select a customer before creating a quote."),
+                { type: "warning" }
+            );
+            return;
+        }
+        this.env.services.dialog.add(AveaQuotePopup, { order });
     },
 
     aveaClearSale() {
