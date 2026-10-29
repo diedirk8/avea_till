@@ -11,7 +11,7 @@ INCLUSIVE = """
 Tax Invoice INV100
 Invoice date: 28/10/2026
 Prices include VAT
-2 PE White Sunflower Seeds 5kg 115.00 230.00
+2 Zzqx Phantom Pellet 9kg 115.00 230.00
 """
 
 EXCLUSIVE = """
