@@ -205,7 +205,7 @@ class AveaPosQuote(models.Model):
             "avea_till.report_avea_pos_quote_document",
             res_ids=self.ids,
         )
-        if not pdf_content:
+        if not pdf_content or not pdf_content.startswith(b"%PDF"):
             raise UserError(_("The quote PDF could not be created."))
         return pdf_content
 

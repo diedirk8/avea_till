@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import base64
 from unittest.mock import patch
 
 from odoo import fields
@@ -84,16 +85,14 @@ class TestAveaPosQuote(TransactionCase):
 
     def test_quote_pdf_and_email(self):
         result = self.env["avea.pos.quote"].create_from_pos(self._payload())
-        quote = self.env["avea.pos.quote"].browse(result["id"])
+        # Odoo skips wkhtmltopdf during tests unless this context is set.
+        quote = self.env["avea.pos.quote"].browse(result["id"]).with_context(
+            force_report_rendering=True
+        )
         pdf = quote.get_pdf()
         self.assertTrue(pdf["filename"].endswith(".pdf"))
-        self.assertTrue(pdf["pdf"])
-        rendered, report_format = self.env["ir.actions.report"]._render_qweb_pdf(
-            "avea_till.report_avea_pos_quote_document",
-            res_ids=quote.ids,
-        )
-        self.assertEqual(report_format, "pdf")
-        self.assertTrue(rendered.startswith(b"%PDF"))
+        content = base64.b64decode(pdf["pdf"])
+        self.assertTrue(content.startswith(b"%PDF"))
         with patch.object(
             type(self.env["pos.order"]),
             "_avea_schedule_receipt_mail_delivery",
@@ -105,6 +104,8 @@ class TestAveaPosQuote(TransactionCase):
         mail = self.env["mail.mail"].browse(sent["mail_id"])
         self.assertEqual(mail.email_to, "zzqx.quote@example.com")
         self.assertTrue(mail.attachment_ids)
+        attachment = base64.b64decode(mail.attachment_ids.datas)
+        self.assertTrue(attachment.startswith(b"%PDF"))
         self.assertIn(quote.name, mail.subject)
         quote_without_email = self.env["avea.pos.quote"].create_from_pos(
             self._payload(
