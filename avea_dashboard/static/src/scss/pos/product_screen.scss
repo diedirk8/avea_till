@@ -375,18 +375,37 @@
     color: #9ca3af;
 }
 
+.avea-sale-header,
+.avea-customer-card,
+.avea-sale-actions,
+.avea-sale-pads,
+.avea-sale-secondary-actions {
+    flex-shrink: 0;
+}
+
 .avea-sale-lines {
+    flex: 1 1 9rem;
     margin: 0 0.55rem;
+    min-height: 9rem;
+    overflow: hidden;
+}
+
+.avea-sale-lines > * {
+    flex: 1 1 auto;
     min-height: 0;
 }
 
 .avea-sale-lines .order-container {
+    flex: 1 1 auto;
+    min-height: 2.75rem;
+    overflow-y: auto;
     padding-right: 0.15rem;
 }
 
 .avea-sale-lines .order-summary {
     border-bottom: none;
     border-top: 1px solid var(--avea-sell-line);
+    flex-shrink: 0;
     margin-top: 0.25rem;
     padding-top: 0.65rem;
 }
@@ -430,13 +449,26 @@
     padding: 0.35rem 0.85rem 0.55rem;
 }
 
+.avea-sale-pads .numpad {
+    gap: 0.2rem;
+}
+
+.avea-product-screen .avea-sale-pads .numpad-button.btn-lg {
+    font-size: 1.05rem !important;
+    line-height: 1.15 !important;
+    min-height: 2.15rem !important;
+    padding: 0.12rem 0 !important;
+}
+
 .avea-sale-pads .actionpad .pay {
     background: var(--avea-sell-accent);
     border-color: var(--avea-sell-accent);
     border-radius: 8px;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: var(--avea-fw-emphasis);
-    min-height: 3rem;
+    min-height: 2.4rem;
+    padding-bottom: 0.35rem;
+    padding-top: 0.35rem;
 }
 
 .avea-sale-pads .actionpad .pay:hover {
@@ -552,5 +584,47 @@
         background: #fff;
         border-top: 1px solid var(--avea-sell-line);
         flex-shrink: 0;
+    }
+}
+
+@media (max-height: 820px) {
+    .avea-sale-header {
+        padding: 0.45rem 0.75rem 0.35rem;
+    }
+
+    .avea-customer-card {
+        margin: 0.35rem 0.65rem 0.25rem;
+        padding: 0.4rem 0.55rem;
+    }
+
+    .avea-sale-lines {
+        flex-basis: 7.5rem;
+        min-height: 7.5rem;
+    }
+
+    .avea-sale-lines .order-summary .total {
+        font-size: 1.15rem;
+    }
+
+    .avea-sale-actions {
+        padding: 0.3rem 0.65rem 0.15rem;
+    }
+
+    .avea-sale-pads {
+        padding: 0.15rem 0.65rem 0.25rem;
+    }
+
+    .avea-product-screen .avea-sale-pads .numpad-button.btn-lg {
+        font-size: 0.95rem !important;
+        min-height: 1.85rem !important;
+    }
+
+    .avea-sale-pads .actionpad .pay {
+        min-height: 2.15rem;
+    }
+
+    .avea-sale-secondary-actions {
+        gap: 0.35rem;
+        padding: 0 0.65rem 0.45rem;
     }
 }

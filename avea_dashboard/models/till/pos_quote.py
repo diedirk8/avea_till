@@ -5,7 +5,7 @@ from markupsafe import Markup, escape
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import email_normalize, format_date, formataddr
+from odoo.tools import email_normalize, format_date, format_datetime, formataddr
 from odoo.tools.misc import formatLang
 
 
@@ -194,6 +194,61 @@ class AveaPosQuote(models.Model):
             ),
             "partner_name": self.partner_id.display_name,
             "partner_email": (self.partner_id.email or "").strip(),
+        }
+
+    def _avea_format_qty(self, quantity):
+        rounded = round(float(quantity or 0.0), 4)
+        nearest = round(rounded)
+        if abs(rounded - nearest) < 0.0001:
+            return str(int(nearest))
+        return f"{rounded:.4f}".rstrip("0").rstrip(".")
+
+    def _avea_format_discount(self, discount):
+        rounded = round(float(discount or 0.0), 2)
+        if abs(rounded) < 0.001:
+            return ""
+        nearest = round(rounded)
+        if abs(rounded - nearest) < 0.001:
+            return str(int(nearest))
+        return f"{rounded:.2f}".rstrip("0").rstrip(".")
+
+    def _avea_partner_address(self, partner):
+        city_line = " ".join(part for part in [partner.city, partner.zip] if part)
+        state = partner.state_id.name if partner.state_id else ""
+        parts = [partner.street, partner.street2, city_line, state]
+        return ", ".join(part.strip() for part in parts if part and str(part).strip())
+
+    def get_receipt(self):
+        """Receipt-printer payload. Prices are the saved tax-inclusive till amounts."""
+        self.ensure_one()
+        currency = self.currency_id
+        partner = self.partner_id
+        lines = []
+        for line in self.line_ids.sorted(lambda row: (row.sequence, row.id)):
+            lines.append(
+                {
+                    "name": line.name,
+                    "default_code": line.default_code or "",
+                    "quantity": self._avea_format_qty(line.quantity),
+                    "discount": self._avea_format_discount(line.discount),
+                    "price_unit": formatLang(self.env, line.price_unit, currency_obj=currency),
+                    "price_total": formatLang(self.env, line.price_total, currency_obj=currency),
+                }
+            )
+        return {
+            "name": self.name,
+            "quote_date_display": format_datetime(self.env, self.quote_date),
+            "valid_until_display": format_date(self.env, self.valid_until),
+            "cashier_name": self.cashier_name or "",
+            "note": self.note or "",
+            "partner_name": partner.name or "",
+            "partner_address": self._avea_partner_address(partner),
+            "partner_vat": partner.vat or "",
+            "partner_phone": partner.phone or partner.mobile or "",
+            "amount_untaxed": formatLang(self.env, self.amount_untaxed, currency_obj=currency),
+            "amount_tax": formatLang(self.env, self.amount_tax, currency_obj=currency),
+            "amount_total": formatLang(self.env, self.amount_total, currency_obj=currency),
+            "lines": lines,
         }
 
     def _avea_pdf_content(self):

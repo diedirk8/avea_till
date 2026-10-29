@@ -7,6 +7,9 @@ import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useAsyncLockedMethod } from "@point_of_sale/app/hooks/hooks";
 import { RPCError } from "@web/core/network/rpc";
+import { waitImages } from "@point_of_sale/utils";
+import { AveaQuoteReceipt } from "./quote_receipt";
+import { loadAveaPrintReceiptCompanySettings } from "./print_receipt_settings";
 
 function _aveaLineMoney(line, included, excluded) {
     const prices = line.prices || {};
@@ -87,6 +90,9 @@ export class AveaQuotePopup extends Component {
     setup() {
         this.pos = usePos();
         this.notification = useService("notification");
+        this.hardwareProxy = useService("hardware_proxy");
+        this.renderer = useService("renderer");
+        this.printer = useService("printer");
         this.state = useState({
             note: "",
             quote: null,
@@ -180,19 +186,76 @@ export class AveaQuotePopup extends Component {
     async printQuote() {
         this.state.busy = true;
         try {
-            const pdf = await this._loadPdf();
-            const url = URL.createObjectURL(this._pdfBlob(pdf));
-            const opened = window.open(url, "_blank");
-            if (!opened) {
-                this.notification.add(_t("Allow pop-ups to print, or use Download PDF."), {
-                    type: "warning",
-                });
+            await loadAveaPrintReceiptCompanySettings(this.pos);
+            const receipt = await this.pos.data.call("avea.pos.quote", "get_receipt", [
+                [this.state.quote.id],
+            ]);
+            const result = await this._printReceipt(receipt);
+            if (!result?.successful) {
+                this.notification.add(
+                    result?.message?.body ||
+                        _t("The quote did not print. Check the receipt printer and try again."),
+                    { type: "danger" }
+                );
+                return;
             }
-            setTimeout(() => URL.revokeObjectURL(url), 60000);
+            this.notification.add(_t("Quote sent to the receipt printer."), { type: "success" });
         } catch (error) {
             this.notification.add(this._errorMessage(error), { type: "danger" });
         } finally {
             this.state.busy = false;
+        }
+    }
+
+    async _printReceipt(receipt) {
+        this.printer.setPrinter(this.hardwareProxy.printer);
+        const el = await this.renderer.toHtml(AveaQuoteReceipt, {
+            receipt,
+            config: this.pos.config,
+            company: this.pos.company,
+        });
+        try {
+            await waitImages(el);
+        } catch {
+            // A missing logo should not block the slip.
+        }
+        if (this.printer.device?.printReceipt) {
+            const printResult = await this.printer.device.printReceipt(el);
+            if (!printResult?.successful) {
+                return (
+                    printResult || {
+                        successful: false,
+                        message: {
+                            body: _t("The quote did not print. Check the receipt printer and try again."),
+                        },
+                    }
+                );
+            }
+            return printResult;
+        }
+        try {
+            await this.renderer.whenMounted({
+                el,
+                callback: async (mountedEl) => {
+                    try {
+                        await waitImages(mountedEl);
+                    } catch {
+                        // A missing logo should not block the slip.
+                    }
+                    window.print(mountedEl);
+                },
+            });
+            return { successful: true };
+        } catch (error) {
+            return {
+                successful: false,
+                message: {
+                    body:
+                        error.body ||
+                        error.message ||
+                        _t("The quote did not print. Check the receipt printer and try again."),
+                },
+            };
         }
     }
 

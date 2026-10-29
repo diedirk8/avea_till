@@ -76,6 +76,14 @@ class TestAveaPosQuote(TransactionCase):
         self.assertEqual(self.env["stock.move"].search_count([]), moves_before)
         self.assertEqual(self.env["pos.order"].search_count([]), orders_before)
         self.assertIn(quote.name, result["name"])
+        receipt = quote.get_receipt()
+        self.assertEqual(receipt["name"], quote.name)
+        self.assertEqual(receipt["partner_name"], self.partner.name)
+        self.assertEqual(len(receipt["lines"]), 1)
+        self.assertEqual(receipt["lines"][0]["quantity"], "2")
+        self.assertEqual(receipt["lines"][0]["default_code"], "ZZQX-Q-2")
+        self.assertTrue(receipt["amount_total"])
+        self.assertTrue(receipt["valid_until_display"])
 
     def test_quote_requires_a_customer_and_a_product(self):
         with self.assertRaises(UserError):
