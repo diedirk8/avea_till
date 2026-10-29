@@ -244,7 +244,7 @@ class AveaPosQuote(models.Model):
             "partner_name": partner.name or "",
             "partner_address": self._avea_partner_address(partner),
             "partner_vat": partner.vat or "",
-            "partner_phone": partner.phone or partner.mobile or "",
+            "partner_phone": partner.phone or getattr(partner, "mobile", "") or "",
             "amount_untaxed": formatLang(self.env, self.amount_untaxed, currency_obj=currency),
             "amount_tax": formatLang(self.env, self.amount_tax, currency_obj=currency),
             "amount_total": formatLang(self.env, self.amount_total, currency_obj=currency),
