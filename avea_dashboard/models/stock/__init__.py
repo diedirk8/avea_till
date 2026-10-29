@@ -1,6 +1,7 @@
 from . import stock_mixin
 from . import stock_picking
 from . import stock_receive
+from . import supplier_invoice_import
 from . import stock_receive_charge
 from . import stock_receive_pricing_wizard
 from . import stock_receive_pay_wizard

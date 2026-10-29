@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import test_stock_receive_charges
+from . import test_supplier_invoice_read
 from . import test_stock_receive_pricing
 from . import test_stock_return
 from . import test_stock_internal_use

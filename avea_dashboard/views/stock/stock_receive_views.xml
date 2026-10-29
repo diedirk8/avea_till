@@ -96,12 +96,53 @@
                                         />
                                     </div>
                                     <field name="invoice_document_filename" invisible="1"/>
+                                    <button
+                                        name="action_read_supplier_invoice"
+                                        type="object"
+                                        string="Read invoice"
+                                        class="btn btn-secondary"
+                                        invisible="show_confirmation"
+                                    />
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="not invoice_read_summary">
+                                    <span class="o_avea_workspace_info_label">What was read</span>
+                                    <field name="invoice_read_summary" nolabel="1" readonly="1"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" groups="base.group_multi_company">
                                     <span class="o_avea_workspace_info_label">Company</span>
                                     <field name="company_id" nolabel="1"/>
                                 </div>
                             </div>
+                        </div>
+
+                        <div class="o_avea_stock_panel" invisible="not unmatched_line_ids">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-search" title="Not found" aria-hidden="true"/>
+                                Not found on this invoice
+                            </h2>
+                            <p class="o_avea_workspace_section_subtitle">
+                                These lines were read but no single product matched. Choose the product, then add it. Create it with + New Stock Item if it does not exist.
+                            </p>
+                            <field name="unmatched_line_ids" nolabel="1">
+                                <list editable="bottom" create="false">
+                                    <field name="description"/>
+                                    <field name="quantity"/>
+                                    <field name="price_unit"/>
+                                    <field name="product_id"/>
+                                    <button
+                                        name="action_add_to_receive"
+                                        type="object"
+                                        string="Add"
+                                        class="btn-link"
+                                    />
+                                </list>
+                            </field>
+                            <button
+                                name="action_add_matched_invoice_lines"
+                                type="object"
+                                string="Add chosen products"
+                                class="btn btn-secondary"
+                            />
                         </div>
 
                         <div class="o_avea_stock_panel o_avea_stock_panel--products">
