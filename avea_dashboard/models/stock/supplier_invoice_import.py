@@ -234,9 +234,9 @@ class AveaStockReceiveInvoiceImport(models.Model):
         scored.sort(key=lambda item: (item[0], -item[1]), reverse=True)
         best_score, _length, best = scored[0]
         second = scored[1][0] if len(scored) > 1 else 0
+        # One shared word is not enough: "Phantom" must not grab "Red Phantom"
+        # when the invoice also says "Pellet".
         if best_score >= 2 and best_score > second:
-            return best
-        if len(scored) == 1 and best_score >= 1 and len(needle) >= 6:
             return best
         return Product.browse()
 
