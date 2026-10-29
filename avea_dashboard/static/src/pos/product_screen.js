@@ -2,6 +2,7 @@
 
 import { ProductScreen } from "@point_of_sale/app/screens/product_screen/product_screen";
 import { AveaQuotePopup } from "./quote_popup";
+import { AveaLoadQuotePopup } from "./quote_load_popup";
 import { AveaCategorySelector } from "./avea_category_selector";
 import { _t } from "@web/core/l10n/translation";
 import { useEffect } from "@odoo/owl";
@@ -321,6 +322,10 @@ patch(ProductScreen.prototype, {
             return;
         }
         this.env.services.dialog.add(AveaQuotePopup, { order });
+    },
+
+    aveaLoadQuote() {
+        this.env.services.dialog.add(AveaLoadQuotePopup, {});
     },
 
     aveaClearSale() {

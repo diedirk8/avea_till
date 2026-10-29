@@ -478,14 +478,15 @@
 
 .avea-sale-secondary-actions {
     display: grid;
-    gap: 0.55rem;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     padding: 0 0.85rem 0.85rem;
 }
 
 .avea-hold-btn,
 .avea-park-btn,
-.avea-quote-btn {
+.avea-quote-btn,
+.avea-load-quote-btn {
     border-color: var(--avea-sell-line);
     font-size: 0.84rem;
     font-weight: var(--avea-fw-medium);

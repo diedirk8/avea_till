@@ -157,6 +157,7 @@ class AveaPosQuote(models.Model):
                         "quantity": quantity,
                         "discount": float(row.get("discount") or 0.0),
                         "price_unit": currency.round(float(row.get("price_unit") or 0.0)),
+                        "pos_price_unit": currency.round(float(row.get("pos_price_unit") or 0.0)),
                         "price_subtotal": price_subtotal,
                         "price_tax": currency.round(price_total - price_subtotal),
                         "price_total": price_total,
@@ -195,6 +196,67 @@ class AveaPosQuote(models.Model):
             "partner_name": self.partner_id.display_name,
             "partner_email": (self.partner_id.email or "").strip(),
         }
+
+    def _avea_pos_list_row(self):
+        self.ensure_one()
+        row = self._avea_pos_payload()
+        row["quote_date_display"] = format_datetime(self.env, self.quote_date)
+        return row
+
+    @api.model
+    def list_open_for_pos(self, payload):
+        """Quotes the till can still add to a sale. Expired quotes are left out."""
+        payload = payload or {}
+        today = fields.Date.context_today(self)
+        domain = [("valid_until", ">=", today)]
+        company = self.env["res.company"].browse(payload.get("company_id")).exists()
+        if company:
+            domain.append(("company_id", "=", company.id))
+        search = (payload.get("search") or "").strip()
+        if search:
+            domain = [
+                "&",
+                *([domain[0]] if len(domain) == 1 else ["&", *domain]),
+                "|",
+                ("name", "ilike", search),
+                ("partner_id.name", "ilike", search),
+            ]
+        quotes = self.search(domain, limit=40, order="quote_date desc, id desc")
+        return [quote._avea_pos_list_row() for quote in quotes]
+
+    def get_for_sale(self):
+        """Lines and customer for putting this quote on the current sale."""
+        self.ensure_one()
+        today = fields.Date.context_today(self)
+        if self.valid_until < today:
+            raise UserError(_("This quote has expired."))
+        currency = self.currency_id
+        lines = []
+        for line in self.line_ids.sorted(lambda row: (row.sequence, row.id)):
+            pos_price = line.pos_price_unit
+            if not pos_price:
+                factor = 1 - (line.discount or 0.0) / 100.0
+                if factor <= 0:
+                    factor = 1
+                pos_price = currency.round((line.price_unit or 0.0) / factor)
+            lines.append(
+                {
+                    "product_id": line.product_id.id or False,
+                    "name": line.name,
+                    "quantity": line.quantity,
+                    "discount": line.discount,
+                    "pos_price_unit": pos_price,
+                }
+            )
+        payload = self._avea_pos_payload()
+        payload.update(
+            {
+                "partner_id": self.partner_id.id,
+                "note": self.note or "",
+                "lines": lines,
+            }
+        )
+        return payload
 
     def _avea_format_qty(self, quantity):
         rounded = round(float(quantity or 0.0), 4)
@@ -370,6 +432,11 @@ class AveaPosQuoteLine(models.Model):
         string="Unit price",
         currency_field="currency_id",
         help="Unit price including tax, as shown on the till.",
+    )
+    pos_price_unit = fields.Monetary(
+        string="Till unit price",
+        currency_field="currency_id",
+        help="The till price before discount, used when this quote is added to a sale.",
     )
     price_subtotal = fields.Monetary(string="Ex tax", currency_field="currency_id")
     price_tax = fields.Monetary(string="Tax", currency_field="currency_id")

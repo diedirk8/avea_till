@@ -75,6 +75,7 @@ export function aveaQuoteLines(order) {
             quantity,
             discount: typeof line.getDiscount === "function" ? line.getDiscount() : line.discount || 0,
             price_unit: unitIncluded,
+            pos_price_unit: Number(line.price_unit) || 0,
             price_subtotal: totals.totalExcluded,
             price_total: totals.totalIncluded,
         });

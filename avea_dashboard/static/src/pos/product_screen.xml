@@ -354,6 +354,13 @@
                     >
                         <i class="fa fa-file-text-o me-1" aria-hidden="true"/>Quote
                     </button>
+                    <button
+                        type="button"
+                        class="btn btn-light avea-load-quote-btn"
+                        t-on-click="aveaLoadQuote"
+                    >
+                        <i class="fa fa-folder-open-o me-1" aria-hidden="true"/>Load quote
+                    </button>
                 </div>
             </section>
 

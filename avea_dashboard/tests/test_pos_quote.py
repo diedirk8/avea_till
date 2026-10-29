@@ -50,6 +50,7 @@ class TestAveaPosQuote(TransactionCase):
                     "quantity": 2,
                     "discount": 0,
                     "price_unit": 115.0,
+                    "pos_price_unit": 115.0,
                     "price_subtotal": 200.0,
                     "price_total": 230.0,
                 }
@@ -84,6 +85,27 @@ class TestAveaPosQuote(TransactionCase):
         self.assertEqual(receipt["lines"][0]["default_code"], "ZZQX-Q-2")
         self.assertTrue(receipt["amount_total"])
         self.assertTrue(receipt["valid_until_display"])
+
+    def test_open_quote_can_be_added_to_a_sale(self):
+        result = self.env["avea.pos.quote"].create_from_pos(self._payload())
+        quote = self.env["avea.pos.quote"].browse(result["id"])
+        self.assertEqual(quote.line_ids.pos_price_unit, 115.0)
+        open_quotes = self.env["avea.pos.quote"].list_open_for_pos({})
+        self.assertIn(quote.id, [row["id"] for row in open_quotes])
+        searched = self.env["avea.pos.quote"].list_open_for_pos(
+            {"search": "Zzqx Quote Customer"}
+        )
+        self.assertIn(quote.id, [row["id"] for row in searched])
+        sale = quote.get_for_sale()
+        self.assertEqual(sale["partner_id"], self.partner.id)
+        self.assertEqual(sale["lines"][0]["quantity"], 2)
+        self.assertEqual(sale["lines"][0]["pos_price_unit"], 115.0)
+        self.assertEqual(sale["lines"][0]["product_id"], self.product.id)
+        quote.valid_until = fields.Date.add(fields.Date.context_today(quote), days=-1)
+        still_open = self.env["avea.pos.quote"].list_open_for_pos({})
+        self.assertNotIn(quote.id, [row["id"] for row in still_open])
+        with self.assertRaises(UserError):
+            quote.get_for_sale()
 
     def test_quote_requires_a_customer_and_a_product(self):
         with self.assertRaises(UserError):
