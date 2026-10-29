@@ -7,6 +7,37 @@ from odoo.addons.avea_till.models.stock.supplier_invoice_reader import (
 )
 
 
+COLUMN = """
+Tax Invoice INV-532070
+October 26, 2026
+Unit Price Excl.
+VAT
+PFD-RC-CA-0000000160
+RC-Mini Puppy 2kg
+(165020)
+624A1RCA22
+2027-12-07
+1
+250.25
+0.00
+PFD-RC-CA-0000000220
+RC-Mini Adult 2kg
+(10403310)
+622B1RCA10
+2027-11-23
+2
+249.96
+0.00
+15
+15
+Subtotal
+15% VAT
+250.25
+499.92
+Total Amount Incl VAT
+1,350.61
+"""
+
 INCLUSIVE = """
 Tax Invoice INV100
 Invoice date: 28/10/2026
@@ -42,6 +73,19 @@ class TestSupplierInvoiceRead(TransactionCase):
                 "standard_price": 40.0,
             }
         )
+
+    def test_column_invoice_like_biofarm(self):
+        parsed = AveaSupplierInvoiceReader.parse_text(COLUMN)
+        self.assertEqual(parsed["vat_mode"], "exclusive")
+        self.assertEqual(parsed["invoice_number"], "INV-532070")
+        self.assertEqual(str(parsed["invoice_date"]), "2026-10-26")
+        self.assertEqual(len(parsed["lines"]), 2)
+        self.assertEqual(parsed["lines"][0]["description"], "RC-Mini Puppy 2kg (165020)")
+        self.assertEqual(parsed["lines"][0]["quantity"], 1.0)
+        self.assertEqual(parsed["lines"][0]["unit_price"], 250.25)
+        self.assertIn("PFD-RC-CA-0000000160", parsed["lines"][0]["codes"])
+        self.assertEqual(parsed["lines"][1]["quantity"], 2.0)
+        self.assertEqual(parsed["lines"][1]["unit_price"], 249.96)
 
     def test_parse_vat_and_skip_totals(self):
         parsed = AveaSupplierInvoiceReader.parse_text(EXCLUSIVE)

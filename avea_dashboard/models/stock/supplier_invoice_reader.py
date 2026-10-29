@@ -57,6 +57,19 @@ _DATE_FORMATS = (
     "%d-%m-%y",
     "%d %b %Y",
     "%d %B %Y",
+    "%B %d, %Y",
+    "%b %d, %Y",
+)
+# A product code on its own line, as pdfminer emits for column-style invoices.
+_CODE_LINE_RE = re.compile(r"^[A-Z]{2,}(?:-[A-Z0-9]+){2,}$")
+_ISO_DATE_LINE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_INT_LINE_RE = re.compile(r"^\d{1,5}$")
+_MONEY_LINE_RE = re.compile(r"^(?:\d{1,3}(?:,\d{3})+|\d+)\.\d{2}$")
+_LOT_LINE_RE = re.compile(r"^\d+[A-Z]\d[A-Z0-9]*\d$")
+_MONTH_DATE_RE = re.compile(
+    r"\b((?:January|February|March|April|May|June|July|August|September|"
+    r"October|November|December)\s+\d{1,2},\s+\d{4})\b",
+    re.IGNORECASE,
 )
 _IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".tif", ".tiff", ".bmp"}
 
@@ -116,6 +129,9 @@ class AveaSupplierInvoiceReader:
             parsed = cls._parse_line(raw_line)
             if parsed:
                 lines.append(parsed)
+        # Some invoices (Biofarm and similar) put each column on its own line.
+        if not lines:
+            lines = cls._parse_column_blocks(cleaned)
         return {
             "invoice_number": cls._invoice_number(cleaned),
             "invoice_date": cls._invoice_date(cleaned),
@@ -134,6 +150,12 @@ class AveaSupplierInvoiceReader:
             parsed = _to_float(match.group(1))
             if parsed and 0 < parsed < 50:
                 rate = parsed
+        flat = re.sub(r"\s+", " ", text or "")
+        # The unit-price column label wins over a grand total that says "Incl VAT".
+        if re.search(r"unit\s+price\s+excl", flat, re.IGNORECASE):
+            return "exclusive", rate
+        if re.search(r"unit\s+price\s+incl", flat, re.IGNORECASE):
+            return "inclusive", rate
         inclusive = bool(_INCLUSIVE_RE.search(text or ""))
         exclusive = bool(_EXCLUSIVE_RE.search(text or ""))
         if inclusive and not exclusive:
@@ -163,6 +185,10 @@ class AveaSupplierInvoiceReader:
             parsed = cls._parse_date(match.group(1))
             if parsed:
                 return parsed
+        head = (text or "").split("Due Date")[0]
+        match = _MONTH_DATE_RE.search(head)
+        if match:
+            return cls._parse_date(match.group(1))
         return None
 
     @classmethod
@@ -191,6 +217,92 @@ class AveaSupplierInvoiceReader:
                 continue
             return candidate
         return None
+
+    @classmethod
+    def _parse_column_blocks(cls, text):
+        """Rebuild rows when each field of a line was extracted on its own line."""
+        items = []
+        current = None
+
+        def flush():
+            nonlocal current
+            if not current:
+                return
+            item = cls._item_from_block(current)
+            if item:
+                items.append(item)
+            current = None
+
+        for raw_line in (text or "").split("\n"):
+            line = re.sub(r"\s+", " ", raw_line.replace("\u00a0", " ")).strip()
+            if not line:
+                continue
+            # Stop at the totals, not at a header word such as "VAT" above the table.
+            if re.match(
+                r"^(sub\s*total|grand\s+total|total\b|\d{1,2}%\s+vat\b)",
+                line,
+                re.IGNORECASE,
+            ):
+                flush()
+                break
+            if _CODE_LINE_RE.match(line):
+                flush()
+                current = [line]
+                continue
+            if current is None:
+                continue
+            if cls._block_ready(current) and _INT_LINE_RE.match(line):
+                flush()
+                continue
+            current.append(line)
+        flush()
+        return items
+
+    @classmethod
+    def _block_ready(cls, lines):
+        has_qty = has_price = has_desc = False
+        for line in lines[1:]:
+            if _INT_LINE_RE.match(line):
+                has_qty = True
+            elif _MONEY_LINE_RE.match(line):
+                has_price = True
+            elif not _ISO_DATE_LINE_RE.match(line) and not _LOT_LINE_RE.match(line):
+                has_desc = True
+        return has_qty and has_price and has_desc
+
+    @classmethod
+    def _item_from_block(cls, lines):
+        code = lines[0]
+        description_parts = []
+        quantity = None
+        prices = []
+        extra_codes = [code]
+        for line in lines[1:]:
+            if _ISO_DATE_LINE_RE.match(line) or _LOT_LINE_RE.match(line):
+                continue
+            if _INT_LINE_RE.match(line) and quantity is None:
+                quantity = float(line)
+                continue
+            if _MONEY_LINE_RE.match(line):
+                prices.append(_to_float(line.replace(",", "")))
+                continue
+            paren = re.fullmatch(r"\((\d+)\)", line)
+            if paren:
+                extra_codes.append(paren.group(1))
+            description_parts.append(line)
+        description = re.sub(r"\s+", " ", " ".join(description_parts)).strip(" -")
+        if not description or quantity is None or not prices:
+            return None
+        codes = []
+        for token in extra_codes:
+            if token not in codes:
+                codes.append(token)
+        return {
+            "description": description,
+            "quantity": quantity,
+            "unit_price": prices[0],
+            "codes": codes,
+        }
 
     @classmethod
     def _parse_line(cls, raw_line):
