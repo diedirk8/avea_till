@@ -6,7 +6,7 @@
     <record id="view_avea_stock_product_search" model="ir.ui.view">
         <field name="name">avea.stock.product.search</field>
         <field name="model">product.template</field>
-        <field name="priority">99</field>
+        <field name="priority">1</field>
         <field name="arch" type="xml">
             <search string="Stock">
                 <field name="name" string="Product" filter_domain="['|', '|', ('name', 'ilike', self), ('default_code', 'ilike', self), ('barcode', 'ilike', self)]"/>
@@ -38,7 +38,7 @@
     <record id="view_avea_stock_product_list" model="ir.ui.view">
         <field name="name">avea.stock.product.list</field>
         <field name="model">product.template</field>
-        <field name="priority">99</field>
+        <field name="priority">1</field>
         <field name="arch" type="xml">
             <list
                 string="Stock"
@@ -47,8 +47,8 @@
                 multi_edit="1"
                 js_class="avea_stock_catalogue_list"
                 create="1"
-                delete="0"
-                duplicate="0"
+                delete="1"
+                duplicate="1"
             >
                 <header>
                     <button
@@ -65,6 +65,56 @@
                         class="btn-secondary"
                         display="always"
                     />
+                    <button
+                        name="action_avea_bulk_archive"
+                        type="object"
+                        string="Archive"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_bulk_unarchive"
+                        type="object"
+                        string="Restore"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_open_merge_wizard"
+                        type="object"
+                        string="Merge"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_open_label_layout"
+                        type="object"
+                        string="Print labels"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_bulk_enable_pos"
+                        type="object"
+                        string="Sell on POS"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_bulk_disable_pos"
+                        type="object"
+                        string="Remove from POS"
+                        class="btn-secondary"
+                        display="selected"
+                    />
+                    <button
+                        name="action_avea_bulk_delete"
+                        type="object"
+                        string="Delete"
+                        class="btn-danger"
+                        display="selected"
+                        confirm="Permanently delete the selected products? This cannot be undone."
+                    />
                 </header>
                 <field name="currency_id" column_invisible="True"/>
                 <field name="id" column_invisible="True"/>
@@ -78,7 +128,7 @@
                 />
                 <field name="name" string="Product"/>
                 <field name="default_code" string="SKU" optional="show"/>
-                <field name="barcode" string="Barcode" optional="show"/>
+                <field name="avea_barcode_sort" string="Barcode" optional="show"/>
                 <field name="categ_id" string="Category" optional="show" options="{'no_create': True}"/>
                 <field name="avea_supplier_id" string="Supplier" optional="show" options="{'no_create': True, 'no_open': True}"/>
                 <field name="avea_stock_qty" string="Current Stock" sum="Total"/>
@@ -104,7 +154,7 @@
     <record id="view_avea_stock_product_form" model="ir.ui.view">
         <field name="name">avea.stock.product.form</field>
         <field name="model">product.template</field>
-        <field name="priority">99</field>
+        <field name="priority">1</field>
         <field name="arch" type="xml">
             <form string="Stock Item" class="o_avea_workspace o_avea_workspace--stock-product">
                 <sheet class="o_avea_workspace_sheet">
@@ -131,6 +181,14 @@
                             </p>
                         </div>
                         <div class="o_avea_stock_product_hero_actions">
+                            <button
+                                string="Print Labels"
+                                name="action_open_label_layout"
+                                type="object"
+                                class="btn btn-secondary"
+                                icon="fa-barcode"
+                                invisible="not id or type == 'service'"
+                            />
                             <button
                                 string="Back to Receive"
                                 name="action_avea_back_to_receive"
@@ -217,6 +275,10 @@
                                     <div class="o_avea_workspace_info_item">
                                         <span class="o_avea_workspace_info_label">Cost EX Tax</span>
                                         <field name="avea_cost_ex_tax" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Cost INCL Tax</span>
+                                        <field name="avea_cost_incl_tax" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/>
                                     </div>
                                     <div class="o_avea_workspace_info_item">
                                         <span class="o_avea_workspace_info_label">Markup %</span>
@@ -418,6 +480,14 @@
 
                                 <div class="o_avea_stock_product_footer o_avea_stock_product_footer--bar">
                                     <button
+                                        string="Print Labels"
+                                        name="action_open_label_layout"
+                                        type="object"
+                                        class="btn btn-secondary"
+                                        icon="fa-barcode"
+                                        invisible="not id or type == 'service'"
+                                    />
+                                    <button
                                         string="Back to Receive"
                                         name="action_avea_back_to_receive"
                                         type="object"
@@ -461,8 +531,11 @@
         <field name="name">Stock</field>
         <field name="res_model">product.template</field>
         <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_stock_product_search"/>
+        <field name="target">main</field>
         <field name="context">{
             'avea_stock_workspace': True,
+            'clear_breadcrumbs': True,
             'no_breadcrumbs': True,
             'default_sale_ok': True,
             'default_purchase_ok': True,

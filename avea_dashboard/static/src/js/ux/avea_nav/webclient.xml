@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-inherit="web.WebClient" t-inherit-mode="extension">
+        <xpath expr="//NavBar" position="replace">
+            <t t-if="!state.fullscreen">
+                <AveaNav t-if="usesAveaNav()"/>
+                <NavBar t-else=""/>
+            </t>
+        </xpath>
+    </t>
+
+</templates>

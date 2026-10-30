@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="report_avea_stock_take_line_table">
+        <table class="table table-sm o_avea_report_table mb-4">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Barcode</th>
+                    <th>Category</th>
+                    <th>Supplier</th>
+                    <th class="text-end">Expected</th>
+                    <th class="text-end">Counted</th>
+                    <th class="text-end">Difference</th>
+                    <th class="text-end">Unit cost</th>
+                    <th class="text-end">Stock value</th>
+                    <th t-if="show_accounting" class="text-end">Accounting</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr t-foreach="lines" t-as="line">
+                    <td t-out="line['product']"/>
+                    <td t-out="line['sku']"/>
+                    <td t-out="line['barcode']"/>
+                    <td t-out="line['category']"/>
+                    <td t-out="line['supplier']"/>
+                    <td class="text-end" t-out="line['expected_qty']"/>
+                    <td class="text-end" t-out="line['counted_qty']"/>
+                    <td class="text-end" t-out="line['difference_qty']"/>
+                    <td class="text-end" t-out="line['unit_cost_display']"/>
+                    <td class="text-end" t-out="line['variance_value_display']"/>
+                    <td t-if="show_accounting" class="text-end" t-out="payload['money'](line['accounting_value'])"/>
+                </tr>
+            </tbody>
+        </table>
+    </template>
+
+    <template id="report_avea_stock_take_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="payload" t-value="doc.get_stock_take_report_payload()"/>
+                <t t-set="show_accounting" t-value="payload['has_accounting_impact']"/>
+                <t t-set="avea_report_title" t-value="'Stock Take Report'"/>
+                <t t-call="avea_till.avea_report_document">
+                    <t t-call="avea_till.avea_report_metadata">
+                        <div class="col-6">
+                            <strong>Reference:</strong>
+                            <span t-out="payload['reference']"/>
+                        </div>
+                        <div class="col-6">
+                            <strong>Completed:</strong>
+                            <span t-out="payload['completed']"/>
+                        </div>
+                        <div class="col-6">
+                            <strong>Location:</strong>
+                            <span t-out="payload['location']"/>
+                        </div>
+                        <div class="col-6">
+                            <strong>Scope:</strong>
+                            <span t-out="payload['scope']"/>
+                        </div>
+                        <div class="col-6">
+                            <strong>Responsible:</strong>
+                            <span t-out="payload['responsible']"/>
+                        </div>
+                        <div class="col-6">
+                            <strong>Applied by:</strong>
+                            <span t-out="payload['applied_by']"/>
+                        </div>
+                    </t>
+
+                    <h3 class="o_avea_report_section_title">Count summary</h3>
+                    <table class="table table-sm o_avea_report_summary_table mb-4">
+                        <tbody>
+                            <tr>
+                                <td>Products counted</td>
+                                <td class="text-end" t-out="payload['line_count']"/>
+                            </tr>
+                            <tr>
+                                <td>Correct (no variance)</td>
+                                <td class="text-end" t-out="payload['unchanged_count']"/>
+                            </tr>
+                            <tr>
+                                <td>Incorrect (with variance)</td>
+                                <td class="text-end" t-out="payload['difference_count']"/>
+                            </tr>
+                            <tr>
+                                <td>Increases</td>
+                                <td class="text-end">
+                                    <span t-out="payload['increase_count']"/>
+                                    (<span t-out="payload['total_increase_qty']"/> units)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Decreases</td>
+                                <td class="text-end">
+                                    <span t-out="payload['decrease_count']"/>
+                                    (<span t-out="payload['total_decrease_qty']"/> units)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Net unit variance</td>
+                                <td class="text-end" t-out="payload['total_variance']"/>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h3 class="o_avea_report_section_title">Stock value impact (Avea unit cost)</h3>
+                    <table class="table table-sm o_avea_report_summary_table mb-2">
+                        <tbody>
+                            <tr>
+                                <td>Stock gain (count higher than system)</td>
+                                <td class="text-end" t-out="payload['money'](payload['total_gain_value'])"/>
+                            </tr>
+                            <tr>
+                                <td>Stock loss (count lower than system)</td>
+                                <td class="text-end" t-out="payload['money'](payload['total_loss_value'])"/>
+                            </tr>
+                            <tr class="fw-bold">
+                                <td>Net stock value impact</td>
+                                <td class="text-end" t-out="payload['money'](payload['net_stock_value_impact'])"/>
+                            </tr>
+                            <tr t-if="show_accounting">
+                                <td>Accounting impact (posted journals)</td>
+                                <td class="text-end" t-out="payload['money'](payload['accounting_impact_total'])"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="text-muted small mb-4" t-out="payload['valuation_note']"/>
+
+                    <t t-if="payload['variance_lines']">
+                        <h3 class="o_avea_report_section_title">Items not correct (variances)</h3>
+                        <t t-set="lines" t-value="payload['variance_lines']"/>
+                        <t t-call="avea_till.report_avea_stock_take_line_table"/>
+                    </t>
+
+                    <t t-if="payload['increase_lines']">
+                        <h3 class="o_avea_report_section_title">Stock increases</h3>
+                        <t t-set="lines" t-value="payload['increase_lines']"/>
+                        <t t-call="avea_till.report_avea_stock_take_line_table"/>
+                    </t>
+
+                    <t t-if="payload['decrease_lines']">
+                        <h3 class="o_avea_report_section_title">Stock decreases</h3>
+                        <t t-set="lines" t-value="payload['decrease_lines']"/>
+                        <t t-call="avea_till.report_avea_stock_take_line_table"/>
+                    </t>
+
+                    <h3 class="o_avea_report_section_title">All items counted</h3>
+                    <t t-set="lines" t-value="payload['all_lines']"/>
+                    <t t-call="avea_till.report_avea_stock_take_line_table"/>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_avea_stock_take" model="ir.actions.report">
+        <field name="name">Stock Take Report</field>
+        <field name="model">avea.stock.take</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_stock_take_document</field>
+        <field name="report_file">avea_till.report_avea_stock_take_document</field>
+        <field name="print_report_name">'Stock Take - %s' % (object.name)</field>
+    </record>
+
+</odoo>

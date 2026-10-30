@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_sales_platform"
+        name="Sales Platforms"
+        parent="menu_avea_root"
+        action="action_avea_sales_platform"
+        groups="avea_till.group_avea_manager"
+        sequence="16"
+    />
+
+</odoo>

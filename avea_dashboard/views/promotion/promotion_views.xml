@@ -5,9 +5,25 @@
         <field name="name">avea.promotion.list</field>
         <field name="model">avea.promotion</field>
         <field name="arch" type="xml">
-            <list string="Promotions" class="o_avea_promotion_list" create="1" delete="1">
+            <list
+                string="Promotions"
+                class="o_avea_promotion_list o_avea_promotion_list_table"
+                js_class="avea_promotion_list"
+                default_order="date_from desc, name"
+                create="1"
+                delete="1"
+            >
                 <field name="name"/>
-                <field name="active" widget="boolean_toggle"/>
+                <field
+                    name="schedule_status"
+                    string="Status"
+                    widget="badge"
+                    decoration-success="schedule_status == 'running'"
+                    decoration-info="schedule_status == 'scheduled'"
+                    decoration-warning="schedule_status == 'expired'"
+                    decoration-muted="schedule_status == 'inactive'"
+                />
+                <field name="active" string="Enabled" widget="boolean_toggle"/>
                 <field name="date_from" optional="show"/>
                 <field name="date_to" optional="show"/>
                 <field name="deal_summary" string="Deal"/>
@@ -22,11 +38,17 @@
         <field name="model">avea.promotion</field>
         <field name="arch" type="xml">
             <search string="Promotions">
-                <field name="name"/>
-                <field name="promo_code"/>
-                <field name="deal_summary"/>
-                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
-                <filter string="Inactive" name="inactive" domain="[('active', '=', False)]"/>
+                <field
+                    name="name"
+                    string="Search promotions"
+                    filter_domain="['|', '|', ('name', 'ilike', self), ('promo_code', 'ilike', self), ('deal_summary', 'ilike', self)]"
+                />
+                <filter string="Running" name="running" domain="[('schedule_status', '=', 'running')]"/>
+                <filter string="Scheduled" name="scheduled" domain="[('schedule_status', '=', 'scheduled')]"/>
+                <filter string="Expired" name="expired" domain="[('schedule_status', '=', 'expired')]"/>
+                <separator/>
+                <filter string="Enabled" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Disabled" name="inactive" domain="[('active', '=', False)]"/>
             </search>
         </field>
     </record>
@@ -35,7 +57,7 @@
         <field name="name">avea.promotion.form</field>
         <field name="model">avea.promotion</field>
         <field name="arch" type="xml">
-            <form string="Promotion" class="o_avea_workspace o_avea_workspace--promotion">
+            <form string="Promotion" class="o_avea_workspace o_avea_workspace--promotion" js_class="avea_promotion_form">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
                     <field name="program_id" invisible="1"/>
@@ -83,7 +105,7 @@
                                         </div>
                                         <div class="o_avea_workspace_info_item o_avea_promotion_check_row">
                                             <field name="active" nolabel="1"/>
-                                            <span class="o_avea_workspace_info_label">Active</span>
+                                            <span class="o_avea_workspace_info_label">Enabled</span>
                                         </div>
                                     </div>
                                 </div>
@@ -141,9 +163,10 @@
                                         <field
                                             name="product_ids"
                                             nolabel="1"
-                                            widget="many2many_tags"
+                                            widget="avea_promotion_product_picker"
                                             options="{'no_create': True}"
                                             domain="[('sale_ok', '=', True)]"
+                                            placeholder="Search and add a product"
                                         />
                                     </div>
                                 </div>
@@ -262,13 +285,22 @@
 
                                 <div class="o_avea_promotion_summary_name_block">
                                     <field name="summary_name" nolabel="1" readonly="1" class="o_avea_promotion_summary_name"/>
+                                    <field name="schedule_status" invisible="1"/>
                                     <span
-                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--active"
-                                        invisible="not active"
-                                    >Active</span>
+                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--running"
+                                        invisible="schedule_status != 'running'"
+                                    >Running</span>
+                                    <span
+                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--scheduled"
+                                        invisible="schedule_status != 'scheduled'"
+                                    >Scheduled</span>
+                                    <span
+                                        class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--expired"
+                                        invisible="schedule_status != 'expired'"
+                                    >Expired</span>
                                     <span
                                         class="o_avea_promotion_summary_badge o_avea_promotion_summary_badge--inactive"
-                                        invisible="active"
+                                        invisible="schedule_status != 'inactive'"
                                     >Inactive</span>
                                 </div>
 
@@ -323,7 +355,8 @@
         <field name="res_model">avea.promotion</field>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_avea_promotion_search"/>
-        <field name="context">{'search_default_active': 1}</field>
+        <field name="target">main</field>
+        <field name="context">{'clear_breadcrumbs': True}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create your first promotion

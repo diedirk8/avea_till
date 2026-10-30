@@ -98,6 +98,17 @@ class AveaPromotion(models.Model):
     )
 
     program_id = fields.Many2one("loyalty.program", readonly=True, copy=False)
+    schedule_status = fields.Selection(
+        [
+            ("inactive", "Inactive"),
+            ("scheduled", "Scheduled"),
+            ("running", "Running"),
+            ("expired", "Expired"),
+        ],
+        string="Status",
+        compute="_compute_schedule_status",
+        store=True,
+    )
     deal_summary = fields.Char(compute="_compute_summary_panel")
     summary_name = fields.Char(related="name", readonly=True)
     summary_status = fields.Char(compute="_compute_summary_panel")
@@ -107,9 +118,26 @@ class AveaPromotion(models.Model):
     summary_blurb = fields.Text(compute="_compute_summary_panel")
     pos_order_count = fields.Integer(related="program_id.pos_order_count", string="POS orders")
 
+    @api.depends("active", "date_from", "date_to", "open_ended")
+    def _compute_schedule_status(self):
+        today = fields.Date.context_today(self)
+        for promotion in self:
+            promotion.schedule_status = promotion._avea_schedule_status_for_date(today)
+
+    def _avea_schedule_status_for_date(self, today):
+        self.ensure_one()
+        if not self.active:
+            return "inactive"
+        if self.date_from and today < self.date_from:
+            return "scheduled"
+        if not self.open_ended and self.date_to and today > self.date_to:
+            return "expired"
+        return "running"
+
     @api.depends(
         "name",
         "active",
+        "schedule_status",
         "description",
         "date_from",
         "date_to",
@@ -134,9 +162,12 @@ class AveaPromotion(models.Model):
         "currency_id",
     )
     def _compute_summary_panel(self):
+        status_labels = dict(self._fields["schedule_status"].selection)
         for promotion in self:
             promotion.deal_summary = promotion._format_deal_line()
-            promotion.summary_status = _("Active") if promotion.active else _("Inactive")
+            promotion.summary_status = status_labels.get(
+                promotion.schedule_status, _("Inactive")
+            )
             promotion.summary_date_range = promotion._format_date_range()
             promotion.summary_products = promotion._format_products_label()
             promotion.summary_blurb = promotion._format_summary_blurb()

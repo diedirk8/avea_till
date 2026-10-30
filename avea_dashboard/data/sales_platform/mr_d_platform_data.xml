@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+
+    <record id="sales_platform_mr_d" model="avea.sales.platform">
+        <field name="name">Mr D</field>
+        <field name="commission_percent">10</field>
+        <field name="commission_vat" eval="True"/>
+        <field name="price_rounding_rule">nearest_9</field>
+        <field name="notes">First Avea sales platform — delivery marketplace with 10% commission (VAT on commission applies).</field>
+    </record>
+
+</odoo>

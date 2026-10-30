@@ -10,7 +10,6 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         "res.partner",
         string="Supplier",
         required=True,
-        domain="[('supplier_rank', '>', 0)]",
     )
     expense_date = fields.Date(
         string="Date",
@@ -64,6 +63,25 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         required=True,
         default=lambda self: self.env.company,
     )
+    bank_reconcile_line_id = fields.Many2one(
+        "avea.bank.reconcile.line",
+        string="Bank reconcile line",
+        ondelete="set null",
+    )
+    booking_partner_role = fields.Selection(
+        selection=[
+            ("supplier", "Supplier"),
+            ("employee", "Employee"),
+            ("bank", "Bank"),
+            ("merchant", "Merchant"),
+        ],
+        string="Payee type",
+        readonly=True,
+    )
+    partner_hint = fields.Text(
+        string="Payee help",
+        readonly=True,
+    )
 
     @api.depends("company_id")
     def _compute_available_journal_ids(self):
@@ -76,12 +94,19 @@ class AveaOperationalExpenseWizard(models.TransientModel):
     @api.model
     def default_get(self, fields_list):
         values = super().default_get(fields_list)
+        ctx = self.env.context
         if "paid_from_journal_id" in fields_list and not values.get(
             "paid_from_journal_id"
         ):
             journal = self._avea_default_paid_from_journal(self.env.company)
             if journal:
                 values["paid_from_journal_id"] = journal.id
+        role = ctx.get("avea_booking_partner_role")
+        if role and "booking_partner_role" in fields_list:
+            values["booking_partner_role"] = role
+        hint = ctx.get("default_partner_hint")
+        if hint and "partner_hint" in fields_list:
+            values["partner_hint"] = hint
         return values
 
     @api.constrains("amount")
@@ -114,9 +139,22 @@ class AveaOperationalExpenseWizard(models.TransientModel):
 
     def action_record_expense(self):
         self.ensure_one()
+        self._avea_resolve_partner()
         bill = self._avea_create_vendor_bill()
-        self._avea_pay_bill(bill)
+        statement_line = self._avea_pay_bill(bill)
+        if self.bank_reconcile_line_id:
+            return self.bank_reconcile_line_id._avea_after_booked(statement_line)
         return self._avea_success_close()
+
+    def _avea_resolve_partner(self):
+        """Ensure the supplier is flagged as a vendor before posting."""
+        self.ensure_one()
+        partner = self.partner_id
+        if not partner:
+            raise UserError(_("Choose a supplier or add a new one from the list."))
+        if partner.supplier_rank < 1:
+            partner.sudo().write({"supplier_rank": 1})
+        return partner
 
     def _avea_create_vendor_bill(self):
         self.ensure_one()

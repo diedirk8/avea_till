@@ -6,6 +6,7 @@
         name="Promotions"
         parent="menu_avea_root"
         action="action_avea_promotion"
+        groups="avea_till.group_avea_manager"
         sequence="15"
     />
 

@@ -13,6 +13,8 @@ class LoyaltyProgram(models.Model):
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)
         fields_list += [
+            "active",
+            "pos_config_ids",
             "avea_is_combo",
             "avea_combo_price",
             "avea_combo_components",
