@@ -56,6 +56,79 @@ VAT 15% 19.50
 Total 149.50
 """
 
+FEEDER_387 = """
+Invoice
+
+Invoice Number 387
+
+Date
+29 Oct 2026
+
+Due Date
+29 Oct 2026
+
+To
+Pets Empire
+
+From
+The Feeder Co
+
+Item
+
+Quantity
+
+Crickets - Small - 500ml - WS
+
+Mealworms - 1kg - WS
+
+Frozen Mice - Pinkies - 10 - WS
+
+Frozen Mice - Fuzzies - 10 - WS
+
+Shipping - STK5 - NT
+
+Bank Account
+Bank: First National Bank
+
+1
+
+1
+
+3
+
+3
+
+1
+
+Price
+
+R 20,00
+
+R 390,00
+
+R 99,00
+
+R 117,00
+
+R 180,00
+
+Amount
+
+R 20,00
+
+R 390,00
+
+R 297,00
+
+R 351,00
+
+R 180,00
+
+Total
+
+R 1 238,00
+"""
+
 
 @tagged("post_install", "-at_install", "avea_invoice_read")
 class TestSupplierInvoiceRead(TransactionCase):
@@ -74,6 +147,18 @@ class TestSupplierInvoiceRead(TransactionCase):
                 "standard_price": 40.0,
             }
         )
+
+    def test_stacked_columns_like_feeder_co(self):
+        parsed = AveaSupplierInvoiceReader.parse_text(FEEDER_387)
+        self.assertEqual(parsed["invoice_number"], "387")
+        self.assertEqual(str(parsed["invoice_date"]), "2026-10-29")
+        self.assertEqual(len(parsed["lines"]), 5)
+        self.assertEqual(parsed["lines"][0]["description"], "Crickets - Small - 500ml - WS")
+        self.assertEqual(parsed["lines"][0]["quantity"], 1.0)
+        self.assertEqual(parsed["lines"][0]["unit_price"], 20.0)
+        self.assertEqual(parsed["lines"][2]["quantity"], 3.0)
+        self.assertEqual(parsed["lines"][2]["unit_price"], 99.0)
+        self.assertEqual(parsed["lines"][-1]["description"], "Shipping - STK5 - NT")
 
     def test_column_invoice_like_biofarm(self):
         parsed = AveaSupplierInvoiceReader.parse_text(COLUMN)

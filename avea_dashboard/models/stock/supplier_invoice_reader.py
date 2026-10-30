@@ -138,6 +138,8 @@ class AveaSupplierInvoiceReader:
         # Some invoices (Biofarm and similar) put each column on its own line.
         if not lines:
             lines = cls._parse_column_blocks(cleaned)
+        if not lines:
+            lines = cls._parse_stacked_columns(cleaned)
         return {
             "invoice_number": cls._invoice_number(cleaned),
             "invoice_date": cls._invoice_date(cleaned),
@@ -173,17 +175,35 @@ class AveaSupplierInvoiceReader:
 
     @classmethod
     def _invoice_number(cls, text):
+        labeled = re.search(
+            r"invoice\s+number\s+([A-Z0-9][A-Z0-9\-\/]{0,24})",
+            text or "",
+            re.IGNORECASE,
+        )
+        if labeled:
+            return labeled.group(1).strip(" -:")
         match = _INVOICE_NO_RE.search(text or "")
         if not match:
             return None
         number = match.group(1).strip(" -:")
-        if number.lower() in {"date", "no", "number", "tax"}:
+        if number.lower() in {"date", "no", "number", "tax", "invoice"}:
             return None
         return number
 
     @classmethod
     def _invoice_date(cls, text):
-        for line in (text or "").split("\n"):
+        lines = (text or "").split("\n")
+        for index, line in enumerate(lines):
+            if line.strip().lower() != "date":
+                continue
+            for follow in lines[index + 1 : index + 4]:
+                candidate = re.sub(r"\s+", " ", follow.replace("\u00a0", " ")).strip()
+                if not candidate:
+                    continue
+                parsed = cls._parse_date(candidate)
+                if parsed:
+                    return parsed
+        for line in lines:
             if not re.search(r"\bdate\b", line, re.IGNORECASE):
                 continue
             match = _DATE_RE.search(line)
@@ -296,6 +316,82 @@ class AveaSupplierInvoiceReader:
             current.append(line)
         flush()
         return items
+
+    @classmethod
+    def _parse_stacked_columns(cls, text):
+        """Some PDFs (e.g. Wave / Feeder Co) list Item, Qty, Price, and Amount in separate blocks."""
+        raw_lines = (text or "").split("\n")
+        normalized = [
+            re.sub(r"\s+", " ", line.replace("\u00a0", " ")).strip() for line in raw_lines
+        ]
+
+        def find_label(label):
+            target = label.lower()
+            for index, line in enumerate(normalized):
+                if line.lower() == target:
+                    return index
+            return -1
+
+        quantity_idx = find_label("Quantity")
+        price_idx = find_label("Price")
+        amount_idx = find_label("Amount")
+        if quantity_idx < 0 or price_idx < 0:
+            return []
+
+        bank_line = re.compile(
+            r"^(bank account|bank:|account name:|account number:|branch code:|account type:)",
+            re.IGNORECASE,
+        )
+        descriptions = []
+        quantities = []
+        for line in normalized[quantity_idx + 1 : price_idx]:
+            if not line or bank_line.match(line):
+                continue
+            if _INT_LINE_RE.match(line):
+                quantities.append(float(line))
+                continue
+            if line.lower() in {"item", "quantity", "price", "amount", "total"}:
+                continue
+            if _FOOTER_RE.match(line) or _NOT_A_SUPPLIER.match(line):
+                continue
+            if re.search(r"[A-Za-z]", line) and len(line) >= 4:
+                descriptions.append(line)
+
+        prices = []
+        stop = amount_idx if amount_idx > price_idx else len(normalized)
+        for line in normalized[price_idx + 1 : stop]:
+            if not line:
+                continue
+            if line.lower() in {"amount", "total"}:
+                break
+            amount = cls._parse_money_token(line)
+            if amount is not None:
+                prices.append(amount)
+
+        if not descriptions or not quantities or not prices:
+            return []
+        count = min(len(descriptions), len(quantities), len(prices))
+        items = []
+        for index in range(count):
+            items.append(
+                {
+                    "description": descriptions[index],
+                    "quantity": quantities[index],
+                    "unit_price": prices[index],
+                    "codes": [],
+                }
+            )
+        return items
+
+    @classmethod
+    def _parse_money_token(cls, line):
+        cleaned = re.sub(r"\s+", " ", (line or "").replace("\u00a0", " ")).strip()
+        cleaned = re.sub(r"^(?:R|ZAR)\s*", "", cleaned, flags=re.IGNORECASE)
+        match = _MONEY_RE.search(cleaned)
+        if not match:
+            return None
+        whole = match.group(1).replace(" ", "").replace("\u00a0", "")
+        return _to_float(f"{whole}{match.group(2)}{match.group(3)}")
 
     @classmethod
     def _block_ready(cls, lines):
