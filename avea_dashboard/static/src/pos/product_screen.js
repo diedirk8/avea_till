@@ -32,6 +32,8 @@ patch(ProductScreen.prototype, {
         super.setup(...arguments);
         this.state.aveaProductPage = 0;
         this.state.aveaProductTab = "products";
+        this.state.aveaServerSearchBusy = false;
+        this._aveaLastAutoSearchTerm = "";
         if (!this.pos.aveaRecentProductIds) {
             this.pos.aveaRecentProductIds = [];
         }
@@ -47,6 +49,74 @@ patch(ProductScreen.prototype, {
                 this.state.aveaProductTab,
             ]
         );
+        useEffect(
+            () => {
+                const term = (this.pos.searchProductWord || "").trim();
+                if (!term || term.length < 2 || !this.pos.config.avea_pos_auto_search_server) {
+                    return;
+                }
+                const timer = setTimeout(() => {
+                    this._aveaAutoSearchServer(term);
+                }, 400);
+                return () => clearTimeout(timer);
+            },
+            () => [this.pos.searchProductWord, this.pos.config.avea_pos_auto_search_server]
+        );
+    },
+
+    _aveaSearchBatchSize() {
+        const batch = parseInt(this.pos.config.avea_pos_search_batch_size || "100", 10);
+        return Number.isFinite(batch) && batch > 0 ? batch : 100;
+    },
+
+    async loadProductFromDB() {
+        const { searchProductWord } = this.pos;
+        if (!searchProductWord) {
+            return [];
+        }
+        this.pos.setSelectedCategory(0);
+        const domain = this.loadProductFromDBDomain(searchProductWord.trim());
+        const { limit_categories, iface_available_categ_ids } = this.pos.config;
+        if (limit_categories && iface_available_categ_ids.length > 0) {
+            const categIds = iface_available_categ_ids.map((categ) => categ.id);
+            domain.push(["pos_categ_ids", "in", categIds]);
+        }
+        const results = await this.pos.loadNewProducts(
+            domain,
+            this.state.currentOffset,
+            this._aveaSearchBatchSize()
+        );
+        return results["product.product"] || [];
+    },
+
+    async _aveaAutoSearchServer(term) {
+        if (!this.pos.config.avea_pos_auto_search_server || this.state.aveaServerSearchBusy) {
+            return;
+        }
+        if (this._aveaLastAutoSearchTerm !== term) {
+            this.state.currentOffset = 0;
+            this.state.previousSearchWord = term;
+            this._aveaLastAutoSearchTerm = term;
+        }
+        this.state.aveaServerSearchBusy = true;
+        try {
+            const maxRounds = 4;
+            for (let round = 0; round < maxRounds; round += 1) {
+                const batch = await this.loadProductFromDB();
+                if (!batch.length) {
+                    break;
+                }
+                this.state.currentOffset += batch.length;
+                if (this.aveaProductCount >= this.aveaProductsPerPage) {
+                    break;
+                }
+                if (batch.length < this._aveaSearchBatchSize()) {
+                    break;
+                }
+            }
+        } finally {
+            this.state.aveaServerSearchBusy = false;
+        }
     },
 
     get aveaProductsPerPage() {

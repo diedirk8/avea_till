@@ -16,6 +16,8 @@ class TestPosProductViewSettings(TestPoSCommon):
         self.assertTrue(self.config.avea_show_stock_quantity)
         self.assertTrue(self.config.avea_show_stock_status)
         self.assertEqual(self.config.avea_products_per_page, "50")
+        self.assertTrue(self.config.avea_pos_auto_search_server)
+        self.assertEqual(self.config.avea_pos_search_batch_size, "100")
 
     def test_product_template_pos_fields_include_stock(self):
         fields_list = self.env["product.template"]._load_pos_data_fields(self.config)
@@ -33,5 +35,8 @@ class TestPosProductViewSettings(TestPoSCommon):
                 "avea_show_stock_quantity",
                 "avea_show_stock_status",
                 "avea_product_layout",
+                "avea_pos_auto_search_server",
+                "avea_pos_search_batch_size",
+                "avea_preload_all_pos_products",
             ):
                 self.assertIn(field, fields_list)

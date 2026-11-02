@@ -29,6 +29,9 @@ const AVEA_POS_CONFIG_DEFAULTS = {
     avea_show_stock_quantity: true,
     avea_show_stock_status: true,
     avea_products_per_page: "50",
+    avea_pos_auto_search_server: true,
+    avea_pos_search_batch_size: "100",
+    avea_preload_all_pos_products: false,
 };
 
 patch(PosStore.prototype, {
@@ -63,6 +66,48 @@ patch(PosStore.prototype, {
         this.aveaPlatformPricelistByPartnerId =
             this.config?.avea_sales_platform_pricelist_by_partner_id || {};
         this._aveaNormalizePosConfig();
+    },
+
+    async afterProcessServerData() {
+        await super.afterProcessServerData(...arguments);
+        if (this.config?.avea_preload_all_pos_products) {
+            this._aveaPreloadRemainingProducts().catch(() => {});
+        }
+    },
+
+    async _aveaPreloadRemainingProducts() {
+        if (this._aveaPreloadRunning) {
+            return;
+        }
+        this._aveaPreloadRunning = true;
+        try {
+            const domain = [
+                ["available_in_pos", "=", true],
+                ["sale_ok", "=", true],
+            ];
+            const { limit_categories, iface_available_categ_ids } = this.config;
+            if (limit_categories && iface_available_categ_ids?.length) {
+                domain.push([
+                    "pos_categ_ids",
+                    "in",
+                    iface_available_categ_ids.map((categ) => categ.id),
+                ]);
+            }
+            let offset = this.models["product.template"]?.getAll()?.length || 0;
+            while (true) {
+                const result = await this.loadNewProducts(domain, offset, 250);
+                const templates = result["product.template"] || [];
+                if (!templates.length) {
+                    break;
+                }
+                offset += templates.length;
+                if (templates.length < 250) {
+                    break;
+                }
+            }
+        } finally {
+            this._aveaPreloadRunning = false;
+        }
     },
 
     _aveaNormalizePosConfig() {
@@ -323,7 +368,10 @@ patch(PosStore.prototype, {
             (this.config.iface_available_categ_ids || []).map((c) => c.id)
         );
         const perPage = parseInt(this.config.avea_products_per_page || "10", 10);
-        const maxProducts = Math.max(100, (Number.isFinite(perPage) ? perPage : 10) * 25);
+        const searching = Boolean((this.searchProductWord || "").trim());
+        const maxProducts = searching
+            ? Math.max(500, (Number.isFinite(perPage) ? perPage : 10) * 50)
+            : Math.max(100, (Number.isFinite(perPage) ? perPage : 10) * 25);
 
         for (const p of products) {
             if (filteredList.length >= maxProducts) {

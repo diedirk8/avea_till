@@ -39,6 +39,18 @@
                             <field name="avea_products_per_page" class="col-lg-9"/>
                         </div>
                         <div class="row mt16">
+                            <label for="avea_pos_auto_search_server" class="col-lg-3 o_light_label"/>
+                            <field name="avea_pos_auto_search_server" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="avea_pos_search_batch_size" class="col-lg-3 o_light_label"/>
+                            <field name="avea_pos_search_batch_size" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="avea_preload_all_pos_products" class="col-lg-3 o_light_label"/>
+                            <field name="avea_preload_all_pos_products" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
                             <label for="avea_nav_category_ids" class="col-lg-3 o_light_label" string="Category navigation"/>
                             <field
                                 name="avea_nav_category_ids"
@@ -117,6 +129,18 @@
                         <div class="row mt16">
                             <label for="pos_avea_products_per_page" class="col-lg-3 o_light_label"/>
                             <field name="pos_avea_products_per_page" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="pos_avea_pos_auto_search_server" class="col-lg-3 o_light_label"/>
+                            <field name="pos_avea_pos_auto_search_server" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="pos_avea_pos_search_batch_size" class="col-lg-3 o_light_label"/>
+                            <field name="pos_avea_pos_search_batch_size" class="col-lg-9"/>
+                        </div>
+                        <div class="row mt16">
+                            <label for="pos_avea_preload_all_pos_products" class="col-lg-3 o_light_label"/>
+                            <field name="pos_avea_preload_all_pos_products" class="col-lg-9"/>
                         </div>
                         <div class="row mt16">
                             <label for="pos_avea_nav_category_ids" class="col-lg-3 o_light_label" string="Category navigation"/>

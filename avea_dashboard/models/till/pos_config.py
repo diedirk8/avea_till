@@ -41,6 +41,34 @@ class PosConfig(models.Model):
         default="50",
         help="Number of products shown per page on the POS selling screen.",
     )
+    avea_pos_auto_search_server = fields.Boolean(
+        string="Search server while typing",
+        default=True,
+        help=(
+            "When staff search by name, SKU, or barcode, the till also loads matching "
+            "products from the server in the background so they do not have to press "
+            "Search more repeatedly."
+        ),
+    )
+    avea_pos_search_batch_size = fields.Selection(
+        selection=[
+            ("50", "50"),
+            ("100", "100"),
+            ("200", "200"),
+        ],
+        string="Server search batch size",
+        default="100",
+        help="How many products each server search request loads.",
+    )
+    avea_preload_all_pos_products = fields.Boolean(
+        string="Preload full product catalogue",
+        default=False,
+        help=(
+            "After the till opens, load any remaining POS products in the background. "
+            "The first open may take longer, but search and browsing stay on the till "
+            "instead of waiting for Search more."
+        ),
+    )
     @api.model
     def _load_pos_data_fields(self, config):
         fields_list = super()._load_pos_data_fields(config)
@@ -51,6 +79,9 @@ class PosConfig(models.Model):
             "avea_show_stock_status",
             "avea_products_per_page",
             "avea_nav_category_ids",
+            "avea_pos_auto_search_server",
+            "avea_pos_search_batch_size",
+            "avea_preload_all_pos_products",
         ]
         if fields_list:
             return fields_list + [field for field in avea_fields if field not in fields_list]

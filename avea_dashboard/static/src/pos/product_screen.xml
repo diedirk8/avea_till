@@ -242,8 +242,17 @@
                         <p t-else="">There are no products in this category.</p>
                     </div>
 
-                    <div t-if="searchWord and !pos.scanning" class="search-more-button d-flex justify-content-center m-2">
-                        <button class="btn btn-primary btn-lg lh-lg" t-on-click="onPressEnterKey">Search more</button>
+                    <div t-if="searchWord and !pos.scanning" class="search-more-button d-flex flex-column align-items-center m-2 gap-2">
+                        <span t-if="state.aveaServerSearchBusy" class="text-muted">
+                            Searching the full catalogue…
+                        </span>
+                        <button
+                            t-if="!state.aveaServerSearchBusy"
+                            class="btn btn-primary btn-lg lh-lg"
+                            t-on-click="onPressEnterKey"
+                        >
+                            Load more results
+                        </button>
                     </div>
                 </div>
             </section>

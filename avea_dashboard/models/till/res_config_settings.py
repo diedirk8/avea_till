@@ -66,6 +66,18 @@ class ResConfigSettings(models.TransientModel):
         related="pos_config_id.avea_nav_category_ids",
         readonly=False,
     )
+    pos_avea_pos_auto_search_server = fields.Boolean(
+        related="pos_config_id.avea_pos_auto_search_server",
+        readonly=False,
+    )
+    pos_avea_pos_search_batch_size = fields.Selection(
+        related="pos_config_id.avea_pos_search_batch_size",
+        readonly=False,
+    )
+    pos_avea_preload_all_pos_products = fields.Boolean(
+        related="pos_config_id.avea_preload_all_pos_products",
+        readonly=False,
+    )
 
     def action_avea_ensure_dedicated_cash_journal(self):
         self.ensure_one()
