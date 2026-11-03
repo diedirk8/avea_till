@@ -5,6 +5,7 @@
     --avea-brand: #0f766e;
     --avea-brand-hover: #115e59;
     --avea-brand-soft: rgba(15, 118, 110, 0.12);
+    --avea-brand-section: #ccfbf1;
     --avea-brand-border: rgba(15, 118, 110, 0.35);
     --bs-link-color: var(--avea-brand);
     --bs-link-hover-color: var(--avea-brand-hover);
@@ -60,6 +61,29 @@
     }
 }
 
+.o_avea_accounting_report_exports {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin: 0 0 1rem;
+
+    .btn {
+        font-weight: 600;
+        min-width: 4.75rem;
+    }
+}
+
+.o_avea_accounting_report_exports_label {
+    color: var(--o-gray-600, #6c757d);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    margin-right: 0.35rem;
+    text-transform: uppercase;
+}
+
 .o_avea_workspace--accounting-reports {
     .o_avea_accounting_reports_period {
         margin-bottom: 1.25rem;
@@ -108,37 +132,70 @@ body.o_avea_product_shell {
     }
 }
 
-.o_avea_workspace--accounting-report .o_list_table tr.o_data_row:has(td[name="is_total"] .o_field_boolean input:checked) {
-    font-weight: 700;
+.o_avea_accounting_report_table_card {
+    background: #fff;
+    border: 1px solid var(--o-gray-300, #dee2e6);
+    border-radius: 0.75rem;
+    overflow: hidden;
 }
 
 .o_avea_workspace--accounting-report .o_avea_accounting_report_lines {
-    .o_list_table tr.o_data_row:has(td[name="is_section_header"] .o_field_boolean input:checked) {
-        background: var(--avea-brand-soft, rgba(15, 118, 110, 0.12));
-
-        td {
-            border-top: 1px solid var(--avea-brand-border, rgba(15, 118, 110, 0.35));
-            color: var(--avea-brand, #0f766e);
+    .o_list_table {
+        thead th {
+            background: #f3f4f6;
+            border-bottom: 1px solid var(--o-gray-300, #dee2e6);
+            color: var(--o-gray-700, #495057);
             font-size: 0.75rem;
             font-weight: 700;
-            letter-spacing: 0.06em;
-            padding-top: 0.85rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+    }
+
+    .o_list_table tr.o_data_row:has(td[name="is_section_header"] .o_field_boolean input:checked) {
+        background: var(--avea-brand-section, #ccfbf1);
+
+        td {
+            border-bottom: 1px solid rgba(15, 118, 110, 0.15);
+            border-top: 2px solid var(--avea-brand, #0f766e);
+            color: var(--avea-brand-hover, #115e59);
+            font-size: 0.8125rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            padding-bottom: 0.55rem;
+            padding-top: 1rem;
             text-transform: uppercase;
         }
 
-        td[name="account_code"],
-        td[name="amount"] {
+        td[name="account_code"] {
+            color: transparent;
+            user-select: none;
+        }
+    }
+
+    .o_list_table tr.o_data_row:has(td[name="is_total"] .o_field_boolean input:checked) {
+        background: #f8f9fa;
+
+        td {
+            border-top: 2px solid rgba(15, 118, 110, 0.35);
+            font-weight: 700;
+            padding-bottom: 0.65rem;
+            padding-top: 0.65rem;
+        }
+
+        td[name="account_code"] {
             color: transparent;
             user-select: none;
         }
 
-        td[name="amount"] .o_field_widget {
-            display: none;
+        td[name="amount"] .o_field_widget,
+        td[name="debit"] .o_field_widget,
+        td[name="credit"] .o_field_widget {
+            font-weight: 700;
         }
     }
 
-    .o_list_table tr.o_data_row:has(td[name="is_total"] .o_field_boolean input:checked) td[name="account_code"] {
-        color: transparent;
-        user-select: none;
+    .o_list_table tr.o_data_row:not(:has(td[name="is_section_header"] .o_field_boolean input:checked)):not(:has(td[name="is_total"] .o_field_boolean input:checked)):nth-child(even) {
+        background: #fafafa;
     }
 }

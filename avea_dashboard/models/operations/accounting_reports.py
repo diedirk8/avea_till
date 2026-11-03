@@ -246,7 +246,7 @@ class AveaAccountingProfitLossLine(models.TransientModel):
 class AveaAccountingProfitLoss(models.TransientModel):
     _name = "avea.accounting.profit.loss"
     _description = "Profit and loss"
-    _inherit = ["avea.accounting.report.mixin"]
+    _inherit = ["avea.accounting.report.mixin", "avea.accounting.report.export.mixin"]
 
     period = fields.Selection(_PERIOD_SELECTION, readonly=True)
     date_from = fields.Date(readonly=True)
@@ -360,6 +360,50 @@ class AveaAccountingProfitLoss(models.TransientModel):
             self.env["avea.accounting.profit.loss.line"].create(line_vals)
         return report._avea_action_form(_("Profit and loss"))
 
+    def _accounting_export_pdf_xmlid(self):
+        return "avea_till.action_report_avea_accounting_profit_loss"
+
+    def _accounting_build_export_table(self):
+        self.ensure_one()
+        headers = [_("Code"), _("Account"), _("Amount")]
+        rows = []
+        for line in self.line_ids.sorted("sequence"):
+            if line.is_section_header:
+                rows.append(
+                    {"row_type": "header", "cells": ["", line.account_name, ""]}
+                )
+            elif line.is_total:
+                rows.append(
+                    {
+                        "row_type": "total",
+                        "cells": ["", line.account_name, line.amount],
+                    }
+                )
+            else:
+                rows.append(
+                    {
+                        "row_type": "line",
+                        "cells": [
+                            line.account_code or "",
+                            line.account_name,
+                            line.amount,
+                        ],
+                    }
+                )
+        summaries = [
+            (_("Net profit"), self._accounting_format_amount(self.net_profit)),
+            (_("Income"), self._accounting_format_amount(self.total_income)),
+            (_("Expenses"), self._accounting_format_amount(self.total_expense)),
+        ]
+        return (
+            _("Profit and loss"),
+            "profit_and_loss",
+            self.period_range_display or "",
+            summaries,
+            headers,
+            rows,
+        )
+
     def action_back(self):
         return self.env["avea.accounting.reports.home"].action_open_home()
 
@@ -400,7 +444,7 @@ class AveaAccountingBalanceSheetLine(models.TransientModel):
 class AveaAccountingBalanceSheet(models.TransientModel):
     _name = "avea.accounting.balance.sheet"
     _description = "Balance sheet"
-    _inherit = ["avea.accounting.report.mixin"]
+    _inherit = ["avea.accounting.report.mixin", "avea.accounting.report.export.mixin"]
 
     period = fields.Selection(_PERIOD_SELECTION, readonly=True)
     date_from = fields.Date(readonly=True)
@@ -507,6 +551,44 @@ class AveaAccountingBalanceSheet(models.TransientModel):
             self.env["avea.accounting.balance.sheet.line"].create(line_vals)
         return report._avea_action_form(_("Balance sheet"))
 
+    def _accounting_export_pdf_xmlid(self):
+        return "avea_till.action_report_avea_accounting_balance_sheet"
+
+    def _accounting_build_export_table(self):
+        self.ensure_one()
+        headers = [_("Code"), _("Account"), _("Amount")]
+        rows = []
+        for line in self.line_ids.sorted("sequence"):
+            if line.is_section_header:
+                rows.append(
+                    {"row_type": "header", "cells": ["", line.account_name, ""]}
+                )
+            elif line.is_total:
+                rows.append(
+                    {
+                        "row_type": "total",
+                        "cells": ["", line.account_name, line.amount],
+                    }
+                )
+            else:
+                rows.append(
+                    {
+                        "row_type": "line",
+                        "cells": [
+                            line.account_code or "",
+                            line.account_name,
+                            line.amount,
+                        ],
+                    }
+                )
+        period = self.as_at_display or self.period_range_display or ""
+        summaries = [
+            (_("Assets"), self._accounting_format_amount(self.total_assets)),
+            (_("Liabilities"), self._accounting_format_amount(self.total_liabilities)),
+            (_("Equity"), self._accounting_format_amount(self.total_equity)),
+        ]
+        return (_("Balance sheet"), "balance_sheet", period, summaries, headers, rows)
+
     def action_back(self):
         return self.env["avea.accounting.reports.home"].action_open_home()
 
@@ -543,7 +625,7 @@ class AveaAccountingTrialBalanceLine(models.TransientModel):
 class AveaAccountingTrialBalance(models.TransientModel):
     _name = "avea.accounting.trial.balance"
     _description = "Trial balance"
-    _inherit = ["avea.accounting.report.mixin"]
+    _inherit = ["avea.accounting.report.mixin", "avea.accounting.report.export.mixin"]
 
     period = fields.Selection(_PERIOD_SELECTION, readonly=True)
     date_from = fields.Date(readonly=True)
@@ -610,6 +692,49 @@ class AveaAccountingTrialBalance(models.TransientModel):
             self.env["avea.accounting.trial.balance.line"].create(line_vals)
         return report._avea_action_form(_("Trial balance"))
 
+    def _accounting_export_pdf_xmlid(self):
+        return "avea_till.action_report_avea_accounting_trial_balance"
+
+    def _accounting_build_export_table(self):
+        self.ensure_one()
+        headers = [_("Code"), _("Account"), _("Debit"), _("Credit")]
+        rows = []
+        for line in self.line_ids.sorted("account_code, account_name"):
+            rows.append(
+                {
+                    "row_type": "line",
+                    "cells": [
+                        line.account_code or "",
+                        line.account_name,
+                        line.debit,
+                        line.credit,
+                    ],
+                }
+            )
+        rows.append(
+            {
+                "row_type": "total",
+                "cells": [
+                    "",
+                    _("Total"),
+                    self.total_debit,
+                    self.total_credit,
+                ],
+            }
+        )
+        summaries = [
+            (_("Total debit"), self._accounting_format_amount(self.total_debit)),
+            (_("Total credit"), self._accounting_format_amount(self.total_credit)),
+        ]
+        return (
+            _("Trial balance"),
+            "trial_balance",
+            self.period_range_display or "",
+            summaries,
+            headers,
+            rows,
+        )
+
     def action_back(self):
         return self.env["avea.accounting.reports.home"].action_open_home()
 
@@ -650,7 +775,7 @@ class AveaAccountingGeneralLedgerLine(models.TransientModel):
 class AveaAccountingGeneralLedger(models.TransientModel):
     _name = "avea.accounting.general.ledger"
     _description = "General ledger"
-    _inherit = ["avea.accounting.report.mixin"]
+    _inherit = ["avea.accounting.report.mixin", "avea.accounting.report.export.mixin"]
 
     period = fields.Selection(_PERIOD_SELECTION, readonly=True)
     date_from = fields.Date(readonly=True)
@@ -709,6 +834,47 @@ class AveaAccountingGeneralLedger(models.TransientModel):
         if line_vals:
             self.env["avea.accounting.general.ledger.line"].create(line_vals)
         return report._avea_action_form(_("General ledger"))
+
+    def _accounting_export_pdf_xmlid(self):
+        return "avea_till.action_report_avea_accounting_general_ledger"
+
+    def _accounting_build_export_table(self):
+        self.ensure_one()
+        headers = [
+            _("Date"),
+            _("Entry"),
+            _("Code"),
+            _("Account"),
+            _("Description"),
+            _("Partner"),
+            _("Debit"),
+            _("Credit"),
+        ]
+        rows = []
+        for line in self.line_ids.sorted("date desc, id desc"):
+            rows.append(
+                {
+                    "row_type": "line",
+                    "cells": [
+                        line.date.strftime("%Y-%m-%d") if line.date else "",
+                        line.move_name or "",
+                        line.account_code or "",
+                        line.account_name or "",
+                        line.label or "",
+                        line.partner_name or "",
+                        line.debit,
+                        line.credit,
+                    ],
+                }
+            )
+        return (
+            _("General ledger"),
+            "general_ledger",
+            self.period_range_display or "",
+            [],
+            headers,
+            rows,
+        )
 
     def action_back(self):
         return self.env["avea.accounting.reports.home"].action_open_home()

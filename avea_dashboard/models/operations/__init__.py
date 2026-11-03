@@ -1,4 +1,5 @@
 from . import account_account
+from . import accounting_report_export
 from . import accounting_reports
 from . import account_balance_wizard
 from . import account_bank_statement_line

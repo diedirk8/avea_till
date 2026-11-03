@@ -30,6 +30,31 @@
     .o_main_table {
         margin-bottom: 0.5rem;
     }
+
+    .o_avea_accounting_pdf_summary {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.35rem;
+        margin-bottom: 0.5rem;
+        padding: 0.65rem 0.75rem;
+    }
+
+    .o_avea_accounting_pdf_table {
+        .o_avea_accounting_pdf_row--header td {
+            background: #ccfbf1;
+            border-top: 2px solid #0f766e;
+            color: #115e59;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .o_avea_accounting_pdf_row--total td {
+            background: #f8f9fa;
+            border-top: 2px solid #99f6e4;
+            font-weight: 700;
+        }
+    }
 }
 
 .o_body_html .header {

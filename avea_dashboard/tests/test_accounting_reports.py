@@ -68,3 +68,12 @@ class TestAveaAccountingReports(TransactionCase):
         )
         report = self._env()["avea.accounting.general.ledger"].browse(action["res_id"])
         self.assertTrue(report.exists())
+
+    def test_profit_loss_csv_export_action(self):
+        action = self._env()["avea.accounting.profit.loss"].action_open_report(
+            period="ytd"
+        )
+        report = self._env()["avea.accounting.profit.loss"].browse(action["res_id"])
+        export = report.action_export_csv()
+        self.assertEqual(export["type"], "ir.actions.act_url")
+        self.assertIn("/web/content/", export["url"])
