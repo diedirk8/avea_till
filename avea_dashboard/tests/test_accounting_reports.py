@@ -42,6 +42,10 @@ class TestAveaAccountingReports(TransactionCase):
         report = self._env()["avea.accounting.profit.loss"].browse(action["res_id"])
         self.assertTrue(report.exists())
         self.assertEqual(report.net_profit, report.total_income - report.total_expense)
+        headers = report.line_ids.filtered("is_section_header")
+        if report.line_ids.filtered(lambda line: line.section == "income" and not line.is_section_header and not line.is_total):
+            self.assertTrue(headers.filtered(lambda line: line.section == "income"))
+            self.assertEqual(headers.filtered(lambda line: line.section == "income")[:1].account_name, "INCOME")
 
     def test_balance_sheet_report_builds(self):
         action = self._env()["avea.accounting.balance.sheet"].action_open_report(

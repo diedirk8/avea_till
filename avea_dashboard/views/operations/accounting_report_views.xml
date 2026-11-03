@@ -96,11 +96,12 @@
                     </div>
                     <div class="o_avea_workspace_ledger_card">
                         <field name="line_ids" nolabel="1" readonly="1">
-                            <list create="false" edit="false" delete="false" default_order="section, sequence, account_name" decoration-bf="is_total">
-                                <field name="section_label" string="Section" optional="hide"/>
+                            <list create="false" edit="false" delete="false" default_order="sequence" decoration-bf="is_total or is_section_header" class="o_avea_accounting_report_lines">
+                                <field name="section_label" column_invisible="True"/>
                                 <field name="account_code" string="Code" optional="show"/>
                                 <field name="account_name" string="Account"/>
-                                <field name="amount" string="Amount" widget="monetary" sum="Total"/>
+                                <field name="amount" string="Amount" widget="monetary"/>
+                                <field name="is_section_header" column_invisible="True"/>
                                 <field name="is_total" column_invisible="True"/>
                                 <field name="currency_id" column_invisible="True"/>
                             </list>
@@ -144,11 +145,12 @@
                     </div>
                     <div class="o_avea_workspace_ledger_card">
                         <field name="line_ids" nolabel="1" readonly="1">
-                            <list create="false" edit="false" delete="false" default_order="section, sequence, account_name" decoration-bf="is_total">
-                                <field name="section_label" string="Section" optional="hide"/>
+                            <list create="false" edit="false" delete="false" default_order="sequence" decoration-bf="is_total or is_section_header" class="o_avea_accounting_report_lines">
+                                <field name="section_label" column_invisible="True"/>
                                 <field name="account_code" string="Code" optional="show"/>
                                 <field name="account_name" string="Account"/>
                                 <field name="amount" string="Amount" widget="monetary"/>
+                                <field name="is_section_header" column_invisible="True"/>
                                 <field name="is_total" column_invisible="True"/>
                                 <field name="currency_id" column_invisible="True"/>
                             </list>

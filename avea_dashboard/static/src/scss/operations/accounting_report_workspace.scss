@@ -111,3 +111,34 @@ body.o_avea_product_shell {
 .o_avea_workspace--accounting-report .o_list_table tr.o_data_row:has(td[name="is_total"] .o_field_boolean input:checked) {
     font-weight: 700;
 }
+
+.o_avea_workspace--accounting-report .o_avea_accounting_report_lines {
+    .o_list_table tr.o_data_row:has(td[name="is_section_header"] .o_field_boolean input:checked) {
+        background: var(--avea-brand-soft, rgba(15, 118, 110, 0.12));
+
+        td {
+            border-top: 1px solid var(--avea-brand-border, rgba(15, 118, 110, 0.35));
+            color: var(--avea-brand, #0f766e);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            padding-top: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        td[name="account_code"],
+        td[name="amount"] {
+            color: transparent;
+            user-select: none;
+        }
+
+        td[name="amount"] .o_field_widget {
+            display: none;
+        }
+    }
+
+    .o_list_table tr.o_data_row:has(td[name="is_total"] .o_field_boolean input:checked) td[name="account_code"] {
+        color: transparent;
+        user-select: none;
+    }
+}

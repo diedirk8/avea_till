@@ -46,6 +46,19 @@ _SECTION_LABELS = {
 }
 
 
+_PL_SECTION_BASE_SEQ = {
+    "income": 100,
+    "expense_direct_cost": 200,
+    "expense": 300,
+    "other_expense": 400,
+}
+_BS_SECTION_BASE_SEQ = {
+    "asset": 100,
+    "liability": 200,
+    "equity": 300,
+}
+
+
 class AveaAccountingReportMixin(models.AbstractModel):
     _name = "avea.accounting.report.mixin"
     _description = "Avea accounting report helpers"
@@ -114,6 +127,12 @@ class AveaAccountingReportMixin(models.AbstractModel):
         if account_type in _EXPENSE_TYPES:
             return "expense"
         return "other_expense"
+
+    @api.model
+    def _avea_section_heading(self, section_key):
+        """Uppercase section title for report tables (Income, Expenses, …)."""
+        label = _SECTION_LABELS.get(section_key)
+        return _(label).upper() if label else ""
 
     @api.model
     def _avea_bs_section(self, account_type):
@@ -205,7 +224,7 @@ class AveaAccountingReportsHome(models.TransientModel):
 class AveaAccountingProfitLossLine(models.TransientModel):
     _name = "avea.accounting.profit.loss.line"
     _description = "Profit and loss line"
-    _order = "section, sequence, account_name"
+    _order = "sequence, id"
 
     report_id = fields.Many2one(
         "avea.accounting.profit.loss",
@@ -220,6 +239,7 @@ class AveaAccountingProfitLossLine(models.TransientModel):
     account_name = fields.Char()
     account_code = fields.Char()
     amount = fields.Monetary(currency_field="currency_id")
+    is_section_header = fields.Boolean(default=False)
     is_total = fields.Boolean(default=False)
 
 
@@ -263,10 +283,8 @@ class AveaAccountingProfitLoss(models.TransientModel):
         totals = self._avea_move_line_balances(domain)
         Account = self.env["account.account"].sudo()
         accounts = Account.browse(list(totals.keys())).exists()
-        lines = []
-        section_seq = {"income": 10, "expense_direct_cost": 20, "expense": 30, "other_expense": 40}
-        income_total = expense_total = 0.0
         by_section = defaultdict(list)
+        income_total = expense_total = 0.0
         for account in accounts:
             amount = self._avea_display_amount(
                 account.account_type, totals.get(account.id, 0.0)
@@ -299,17 +317,27 @@ class AveaAccountingProfitLoss(models.TransientModel):
             }
         )
         line_vals = []
-        for section in ("income", "expense_direct_cost", "expense", "other_expense"):
+        for section, base_seq in _PL_SECTION_BASE_SEQ.items():
             rows = sorted(by_section.get(section, []), key=lambda row: row["account_name"].lower())
             if not rows:
                 continue
-            for row in rows:
+            line_vals.append(
+                {
+                    "report_id": report.id,
+                    "section": section,
+                    "section_label": _(_SECTION_LABELS[section]),
+                    "sequence": base_seq,
+                    "account_name": self._avea_section_heading(section),
+                    "is_section_header": True,
+                }
+            )
+            for index, row in enumerate(rows):
                 line_vals.append(
                     {
                         "report_id": report.id,
                         "section": section,
                         "section_label": _(_SECTION_LABELS[section]),
-                        "sequence": section_seq[section],
+                        "sequence": base_seq + 10 + index,
                         "account_id": row["account_id"],
                         "account_name": row["account_name"],
                         "account_code": row["account_code"],
@@ -322,7 +350,7 @@ class AveaAccountingProfitLoss(models.TransientModel):
                     "report_id": report.id,
                     "section": section,
                     "section_label": _(_SECTION_LABELS[section]),
-                    "sequence": section_seq[section] + 1,
+                    "sequence": base_seq + 90,
                     "account_name": _("Total %s") % _(_SECTION_LABELS[section]),
                     "amount": subtotal,
                     "is_total": True,
@@ -350,7 +378,7 @@ class AveaAccountingProfitLoss(models.TransientModel):
 class AveaAccountingBalanceSheetLine(models.TransientModel):
     _name = "avea.accounting.balance.sheet.line"
     _description = "Balance sheet line"
-    _order = "section, sequence, account_name"
+    _order = "sequence, id"
 
     report_id = fields.Many2one(
         "avea.accounting.balance.sheet",
@@ -365,6 +393,7 @@ class AveaAccountingBalanceSheetLine(models.TransientModel):
     account_name = fields.Char()
     account_code = fields.Char()
     amount = fields.Monetary(currency_field="currency_id")
+    is_section_header = fields.Boolean(default=False)
     is_total = fields.Boolean(default=False)
 
 
@@ -439,18 +468,27 @@ class AveaAccountingBalanceSheet(models.TransientModel):
             }
         )
         line_vals = []
-        section_seq = {"asset": 10, "liability": 20, "equity": 30}
-        for section in ("asset", "liability", "equity"):
+        for section, base_seq in _BS_SECTION_BASE_SEQ.items():
             rows = sorted(by_section.get(section, []), key=lambda row: row["account_name"].lower())
             if not rows:
                 continue
-            for row in rows:
+            line_vals.append(
+                {
+                    "report_id": report.id,
+                    "section": section,
+                    "section_label": _(_SECTION_LABELS[section]),
+                    "sequence": base_seq,
+                    "account_name": self._avea_section_heading(section),
+                    "is_section_header": True,
+                }
+            )
+            for index, row in enumerate(rows):
                 line_vals.append(
                     {
                         "report_id": report.id,
                         "section": section,
                         "section_label": _(_SECTION_LABELS[section]),
-                        "sequence": section_seq[section],
+                        "sequence": base_seq + 10 + index,
                         **row,
                     }
                 )
@@ -459,7 +497,7 @@ class AveaAccountingBalanceSheet(models.TransientModel):
                     "report_id": report.id,
                     "section": section,
                     "section_label": _(_SECTION_LABELS[section]),
-                    "sequence": section_seq[section] + 1,
+                    "sequence": base_seq + 90,
                     "account_name": _("Total %s") % _(_SECTION_LABELS[section]),
                     "amount": section_totals[section],
                     "is_total": True,
