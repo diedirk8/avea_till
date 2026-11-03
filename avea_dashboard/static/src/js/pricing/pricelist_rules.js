@@ -30,6 +30,10 @@ export class AveaPricelistRulesRenderer extends ListRenderer {
         const base = super.getCellClass(column, record);
         return _hideUnusedScopeCell(column, record) ? `${base} o_invisible_modifier` : base;
     }
+
+    get getEmptyRowIds() {
+        return [];
+    }
 }
 
 registry.category("views").add("avea_pricelist_rules", {
@@ -53,5 +57,11 @@ patch(ListRenderer.prototype, {
             return base;
         }
         return `${base} o_invisible_modifier`;
+    },
+    get getEmptyRowIds() {
+        if (_isAveaPricelistRules(this)) {
+            return [];
+        }
+        return super.getEmptyRowIds;
     },
 });

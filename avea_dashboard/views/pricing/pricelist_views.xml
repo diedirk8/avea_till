@@ -115,6 +115,9 @@
                                         js_class="avea_pricelist_rules"
                                         default_order="avea_priority, applied_on, id"
                                     >
+                                        <control>
+                                            <create string="Add a rule"/>
+                                        </control>
                                         <field name="avea_priority" string="Level"/>
                                         <field name="applied_on" string="Applies to"/>
                                         <field

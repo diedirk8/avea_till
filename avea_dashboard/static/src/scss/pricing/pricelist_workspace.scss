@@ -198,11 +198,11 @@
     .o_avea_pricelist_lines .o_data_cell {
         border: none !important;
         display: flex !important;
-        flex: 1 1 11rem;
+        flex: 0 1 auto;
         flex-direction: column;
         gap: 0.28rem;
-        max-width: 100%;
-        min-width: 0;
+        max-width: 18rem;
+        min-width: 7.5rem;
         overflow: visible !important;
         padding: 0 !important;
         white-space: normal !important;
@@ -282,12 +282,34 @@
 
     .o_avea_pricelist_lines .o_data_cell[name="avea_priority"],
     .o_avea_pricelist_lines .o_data_cell[data-name="avea_priority"] {
-        flex: 0 1 7rem;
+        flex: 0 0 6.25rem;
+        max-width: 6.25rem;
+        min-width: 5.5rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="applied_on"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="applied_on"],
+    .o_avea_pricelist_lines .o_data_cell[name="avea_method"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_method"] {
+        flex: 0 1 12rem;
+        max-width: 16rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="categ_id"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="categ_id"],
+    .o_avea_pricelist_lines .o_data_cell[name="product_tmpl_id"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="product_tmpl_id"],
+    .o_avea_pricelist_lines .o_data_cell[name="product_id"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="product_id"] {
+        flex: 1 1 14rem;
+        max-width: 22rem;
     }
 
     .o_avea_pricelist_lines .o_data_cell[name="avea_amount"],
     .o_avea_pricelist_lines .o_data_cell[data-name="avea_amount"] {
-        flex: 0 1 8.5rem;
+        flex: 0 1 7.5rem;
+        max-width: 8.5rem;
+        min-width: 6.5rem;
     }
 
     .o_avea_pricelist_lines .o_data_cell[name="avea_result"],
@@ -295,6 +317,7 @@
     .o_avea_pricelist_lines .o_data_cell[name="price"],
     .o_avea_pricelist_lines .o_data_cell[data-name="price"] {
         flex: 1 1 100%;
+        max-width: none;
         font-weight: 600;
     }
 
@@ -321,27 +344,52 @@
         word-break: break-word;
     }
 
-    .o_avea_pricelist_lines .o_field_x2many_list_row_add,
-    .o_avea_pricelist_lines tr.o_field_x2many_list_row_add {
+    // Odoo 19 puts o_field_x2many_list_row_add on the TD, not the TR.
+    // Spreadsheet filler rows (zero-width space) collapse into a grey square
+    // once tbody is a flex column — hide them.
+    .o_avea_pricelist_lines tbody > tr:not(.o_data_row):not(:has(.o_field_x2many_list_row_add)) {
+        display: none !important;
+    }
+
+    .o_avea_pricelist_lines tbody > tr:has(> .o_field_x2many_list_row_add) {
+        align-items: stretch;
         background: transparent;
         border: 1px dashed rgba(13, 148, 136, 0.45);
         border-radius: 0.75rem;
+        box-sizing: border-box;
         display: flex !important;
-        min-height: 2.6rem;
-        padding: 0.55rem 0.95rem;
-        width: 100%;
-    }
-
-    .o_avea_pricelist_lines .o_field_x2many_list_row_add td {
-        border: none !important;
-        display: block;
+        min-height: 2.75rem;
         padding: 0;
-        width: 100%;
+        width: 100% !important;
+
+        &:hover {
+            background: var(--avea-brand-soft);
+            border-color: var(--avea-brand);
+        }
     }
 
-    .o_avea_pricelist_lines .o_field_x2many_list_row_add a {
+    .o_avea_pricelist_lines td.o_field_x2many_list_row_add {
+        align-items: center;
+        border: none !important;
+        display: flex !important;
+        flex: 1 1 auto !important;
+        max-width: none !important;
+        min-height: 2.75rem;
+        min-width: 0 !important;
+        overflow: visible !important;
+        padding: 0.55rem 1rem !important;
+        width: 100% !important;
+    }
+
+    .o_avea_pricelist_lines td.o_field_x2many_list_row_add a {
         color: var(--avea-brand);
+        display: inline-flex;
         font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .o_avea_pricelist_lines td.o_field_x2many_list_row_add a::before {
+        content: "+ ";
     }
 }
 
