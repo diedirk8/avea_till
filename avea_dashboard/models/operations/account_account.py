@@ -30,15 +30,6 @@ _AVEA_CODE_START = {
     "income_other": "420080",
 }
 
-_AVEA_WRITE_FIELDS = {
-    "name",
-    "account_type",
-    "active",
-    "deprecated",
-    "code",
-}
-
-
 class AccountAccount(models.Model):
     _inherit = "account.account"
 
@@ -207,11 +198,6 @@ class AccountAccount(models.Model):
                         "or add a new account instead."
                     )
                 )
-        return {
-            key: value
-            for key, value in vals.items()
-            if key in _AVEA_WRITE_FIELDS
-        }
 
     def _avea_use_workspace_form(self, user=None):
         self.ensure_one()
@@ -240,18 +226,20 @@ class AccountAccount(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
-        if self.env.context.get("avea_account_workspace") and not self.env.context.get(
-            "avea_account_writing"
-        ):
-            self._avea_require_manager()
+        if self.env.context.get("avea_account_workspace"):
             if "avea_kind" in vals and vals.get("avea_kind"):
                 vals = dict(vals, account_type=vals["avea_kind"])
             vals.pop("avea_kind", None)
-            allowed = self._avea_validate_write(vals)
-            return super(
-                AccountAccount,
-                self.sudo().with_context(avea_account_writing=True),
-            ).write(allowed)
+            user_keys = set(vals) - {
+                "code",
+                "code_store",
+                "code_mapping_ids",
+                "company_ids",
+            }
+            if user_keys and not self.env.su:
+                self._avea_require_manager()
+            if "account_type" in vals:
+                self._avea_validate_write(vals)
         return super().write(vals)
 
     def unlink(self):
