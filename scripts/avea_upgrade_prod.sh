@@ -50,4 +50,29 @@ bash "$(dirname "$0")/avea_verify_product_shell_layout.sh" --compiled
 
 echo "==> Installed version"
 "${SSH[@]}" "docker exec odoo-db-1 psql -U odoo -d ${PROD_DB} -t -c \"SELECT state, latest_version FROM ir_module_module WHERE name='${MODULE}';\""
+
+# wkhtmltopdf runs inside the Odoo container. It has to load report CSS from
+# a port this container actually serves (8069). web.base.url used to be
+# http://127.0.0.1:18069, so invoices and reports were printed with no logo,
+# colours, or table layout. report.url keeps PDF fetches on 8069 even if an
+# administrator signs in from another host.
+echo "==> Keep PDF report styles reachable inside the container"
+"${SSH[@]}" "docker exec odoo-db-1 psql -U odoo -d ${PROD_DB} -v ON_ERROR_STOP=1 -c \"
+UPDATE ir_config_parameter
+   SET value = 'http://127.0.0.1:8069', write_date = (NOW() AT TIME ZONE 'UTC')
+ WHERE key = 'report.url';
+INSERT INTO ir_config_parameter (key, value, create_uid, write_uid, create_date, write_date)
+SELECT 'report.url', 'http://127.0.0.1:8069', 1, 1, (NOW() AT TIME ZONE 'UTC'), (NOW() AT TIME ZONE 'UTC')
+WHERE NOT EXISTS (SELECT 1 FROM ir_config_parameter WHERE key = 'report.url');
+UPDATE ir_config_parameter
+   SET value = 'https://pos.petsempire.co.za', write_date = (NOW() AT TIME ZONE 'UTC')
+ WHERE key = 'web.base.url';
+UPDATE ir_config_parameter
+   SET value = 'True', write_date = (NOW() AT TIME ZONE 'UTC')
+ WHERE key = 'web.base.url.freeze';
+INSERT INTO ir_config_parameter (key, value, create_uid, write_uid, create_date, write_date)
+SELECT 'web.base.url.freeze', 'True', 1, 1, (NOW() AT TIME ZONE 'UTC'), (NOW() AT TIME ZONE 'UTC')
+WHERE NOT EXISTS (SELECT 1 FROM ir_config_parameter WHERE key = 'web.base.url.freeze');
+\""
+
 echo "==> Done (PRODUCTION)."
