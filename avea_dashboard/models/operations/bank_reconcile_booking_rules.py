@@ -6,6 +6,7 @@ suggest a category and GL account; the user confirms (or enables auto-apply late
 Avea follows the same pattern — suggestions on each line, one click to book.
 """
 import re
+from datetime import datetime
 
 from odoo import _, models
 
@@ -139,6 +140,11 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
             return True
         if _DATE_ONLY_LABEL.match(text):
             return True
+        if isinstance(bank_date, str):
+            try:
+                bank_date = datetime.strptime(bank_date[:10], "%Y-%m-%d").date()
+            except ValueError:
+                bank_date = False
         if bank_date:
             for fmt in ("%d %b", "%d %B", "%d/%m/%Y", "%Y-%m-%d"):
                 try:
