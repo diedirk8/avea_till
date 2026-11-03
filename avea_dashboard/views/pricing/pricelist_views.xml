@@ -82,6 +82,12 @@
                         <div class="o_avea_pricelist_hero_actions">
                             <div class="o_avea_pricelist_hero_actions_tools" invisible="not id">
                                 <button
+                                    name="action_avea_view_prices"
+                                    type="object"
+                                    string="View prices"
+                                    class="btn btn-secondary"
+                                />
+                                <button
                                     name="action_avea_fill_from_shelf"
                                     type="object"
                                     string="Fill from retail prices"
@@ -198,6 +204,50 @@
                     </div>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <record id="view_avea_pricelist_prices_list" model="ir.ui.view">
+        <field name="name">product.template.list.avea.pricelist.prices</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list
+                string="Prices"
+                create="false"
+                delete="false"
+                default_order="name"
+                class="o_avea_pricelist_prices_table"
+                js_class="avea_pricelist_prices"
+            >
+                <field name="name" string="Product"/>
+                <field name="categ_id" string="Category"/>
+                <field name="default_code" string="Code" optional="show"/>
+                <field name="barcode" string="Barcode" optional="hide"/>
+                <field name="avea_pricelist_preview_shelf" string="Shelf" widget="monetary"/>
+                <field name="avea_pricelist_preview_cost" string="Cost" widget="monetary"/>
+                <field name="avea_pricelist_preview_price" string="This list" widget="monetary"/>
+                <field name="avea_pricelist_preview_rule" string="Rule"/>
+                <field name="avea_pricelist_preview_currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_pricelist_prices_search" model="ir.ui.view">
+        <field name="name">product.template.search.avea.pricelist.prices</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <search string="Prices">
+                <field
+                    name="name"
+                    string="Product"
+                    filter_domain="['|', '|', '|', ('name', 'ilike', self), ('default_code', 'ilike', self), ('barcode', 'ilike', self), ('categ_id', 'ilike', self)]"
+                />
+                <field name="default_code" string="Code"/>
+                <field name="barcode"/>
+                <field name="categ_id" string="Category"/>
+            </search>
         </field>
     </record>
 

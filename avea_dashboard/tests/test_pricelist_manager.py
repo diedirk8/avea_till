@@ -291,6 +291,72 @@ class TestAveaPricelistManager(TransactionCase):
         self.assertEqual(global_item.avea_priority, 10)
         self.assertEqual(category_item.avea_priority, 3)
 
+    def test_view_prices_shows_computed_list_and_rule(self):
+        category = self.env["product.category"].create({"name": "Bird food"})
+        bird = self.env["product.template"].create(
+            {
+                "name": "Seed mix",
+                "list_price": 200.0,
+                "standard_price": 100.0,
+                "categ_id": category.id,
+                "type": "consu",
+                "sale_ok": True,
+            }
+        )
+        other = self.product
+        other.standard_price = 50.0
+        other.list_price = 120.0
+        pricelist = self.env["product.pricelist"].create(
+            {
+                "name": "Staff preview",
+                "company_id": self.company.id,
+            }
+        )
+        self.env["product.pricelist.item"].create(
+            [
+                {
+                    "pricelist_id": pricelist.id,
+                    "applied_on": "3_global",
+                    "compute_price": "formula",
+                    "base": "standard_price",
+                    "price_markup": 24.2,
+                    "avea_priority": 10,
+                },
+                {
+                    "pricelist_id": pricelist.id,
+                    "applied_on": "2_product_category",
+                    "categ_id": category.id,
+                    "compute_price": "percentage",
+                    "percent_price": 20.0,
+                    "avea_priority": 3,
+                },
+            ]
+        )
+        bird_row = bird.with_context(avea_pricelist_id=pricelist.id)
+        other_row = other.with_context(avea_pricelist_id=pricelist.id)
+        self.assertAlmostEqual(
+            bird_row.avea_pricelist_preview_price,
+            pricelist._get_product_price(bird.product_variant_id, 1),
+            places=2,
+        )
+        self.assertAlmostEqual(
+            other_row.avea_pricelist_preview_price,
+            pricelist._get_product_price(other.product_variant_id, 1),
+            places=2,
+        )
+        self.assertAlmostEqual(other_row.avea_pricelist_preview_shelf, 120.0, places=1)
+        self.assertAlmostEqual(other_row.avea_pricelist_preview_cost, 50.0, places=1)
+        self.assertIn("Bird food", bird_row.avea_pricelist_preview_rule)
+        self.assertRegex(bird_row.avea_pricelist_preview_rule, r"20(\.0+)?%")
+        self.assertIn("All products", other_row.avea_pricelist_preview_rule)
+        self.assertIn("cost", other_row.avea_pricelist_preview_rule.lower())
+
+        action = pricelist.action_avea_view_prices()
+        self.assertEqual(action["res_model"], "product.template")
+        self.assertEqual(action["context"]["avea_pricelist_id"], pricelist.id)
+        self.assertIn(("sale_ok", "=", True), action["domain"])
+        self.assertIn(bird, self.env["product.template"].search(action["domain"]))
+
     def test_cannot_delete_platform_pricelist(self):
         platform = self.env["avea.sales.platform"].create(
             {

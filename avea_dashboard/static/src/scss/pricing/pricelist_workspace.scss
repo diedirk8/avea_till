@@ -395,7 +395,8 @@
 
 // Product-shell overflow-x:clip ancestors swallow vertical scroll. Make the
 // action pane the scroller and let this form grow with its rules table.
-body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist) {
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist),
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist-prices) {
     height: calc(100vh - var(--avea-topbar-height));
     max-height: calc(100vh - var(--avea-topbar-height));
     overflow-x: hidden !important;
@@ -488,9 +489,83 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist) {
     padding: 1.25rem;
 }
 
-.o_list_view.o_avea_workspace--pricelist-list {
+.o_list_view.o_avea_workspace--pricelist-list,
+.o_list_view.o_avea_workspace--pricelist-prices {
     .o_control_panel {
         display: none !important;
+    }
+}
+
+.o_avea_pricelist_back_btn {
+    color: var(--avea-brand, #0d9488) !important;
+    display: inline-block;
+    font-weight: 700;
+    margin: 0 0 0.35rem;
+    padding: 0;
+    text-decoration: none;
+
+    &:hover {
+        color: var(--avea-brand-hover, #0f766e) !important;
+        text-decoration: underline;
+    }
+}
+
+.o_avea_pricelist_prices_search {
+    margin-top: 0.85rem;
+    max-width: 28rem;
+}
+
+.o_avea_pricelist_prices_search_input {
+    min-height: 2.35rem;
+}
+
+.o_avea_workspace--pricelist-prices {
+    .o_avea_pricelist_prices_table,
+    .o_list_renderer,
+    .o_list_table {
+        width: 100%;
+    }
+
+    .o_list_table {
+        table-layout: auto;
+
+        th,
+        td {
+            overflow-wrap: anywhere;
+            vertical-align: top;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        th {
+            background: var(--o-gray-100, #f8f9fa);
+            color: var(--o-gray-600, #6c757d);
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        td[name="avea_pricelist_preview_price"],
+        th[data-name="avea_pricelist_preview_price"] {
+            color: var(--avea-brand, #0d9488);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        td[name="avea_pricelist_preview_shelf"],
+        td[name="avea_pricelist_preview_cost"],
+        th[data-name="avea_pricelist_preview_shelf"],
+        th[data-name="avea_pricelist_preview_cost"] {
+            white-space: nowrap;
+        }
+    }
+
+    .o_list_renderer {
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 0.75rem;
+        margin: 0 0 0.5rem;
+        overflow-x: auto;
+        padding: 0.15rem 0 0;
     }
 }
 

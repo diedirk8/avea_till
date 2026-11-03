@@ -207,6 +207,36 @@ class ProductPricelist(models.Model):
             },
         }
 
+    def action_avea_view_prices(self):
+        self.ensure_one()
+        if not self.id:
+            raise UserError(_("Save this price list first, then view prices."))
+        domain = [
+            ("sale_ok", "=", True),
+            ("active", "=", True),
+        ]
+        if self.company_id:
+            domain.append(("company_id", "in", [False, self.company_id.id]))
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Prices on %(name)s", name=self.display_name),
+            "res_model": "product.template",
+            "view_mode": "list",
+            "views": [
+                (self.env.ref("avea_till.view_avea_pricelist_prices_list").id, "list"),
+            ],
+            "search_view_id": self.env.ref("avea_till.view_avea_pricelist_prices_search").id,
+            "domain": domain,
+            "context": {
+                "avea_pricelist_id": self.id,
+                "avea_pricelist_name": self.display_name,
+                "create": False,
+                "edit": False,
+                "delete": False,
+            },
+            "target": "current",
+        }
+
     def action_avea_view_customers(self):
         self.ensure_one()
         return {
