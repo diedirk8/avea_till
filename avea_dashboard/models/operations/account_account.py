@@ -151,13 +151,14 @@ class AccountAccount(models.Model):
                 ("account_type", "=", account_type),
                 ("code", "!=", False),
             ],
-            order="code desc",
             limit=1,
         )
         start = _AVEA_CODE_START.get(account_type, "999080")
         code = sample.code or ""
-        if code.isdigit():
-            start = str(int(code) + 1)
+        if code[:1].isdigit():
+            prefix = code[:4] if len(code) >= 4 else code[:3]
+            digits = "".join(ch for ch in prefix if ch.isdigit()) or prefix
+            start = f"{digits}80"
         return Account._search_new_account_code(start)
 
     @api.model
@@ -189,18 +190,6 @@ class AccountAccount(models.Model):
         vals.setdefault("reconcile", False)
         vals.setdefault("active", True)
         return vals
-
-    def _avea_fill_company_codes(self):
-        """Odoo 19 requires a code on each related company, including the parent."""
-        for account in self:
-            code = account.code
-            if not code:
-                continue
-            companies = account.company_ids | account.company_ids.root_id
-            for company in companies:
-                scoped = account.with_company(company)
-                if not scoped.code:
-                    scoped.code = code
 
     def _avea_validate_write(self, vals):
         if "account_type" in vals and vals["account_type"] not in AVEA_ACCOUNT_TYPES:
@@ -242,19 +231,12 @@ class AccountAccount(models.Model):
         ):
             self._avea_require_manager()
             prepared = [self._avea_prepare_account_vals(dict(vals)) for vals in vals_list]
-            company = self.env.company
-            root = company.root_id or company
-            accounts = super(
-                AccountAccount,
-                self.sudo()
-                .with_company(root)
-                .with_context(
-                    avea_account_creating=True,
-                    allowed_company_ids=(root | company).ids,
-                ),
-            ).create(prepared)
-            accounts._avea_fill_company_codes()
-            return accounts
+            creator = self.with_company(self.env.company).with_context(
+                avea_account_creating=True
+            )
+            if not self.env.su and not self.has_access("create"):
+                creator = creator.sudo()
+            return super(AccountAccount, creator).create(prepared)
         return super().create(vals_list)
 
     def write(self, vals):
