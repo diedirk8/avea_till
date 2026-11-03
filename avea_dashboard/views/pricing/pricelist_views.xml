@@ -134,7 +134,7 @@
                                             name="product_id"
                                             string="Variant"
                                             placeholder="Pick variant"
-                                            invisible="applied_on != '0_product_variant'"
+                                            column_invisible="True"
                                         />
                                         <field name="avea_method" string="How"/>
                                         <field name="avea_amount" string="Amount"/>
