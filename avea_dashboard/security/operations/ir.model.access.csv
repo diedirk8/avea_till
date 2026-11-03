@@ -12,3 +12,12 @@ access_avea_bank_reconcile_line,access.avea.bank.reconcile.line,model_avea_bank_
 access_avea_bank_reconcile_book_line,access.avea.bank.reconcile.book.line,model_avea_bank_reconcile_book_line,,1,1,1,1
 access_account_account_avea_manager,account.account.avea.manager,account.model_account_account,avea_till.group_avea_manager,1,1,1,0
 access_account_move_line_avea_manager,account.move.line.avea.manager,account.model_account_move_line,avea_till.group_avea_manager,1,0,0,0
+access_avea_accounting_reports_home,access.avea.accounting.reports.home,model_avea_accounting_reports_home,,1,1,1,1
+access_avea_accounting_profit_loss,access.avea.accounting.profit.loss,model_avea_accounting_profit_loss,,1,1,1,1
+access_avea_accounting_profit_loss_line,access.avea.accounting.profit.loss.line,model_avea_accounting_profit_loss_line,,1,1,1,1
+access_avea_accounting_balance_sheet,access.avea.accounting.balance.sheet,model_avea_accounting_balance_sheet,,1,1,1,1
+access_avea_accounting_balance_sheet_line,access.avea.accounting.balance.sheet.line,model_avea_accounting_balance_sheet_line,,1,1,1,1
+access_avea_accounting_trial_balance,access.avea.accounting.trial.balance,model_avea_accounting_trial_balance,,1,1,1,1
+access_avea_accounting_trial_balance_line,access.avea.accounting.trial.balance.line,model_avea_accounting_trial_balance_line,,1,1,1,1
+access_avea_accounting_general_ledger,access.avea.accounting.general.ledger,model_avea_accounting_general_ledger,,1,1,1,1
+access_avea_accounting_general_ledger_line,access.avea.accounting.general.ledger.line,model_avea_accounting_general_ledger_line,,1,1,1,1

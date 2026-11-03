@@ -22,6 +22,26 @@ AVEA_KIND_SELECTION = [
 AVEA_INCOME_TYPES = ("income", "income_other")
 AVEA_EXPENSE_TYPES = ("expense", "expense_other", "expense_direct_cost")
 
+AVEA_ASSET_TYPES = (
+    "asset_receivable",
+    "asset_cash",
+    "asset_current",
+    "asset_non_current",
+    "asset_fixed",
+    "asset_prepayments",
+)
+
+AVEA_ASSET_KIND_SELECTION = [
+    ("asset_cash", "Cash"),
+    ("asset_current", "Current asset"),
+    ("asset_receivable", "Receivable"),
+    ("asset_prepayments", "Prepayment"),
+    ("asset_fixed", "Fixed asset"),
+    ("asset_non_current", "Non-current asset"),
+]
+
+_AVEA_KIND_ALL = dict(AVEA_KIND_SELECTION + AVEA_ASSET_KIND_SELECTION)
+
 _AVEA_CODE_START = {
     "expense": "610080",
     "expense_other": "620080",
@@ -34,7 +54,7 @@ class AccountAccount(models.Model):
     _inherit = "account.account"
 
     avea_kind = fields.Selection(
-        selection=AVEA_KIND_SELECTION,
+        selection=AVEA_KIND_SELECTION + AVEA_ASSET_KIND_SELECTION,
         string="Kind",
         compute="_compute_avea_kind",
         inverse="_inverse_avea_kind",
@@ -59,13 +79,20 @@ class AccountAccount(models.Model):
         string="Has entries",
         compute="_compute_avea_activity_stats",
     )
+    avea_balance = fields.Monetary(
+        string="Balance",
+        compute="_compute_avea_balance",
+        currency_field="avea_currency_id",
+        help="Current posted balance on the account.",
+    )
+    avea_is_asset_account = fields.Boolean(compute="_compute_avea_account_flags")
+    avea_is_pnl_account = fields.Boolean(compute="_compute_avea_account_flags")
 
     @api.depends("account_type")
     def _compute_avea_kind(self):
-        allowed = dict(AVEA_KIND_SELECTION)
         for account in self:
             account.avea_kind = (
-                account.account_type if account.account_type in allowed else False
+                account.account_type if account.account_type in _AVEA_KIND_ALL else False
             )
 
     def _inverse_avea_kind(self):
@@ -119,6 +146,22 @@ class AccountAccount(models.Model):
                 account.avea_ytd_amount = balance
             account.avea_entry_count = counts.get(account.id, 0)
             account.avea_has_entries = bool(all_counts.get(account.id, 0))
+
+    @api.depends_context("company")
+    def _compute_avea_balance(self):
+        currency = self.env.company.currency_id
+        for account in self:
+            account.avea_currency_id = currency
+            if not account.id:
+                account.avea_balance = 0.0
+                continue
+            account.avea_balance = account.sudo().current_balance
+
+    @api.depends("account_type")
+    def _compute_avea_account_flags(self):
+        for account in self:
+            account.avea_is_asset_account = account.account_type in AVEA_ASSET_TYPES
+            account.avea_is_pnl_account = account.account_type in AVEA_ACCOUNT_TYPES
 
     @api.model
     def default_get(self, fields_list):
@@ -226,6 +269,10 @@ class AccountAccount(models.Model):
         if not user._avea_uses_product_shell():
             return False
         if self.account_type in AVEA_ACCOUNT_TYPES or not self.account_type:
+            return True
+        if self.account_type in AVEA_ASSET_TYPES and self.env.context.get(
+            "avea_asset_workspace"
+        ):
             return True
         return bool(self.env.context.get("avea_account_workspace"))
 

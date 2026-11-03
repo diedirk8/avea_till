@@ -19,6 +19,21 @@ export class AveaAccountListController extends ListController {
         this._applySearchDebounced = debounce(() => this.applyAccountSearch(), 300);
     }
 
+    get isAssetList() {
+        return Boolean(this.props.context?.avea_asset_workspace);
+    }
+
+    get listEyebrow() {
+        return "Accounting";
+    }
+
+    get listTitle() {
+        if (this.isAssetList) {
+            return "Asset accounts";
+        }
+        return "Income & expense accounts";
+    }
+
     get className() {
         const base = this.props.className || "";
         return `${base} o_avea_workspace o_avea_workspace--account o_avea_workspace--account-list`.trim();
@@ -96,6 +111,22 @@ export class AveaAccountListController extends ListController {
     async onFilterClick(filterKey) {
         await this._clearFilters();
         const searchModel = this.env.searchModel;
+        if (this.isAssetList) {
+            if (filterKey === "inactive") {
+                const item = this._searchItem("inactive");
+                if (item) {
+                    searchModel.toggleSearchItem(item.id);
+                }
+            } else {
+                const active = this._searchItem("active");
+                if (active) {
+                    searchModel.toggleSearchItem(active.id);
+                }
+            }
+            this.bannerState.activeFilter = filterKey;
+            await searchModel.search();
+            return;
+        }
         if (filterKey === "income" || filterKey === "expense") {
             const kind = this._searchItem(filterKey);
             const active = this._searchItem("active");

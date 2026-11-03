@@ -182,6 +182,47 @@ class AveaNavMixin(models.AbstractModel):
                 ],
             },
             {
+                "id": "accounting",
+                "label": "Accounting",
+                "min_role": "manager",
+                "items": [
+                    {
+                        "label": "Income & expense accounts",
+                        "menu_xmlid": "avea_till.menu_avea_accounting_income_expense",
+                    },
+                    {
+                        "label": "Asset accounts",
+                        "menu_xmlid": "avea_till.menu_avea_accounting_assets",
+                    },
+                    {
+                        "id": "accounting_reports",
+                        "label": "Reports",
+                        "items": [
+                            {
+                                "label": "Reports home",
+                                "menu_xmlid": "avea_till.menu_avea_accounting_reports",
+                            },
+                            {
+                                "label": "Profit and loss",
+                                "menu_xmlid": "avea_till.menu_avea_accounting_profit_loss",
+                            },
+                            {
+                                "label": "Balance sheet",
+                                "menu_xmlid": "avea_till.menu_avea_accounting_balance_sheet",
+                            },
+                            {
+                                "label": "Trial balance",
+                                "menu_xmlid": "avea_till.menu_avea_accounting_trial_balance",
+                            },
+                            {
+                                "label": "General ledger",
+                                "menu_xmlid": "avea_till.menu_avea_accounting_general_ledger",
+                            },
+                        ],
+                    },
+                ],
+            },
+            {
                 "id": "money",
                 "label": "Money",
                 "min_role": "manager",
@@ -193,10 +234,6 @@ class AveaNavMixin(models.AbstractModel):
                     {
                         "label": "Account Balances",
                         "menu_xmlid": "avea_till.menu_avea_operations_balances",
-                    },
-                    {
-                        "label": "Accounts",
-                        "menu_xmlid": "avea_till.menu_avea_operations_accounts",
                     },
                     {
                         "label": "New bank reconciliation",

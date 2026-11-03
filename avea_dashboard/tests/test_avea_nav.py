@@ -44,7 +44,7 @@ class TestAveaNav(TestPoSCommon):
         sections = self._section_ids(self.manager)
         self.assertEqual(
             sections,
-            ["business", "sessions", "stock", "customers", "money"],
+            ["business", "sessions", "stock", "customers", "accounting", "money"],
         )
         nav = self.manager._avea_nav_structure()
         self.assertTrue(nav["home"])
@@ -68,7 +68,7 @@ class TestAveaNav(TestPoSCommon):
         labels = {item["label"] for item in business["items"]}
         self.assertEqual(labels, {"Performance", "Transactions"})
 
-    def test_customers_and_money_use_nested_groups(self):
+    def test_accounting_section_and_money_nested_groups(self):
         nav = self.manager._avea_nav_structure()
         customers = next(s for s in nav["sections"] if s["id"] == "customers")
         self.assertEqual(customers["items"][0]["label"], "Customers")
@@ -80,9 +80,29 @@ class TestAveaNav(TestPoSCommon):
         self.assertEqual(customers["items"][5]["label"], "Sales Platforms")
         self.assertIn("items", store_credit)
 
+        accounting = next(s for s in nav["sections"] if s["id"] == "accounting")
+        accounting_labels = [item["label"] for item in accounting["items"]]
+        self.assertEqual(
+            accounting_labels[:2],
+            ["Income & expense accounts", "Asset accounts"],
+        )
+        reports = accounting["items"][2]
+        self.assertEqual(reports["label"], "Reports")
+        report_labels = [item["label"] for item in reports["items"]]
+        self.assertEqual(
+            report_labels,
+            [
+                "Reports home",
+                "Profit and loss",
+                "Balance sheet",
+                "Trial balance",
+                "General ledger",
+            ],
+        )
+
         money = next(s for s in nav["sections"] if s["id"] == "money")
         money_labels = [item["label"] for item in money["items"]]
-        self.assertIn("Accounts", money_labels)
+        self.assertNotIn("Accounts", money_labels)
         record_group = money["items"][-1]
         self.assertEqual(record_group["label"], "Record")
         record_labels = {item["label"] for item in record_group["items"]}

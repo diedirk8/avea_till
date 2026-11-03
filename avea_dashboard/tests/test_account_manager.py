@@ -6,7 +6,10 @@ from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
-from odoo.addons.avea_till.models.operations.account_account import AVEA_ACCOUNT_TYPES
+from odoo.addons.avea_till.models.operations.account_account import (
+    AVEA_ACCOUNT_TYPES,
+    AVEA_ASSET_TYPES,
+)
 
 
 @tagged("post_install", "-at_install", "avea_account_manager")
@@ -193,8 +196,28 @@ class TestAveaAccountManager(TransactionCase):
                 avea_account_workspace=True
             ).write({"name": "Do not rename cash"})
 
-    def test_nav_includes_accounts(self):
+    def test_nav_accounting_lists_accounts(self):
         nav = self.manager._avea_nav_structure()
-        money = next(section for section in nav["sections"] if section["id"] == "money")
-        labels = [item["label"] for item in money["items"]]
-        self.assertIn("Accounts", labels)
+        accounting = next(
+            section for section in nav["sections"] if section["id"] == "accounting"
+        )
+        labels = [item["label"] for item in accounting["items"]]
+        self.assertIn("Income & expense accounts", labels)
+        self.assertIn("Asset accounts", labels)
+
+    def test_asset_list_is_asset_types_only(self):
+        action = self.env.ref("avea_till.action_avea_asset_account_manager")
+        raw = action.domain or "[]"
+        domain = raw if isinstance(raw, list) else ast.literal_eval(raw)
+        type_leaf = next(
+            leaf for leaf in domain if leaf[0] == "account_type" and leaf[1] == "in"
+        )
+        self.assertEqual(set(type_leaf[2]), set(AVEA_ASSET_TYPES))
+        accounts = self.Account.search(domain)
+        self.assertTrue(accounts)
+        self.assertTrue(
+            all(account.account_type in AVEA_ASSET_TYPES for account in accounts)
+        )
+        pnl = self.Account.search(self._action_domain(), limit=1)
+        self.assertTrue(pnl)
+        self.assertNotIn(pnl, accounts)
