@@ -28,14 +28,21 @@ _LIABILITY_TYPES = (
 )
 _EQUITY_TYPES = ("equity", "equity_unaffected")
 
+_PERIOD_SELECTION = [
+    ("mtd", "Month to Date"),
+    ("ytd", "Year to Date"),
+    ("last_30", "Last 30 Days"),
+    ("custom", "Custom"),
+]
+
 _SECTION_LABELS = {
-    "income": _("Income"),
-    "expense_direct_cost": _("Cost of sales"),
-    "expense": _("Expenses"),
-    "other_expense": _("Other expenses"),
-    "asset": _("Assets"),
-    "liability": _("Liabilities"),
-    "equity": _("Equity"),
+    "income": "Income",
+    "expense_direct_cost": "Cost of sales",
+    "expense": "Expenses",
+    "other_expense": "Other expenses",
+    "asset": "Assets",
+    "liability": "Liabilities",
+    "equity": "Equity",
 }
 
 
@@ -125,12 +132,7 @@ class AveaAccountingReportsHome(models.TransientModel):
     _inherit = ["avea.accounting.report.mixin"]
 
     period = fields.Selection(
-        [
-            ("mtd", "Month to Date"),
-            ("ytd", "Year to Date"),
-            ("last_30", "Last 30 Days"),
-            ("custom", "Custom"),
-        ],
+        _PERIOD_SELECTION,
         required=True,
         default="ytd",
     )
@@ -226,15 +228,7 @@ class AveaAccountingProfitLoss(models.TransientModel):
     _description = "Profit and loss"
     _inherit = ["avea.accounting.report.mixin"]
 
-    period = fields.Selection(
-        [
-            ("mtd", "Month to Date"),
-            ("ytd", "Year to Date"),
-            ("last_30", "Last 30 Days"),
-            ("custom", "Custom"),
-        ],
-        readonly=True,
-    )
+    period = fields.Selection(_PERIOD_SELECTION, readonly=True)
     date_from = fields.Date(readonly=True)
     date_to = fields.Date(readonly=True)
     period_range_display = fields.Char(readonly=True)
@@ -314,7 +308,7 @@ class AveaAccountingProfitLoss(models.TransientModel):
                     {
                         "report_id": report.id,
                         "section": section,
-                        "section_label": _SECTION_LABELS[section],
+                        "section_label": _(_SECTION_LABELS[section]),
                         "sequence": section_seq[section],
                         "account_id": row["account_id"],
                         "account_name": row["account_name"],
@@ -327,9 +321,9 @@ class AveaAccountingProfitLoss(models.TransientModel):
                 {
                     "report_id": report.id,
                     "section": section,
-                    "section_label": _SECTION_LABELS[section],
+                    "section_label": _(_SECTION_LABELS[section]),
                     "sequence": section_seq[section] + 1,
-                    "account_name": _("Total %s") % _SECTION_LABELS[section],
+                    "account_name": _("Total %s") % _(_SECTION_LABELS[section]),
                     "amount": subtotal,
                     "is_total": True,
                 }
@@ -379,7 +373,7 @@ class AveaAccountingBalanceSheet(models.TransientModel):
     _description = "Balance sheet"
     _inherit = ["avea.accounting.report.mixin"]
 
-    period = fields.Selection(readonly=True)
+    period = fields.Selection(_PERIOD_SELECTION, readonly=True)
     date_from = fields.Date(readonly=True)
     date_to = fields.Date(readonly=True)
     period_range_display = fields.Char(readonly=True)
@@ -455,7 +449,7 @@ class AveaAccountingBalanceSheet(models.TransientModel):
                     {
                         "report_id": report.id,
                         "section": section,
-                        "section_label": _SECTION_LABELS[section],
+                        "section_label": _(_SECTION_LABELS[section]),
                         "sequence": section_seq[section],
                         **row,
                     }
@@ -464,9 +458,9 @@ class AveaAccountingBalanceSheet(models.TransientModel):
                 {
                     "report_id": report.id,
                     "section": section,
-                    "section_label": _SECTION_LABELS[section],
+                    "section_label": _(_SECTION_LABELS[section]),
                     "sequence": section_seq[section] + 1,
-                    "account_name": _("Total %s") % _SECTION_LABELS[section],
+                    "account_name": _("Total %s") % _(_SECTION_LABELS[section]),
                     "amount": section_totals[section],
                     "is_total": True,
                 }
@@ -513,7 +507,7 @@ class AveaAccountingTrialBalance(models.TransientModel):
     _description = "Trial balance"
     _inherit = ["avea.accounting.report.mixin"]
 
-    period = fields.Selection(readonly=True)
+    period = fields.Selection(_PERIOD_SELECTION, readonly=True)
     date_from = fields.Date(readonly=True)
     date_to = fields.Date(readonly=True)
     period_range_display = fields.Char(readonly=True)
@@ -620,7 +614,7 @@ class AveaAccountingGeneralLedger(models.TransientModel):
     _description = "General ledger"
     _inherit = ["avea.accounting.report.mixin"]
 
-    period = fields.Selection(readonly=True)
+    period = fields.Selection(_PERIOD_SELECTION, readonly=True)
     date_from = fields.Date(readonly=True)
     date_to = fields.Date(readonly=True)
     period_range_display = fields.Char(readonly=True)
