@@ -13,12 +13,10 @@ export class AveaPricelistRulesRenderer extends ListRenderer {
 
     getCellClass(column, record) {
         const base = super.getCellClass ? super.getCellClass(column, record) : "o_data_cell";
-        const applied = record?.data?.applied_on;
-        const hide =
-            (column.name === "categ_id" && applied !== "2_product_category") ||
-            (column.name === "product_tmpl_id" && applied !== "1_product") ||
-            (column.name === "product_id" && applied !== "0_product_variant");
-        return hide ? `${base} o_invisible_modifier` : base;
+        if (column.invisible && this.evalInvisible(column.invisible, record)) {
+            return `${base} o_invisible_modifier`;
+        }
+        return base;
     }
 }
 
