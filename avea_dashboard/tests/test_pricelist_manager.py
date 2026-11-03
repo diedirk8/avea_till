@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import ast
+
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -37,7 +40,8 @@ class TestAveaPricelistManager(TransactionCase):
             }
         )
         action = self.env.ref("avea_till.action_avea_pricelist_manager")
-        domain = action.domain or []
+        raw_domain = action.domain or "[]"
+        domain = raw_domain if isinstance(raw_domain, list) else ast.literal_eval(raw_domain)
         lists = self.env["product.pricelist"].search(domain)
         self.assertNotIn(platform.pricelist_id, lists)
 
@@ -63,5 +67,5 @@ class TestAveaPricelistManager(TransactionCase):
                 "commission_percent": 5.0,
             }
         )
-        with self.assertRaises(Exception):
+        with self.assertRaises(UserError):
             platform.pricelist_id.unlink()
