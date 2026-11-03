@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.AccountList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_account_list_shell">
+                <div class="o_avea_workspace_sheet o_avea_account_list_sheet">
+                    <div class="o_avea_workspace_hero o_avea_account_list_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Money</span>
+                            <h1 class="o_avea_workspace_title">Accounts</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Income and expense accounts. Add a new one when Add Expense or Record Income
+                                does not have the right option. Open an account to see this year's activity.
+                                Cash and bank balances stay under Account Balances.
+                            </p>
+                            <div class="o_avea_account_list_search">
+                                <label class="o_avea_workspace_info_label" for="avea_account_list_search">
+                                    Search
+                                </label>
+                                <input
+                                    id="avea_account_list_search"
+                                    type="search"
+                                    class="form-control o_avea_account_list_search_input"
+                                    placeholder="Name or code"
+                                    t-att-value="bannerState.searchText"
+                                    t-on-input="(ev) => this.onAccountSearchInput(ev)"
+                                />
+                            </div>
+                            <div class="o_avea_period_selector o_avea_account_filters">
+                                <button type="button" t-att-class="this._filterButtonClass('all')" t-on-click="() => this.onFilterClick('all')">
+                                    All
+                                </button>
+                                <button type="button" t-att-class="this._filterButtonClass('income')" t-on-click="() => this.onFilterClick('income')">
+                                    Income
+                                </button>
+                                <button type="button" t-att-class="this._filterButtonClass('expense')" t-on-click="() => this.onFilterClick('expense')">
+                                    Expense
+                                </button>
+                                <button type="button" t-att-class="this._filterButtonClass('inactive')" t-on-click="() => this.onFilterClick('inactive')">
+                                    Archived
+                                </button>
+                            </div>
+                        </div>
+                        <div class="o_avea_account_list_actions">
+                            <button type="button" class="btn btn-primary" t-on-click="() => this.onClickCreateAccount()">
+                                New account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div class="o_avea_account_list_footer">
+                <div
+                    t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                    class="o_avea_account_pager o_cp_pager text-nowrap"
+                >
+                    <Pager t-props="env.config.pagerProps"/>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

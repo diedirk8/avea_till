@@ -25,6 +25,7 @@ from . import test_pos_partner_access
 from . import test_pos_product_view
 from . import test_avea_settings_printed_receipt
 from . import test_withdraw_cash
+from . import test_account_manager
 from . import test_operational_expense
 from . import test_bank_reconcile
 from . import test_pos_exchange

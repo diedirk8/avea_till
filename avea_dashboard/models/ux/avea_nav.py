@@ -195,6 +195,10 @@ class AveaNavMixin(models.AbstractModel):
                         "menu_xmlid": "avea_till.menu_avea_operations_balances",
                     },
                     {
+                        "label": "Accounts",
+                        "menu_xmlid": "avea_till.menu_avea_operations_accounts",
+                    },
+                    {
                         "label": "New bank reconciliation",
                         "menu_xmlid": "avea_till.menu_avea_operations_bank_reconcile_new",
                     },

@@ -81,6 +81,8 @@ class TestAveaNav(TestPoSCommon):
         self.assertIn("items", store_credit)
 
         money = next(s for s in nav["sections"] if s["id"] == "money")
+        money_labels = [item["label"] for item in money["items"]]
+        self.assertIn("Accounts", money_labels)
         record_group = money["items"][-1]
         self.assertEqual(record_group["label"], "Record")
         record_labels = {item["label"] for item in record_group["items"]}
