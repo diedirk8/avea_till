@@ -60,7 +60,30 @@ class TestAveaPricelistManager(TransactionCase):
         self.assertTrue(self.pos_config.use_pricelist)
         self.assertIn(pricelist, self.pos_config.available_pricelist_ids)
 
-    def test_cannot_delete_platform_pricelist(self):
+    def test_list_read_includes_customer_count(self):
+        partner = self.env["res.partner"].create(
+            {
+                "name": "Pricelist Customer",
+                "property_product_pricelist": self.env["product.pricelist"].create(
+                    {"name": "Trade list", "company_id": self.company.id}
+                ).id,
+            }
+        )
+        pricelist = partner.property_product_pricelist
+        data = self.env["product.pricelist"].web_search_read(
+            domain=[("id", "=", pricelist.id)],
+            specification={
+                "name": {},
+                "avea_item_count": {},
+                "avea_customer_count": {},
+            },
+            offset=0,
+            limit=1,
+            order="",
+        )
+        row = data["records"][0]
+        self.assertGreaterEqual(row["avea_customer_count"], 1)
+
         platform = self.env["avea.sales.platform"].create(
             {
                 "name": "Delete Guard Platform",

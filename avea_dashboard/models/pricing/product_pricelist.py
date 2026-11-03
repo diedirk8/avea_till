@@ -24,6 +24,11 @@ class ProductPricelist(models.Model):
     )
     avea_notes = fields.Text(string="Notes")
 
+    def _avea_partner_domain_on_pricelist(self):
+        """Partners with this list explicitly assigned (Odoo 19 stores it on specific_property_product_pricelist)."""
+        self.ensure_one()
+        return [("specific_property_product_pricelist", "=", self.id)]
+
     @api.depends("item_ids", "item_ids.product_tmpl_id")
     def _compute_avea_stats(self):
         Partner = self.env["res.partner"]
@@ -33,14 +38,13 @@ class ProductPricelist(models.Model):
                     lambda line: line.applied_on == "1_product" and line.product_tmpl_id
                 )
             )
+            partner_domain = pricelist._avea_partner_domain_on_pricelist()
             if pricelist.company_id:
                 pricelist.avea_customer_count = Partner.with_company(
                     pricelist.company_id
-                ).search_count([("property_product_pricelist", "=", pricelist.id)])
+                ).search_count(partner_domain)
             else:
-                pricelist.avea_customer_count = Partner.search_count(
-                    [("property_product_pricelist", "=", pricelist.id)]
-                )
+                pricelist.avea_customer_count = Partner.search_count(partner_domain)
 
     @api.constrains("avea_sales_platform_id", "avea_pos_available")
     def _check_avea_platform_pos_flag(self):
@@ -154,6 +158,9 @@ class ProductPricelist(models.Model):
             "name": _("Customers on %(name)s", name=self.display_name),
             "res_model": "res.partner",
             "view_mode": "list,form",
-            "domain": [("property_product_pricelist", "=", self.id)],
-            "context": {"default_property_product_pricelist": self.id},
+            "domain": self._avea_partner_domain_on_pricelist(),
+            "context": {
+                "default_property_product_pricelist": self.id,
+                "default_specific_property_product_pricelist": self.id,
+            },
         }
