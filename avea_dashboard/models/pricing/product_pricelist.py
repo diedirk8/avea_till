@@ -15,11 +15,15 @@ class ProductPricelist(models.Model):
         ),
     )
     avea_item_count = fields.Integer(
-        string="Product lines",
+        string="Rules",
         compute="_compute_avea_stats",
     )
     avea_customer_count = fields.Integer(
         string="Customers",
+        compute="_compute_avea_stats",
+    )
+    avea_rule_summary = fields.Char(
+        string="What it does",
         compute="_compute_avea_stats",
     )
     avea_notes = fields.Text(string="Notes")
@@ -29,15 +33,22 @@ class ProductPricelist(models.Model):
         self.ensure_one()
         return [("specific_property_product_pricelist", "=", self.id)]
 
-    @api.depends("item_ids", "item_ids.product_tmpl_id")
+    @api.depends(
+        "item_ids",
+        "item_ids.applied_on",
+        "item_ids.compute_price",
+        "item_ids.price",
+        "item_ids.name",
+    )
     def _compute_avea_stats(self):
         Partner = self.env["res.partner"]
         for pricelist in self:
-            pricelist.avea_item_count = len(
-                pricelist.item_ids.filtered(
-                    lambda line: line.applied_on == "1_product" and line.product_tmpl_id
-                )
-            )
+            pricelist.avea_item_count = len(pricelist.item_ids)
+            summaries = [
+                (line.price or line.name or "").strip()
+                for line in pricelist.item_ids
+            ]
+            pricelist.avea_rule_summary = "; ".join(part for part in summaries if part)
             partner_domain = pricelist._avea_partner_domain_on_pricelist()
             if pricelist.company_id:
                 pricelist.avea_customer_count = Partner.with_company(

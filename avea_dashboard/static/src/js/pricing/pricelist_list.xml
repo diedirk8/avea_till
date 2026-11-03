@@ -10,7 +10,7 @@
                             <span class="o_avea_workspace_eyebrow">Customers</span>
                             <h1 class="o_avea_workspace_title">Price lists</h1>
                             <p class="o_avea_workspace_section_subtitle">
-                                Fixed prices for staff, trade, or customers you assign. Each list overrides shelf price only for those sales — retail Stock prices stay unchanged. Marketplace lists are under Sales Platforms.
+                                Staff, trade, and customer pricing rules (cost plus a markup, a discount, or a fixed price). Retail Stock prices stay unchanged. Marketplace lists are under Sales Platforms.
                             </p>
                             <div class="o_avea_period_selector o_avea_pricelist_filters">
                                 <button type="button" t-att-class="this._filterButtonClass('all')" t-on-click="() => this.onFilterClick('all')">

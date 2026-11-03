@@ -11,10 +11,11 @@
                 js_class="avea_pricelist_list"
             >
                 <field name="name" string="Price list"/>
+                <field name="avea_rule_summary" string="What it does"/>
                 <field name="active" widget="boolean_toggle"/>
                 <field name="avea_pos_available" string="On till"/>
                 <field name="currency_id" string="Currency"/>
-                <field name="avea_item_count" string="Products"/>
+                <field name="avea_item_count" string="Rules"/>
                 <field name="avea_customer_count" string="Customers"/>
                 <field name="company_id" groups="base.group_multi_company" optional="hide"/>
             </list>
@@ -56,12 +57,16 @@
                                     />
                                 </h1>
                                 <p class="o_avea_workspace_section_subtitle">
-                                    Special fixed prices for staff, trade, or selected customers. Shelf prices in Stock stay as they are — this list only applies when you assign it to a customer and sell at the till.
+                                    Rules that replace shelf price when this list is used — for example cost plus a markup for staff, a percentage off, or a fixed price on one product. Stock catalogue prices stay as they are.
                                 </p>
                             </div>
                             <div class="o_avea_workspace_hero_stats" invisible="not id">
+                                <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary o_avea_pricelist_hero_stat--summary">
+                                    <span class="o_avea_workspace_hero_stat_label">Current rules</span>
+                                    <field name="avea_rule_summary" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
+                                </div>
                                 <div class="o_avea_workspace_hero_stat">
-                                    <span class="o_avea_workspace_hero_stat_label">Products priced</span>
+                                    <span class="o_avea_workspace_hero_stat_label">Rule count</span>
                                     <field name="avea_item_count" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
                                 </div>
                                 <div class="o_avea_workspace_hero_stat">
@@ -87,7 +92,7 @@
                                     type="object"
                                     string="Fill from retail prices"
                                     class="btn btn-secondary"
-                                    confirm="Add or update a line for every saleable product using each product's current shelf price? Retail catalogue prices will not change — only this list."
+                                    confirm="Add a fixed price for every saleable product from current shelf prices? Those product lines override formula rules (such as cost + %) for those products. Retail catalogue prices will not change."
                                 />
                             </div>
                             <div class="o_avea_pricelist_hero_actions_save">
@@ -99,19 +104,19 @@
 
                     <div class="o_avea_pricelist_workspace">
                         <div class="o_avea_pricelist_panel o_avea_pricelist_panel--help">
-                            <h2 class="o_avea_workspace_section_title">How this price list works</h2>
+                            <h2 class="o_avea_workspace_section_title">How rules work</h2>
                             <ul class="o_avea_pricelist_help_list">
                                 <li>
-                                    <strong>Rule:</strong> one fixed price per product on this list (tax-inclusive). No percentage rules or category discounts here — edit each line or use <em>Fill from retail prices</em> to start from shelf prices, then change individual lines.
+                                    <strong>Apply on:</strong> all products (typical for staff/cost-plus), a category, one product, or a variant. More specific rules win over “all products”.
                                 </li>
                                 <li>
-                                    <strong>At the till:</strong> set this list on a customer (Customers → open customer → price list). When that customer is on the sale, those prices apply instead of shelf prices.
+                                    <strong>Price type:</strong> Formula (e.g. cost + 24%), Discount (% off sales price), or Fixed Price. Formula “Based on Cost” plus Markup % is staff pricing.
                                 </li>
                                 <li>
-                                    <strong>Available on till:</strong> when enabled, staff can pick this list on the till even without a named customer (useful for staff or walk-in trade pricing).
+                                    <strong>At the till:</strong> assign this list on a customer. When they are on the sale, these rules apply instead of shelf price.
                                 </li>
                                 <li>
-                                    <strong>Fill from retail prices:</strong> bulk-builds lines from your current Stock shelf prices. Existing lines for the same product are updated; nothing changes in the main product catalogue.
+                                    <strong>Fill from retail prices:</strong> only use this if you want a fixed price on every product. It does not change a cost-plus rule — it adds product lines that override it.
                                 </li>
                             </ul>
                         </div>
@@ -140,16 +145,76 @@
                         </div>
 
                         <div class="o_avea_pricelist_panel">
-                            <h2 class="o_avea_workspace_section_title">Product prices on this list</h2>
+                            <h2 class="o_avea_workspace_section_title">Pricing rules</h2>
                             <p class="o_avea_pricelist_panel_hint">
-                                Each row is one product and the price charged when this list applies. Amounts include tax, same as shelf price on the product. Leave a product off the list if it should keep the normal shelf price.
+                                Staff-style lists usually have one “All products” formula (cost + markup). Add extra rows only for exceptions. “What this does” is the readable version of the rule.
                             </p>
-                            <field name="item_ids" nolabel="1" context="{'default_applied_on': '1_product', 'default_compute_price': 'fixed'}">
+                            <field name="item_ids" nolabel="1" class="o_avea_pricelist_item_field">
                                 <list editable="bottom" class="o_avea_pricelist_lines">
-                                    <field name="applied_on" column_invisible="True"/>
-                                    <field name="compute_price" column_invisible="True"/>
-                                    <field name="product_tmpl_id" string="Product" domain="[('sale_ok', '=', True), ('active', '=', True)]"/>
-                                    <field name="fixed_price" string="List price (incl. tax)" class="o_avea_pricelist_price_col"/>
+                                    <field name="applied_on" string="Apply on"/>
+                                    <field
+                                        name="categ_id"
+                                        string="Category"
+                                        optional="hide"
+                                        invisible="applied_on != '2_product_category'"
+                                    />
+                                    <field
+                                        name="product_tmpl_id"
+                                        string="Product"
+                                        domain="[('sale_ok', '=', True), ('active', '=', True)]"
+                                        invisible="applied_on != '1_product'"
+                                    />
+                                    <field
+                                        name="product_id"
+                                        string="Variant"
+                                        optional="hide"
+                                        invisible="applied_on != '0_product_variant'"
+                                    />
+                                    <field name="compute_price" string="Price type"/>
+                                    <field
+                                        name="base"
+                                        string="Based on"
+                                        invisible="compute_price != 'formula'"
+                                    />
+                                    <field
+                                        name="base_pricelist_id"
+                                        string="Other list"
+                                        optional="hide"
+                                        invisible="base != 'pricelist'"
+                                    />
+                                    <field
+                                        name="percent_price"
+                                        string="Discount %"
+                                        invisible="compute_price != 'percentage'"
+                                    />
+                                    <field
+                                        name="price_markup"
+                                        string="Markup %"
+                                        invisible="compute_price != 'formula' or base != 'standard_price'"
+                                    />
+                                    <field
+                                        name="price_discount"
+                                        string="Discount %"
+                                        optional="hide"
+                                        invisible="compute_price != 'formula' or base == 'standard_price'"
+                                    />
+                                    <field
+                                        name="fixed_price"
+                                        string="Fixed price"
+                                        invisible="compute_price != 'fixed'"
+                                    />
+                                    <field
+                                        name="price_round"
+                                        string="Round to"
+                                        optional="hide"
+                                    />
+                                    <field
+                                        name="price_surcharge"
+                                        string="Extra fee"
+                                        optional="hide"
+                                    />
+                                    <field name="min_quantity" string="Min qty" optional="hide"/>
+                                    <field name="price" string="What this does" readonly="1"/>
                                 </list>
                             </field>
                         </div>

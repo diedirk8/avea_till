@@ -15,6 +15,12 @@
 }
 
 .o_form_view.o_avea_workspace--pricelist {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden !important;
+
     .o_control_panel,
     .o_form_statusbar,
     header {
@@ -23,11 +29,18 @@
 
     .o_form_sheet_bg {
         background: var(--o-webclient-background-color, #f4f5f7);
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
 
     .o_avea_workspace_sheet {
-        max-width: #{unquote("min(1280px, 100%)")};
-        margin: 0 auto;
+        height: auto;
+        margin: 0;
+        max-width: none;
+        overflow: visible;
         padding-top: 1.15rem;
         padding-bottom: 2rem;
     }
@@ -69,8 +82,20 @@
     }
 
     .o_avea_workspace_hero_stats {
-        flex: 0 1 auto;
+        flex: 1 1 16rem;
         margin-top: 0.15rem;
+        min-width: 0;
+    }
+
+    .o_avea_pricelist_hero_stat--summary {
+        max-width: 28rem;
+        min-width: 12rem;
+
+        .o_avea_workspace_hero_stat_value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            white-space: normal;
+        }
     }
 
     .o_avea_pricelist_hero_actions {
@@ -141,32 +166,38 @@
         margin-top: 0.25rem;
     }
 
+    .o_avea_pricelist_item_field,
     .o_avea_pricelist_lines {
-        .o_list_table {
-            table-layout: fixed;
-        }
-
-        th:nth-child(1),
-        td:nth-child(1) {
-            width: 65%;
-        }
-
-        th:nth-child(2),
-        td:nth-child(2) {
-            min-width: 9rem;
-            width: 35%;
-        }
+        max-width: 100%;
+        min-width: 0;
+        overflow-x: auto;
     }
 
-    .o_avea_pricelist_price_col {
-        text-align: right;
+    .o_avea_pricelist_lines .o_list_table {
+        min-width: 56rem;
+        table-layout: auto;
+        width: 100%;
+    }
+}
+
+body.o_avea_product_shell {
+    .o_form_view.o_avea_workspace--pricelist {
+        height: 100%;
+        max-height: 100%;
+        overflow: hidden !important;
+
+        .o_form_sheet_bg {
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+        }
     }
 }
 
 .o_avea_pricelist_list_shell,
 .o_avea_pricelist_workspace {
-    max-width: #{unquote("min(1280px, 100%)")};
-    margin: 0 auto;
+    margin: 0;
+    max-width: none;
+    width: 100%;
 }
 
 .o_avea_pricelist_list_hero {

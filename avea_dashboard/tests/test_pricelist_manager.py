@@ -84,6 +84,29 @@ class TestAveaPricelistManager(TransactionCase):
         row = data["records"][0]
         self.assertGreaterEqual(row["avea_customer_count"], 1)
 
+    def test_formula_rule_counts_and_summarises(self):
+        pricelist = self.env["product.pricelist"].create(
+            {
+                "name": "Staff cost plus",
+                "company_id": self.company.id,
+            }
+        )
+        self.env["product.pricelist.item"].create(
+            {
+                "pricelist_id": pricelist.id,
+                "applied_on": "3_global",
+                "compute_price": "formula",
+                "base": "standard_price",
+                "price_markup": 24.2,
+                "price_round": 1.0,
+            }
+        )
+        pricelist.invalidate_recordset(["avea_item_count", "avea_rule_summary"])
+        self.assertEqual(pricelist.avea_item_count, 1)
+        self.assertTrue(pricelist.avea_rule_summary)
+        self.assertRegex(pricelist.avea_rule_summary, r"24")
+
+    def test_cannot_delete_platform_pricelist(self):
         platform = self.env["avea.sales.platform"].create(
             {
                 "name": "Delete Guard Platform",
