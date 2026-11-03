@@ -15,12 +15,6 @@
 }
 
 .o_form_view.o_avea_workspace--pricelist {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    min-height: 0;
-    overflow: hidden !important;
-
     .o_control_panel,
     .o_form_statusbar,
     header {
@@ -29,11 +23,6 @@
 
     .o_form_sheet_bg {
         background: var(--o-webclient-background-color, #f4f5f7);
-        flex: 1 1 auto;
-        min-height: 0;
-        overflow-x: hidden !important;
-        overflow-y: auto !important;
-        -webkit-overflow-scrolling: touch;
     }
 
     .o_avea_workspace_sheet {
@@ -42,7 +31,7 @@
         max-width: none;
         overflow: visible;
         padding-top: 1.15rem;
-        padding-bottom: 2rem;
+        padding-bottom: 3rem;
     }
 
     .o_avea_workspace_eyebrow {
@@ -140,23 +129,6 @@
         }
     }
 
-    .o_avea_pricelist_panel--help {
-        background: var(--avea-brand-soft);
-        border-color: var(--avea-brand-border);
-    }
-
-    .o_avea_pricelist_help_list {
-        color: var(--o-gray-700, #495057);
-        font-size: 0.9rem;
-        line-height: 1.5;
-        margin: 0.65rem 0 0;
-        padding-left: 1.15rem;
-
-        li + li {
-            margin-top: 0.45rem;
-        }
-    }
-
     .o_avea_pricelist_panel_hint,
     .o_avea_pricelist_field_hint {
         color: var(--o-gray-600, #6c757d);
@@ -174,22 +146,35 @@
     }
 
     .o_avea_pricelist_lines .o_list_table {
-        min-width: 56rem;
+        min-width: 52rem;
         table-layout: auto;
         width: 100%;
     }
 }
 
-body.o_avea_product_shell {
-    .o_form_view.o_avea_workspace--pricelist {
-        height: 100%;
-        max-height: 100%;
-        overflow: hidden !important;
+// Product-shell overflow-x:clip ancestors swallow vertical scroll. Make the
+// action pane the scroller and let this form grow with its rules table.
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist) {
+    height: calc(100vh - var(--avea-topbar-height));
+    max-height: calc(100vh - var(--avea-topbar-height));
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
 
-        .o_form_sheet_bg {
-            overflow-x: hidden !important;
-            overflow-y: auto !important;
-        }
+    .o_action,
+    .o_content,
+    .o_view_controller,
+    .o_form_view.o_avea_workspace--pricelist,
+    .o_form_view.o_avea_workspace--pricelist .o_form_sheet_bg,
+    .o_form_view.o_avea_workspace--pricelist .o_avea_workspace_sheet {
+        display: block !important;
+        flex: none !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
     }
 }
 
