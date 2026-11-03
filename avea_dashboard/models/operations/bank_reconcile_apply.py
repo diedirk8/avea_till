@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import re
+from datetime import datetime, timedelta
+
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
@@ -21,6 +24,7 @@ class AveaBankReconcileApply(models.TransientModel):
     mode = fields.Selection(
         selection=[
             ("match", "Match invoice or bill"),
+            ("settlement", "Card settlement"),
             ("split", "Split across accounts"),
             ("transfer", "Transfer to another account"),
         ],
@@ -63,6 +67,25 @@ class AveaBankReconcileApply(models.TransientModel):
     available_transfer_journal_ids = fields.Many2many(
         "account.journal",
         compute="_compute_available_transfer_journal_ids",
+    )
+    settlement_gross = fields.Monetary(
+        string="Card sales before the fee",
+        currency_field="currency_id",
+        help="The till total for this Capitec or Yoco batch, before their fee.",
+    )
+    settlement_fee = fields.Monetary(
+        string="Card fee",
+        compute="_compute_settlement_fee",
+        currency_field="currency_id",
+    )
+    settlement_hint = fields.Char(compute="_compute_settlement_fee")
+    fee_account_id = fields.Many2one(
+        "account.account",
+        string="Fee account",
+        domain=(
+            "[('company_ids', 'in', company_id), "
+            "('account_type', 'in', ('expense', 'expense_other', 'expense_direct_cost'))]"
+        ),
     )
 
     @api.depends("reconcile_line_id", "reconcile_line_id.amount", "company_id")
@@ -113,7 +136,18 @@ class AveaBankReconcileApply(models.TransientModel):
             "default_reconcile_line_id"
         )
         line = self.env["avea.bank.reconcile.line"].browse(line_id)
-        if not line or "move_ids" not in (fields_list or ["move_ids"]):
+        if not line:
+            return values
+        description = (line.description or "").lower()
+        if "card settlement" in description and "mode" in (fields_list or ["mode"]):
+            values["mode"] = "settlement"
+        gross, _hint = self._avea_suggest_settlement_gross(line)
+        if gross and "settlement_gross" in (fields_list or ["settlement_gross"]):
+            values["settlement_gross"] = gross
+        fee_account = self._avea_fee_account(line.company_id)
+        if fee_account and "fee_account_id" in (fields_list or ["fee_account_id"]):
+            values["fee_account_id"] = fee_account.id
+        if "move_ids" not in (fields_list or ["move_ids"]):
             return values
         currency = line.currency_id or self.env.company.currency_id
         target = abs(line.amount)
@@ -131,6 +165,24 @@ class AveaBankReconcileApply(models.TransientModel):
             values["move_ids"] = [Command.set(exact.ids)]
         return values
 
+    @api.depends("settlement_gross", "amount", "currency_id", "reconcile_line_id.description")
+    def _compute_settlement_fee(self):
+        for wizard in self:
+            currency = wizard.currency_id or wizard.env.company.currency_id
+            net = wizard.amount or 0.0
+            gross = wizard.settlement_gross or 0.0
+            fee = currency.round(gross - net) if currency.compare_amounts(gross, 0.0) > 0 else 0.0
+            wizard.settlement_fee = fee
+            _gross, hint = wizard._avea_suggest_settlement_gross(wizard.reconcile_line_id)
+            if currency.compare_amounts(fee, 0.0) > 0 and currency.compare_amounts(gross, 0.0) > 0:
+                rate = fee / gross * 100.0
+                hint = _(
+                    "%(hint)s Fee on this batch is %(rate).2f%%.",
+                    hint=hint or "",
+                    rate=rate,
+                ).strip()
+            wizard.settlement_hint = hint or False
+
     def action_apply(self):
         self.ensure_one()
         line = self.reconcile_line_id
@@ -138,6 +190,8 @@ class AveaBankReconcileApply(models.TransientModel):
             raise UserError(_("This statement line is already matched."))
         if self.mode == "match":
             statement_line = self._avea_apply_match()
+        elif self.mode == "settlement":
+            statement_line = self._avea_apply_settlement()
         elif self.mode == "split":
             statement_line = self._avea_apply_split()
         elif self.mode == "transfer":
@@ -207,6 +261,184 @@ class AveaBankReconcileApply(models.TransientModel):
         if not account:
             raise UserError(_("This contact has no receivable or payable account."))
         return account
+
+    def _avea_trading_date(self):
+        self.ensure_one()
+        text = self.reconcile_line_id.description or ""
+        match = re.search(r"sales\s+(\d{1,2}\s+\w{3}\s+\d{4})", text, re.IGNORECASE)
+        if not match:
+            return False
+        for fmt in ("%d %b %Y", "%d %B %Y"):
+            try:
+                return datetime.strptime(match.group(1), fmt).date()
+            except ValueError:
+                continue
+        return False
+
+    def _avea_card_methods(self, provider):
+        methods = self.env["pos.payment.method"].sudo().search([])
+        cards = methods.filtered(
+            lambda method: "card" in (method.name or "").lower()
+            or (
+                hasattr(method, "_avea_tender_kind")
+                and method._avea_tender_kind() == "card"
+            )
+        )
+        if provider:
+            named = cards.filtered(lambda method: provider in (method.name or "").lower())
+            if named:
+                return named
+        return cards
+
+    @api.model
+    def _avea_suggest_settlement_gross(self, line):
+        if not line or "card settlement" not in (line.description or "").lower():
+            return 0.0, False
+        description = line.description or ""
+        lowered = description.lower()
+        provider = "capitec" if "capitec" in lowered else "yoco" if "yoco" in lowered else ""
+        trading = False
+        match = re.search(r"sales\s+(\d{1,2}\s+\w{3}\s+\d{4})", description, re.IGNORECASE)
+        if match:
+            for fmt in ("%d %b %Y", "%d %B %Y"):
+                try:
+                    trading = datetime.strptime(match.group(1), fmt).date()
+                    break
+                except ValueError:
+                    continue
+        if not trading:
+            return 0.0, _("Type the card-machine total for this batch, before the fee.")
+        return self._avea_settlement_gross_for(line, provider, trading)
+
+    @api.model
+    def _avea_settlement_gross_for(self, line, provider, trading):
+        methods = self._avea_card_methods(provider)
+        if not methods:
+            return 0.0, _(
+                "No card payment method was found on the till. Type the batch total from Capitec or Yoco."
+            )
+        start = datetime.combine(trading, datetime.min.time())
+        payments = self.env["pos.payment"].sudo().search(
+            [
+                ("payment_method_id", "in", methods.ids),
+                ("payment_date", ">=", start),
+                ("payment_date", "<", start + timedelta(days=1)),
+            ]
+        )
+        gross = sum(payments.mapped("amount"))
+        currency = line.currency_id or self.env.company.currency_id
+        net = line.amount or 0.0
+        hint = _(
+            "Till card sales on %(day)s were %(gross)s. This deposit is only the %(provider)s batch, "
+            "and their fee is already taken off. Type that batch total if it is not the whole day's cards.",
+            day=trading.strftime("%d %b %Y").lstrip("0"),
+            gross=gross,
+            provider=provider.title() or _("card"),
+        )
+        if currency.compare_amounts(gross, net) > 0 and gross:
+            rate = (gross - net) / gross
+            if 0.005 <= rate <= 0.03:
+                return gross, _(
+                    "This deposit matches the till card sales on %(day)s after a %(rate).2f%% fee.",
+                    day=trading.strftime("%d %b %Y").lstrip("0"),
+                    rate=rate * 100.0,
+                )
+        return 0.0, hint
+
+    def _avea_fee_account(self, company):
+        return self.env["account.account"].sudo().search(
+            [
+                ("company_ids", "in", company.id),
+                ("account_type", "in", ("expense", "expense_other", "expense_direct_cost")),
+                "|",
+                "|",
+                ("name", "ilike", "bank charge"),
+                ("name", "ilike", "service fee"),
+                ("name", "ilike", "card fee"),
+            ],
+            limit=1,
+        )
+
+    def _avea_apply_settlement(self):
+        self.ensure_one()
+        line = self.reconcile_line_id
+        currency = self.currency_id
+        net = line.amount
+        if currency.compare_amounts(net, 0.0) <= 0:
+            raise UserError(_("A card settlement on the statement is money in."))
+        gross = self.settlement_gross
+        if currency.compare_amounts(gross, net) < 0:
+            raise UserError(
+                _("Card sales before the fee must be at least the amount the bank received.")
+            )
+        fee = currency.round(gross - net)
+        if currency.compare_amounts(fee, 0.0) > 0 and not self.fee_account_id:
+            raise UserError(_("Choose the expense account for the card fee."))
+        provider = "capitec" if "capitec" in (line.description or "").lower() else "yoco" if "yoco" in (line.description or "").lower() else ""
+        methods = self._avea_card_methods(provider)
+        outstanding = methods.mapped("outstanding_account_id")[:1]
+        if not outstanding:
+            raise UserError(
+                _(
+                    "The card payment method needs an outstanding receipts account. "
+                    "Ask your accountant to set it on the card payment method."
+                )
+            )
+        suspense = line.journal_id.suspense_account_id
+        if not suspense:
+            raise UserError(_("This bank journal needs a suspense account."))
+        statement_line = self._avea_create_statement_line(
+            amount=net,
+            payment_ref=(line.description or _("Card settlement"))[:255],
+            counterpart=suspense,
+            partner=self.env["res.partner"],
+        )
+        move = statement_line.move_id
+        move.button_draft()
+        liquidity, _suspense_lines, _others = statement_line._seek_for_lines()
+        commands = [Command.clear()]
+        for liq in liquidity:
+            commands.append(
+                Command.create(
+                    {
+                        "name": liq.name,
+                        "account_id": liq.account_id.id,
+                        "partner_id": liq.partner_id.id,
+                        "currency_id": liq.currency_id.id,
+                        "amount_currency": liq.amount_currency,
+                        "debit": liq.debit,
+                        "credit": liq.credit,
+                    }
+                )
+            )
+        if currency.compare_amounts(fee, 0.0) > 0:
+            commands.append(
+                Command.create(
+                    {
+                        "name": _("Card fee"),
+                        "account_id": self.fee_account_id.id,
+                        "debit": fee,
+                        "credit": 0.0,
+                        "amount_currency": fee,
+                        "currency_id": currency.id,
+                    }
+                )
+            )
+        commands.append(
+            Command.create(
+                {
+                    "name": line.description or _("Card sales"),
+                    "account_id": outstanding.id,
+                    "debit": 0.0,
+                    "credit": gross,
+                    "amount_currency": -gross,
+                    "currency_id": currency.id,
+                }
+            )
+        )
+        move.with_context(skip_account_move_synchronization=True).write({"line_ids": commands})
+        move.action_post()
+        return statement_line
 
     def _avea_apply_split(self):
         self.ensure_one()

@@ -149,6 +149,85 @@ def _parse_fnb_pdf_amount(value: str):
     return -abs(amount)
 
 
+_DATE_ONLY_RE = re.compile(r"^\d{1,2}\s+[A-Za-z]{3}$")
+_CAPITEC_SETTLE_RE = re.compile(
+    r"magtape\s+credit\s+capitec\b.*?possettle\s+(\d{6})",
+    re.IGNORECASE,
+)
+_YOCO_SETTLE_RE = re.compile(
+    r"magtape\s+credit\s+yoco\b.*?(\d{6})\s*$",
+    re.IGNORECASE,
+)
+_SERVICE_FEE_MAX = 30.0
+
+
+def _date_from_yymmdd(value: str) -> date | None:
+    try:
+        return datetime.strptime(value, "%y%m%d").date()
+    except ValueError:
+        return None
+
+
+def _date_from_ddmmyy(value: str) -> date | None:
+    try:
+        return datetime.strptime(value, "%d%m%y").date()
+    except ValueError:
+        return None
+
+
+def _format_sales_date(value: date) -> str:
+    return value.strftime("%d %b %Y").lstrip("0")
+
+
+def _clean_fnb_description(
+    description: str,
+    amount: float | None,
+    reference: str = "",
+) -> tuple[str, str]:
+    """Return (display description, original text kept as the reference).
+
+    FNB Gold Business fee rows print a date and an amount and nothing else.
+    A card purchase with no shop name still has the card reference (######*).
+    """
+    text = re.sub(r"\s+", " ", (description or "").strip())
+    ref = re.sub(r"\s+", " ", (reference or "").strip())
+    unlabeled = not text or bool(_DATE_ONLY_RE.match(text))
+    if unlabeled and amount is not None and amount < 0:
+        if not text and re.search(r"\d{6}\*", ref):
+            return "POS purchase", ""
+        no_reference = not ref or bool(_DATE_ONLY_RE.match(ref))
+        # A date stuffed into the description (the old text extract) is only a fee
+        # when it is a small debit. A blank description with no reference is a fee
+        # at any amount: that is how FNB prints service fees, including the monthly one.
+        if no_reference and (not text or abs(amount) <= _SERVICE_FEE_MAX):
+            return "FNB service fee", text
+    capitec = _CAPITEC_SETTLE_RE.search(text)
+    if capitec:
+        trading = _date_from_yymmdd(capitec.group(1))
+        if trading:
+            return "Capitec card settlement (sales %s)" % _format_sales_date(trading), text
+    yoco = _YOCO_SETTLE_RE.search(text)
+    if yoco:
+        trading = _date_from_ddmmyy(yoco.group(1))
+        if trading:
+            return "Yoco card settlement (sales %s)" % _format_sales_date(trading), text
+    if re.search(r"magtape\s+debit\s+capitec\b.*device", text, re.IGNORECASE):
+        return "Capitec card machine rental", text
+    return text, ""
+
+
+def _apply_fnb_description(tx: dict[str, Any]) -> dict[str, Any]:
+    description, original = _clean_fnb_description(
+        tx.get("description"),
+        tx.get("amount"),
+        tx.get("reference") or "",
+    )
+    tx["description"] = description
+    if original and not tx.get("reference"):
+        tx["reference"] = original
+    return tx
+
+
 def _normalize_header(cell: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", (cell or "").strip().lower()).strip("_")
 
@@ -193,6 +272,9 @@ class AveaBankStatementParser:
 
     @classmethod
     def _parse_pdf(cls, raw_bytes: bytes) -> dict[str, Any]:
+        laid_out = cls._parse_fnb_pdf_layout(raw_bytes)
+        if laid_out and laid_out.get("transactions"):
+            return laid_out
         text = cls._pdf_extract_text(raw_bytes)
         cleaned = re.sub(r"\r\n?", "\n", text)
         if len(cleaned.strip()) < 40:
@@ -302,13 +384,15 @@ class AveaBankStatementParser:
             if amount is None:
                 continue
             transactions.append(
-                {
-                    "date": tx_date,
-                    "description": match.group(2).strip(),
-                    "reference": "",
-                    "amount": amount,
-                    "balance": balance,
-                }
+                _apply_fnb_description(
+                    {
+                        "date": tx_date,
+                        "description": match.group(2).strip(),
+                        "reference": "",
+                        "amount": amount,
+                        "balance": balance,
+                    }
+                )
             )
         return transactions
 
@@ -341,11 +425,16 @@ class AveaBankStatementParser:
                         date_label = match.group(1)
                         description = (match.group(2) or "").strip()
                         if not description:
-                            index += 1
-                            if index >= len(filtered):
-                                break
-                            description = filtered[index].strip()
-                        if _FNB_REF_LINE_RE.match(description):
+                            nxt = filtered[index + 1].strip() if index + 1 < len(filtered) else ""
+                            nxt_is_date = bool(_FNB_TX_DATE_RE.match(nxt)) and not (
+                                _FNB_TX_DATE_RE.match(nxt).group(2) or ""
+                            ).strip()
+                            if nxt and not nxt_is_date and not _FNB_PDF_AMOUNT_LINE_RE.match(
+                                _normalize_pdf_token(nxt)
+                            ):
+                                index += 1
+                                description = nxt
+                        if description and _FNB_REF_LINE_RE.match(description):
                             index += 1
                             continue
                         descriptions.append((date_label, description))
@@ -393,15 +482,131 @@ class AveaBankStatementParser:
                     else None
                 )
                 transactions.append(
-                    {
-                        "date": tx_date,
-                        "description": description,
-                        "reference": "",
-                        "amount": amount,
-                        "balance": balance,
-                    }
+                    _apply_fnb_description(
+                        {
+                            "date": tx_date,
+                            "description": description,
+                            "reference": "",
+                            "amount": amount,
+                            "balance": balance,
+                        }
+                    )
                 )
         return transactions
+
+    @classmethod
+    def _parse_fnb_pdf_layout(cls, raw_bytes: bytes) -> dict[str, Any] | None:
+        """Read FNB's column layout so a blank fee row is not given the next line's name."""
+        try:
+            from pdfminer.high_level import extract_pages
+            from pdfminer.layout import LTTextContainer, LTTextLine
+        except ImportError:
+            return None
+        pages = list(extract_pages(io.BytesIO(raw_bytes)))
+        if not pages:
+            return None
+        text_bits: list[str] = []
+        transactions: list[dict[str, Any]] = []
+        opening_balance = None
+        closing_balance = None
+        for page in pages:
+            rows: dict[float, list[tuple[float, str]]] = {}
+            for element in page:
+                if not isinstance(element, LTTextContainer):
+                    continue
+                for line in element:
+                    if not isinstance(line, LTTextLine):
+                        continue
+                    text = re.sub(r"\s+", " ", line.get_text()).strip()
+                    if not text:
+                        continue
+                    text_bits.append(text)
+                    rows.setdefault(round(line.y0, 0), []).append((line.x0, text))
+            for _y, parts in sorted(rows.items(), reverse=True):
+                parts.sort()
+                labels = [text for _x, text in parts]
+                if "Opening Balance" in labels and opening_balance is None:
+                    credit = next(
+                        (
+                            _parse_fnb_pdf_amount(text)
+                            for _x, text in parts
+                            if text.lower().endswith("cr")
+                        ),
+                        None,
+                    )
+                    if credit is not None:
+                        opening_balance = credit
+                if "Closing Balance" in labels and closing_balance is None:
+                    credit = next(
+                        (
+                            _parse_fnb_pdf_amount(text)
+                            for _x, text in parts
+                            if text.lower().endswith("cr")
+                        ),
+                        None,
+                    )
+                    if credit is not None:
+                        closing_balance = credit
+                left = next((text for x, text in parts if x < 80), "")
+                date_match = _FNB_TX_DATE_RE.match(left)
+                if not date_match:
+                    continue
+                description = (date_match.group(2) or "").strip()
+                if not description:
+                    description = " ".join(
+                        text for x, text in parts if 30 <= x < 290 and text != left
+                    ).strip()
+                reference = " ".join(
+                    text for x, text in parts if 290 <= x < 420
+                ).strip()
+                amount_text = next(
+                    (
+                        text
+                        for x, text in parts
+                        if 420 <= x < 490
+                        and _FNB_PDF_AMOUNT_LINE_RE.match(_normalize_pdf_token(text))
+                    ),
+                    "",
+                )
+                balance_text = next(
+                    (
+                        text
+                        for x, text in parts
+                        if 490 <= x < 560
+                        and _FNB_PDF_AMOUNT_LINE_RE.match(_normalize_pdf_token(text))
+                    ),
+                    "",
+                )
+                amount = _parse_fnb_pdf_amount(amount_text) if amount_text else None
+                if amount is None:
+                    continue
+                if reference and _FNB_REF_LINE_RE.match(description or ""):
+                    continue
+                transactions.append(
+                    _apply_fnb_description(
+                        {
+                            "date": None,
+                            "date_label": date_match.group(1),
+                            "description": description,
+                            "reference": reference,
+                            "amount": amount,
+                            "balance": _parse_fnb_pdf_amount(balance_text) if balance_text else None,
+                        }
+                    )
+                )
+        if len(transactions) < 3:
+            return None
+        full_text = "\n".join(text_bits)
+        period_start, period_end = cls._extract_fnb_statement_period(full_text)
+        for tx in transactions:
+            tx["date"] = _parse_dd_mon(tx.pop("date_label"), period_start, period_end)
+        transactions = [tx for tx in transactions if tx.get("date")]
+        meta = cls._parse_fnb_pdf_meta(full_text, period_end)
+        if opening_balance is not None:
+            meta["opening_balance"] = opening_balance
+        if closing_balance is not None:
+            meta["closing_balance"] = closing_balance
+        return cls._result(meta, transactions, "fnb_pdf")
 
     @classmethod
     def _parse_fnb_pdf_text(cls, text: str) -> dict[str, Any]:

@@ -31,6 +31,9 @@ _KEYWORD_RULES = (
             "admin fee",
             "transaction fee",
             "cash handling",
+            "int on debit",
+            "machine rental",
+            "devicerent",
         ),
         "label": "Record as bank charge",
         "import_action": "expense",
@@ -176,6 +179,13 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
             "partner_role": "supplier",
             "matched_rule": None,
         }
+        if "card settlement" in blob and currency.compare_amounts(amount, 0.0) > 0:
+            result["import_action"] = "income"
+            result["booking_suggestion"] = _(
+                "Card settlement. The bank amount is after Capitec or Yoco took their fee. "
+                "Use Match, split, or transfer and choose Card settlement."
+            )
+            return result
         if currency.compare_amounts(amount, 0.0) == 0:
             result["import_action"] = "skip"
             result["booking_suggestion"] = _("No amount — skip")

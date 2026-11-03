@@ -34,6 +34,29 @@ Effective Date,Description,Reference,Amount,Balance
         self.assertEqual(tx["amount"], -150.0)
         self.assertEqual(tx["reference"], "INV001")
 
+    def test_fnb_service_fee_and_card_settlement_names(self):
+        from odoo.addons.avea_till.models.operations.bank_statement_parser import (
+            _clean_fnb_description,
+        )
+
+        fee, original = _clean_fnb_description("09 Jul", -1.07)
+        self.assertEqual(fee, "FNB service fee")
+        self.assertEqual(original, "09 Jul")
+        blank_fee, _blank_ref = _clean_fnb_description("", -349.0, "")
+        self.assertEqual(blank_fee, "FNB service fee")
+        card, _card_ref = _clean_fnb_description("", -94.09, "400568*2514 18 Jul")
+        self.assertEqual(card, "POS purchase")
+        named, _named_ref = _clean_fnb_description("POS Purchase Checkers Sixty60", -1535.22)
+        self.assertEqual(named, "POS Purchase Checkers Sixty60")
+        name, raw = _clean_fnb_description(
+            "Magtape Credit Capitec 0107Possettle 260630",
+            651.57,
+        )
+        self.assertEqual(name, "Capitec card settlement (sales 30 Jun 2026)")
+        self.assertIn("Possettle", raw)
+        yoco, _raw = _clean_fnb_description("Magtape Credit Yoco 9Chxd 010726", 2869.47)
+        self.assertEqual(yoco, "Yoco card settlement (sales 1 Jul 2026)")
+
     def test_parse_fnb_gold_business_columnar_pdf(self):
         content = """
 Gold Business Account : 62920038462
