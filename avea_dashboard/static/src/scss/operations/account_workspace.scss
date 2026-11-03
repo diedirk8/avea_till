@@ -56,7 +56,7 @@
         width: 100%;
     }
 
-    .o_avea_workspace_hero_intro {
+    .o_avea_account_hero_top .o_avea_workspace_hero_intro {
         flex: 1 1 18rem;
         margin-bottom: 0;
         min-width: 0;
@@ -75,10 +75,24 @@
         display: none !important;
     }
 
-    .o_avea_workspace_hero_stats {
+    .o_avea_account_hero .o_avea_workspace_hero_stats {
         flex: 1 1 16rem;
         margin-top: 0.15rem;
         min-width: 0;
+    }
+
+    .o_avea_workspace_hero:not(.o_avea_account_hero) {
+        .o_avea_workspace_hero_intro,
+        .o_avea_workspace_hero_stats {
+            flex: none;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .o_avea_workspace_title {
+            overflow-wrap: normal;
+            word-break: normal;
+        }
     }
 
     .btn-primary,
@@ -323,8 +337,11 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account) {
         flex: none !important;
         height: auto !important;
         max-height: none !important;
+        max-width: 100% !important;
         min-height: 0 !important;
+        min-width: 0 !important;
         overflow: visible !important;
+        width: 100% !important;
     }
 }
 
@@ -378,6 +395,20 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account) {
     color: var(--o-gray-600, #6c757d);
     font-size: 0.9375rem;
     margin-top: 0.35rem;
+    max-width: 100%;
+    overflow-wrap: normal;
+    white-space: normal;
+    width: 100%;
+    word-break: normal;
+
+    .o_field_widget {
+        display: block;
+        max-width: 100%;
+        overflow-wrap: normal;
+        white-space: normal;
+        width: 100%;
+        word-break: normal;
+    }
 }
 
 .o_avea_workspace--account .o_list_table tr.o_data_row:has(td[name="is_total"] .o_field_boolean input:checked) {
