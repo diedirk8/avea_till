@@ -97,7 +97,6 @@
                     </div>
 
                     <div class="o_avea_pricelist_workspace">
-                        <div class="o_avea_pricelist_main">
                             <div class="o_avea_pricelist_panel o_avea_pricelist_panel--rules">
                                 <h2 class="o_avea_workspace_section_title">Rules (most specific wins)</h2>
                                 <p class="o_avea_pricelist_panel_hint">
@@ -176,6 +175,7 @@
                                 </field>
                             </div>
 
+                        <div class="o_avea_pricelist_lower">
                             <div class="o_avea_pricelist_panel">
                                 <h2 class="o_avea_workspace_section_title">Setup</h2>
                                 <div class="o_avea_pricelist_fields">
@@ -195,9 +195,8 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="o_avea_pricelist_panel o_avea_pricelist_panel--customers">
+                            <div class="o_avea_pricelist_panel o_avea_pricelist_panel--customers">
                             <h2 class="o_avea_workspace_section_title">Customers on this list</h2>
                             <p class="o_avea_pricelist_panel_hint">
                                 Add people here so this list is used when they are on a till sale. Removing someone puts them back on the default retail list.
@@ -207,7 +206,7 @@
                                 nolabel="1"
                                 widget="many2many"
                                 domain="[('customer_rank', '&gt;', 0)]"
-                                context="{'default_customer_rank': 1, 'res_partner_search_mode': 'customer', 'default_specific_property_product_pricelist': id}"
+                                context="{'default_customer_rank': 1, 'res_partner_search_mode': 'customer'}"
                                 options="{'no_create_edit': True}"
                             >
                                 <list>
@@ -216,6 +215,7 @@
                                     <field name="email"/>
                                 </list>
                             </field>
+                            </div>
                         </div>
                     </div>
                 </sheet>

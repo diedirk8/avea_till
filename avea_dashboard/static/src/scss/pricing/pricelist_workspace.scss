@@ -138,6 +138,11 @@
         margin-top: 0.25rem;
     }
 
+    .o_avea_pricelist_panel--rules {
+        min-width: 0;
+        overflow-x: auto;
+    }
+
     .o_avea_pricelist_item_field,
     .o_avea_pricelist_lines {
         max-width: 100%;
@@ -146,7 +151,7 @@
     }
 
     .o_avea_pricelist_lines .o_list_table {
-        min-width: 52rem;
+        min-width: 44rem;
         table-layout: auto;
         width: 100%;
     }
@@ -185,20 +190,22 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist) {
 }
 
 .o_avea_pricelist_workspace {
-    align-items: start;
-    display: grid;
-    gap: 0.85rem;
-    grid-template-columns: minmax(0, 1.7fr) minmax(16rem, 0.9fr);
-    margin: 0;
-    max-width: none;
-    width: 100%;
-}
-
-.o_avea_pricelist_main {
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
+    margin: 0;
+    max-width: none;
     min-width: 0;
+    width: 100%;
+}
+
+.o_avea_pricelist_lower {
+    align-items: start;
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 28rem);
+    min-width: 0;
+    width: 100%;
 }
 
 .o_avea_pricelist_panel--customers {
@@ -206,7 +213,7 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist) {
 }
 
 @media (max-width: 991.98px) {
-    .o_avea_pricelist_workspace {
+    .o_avea_pricelist_lower {
         grid-template-columns: minmax(0, 1fr);
     }
 }
