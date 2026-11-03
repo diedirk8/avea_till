@@ -152,50 +152,65 @@ body.o_avea_product_shell {
         }
     }
 
-    .o_list_table tr.o_data_row:has(td[name="is_section_header"] .o_field_boolean input:checked) {
-        background: var(--avea-brand-section, #ccfbf1);
+    // Section headings — Odoo applies decoration-info → text-info, decoration-bf → fw-bold
+    .o_list_table tbody tr.o_data_row.text-info.fw-bold {
+        background-color: var(--avea-brand-section, #ccfbf1) !important;
 
-        td {
-            border-bottom: 1px solid rgba(15, 118, 110, 0.15);
-            border-top: 2px solid var(--avea-brand, #0f766e);
-            color: var(--avea-brand-hover, #115e59);
-            font-size: 0.8125rem;
-            font-weight: 800;
+        > td {
+            background-color: inherit !important;
+            border-bottom: 1px solid rgba(15, 118, 110, 0.18) !important;
+            border-top: 2px solid var(--avea-brand, #0f766e) !important;
+            color: var(--avea-brand-hover, #115e59) !important;
+            font-size: 0.8125rem !important;
+            font-weight: 800 !important;
             letter-spacing: 0.08em;
-            padding-bottom: 0.55rem;
-            padding-top: 1rem;
+            padding-bottom: 0.55rem !important;
+            padding-top: 1rem !important;
             text-transform: uppercase;
+            vertical-align: middle;
         }
 
-        td[name="account_code"] {
-            color: transparent;
-            user-select: none;
-        }
-    }
-
-    .o_list_table tr.o_data_row:has(td[name="is_total"] .o_field_boolean input:checked) {
-        background: #f8f9fa;
-
-        td {
-            border-top: 2px solid rgba(15, 118, 110, 0.35);
-            font-weight: 700;
-            padding-bottom: 0.65rem;
-            padding-top: 0.65rem;
-        }
-
-        td[name="account_code"] {
-            color: transparent;
+        > td[name="account_code"] {
+            color: transparent !important;
             user-select: none;
         }
 
-        td[name="amount"] .o_field_widget,
-        td[name="debit"] .o_field_widget,
-        td[name="credit"] .o_field_widget {
-            font-weight: 700;
+        > td[name="amount"] .o_field_widget {
+            display: none !important;
         }
     }
 
-    .o_list_table tr.o_data_row:not(:has(td[name="is_section_header"] .o_field_boolean input:checked)):not(:has(td[name="is_total"] .o_field_boolean input:checked)):nth-child(even) {
-        background: #fafafa;
+    // Section subtotals — decoration-muted + decoration-bf
+    .o_list_table tbody tr.o_data_row.text-muted.fw-bold {
+        background-color: #f3f4f6 !important;
+
+        > td {
+            background-color: inherit !important;
+            border-top: 2px solid rgba(15, 118, 110, 0.35) !important;
+            color: var(--o-gray-900, #212529) !important;
+            font-weight: 700 !important;
+            padding-bottom: 0.65rem !important;
+            padding-top: 0.65rem !important;
+        }
+
+        > td[name="account_code"] {
+            color: transparent !important;
+            user-select: none;
+        }
+
+        > td[name="amount"] .o_field_widget,
+        > td[name="debit"] .o_field_widget,
+        > td[name="credit"] .o_field_widget {
+            font-weight: 700 !important;
+        }
+    }
+
+    // Detail lines — subtle zebra (ignore decorated rows)
+    .o_list_table tbody tr.o_data_row:not(.text-info):not(.text-muted):nth-child(even) {
+        background-color: #fafafa;
+    }
+
+    .o_list_table tbody tr.o_data_row:not(.text-info):not(.text-muted):hover {
+        background-color: #f0fdfa !important;
     }
 }

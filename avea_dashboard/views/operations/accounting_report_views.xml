@@ -102,7 +102,11 @@
                     </div>
                     <div class="o_avea_workspace_ledger_card o_avea_accounting_report_table_card">
                         <field name="line_ids" nolabel="1" readonly="1">
-                            <list create="false" edit="false" delete="false" default_order="sequence" decoration-bf="is_total" class="o_avea_accounting_report_lines">
+                            <list create="false" edit="false" delete="false" default_order="sequence"
+                                decoration-bf="is_section_header or is_total"
+                                decoration-info="is_section_header"
+                                decoration-muted="is_total and not is_section_header"
+                                class="o_avea_accounting_report_lines">
                                 <field name="section_label" column_invisible="True"/>
                                 <field name="account_code" string="Code" optional="show"/>
                                 <field name="account_name" string="Account"/>
@@ -157,7 +161,11 @@
                     </div>
                     <div class="o_avea_workspace_ledger_card o_avea_accounting_report_table_card">
                         <field name="line_ids" nolabel="1" readonly="1">
-                            <list create="false" edit="false" delete="false" default_order="sequence" decoration-bf="is_total" class="o_avea_accounting_report_lines">
+                            <list create="false" edit="false" delete="false" default_order="sequence"
+                                decoration-bf="is_section_header or is_total"
+                                decoration-info="is_section_header"
+                                decoration-muted="is_total and not is_section_header"
+                                class="o_avea_accounting_report_lines">
                                 <field name="section_label" column_invisible="True"/>
                                 <field name="account_code" string="Code" optional="show"/>
                                 <field name="account_name" string="Account"/>
