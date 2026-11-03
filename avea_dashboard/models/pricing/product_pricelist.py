@@ -164,6 +164,12 @@ class ProductPricelist(models.Model):
         Item.create(vals)
         return "created"
 
+    def _get_applicable_rules(self, products, date, **kwargs):
+        rules = super()._get_applicable_rules(products, date, **kwargs)
+        if len(self) != 1 or self.avea_sales_platform_id:
+            return rules
+        return rules.sorted(key=lambda rule: rule._avea_sort_key())
+
     def _avea_sync_pos_registration(self):
         PosConfig = self.env["pos.config"]
         for pricelist in self:

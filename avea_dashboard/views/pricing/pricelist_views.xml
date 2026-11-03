@@ -98,79 +98,54 @@
 
                     <div class="o_avea_pricelist_workspace">
                             <div class="o_avea_pricelist_panel o_avea_pricelist_panel--rules">
-                                <h2 class="o_avea_workspace_section_title">Rules (most specific wins)</h2>
+                                <h2 class="o_avea_workspace_section_title">Rules</h2>
                                 <p class="o_avea_pricelist_panel_hint">
-                                    Keep one <strong>All products</strong> row as the default (e.g. cost + 24%). To price one category differently, Add a line, set Apply on = Product Category, pick the category, and set its own markup. Category beats all-products; a single product beats its category.
+                                    <strong>Level 1 is applied first.</strong>
+                                    Keep All products on 10 as the fallback. Add a category or product exception on a lower level (1–3).
                                 </p>
-                                <field name="item_ids" nolabel="1" class="o_avea_pricelist_item_field">
+                                <field
+                                    name="item_ids"
+                                    nolabel="1"
+                                    class="o_avea_pricelist_item_field"
+                                    context="{'default_applied_on': '2_product_category', 'default_compute_price': 'formula', 'default_base': 'standard_price', 'default_avea_priority': 3, 'default_avea_method': 'cost_plus'}"
+                                >
                                     <list
                                         editable="bottom"
                                         class="o_avea_pricelist_lines"
-                                        default_order="applied_on desc, id"
-                                        decoration-muted="applied_on == '3_global'"
-                                        decoration-warning="applied_on == '2_product_category'"
-                                        decoration-info="applied_on in ('1_product', '0_product_variant')"
+                                        js_class="avea_pricelist_rules"
+                                        default_order="avea_priority, applied_on, id"
                                     >
-                                        <field name="avea_layer" string="Level" readonly="1"/>
-                                        <field name="applied_on" string="Apply on"/>
+                                        <field name="avea_priority" string="Level"/>
+                                        <field name="applied_on" string="Applies to"/>
                                         <field
                                             name="categ_id"
                                             string="Category"
+                                            placeholder="Pick category"
                                             invisible="applied_on != '2_product_category'"
                                         />
                                         <field
                                             name="product_tmpl_id"
                                             string="Product"
+                                            placeholder="Pick product"
                                             domain="[('sale_ok', '=', True), ('active', '=', True)]"
                                             invisible="applied_on != '1_product'"
                                         />
                                         <field
                                             name="product_id"
                                             string="Variant"
-                                            optional="hide"
+                                            placeholder="Pick variant"
                                             invisible="applied_on != '0_product_variant'"
                                         />
-                                        <field name="compute_price" string="Price type"/>
-                                        <field
-                                            name="base"
-                                            string="Based on"
-                                            invisible="compute_price != 'formula'"
-                                        />
-                                        <field
-                                            name="base_pricelist_id"
-                                            string="Other list"
-                                            optional="hide"
-                                            invisible="base != 'pricelist'"
-                                        />
-                                        <field
-                                            name="percent_price"
-                                            string="Discount %"
-                                            invisible="compute_price != 'percentage'"
-                                        />
-                                        <field
-                                            name="price_markup"
-                                            string="Markup %"
-                                            invisible="compute_price != 'formula' or base != 'standard_price'"
-                                        />
-                                        <field
-                                            name="price_discount"
-                                            string="Discount %"
-                                            optional="hide"
-                                            invisible="compute_price != 'formula' or base == 'standard_price'"
-                                        />
-                                        <field
-                                            name="fixed_price"
-                                            string="Fixed price"
-                                            invisible="compute_price != 'fixed'"
-                                        />
-                                        <field name="price_round" string="Round to"/>
-                                        <field
-                                            name="price_surcharge"
-                                            string="Extra fee"
-                                            optional="hide"
-                                        />
-                                        <field name="min_quantity" string="Min qty" optional="hide"/>
-                                        <field name="price" string="What this does" readonly="1"/>
+                                        <field name="avea_method" string="How"/>
+                                        <field name="avea_amount" string="Amount"/>
+                                        <field name="avea_result" string="Result" readonly="1"/>
+                                        <field name="currency_id" column_invisible="True"/>
+                                        <field name="compute_price" column_invisible="True"/>
+                                        <field name="base" column_invisible="True"/>
+                                        <field name="percent_price" column_invisible="True"/>
+                                        <field name="price_markup" column_invisible="True"/>
+                                        <field name="price_discount" column_invisible="True"/>
+                                        <field name="fixed_price" column_invisible="True"/>
                                     </list>
                                 </field>
                             </div>

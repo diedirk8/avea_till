@@ -192,6 +192,105 @@ class TestAveaPricelistManager(TransactionCase):
         self.assertAlmostEqual(bird_price, 110.0, places=1)
         self.assertAlmostEqual(other_price, 62.0, places=1)
 
+    def test_priority_controls_which_rule_applies_first(self):
+        category = self.env["product.category"].create({"name": "Toys"})
+        toy = self.env["product.template"].create(
+            {
+                "name": "Chew toy",
+                "list_price": 80.0,
+                "standard_price": 40.0,
+                "categ_id": category.id,
+                "type": "consu",
+                "sale_ok": True,
+            }
+        )
+        pricelist = self.env["product.pricelist"].create(
+            {
+                "name": "Priority test",
+                "company_id": self.company.id,
+            }
+        )
+        self.env["product.pricelist.item"].create(
+            [
+                {
+                    "pricelist_id": pricelist.id,
+                    "applied_on": "3_global",
+                    "compute_price": "formula",
+                    "base": "standard_price",
+                    "price_markup": 50.0,
+                    "avea_priority": 1,
+                },
+                {
+                    "pricelist_id": pricelist.id,
+                    "applied_on": "2_product_category",
+                    "categ_id": category.id,
+                    "compute_price": "formula",
+                    "base": "standard_price",
+                    "price_markup": 10.0,
+                    "avea_priority": 9,
+                },
+            ]
+        )
+        price = pricelist._get_product_price(toy.product_variant_id, 1)
+        self.assertAlmostEqual(price, 60.0, places=1)
+
+    def test_how_and_amount_map_to_odoo_fields(self):
+        pricelist = self.env["product.pricelist"].create(
+            {
+                "name": "How amount map",
+                "company_id": self.company.id,
+            }
+        )
+        item = self.env["product.pricelist.item"].create(
+            {
+                "pricelist_id": pricelist.id,
+                "applied_on": "3_global",
+                "compute_price": "formula",
+                "base": "standard_price",
+                "price_markup": 24.2,
+            }
+        )
+        self.assertEqual(item.avea_method, "cost_plus")
+        self.assertAlmostEqual(item.avea_amount, 24.2, places=2)
+        self.assertIn("24.2", item.avea_result)
+        self.assertIn("cost", item.avea_result.lower())
+
+        item.write({"avea_method": "off_sales", "avea_amount": 20.0})
+        item.invalidate_recordset()
+        self.assertEqual(item.compute_price, "percentage")
+        self.assertAlmostEqual(item.percent_price, 20.0, places=2)
+        self.assertEqual(item.avea_method, "off_sales")
+        self.assertRegex(item.avea_result, r"20(\.0+)?%\s+off")
+        self.assertIn("shelf", item.avea_result.lower())
+
+    def test_create_sets_default_level_from_applies_to(self):
+        pricelist = self.env["product.pricelist"].create(
+            {
+                "name": "Default levels",
+                "company_id": self.company.id,
+            }
+        )
+        global_item, category_item = self.env["product.pricelist.item"].create(
+            [
+                {
+                    "pricelist_id": pricelist.id,
+                    "applied_on": "3_global",
+                    "compute_price": "formula",
+                    "base": "standard_price",
+                    "price_markup": 24.2,
+                },
+                {
+                    "pricelist_id": pricelist.id,
+                    "applied_on": "2_product_category",
+                    "categ_id": self.env["product.category"].create({"name": "Default cat"}).id,
+                    "compute_price": "percentage",
+                    "percent_price": 20.0,
+                },
+            ]
+        )
+        self.assertEqual(global_item.avea_priority, 10)
+        self.assertEqual(category_item.avea_priority, 3)
+
     def test_cannot_delete_platform_pricelist(self):
         platform = self.env["avea.sales.platform"].create(
             {

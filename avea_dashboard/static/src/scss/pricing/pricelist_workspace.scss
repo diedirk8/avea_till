@@ -140,20 +140,215 @@
 
     .o_avea_pricelist_panel--rules {
         min-width: 0;
-        overflow-x: auto;
+        overflow: visible;
     }
 
     .o_avea_pricelist_item_field,
-    .o_avea_pricelist_lines {
+    .o_avea_pricelist_lines,
+    .o_avea_pricelist_lines .o_list_renderer,
+    .o_avea_pricelist_lines .table-responsive,
+    .o_avea_pricelist_lines .o_list_table {
         max-width: 100%;
-        min-width: 0;
-        overflow-x: auto;
+        min-width: 0 !important;
+        overflow: visible !important;
+        width: 100%;
+    }
+
+    .o_avea_pricelist_lines .o_list_renderer,
+    .o_avea_pricelist_lines .table-responsive {
+        overflow-x: visible !important;
     }
 
     .o_avea_pricelist_lines .o_list_table {
-        min-width: 44rem;
+        display: block;
         table-layout: auto;
+    }
+
+    .o_avea_pricelist_lines thead {
+        display: none;
+    }
+
+    .o_avea_pricelist_lines tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_row,
+    .o_avea_pricelist_lines .o_data_row.o_selected_row,
+    .o_avea_pricelist_lines tr.o_data_row {
+        align-items: flex-end;
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        display: flex !important;
+        flex-wrap: wrap;
+        gap: 0.55rem 0.9rem;
+        padding: 0.8rem 0.95rem 0.9rem;
         width: 100%;
+    }
+
+    .o_avea_pricelist_lines .o_data_row.o_selected_row {
+        border-color: var(--avea-brand-border);
+        box-shadow: 0 0 0 3px var(--avea-brand-focus);
+    }
+
+    .o_avea_pricelist_lines .o_data_cell {
+        border: none !important;
+        display: flex;
+        flex: 1 1 11rem;
+        flex-direction: column;
+        gap: 0.22rem;
+        max-width: 100%;
+        min-width: 0;
+        overflow: visible !important;
+        padding: 0 !important;
+        white-space: normal !important;
+        word-break: break-word;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell.o_invisible_modifier,
+    .o_avea_pricelist_lines .o_data_cell.d-none,
+    .o_avea_pricelist_lines .o_data_cell[column_invisible],
+    .o_avea_pricelist_lines .o_list_table .o_optional_columns_dropdown,
+    .o_avea_pricelist_lines .o_list_actions_header {
+        display: none !important;
+        flex: none;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell::before {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_priority"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_priority"]::before {
+        content: "Level (1 first)";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="applied_on"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="applied_on"]::before {
+        content: "Applies to";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="categ_id"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="categ_id"]::before {
+        content: "Category";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="product_tmpl_id"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="product_tmpl_id"]::before {
+        content: "Product";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="product_id"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="product_id"]::before {
+        content: "Variant";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_method"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_method"]::before {
+        content: "How";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_amount"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_amount"]::before {
+        content: "Amount";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_result"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_result"]::before,
+    .o_avea_pricelist_lines .o_data_cell[name="price"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="price"]::before {
+        content: "Result";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_priority"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_priority"] {
+        flex: 0 1 7rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_amount"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_amount"] {
+        flex: 0 1 8.5rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_result"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_result"],
+    .o_avea_pricelist_lines .o_data_cell[name="price"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="price"] {
+        flex: 1 1 100%;
+        font-weight: 600;
+    }
+
+    .o_avea_pricelist_lines .o_list_record_remove_container,
+    .o_avea_pricelist_lines .o_list_record_remove,
+    .o_avea_pricelist_lines .o_list_button {
+        align-self: center;
+        flex: 0 0 auto;
+        margin-left: auto;
+        max-width: none;
+        white-space: nowrap;
+    }
+
+    .o_avea_pricelist_lines .o_field_widget,
+    .o_avea_pricelist_lines .o_input,
+    .o_avea_pricelist_lines .o_field_widget span,
+    .o_avea_pricelist_lines .text-truncate {
+        max-width: 100%;
+        min-width: 0;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        width: 100%;
+        word-break: break-word;
+    }
+
+    .o_avea_pricelist_lines .o_field_x2many_list_row_add,
+    .o_avea_pricelist_lines tr.o_field_x2many_list_row_add {
+        background: transparent;
+        border: 1px dashed rgba(13, 148, 136, 0.45);
+        border-radius: 0.75rem;
+        display: block;
+        padding: 0.7rem 0.95rem;
+        width: 100%;
+    }
+
+    .o_avea_pricelist_lines .o_field_x2many_list_row_add td {
+        border: none !important;
+        display: block;
+        padding: 0;
+    }
+
+    .o_avea_pricelist_lines .o_field_x2many_list_row_add a {
+        color: var(--avea-brand);
+        font-weight: 700;
+    }
+
+    .o_avea_pricelist_lines .o_avea_method_cost_plus .o_data_cell[name="avea_amount"]::after,
+    .o_avea_pricelist_lines .o_avea_method_off_sales .o_data_cell[name="avea_amount"]::after {
+        color: var(--o-gray-600, #6c757d);
+        content: "%";
+        font-size: 0.8rem;
+        font-weight: 700;
+        position: absolute;
+        right: 0.4rem;
+        top: 1.55rem;
+    }
+
+    .o_avea_pricelist_lines .o_avea_method_cost_plus .o_data_cell[name="avea_amount"],
+    .o_avea_pricelist_lines .o_avea_method_off_sales .o_data_cell[name="avea_amount"] {
+        position: relative;
+    }
+
+    .o_avea_pricelist_lines .o_avea_method_cost_plus .o_data_cell[name="avea_amount"] .o_input,
+    .o_avea_pricelist_lines .o_avea_method_off_sales .o_data_cell[name="avea_amount"] .o_input {
+        padding-right: 1.35rem;
     }
 }
 
