@@ -153,6 +153,12 @@ class TestAveaAccountManager(TransactionCase):
         rent_line = move.line_ids.filtered(lambda line: line.account_id == expense)
         self.assertIn(rent_line.id, lines.ids)
         self.assertAlmostEqual(rent_line.avea_signed_amount, 250.0, places=2)
+        manager_lines = (
+            self.env["account.move.line"]
+            .with_user(self.manager)
+            .search(activity["domain"])
+        )
+        self.assertIn(rent_line.id, manager_lines.ids)
         with self.assertRaises(UserError):
             expense.with_context(avea_account_workspace=True).write(
                 {"account_type": "income"}
@@ -161,6 +167,31 @@ class TestAveaAccountManager(TransactionCase):
     def test_cashier_cannot_create_workspace_account(self):
         with self.assertRaises(AccessError):
             self._workspace(self.cashier).create({"name": "Blocked expense"})
+
+    def test_manager_owl_has_create_access(self):
+        """The list New account button checks has_access before Python create."""
+        Account = self._workspace(self.manager)
+        self.assertTrue(Account.has_access("create"))
+        self.assertTrue(Account.has_access("write"))
+        self.assertFalse(self._workspace(self.cashier).has_access("create"))
+
+    def test_manager_renames_expense_but_not_cash(self):
+        Account = self._workspace(self.manager)
+        expense = Account.create({"name": "Avea Test Water", "account_type": "expense"})
+        expense.write({"name": "Avea Test Water & sewer"})
+        self.assertEqual(expense.name, "Avea Test Water & sewer")
+        cash = self.Account.search(
+            [
+                ("company_ids", "in", self.company.id),
+                ("account_type", "=", "asset_cash"),
+            ],
+            limit=1,
+        )
+        self.assertTrue(cash, "Need a cash account to prove it stays locked")
+        with self.assertRaises(AccessError):
+            cash.with_user(self.manager).with_context(
+                avea_account_workspace=True
+            ).write({"name": "Do not rename cash"})
 
     def test_nav_includes_accounts(self):
         nav = self.manager._avea_nav_structure()

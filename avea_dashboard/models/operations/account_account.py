@@ -135,6 +135,25 @@ class AccountAccount(models.Model):
             raise AccessError(_("Only a manager can add or change accounts."))
 
     @api.model
+    def _avea_is_non_advisor_manager(self):
+        """Avea manager without Accounting/Advisor — P&L accounts only."""
+        if self.env.su:
+            return False
+        user = self.env.user
+        if user.has_group("account.group_account_manager"):
+            return False
+        return user.has_group("avea_till.group_avea_manager")
+
+    def _avea_assert_pnl_records(self):
+        if any(account.account_type not in AVEA_ACCOUNT_TYPES for account in self):
+            raise AccessError(
+                _(
+                    "Cash, bank, and other bookkeeping accounts cannot be "
+                    "changed here. Use Account Balances for those."
+                )
+            )
+
+    @api.model
     def _avea_next_account_code(self, account_type):
         Account = self.sudo().with_company(self.env.company)
         sample = Account.search(
@@ -210,23 +229,33 @@ class AccountAccount(models.Model):
             return True
         return bool(self.env.context.get("avea_account_workspace"))
 
+    @api.model
+    def _avea_should_prepare_vals(self):
+        if self.env.context.get("avea_account_creating"):
+            return False
+        if self.env.context.get("avea_account_workspace"):
+            return True
+        return self._avea_is_non_advisor_manager()
+
     @api.model_create_multi
     def create(self, vals_list):
-        if self.env.context.get("avea_account_workspace") and not self.env.context.get(
-            "avea_account_creating"
-        ):
+        if self._avea_should_prepare_vals():
             self._avea_require_manager()
             prepared = [self._avea_prepare_account_vals(dict(vals)) for vals in vals_list]
             creator = self.with_company(self.env.company).with_context(
                 avea_account_creating=True
             )
-            if not self.env.su and not self.has_access("create"):
+            # OWL checks ir.model.access before this method. Avea managers get
+            # that ACL, but Odoo's account create still expects Advisor internals.
+            if self._avea_is_non_advisor_manager():
                 creator = creator.sudo()
             return super(AccountAccount, creator).create(prepared)
         return super().create(vals_list)
 
     def write(self, vals):
-        if self.env.context.get("avea_account_workspace"):
+        restricted = self._avea_is_non_advisor_manager()
+        workspace = bool(self.env.context.get("avea_account_workspace"))
+        if workspace or restricted:
             if "avea_kind" in vals and vals.get("avea_kind"):
                 vals = dict(vals, account_type=vals["avea_kind"])
             vals.pop("avea_kind", None)
@@ -238,13 +267,20 @@ class AccountAccount(models.Model):
             }
             if user_keys and not self.env.su:
                 self._avea_require_manager()
+            if restricted and user_keys:
+                self._avea_assert_pnl_records()
             if "account_type" in vals:
                 self._avea_validate_write(vals)
+            if restricted and user_keys and not self.env.su:
+                return super(AccountAccount, self.sudo()).write(vals)
         return super().write(vals)
 
     def unlink(self):
-        if self.env.context.get("avea_account_workspace"):
+        restricted = self._avea_is_non_advisor_manager()
+        if self.env.context.get("avea_account_workspace") or restricted:
             self._avea_require_manager()
+            if restricted:
+                self._avea_assert_pnl_records()
             self.invalidate_recordset(["avea_has_entries"])
             used = self.filtered("avea_has_entries")
             if used:
