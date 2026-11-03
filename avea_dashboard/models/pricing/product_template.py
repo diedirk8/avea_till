@@ -16,7 +16,7 @@ class ProductTemplate(models.Model):
         currency_field="avea_pricelist_preview_currency_id",
     )
     avea_pricelist_preview_cost = fields.Monetary(
-        string="Cost",
+        string="Product cost",
         compute="_compute_avea_pricelist_preview",
         currency_field="avea_pricelist_preview_currency_id",
     )
