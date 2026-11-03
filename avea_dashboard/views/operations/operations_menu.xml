@@ -68,7 +68,7 @@
 
     <menuitem
         id="menu_avea_operations_withdraw_cash"
-        name="Withdraw Cash"
+        name="Withdraw"
         parent="menu_avea_money_record"
         action="action_avea_withdraw_cash_wizard"
         groups="avea_till.group_avea_manager"

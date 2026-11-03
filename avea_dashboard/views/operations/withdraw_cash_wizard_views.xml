@@ -5,9 +5,14 @@
         <field name="name">avea.withdraw.cash.wizard.form</field>
         <field name="model">avea.withdraw.cash.wizard</field>
         <field name="arch" type="xml">
-            <form string="Withdraw Cash" class="o_avea_wizard">
+            <form string="Withdraw" class="o_avea_wizard">
                 <field name="company_id" invisible="1"/>
                 <field name="available_journal_ids" invisible="1"/>
+                <p class="text-muted">
+                    Take money out of cash or bank. Use Owner / director for drawings
+                    and director payments. Paying a named supplier belongs under Add Expense.
+                    Moving money between your own accounts belongs under Transfer Money.
+                </p>
                 <group>
                     <group>
                         <field
@@ -36,7 +41,7 @@
                 <footer>
                     <button
                         name="action_withdraw_cash"
-                        string="Withdraw Cash"
+                        string="Withdraw"
                         type="object"
                         class="btn-primary"
                         data-hotkey="q"
@@ -48,7 +53,7 @@
     </record>
 
     <record id="action_avea_withdraw_cash_wizard" model="ir.actions.server">
-        <field name="name">Withdraw Cash</field>
+        <field name="name">Withdraw</field>
         <field name="model_id" ref="model_avea_withdraw_cash_wizard"/>
         <field name="state">code</field>
         <field name="code">action = model.action_open_wizard()</field>

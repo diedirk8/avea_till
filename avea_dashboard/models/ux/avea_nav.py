@@ -215,7 +215,7 @@ class AveaNavMixin(models.AbstractModel):
                                 "menu_xmlid": "avea_till.menu_avea_operations_transfer",
                             },
                             {
-                                "label": "Withdraw Cash",
+                                "label": "Withdraw",
                                 "menu_xmlid": "avea_till.menu_avea_operations_withdraw_cash",
                             },
                             {
