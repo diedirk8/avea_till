@@ -85,6 +85,35 @@ class TestAveaAccountManager(TransactionCase):
         if other:
             self.assertNotIn(other, accounts)
 
+    def test_workspace_default_get_suggests_code(self):
+        Account = self._workspace(self.manager)
+        defaults = Account.default_get(["code", "account_type", "avea_kind"])
+        self.assertEqual(defaults.get("account_type"), "expense")
+        self.assertEqual(defaults.get("avea_kind"), "expense")
+        self.assertTrue(defaults.get("code"))
+
+    def test_onchange_kind_refreshes_suggested_code(self):
+        Account = self._workspace(self.manager)
+        expense_code = Account._avea_next_account_code("expense")
+        income_code = Account._avea_next_account_code("income")
+        account = Account.new(
+            {
+                "name": "Draft account",
+                "avea_kind": "expense",
+                "code": expense_code,
+            }
+        )
+        account.avea_kind = "income"
+        account._onchange_avea_kind_suggest_code()
+        self.assertEqual(account.account_type, "income")
+        self.assertEqual(account.code, income_code)
+
+    def test_avea_suggest_account_code_rpc(self):
+        Account = self._workspace(self.manager)
+        code = Account.avea_suggest_account_code("income_other")
+        self.assertTrue(code)
+        self.assertFalse(Account.avea_suggest_account_code("not_a_kind"))
+
     def test_manager_creates_expense_and_income_with_codes(self):
         Account = self._workspace(self.manager)
         expense = Account.create({"name": "Avea Test Electricity", "account_type": "expense"})

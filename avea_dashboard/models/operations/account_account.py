@@ -166,9 +166,40 @@ class AccountAccount(models.Model):
     @api.model
     def default_get(self, fields_list):
         values = super().default_get(fields_list)
-        if self.env.context.get("avea_account_workspace"):
+        if not self.env.context.get("avea_account_workspace"):
+            return values
+        kind = (
+            self.env.context.get("default_avea_kind")
+            or values.get("avea_kind")
+            or values.get("account_type")
+            or "expense"
+        )
+        if kind in _AVEA_KIND_ALL:
+            values.setdefault("avea_kind", kind)
+            values.setdefault("account_type", kind)
+        else:
             values.setdefault("account_type", "expense")
+        want_code = not fields_list or "code" in fields_list
+        if want_code and not values.get("code"):
+            account_type = values.get("account_type") or kind
+            if account_type in AVEA_ACCOUNT_TYPES or account_type in AVEA_ASSET_TYPES:
+                values["code"] = self._avea_next_account_code(account_type)
         return values
+
+    @api.onchange("avea_kind")
+    def _onchange_avea_kind_suggest_code(self):
+        if not self.avea_kind:
+            return
+        self.account_type = self.avea_kind
+        if not self._origin.id:
+            self.code = self._avea_next_account_code(self.avea_kind)
+
+    @api.model
+    def avea_suggest_account_code(self, account_type):
+        """Return the next chart code for a kind (used by the Avea account form)."""
+        if account_type not in _AVEA_KIND_ALL:
+            return False
+        return self._avea_next_account_code(account_type)
 
     @api.model
     def _avea_require_manager(self):

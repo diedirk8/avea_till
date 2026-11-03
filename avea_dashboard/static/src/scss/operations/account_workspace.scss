@@ -77,6 +77,49 @@
         font-weight: inherit;
     }
 
+    .o_avea_workspace_title {
+        align-items: baseline;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem 0.75rem;
+    }
+
+    .o_avea_account_code_badge {
+        background: var(--avea-brand-soft);
+        border: 1px solid var(--avea-brand-border);
+        border-radius: 0.45rem;
+        color: var(--avea-brand);
+        display: inline-flex;
+        flex-shrink: 0;
+        font-family: var(
+            --o-font-family-monospace,
+            ui-monospace,
+            SFMono-Regular,
+            Menlo,
+            Monaco,
+            Consolas,
+            monospace
+        );
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        line-height: 1.35;
+        padding: 0.15rem 0.55rem;
+    }
+
+    .o_avea_account_code_badge_value {
+        width: auto;
+    }
+
+    .o_avea_account_code_hint {
+        color: var(--o-gray-600, #6c757d);
+        display: block;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        margin-top: 0.35rem;
+        max-width: 28rem;
+    }
+
     .o_avea_account_name_title .o_field_input_buttons {
         display: none !important;
     }
