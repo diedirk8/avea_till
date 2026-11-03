@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="rule_account_move_line_avea_manager_pnl" model="ir.rule">
+        <field name="name">Avea manager: posted income and expense lines</field>
+        <field name="model_id" ref="account.model_account_move_line"/>
+        <field name="domain_force">[
+            ('parent_state', '=', 'posted'),
+            ('account_id.account_type', 'in', ('income', 'income_other', 'expense', 'expense_other', 'expense_direct_cost')),
+        ]</field>
+        <field name="groups" eval="[(4, ref('avea_till.group_avea_manager'))]"/>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+</odoo>
