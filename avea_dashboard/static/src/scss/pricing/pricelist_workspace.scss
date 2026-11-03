@@ -56,7 +56,7 @@
 
 .o_avea_pricelist_list_shell,
 .o_avea_pricelist_workspace {
-    max-width: min(1280px, 100%);
+    max-width: #{unquote("min(1280px, 100%)")};
     margin: 0 auto;
 }
 
