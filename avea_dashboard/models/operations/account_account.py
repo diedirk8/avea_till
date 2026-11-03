@@ -182,14 +182,25 @@ class AccountAccount(models.Model):
             )
         vals["account_type"] = account_type
         vals.pop("avea_kind", None)
+        company = self.env.company
         if not vals.get("code"):
             vals["code"] = self._avea_next_account_code(account_type)
-        company = self.env.company
-        if not vals.get("company_ids"):
-            vals["company_ids"] = [Command.link(company.id)]
+        vals["company_ids"] = [Command.set([company.id])]
         vals.setdefault("reconcile", False)
         vals.setdefault("active", True)
         return vals
+
+    def _avea_fill_company_codes(self):
+        """Odoo 19 requires a code on each related company, including the parent."""
+        for account in self:
+            code = account.code
+            if not code:
+                continue
+            companies = account.company_ids | account.company_ids.root_id
+            for company in companies:
+                scoped = account.with_company(company)
+                if not scoped.code:
+                    scoped.code = code
 
     def _avea_validate_write(self, vals):
         if "account_type" in vals and vals["account_type"] not in AVEA_ACCOUNT_TYPES:
@@ -231,12 +242,19 @@ class AccountAccount(models.Model):
         ):
             self._avea_require_manager()
             prepared = [self._avea_prepare_account_vals(dict(vals)) for vals in vals_list]
-            return super(
+            company = self.env.company
+            root = company.root_id or company
+            accounts = super(
                 AccountAccount,
                 self.sudo()
-                .with_company(self.env.company)
-                .with_context(avea_account_creating=True),
+                .with_company(root)
+                .with_context(
+                    avea_account_creating=True,
+                    allowed_company_ids=(root | company).ids,
+                ),
             ).create(prepared)
+            accounts._avea_fill_company_codes()
+            return accounts
         return super().create(vals_list)
 
     def write(self, vals):
