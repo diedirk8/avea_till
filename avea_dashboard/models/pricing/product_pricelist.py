@@ -140,9 +140,10 @@ class ProductPricelist(models.Model):
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": _("Shelf prices copied"),
+                "title": _("Lines filled from retail prices"),
                 "message": _(
-                    "%(created)s new lines and %(updated)s updated from current retail prices.",
+                    "%(created)s new lines and %(updated)s updated from current shelf prices. "
+                    "Retail product prices were not changed.",
                     created=created,
                     updated=updated,
                 ),

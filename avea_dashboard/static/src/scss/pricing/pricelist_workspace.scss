@@ -25,8 +25,80 @@
         background: var(--o-webclient-background-color, #f4f5f7);
     }
 
+    .o_avea_workspace_sheet {
+        max-width: #{unquote("min(1280px, 100%)")};
+        margin: 0 auto;
+        padding-top: 1.15rem;
+        padding-bottom: 2rem;
+    }
+
     .o_avea_workspace_eyebrow {
         color: var(--avea-brand) !important;
+    }
+
+    .o_avea_pricelist_hero {
+        align-items: stretch;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_pricelist_hero_top {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.25rem;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .o_avea_workspace_hero_intro {
+        flex: 1 1 18rem;
+        margin-bottom: 0;
+        min-width: 0;
+    }
+
+    .o_avea_workspace_section_subtitle {
+        max-width: 40rem;
+    }
+
+    .o_avea_pricelist_name_title input {
+        font-size: inherit;
+        font-weight: inherit;
+    }
+
+    .o_avea_workspace_hero_stats {
+        flex: 0 1 auto;
+        margin-top: 0.15rem;
+    }
+
+    .o_avea_pricelist_hero_actions {
+        align-items: center;
+        border-top: 1px solid rgba(15, 23, 42, 0.08);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        justify-content: space-between;
+        padding-top: 0.85rem;
+        width: 100%;
+    }
+
+    .o_avea_pricelist_hero_actions_tools,
+    .o_avea_pricelist_hero_actions_save {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .o_avea_pricelist_hero_actions_save {
+        margin-left: auto;
+    }
+
+    .o_avea_pricelist_hero_actions .btn {
+        min-height: 2.35rem;
+        white-space: nowrap;
     }
 
     .btn-primary,
@@ -43,14 +115,51 @@
         }
     }
 
-    .btn-outline-primary {
-        color: var(--avea-brand) !important;
-        border-color: var(--avea-brand) !important;
-        font-weight: 600;
+    .o_avea_pricelist_panel--help {
+        background: var(--avea-brand-soft);
+        border-color: var(--avea-brand-border);
+    }
 
-        &:hover {
-            background-color: var(--avea-brand-soft) !important;
+    .o_avea_pricelist_help_list {
+        color: var(--o-gray-700, #495057);
+        font-size: 0.9rem;
+        line-height: 1.5;
+        margin: 0.65rem 0 0;
+        padding-left: 1.15rem;
+
+        li + li {
+            margin-top: 0.45rem;
         }
+    }
+
+    .o_avea_pricelist_panel_hint,
+    .o_avea_pricelist_field_hint {
+        color: var(--o-gray-600, #6c757d);
+        display: block;
+        font-size: 0.8125rem;
+        line-height: 1.4;
+        margin-top: 0.25rem;
+    }
+
+    .o_avea_pricelist_lines {
+        .o_list_table {
+            table-layout: fixed;
+        }
+
+        th:nth-child(1),
+        td:nth-child(1) {
+            width: 65%;
+        }
+
+        th:nth-child(2),
+        td:nth-child(2) {
+            min-width: 9rem;
+            width: 35%;
+        }
+    }
+
+    .o_avea_pricelist_price_col {
+        text-align: right;
     }
 }
 
@@ -60,19 +169,26 @@
     margin: 0 auto;
 }
 
-.o_avea_pricelist_list_hero,
-.o_avea_pricelist_hero_actions {
+.o_avea_pricelist_list_hero {
+    align-items: flex-start;
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
-    align-items: flex-start;
     justify-content: space-between;
+}
+
+.o_avea_pricelist_list_actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-left: auto;
 }
 
 .o_avea_pricelist_fields {
     display: grid;
     gap: 1rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .o_avea_pricelist_field--wide {
@@ -83,8 +199,8 @@
     background: #fff;
     border: 1px solid rgba(15, 23, 42, 0.08);
     border-radius: 0.75rem;
+    margin-bottom: 0.85rem;
     padding: 1.25rem;
-    margin-bottom: 1rem;
 }
 
 .o_list_view.o_avea_workspace--pricelist-list {
