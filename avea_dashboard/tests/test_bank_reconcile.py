@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -236,3 +237,164 @@ Date Description Amount Balance Accrued Bank Charges
             avea_bank_reconcile_labels=True
         ).line_ids.read(["statement_line_id", "book_match_summary"])
         self.assertEqual(len(data), 1)
+
+    def _bank_journal(self):
+        journal = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
+            limit=1,
+        )
+        if not journal or not journal.suspense_account_id:
+            return self.env["account.journal"]
+        return journal
+
+    def _statement_line(self, journal, **vals):
+        values = {
+            "journal_id": journal.id,
+            "amount": -80.0,
+            "date": "2026-07-15",
+            "payment_ref": "AVEA RECON TEST",
+            "counterpart_account_id": journal.suspense_account_id.id,
+        }
+        values.update(vals)
+        return (
+            self.env["account.bank.statement.line"]
+            .sudo()
+            .with_context(no_retrieve_partner=True)
+            .create(values)
+        )
+
+    def test_reversed_or_near_amount_does_not_score(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        st_line = self._statement_line(journal, amount=-250.0, payment_ref="RENT")
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress", "date_to": "2026-07-31"}
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-07-15",
+                "description": "RENT",
+                "amount": 250.0,
+            }
+        )
+        score, _hint = line._avea_score_candidate(st_line)
+        self.assertEqual(score, 0.0)
+        near = self._statement_line(journal, amount=-249.0, payment_ref="RENT")
+        score, _hint = line._avea_score_candidate(near)
+        self.assertEqual(score, 0.0)
+
+    def test_one_book_entry_matches_only_one_statement_line(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        st_line = self._statement_line(
+            journal, amount=-42.42, date="2026-07-10", payment_ref="ONCE"
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-07-01",
+                "date_to": "2026-07-31",
+            }
+        )
+        for _index in range(2):
+            self.env["avea.bank.reconcile.line"].create(
+                {
+                    "reconciliation_id": reconciliation.id,
+                    "bank_date": "2026-07-10",
+                    "description": "ONCE",
+                    "amount": -42.42,
+                }
+            )
+        reconciliation._avea_match_lines()
+        linked = reconciliation.line_ids.filtered(
+            lambda line: line.statement_line_id == st_line
+        )
+        self.assertEqual(len(linked), 1)
+
+    def test_older_book_entry_is_outstanding_only_when_asked(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        old = self._statement_line(
+            journal, amount=-15.0, date="2098-05-01", payment_ref="OLD CHEQUE"
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2099-07-01",
+                "date_to": "2099-07-31",
+            }
+        )
+        outstanding = reconciliation._avea_outstanding_statement_lines()
+        if reconciliation._avea_has_prior_reconciliation():
+            self.assertIn(old, outstanding)
+        else:
+            self.assertNotIn(old, outstanding)
+            reconciliation.prior_items_outstanding = True
+            self.assertIn(old, reconciliation._avea_outstanding_statement_lines())
+
+    def test_complete_requires_a_zero_difference_and_clears_the_line(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        st_line = self._statement_line(
+            journal,
+            amount=-321.55,
+            date="2099-07-20",
+            payment_ref="CLEAR ME",
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2099-07-01",
+                "date_to": "2099-07-31",
+                "balances_from_file": True,
+                "prior_items_outstanding": True,
+            }
+        )
+        self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2099-07-20",
+                "description": "CLEAR ME",
+                "amount": -321.55,
+            }
+        )
+        reconciliation._avea_match_lines()
+        self.assertEqual(reconciliation.line_ids.match_state, "matched")
+        with self.assertRaises(UserError):
+            reconciliation.action_apply_reconciliation()
+        currency = reconciliation.currency_id
+        reconciliation.closing_balance = reconciliation.adjusted_book_balance
+        reconciliation.opening_balance = currency.round(
+            reconciliation.closing_balance - sum(reconciliation.line_ids.mapped("amount"))
+        )
+        self.assertTrue(currency.is_zero(reconciliation.statement_difference))
+        reconciliation.action_apply_reconciliation()
+        self.assertEqual(reconciliation.state, "done")
+        self.assertTrue(st_line.avea_cleared)
+        self.assertEqual(st_line.avea_cleared_reconciliation_id, reconciliation)
+        again = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2099-08-01",
+                "date_to": "2099-08-31",
+            }
+        )
+        self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": again.id,
+                "bank_date": "2099-07-20",
+                "description": "CLEAR ME",
+                "amount": -321.55,
+            }
+        )
+        again._avea_match_lines()
+        self.assertFalse(again.line_ids.statement_line_id)

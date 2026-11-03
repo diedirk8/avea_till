@@ -72,7 +72,7 @@
                 <field name="description"/>
                 <field name="reference" optional="hide"/>
                 <field name="amount" widget="monetary"/>
-                <field name="match_state" widget="badge"
+                <field name="match_state" widget="badge" readonly="1"
                     decoration-success="match_state == 'matched'"
                     decoration-info="match_state == 'possible'"
                     decoration-warning="match_state == 'unmatched'"
@@ -86,6 +86,14 @@
                 <field name="statement_line_id" string="Change match" optional="show"
                     options="{'no_create': True, 'no_open': True}"
                     readonly="match_state in ('imported', 'skipped')"/>
+                <field name="match_locked" column_invisible="True"/>
+                <button
+                    name="action_accept_line_match"
+                    type="object"
+                    string="Accept"
+                    class="btn-link"
+                    invisible="match_state != 'possible'"
+                />
                 <field name="import_action" string="If unmatched"
                     invisible="match_state in ('matched', 'imported')"/>
                 <button
@@ -138,6 +146,12 @@
                         invisible="state != 'in_progress'"
                     />
                     <button
+                        name="action_accept_possible_matches"
+                        string="Accept possible matches"
+                        type="object"
+                        invisible="state != 'in_progress' or possible_match_count == 0"
+                    />
+                    <button
                         name="action_apply_reconciliation"
                         string="Complete reconciliation"
                         type="object"
@@ -186,8 +200,27 @@
                     <group>
                         <field name="date_from" readonly="1"/>
                         <field name="date_to" readonly="1"/>
-                        <field name="opening_balance" readonly="1" widget="monetary"/>
-                        <field name="closing_balance" readonly="1" widget="monetary"/>
+                        <field name="opening_balance" readonly="state == 'done'" widget="monetary"/>
+                        <field name="closing_balance" readonly="state == 'done'" widget="monetary"/>
+                        <field name="balances_from_file" invisible="1"/>
+                    </group>
+                </group>
+                <div class="alert alert-warning" role="status" invisible="state == 'draft' or not balance_warning">
+                    <field name="balance_warning" nolabel="1" readonly="1"/>
+                </div>
+                <group invisible="state == 'draft'" string="Does it balance?">
+                    <group>
+                        <field name="gl_balance" readonly="1" widget="monetary"/>
+                        <field name="outstanding_amount" readonly="1" widget="monetary"/>
+                        <field name="adjusted_book_balance" readonly="1" widget="monetary"/>
+                    </group>
+                    <group>
+                        <field name="statement_difference" readonly="1" widget="monetary"/>
+                        <field name="show_prior_outstanding_option" invisible="1"/>
+                        <field
+                            name="prior_items_outstanding"
+                            invisible="not show_prior_outstanding_option"
+                        />
                     </group>
                 </group>
                 <group invisible="state != 'in_progress'">
@@ -222,8 +255,11 @@
                     </page>
                     <page string="Missing from bank" name="book_lines">
                         <p class="text-muted">
-                            These unreconciled entries are already on your books for this bank
-                            account but were not found on the uploaded statement.
+                            Outstanding items: on your books up to the statement end date
+                            and not on this statement. They stay outstanding until a later
+                            statement clears them. When this is your first reconciliation,
+                            entries from before the statement are part of the opening balance
+                            unless you mark them as still missing from the bank.
                         </p>
                         <field name="book_line_ids" nolabel="1"/>
                     </page>

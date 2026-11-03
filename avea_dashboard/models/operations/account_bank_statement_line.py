@@ -6,6 +6,21 @@ from odoo.tools.misc import formatLang
 class AccountBankStatementLine(models.Model):
     _inherit = "account.bank.statement.line"
 
+    avea_cleared = fields.Boolean(
+        string="Cleared on a bank statement",
+        default=False,
+        index=True,
+        copy=False,
+        help="Set when an Avea bank reconciliation has ticked this book entry off "
+        "against a statement. Cleared lines are not offered again.",
+    )
+    avea_cleared_reconciliation_id = fields.Many2one(
+        "avea.bank.reconciliation",
+        string="Cleared on",
+        copy=False,
+        ondelete="set null",
+    )
+
     def avea_reconcile_display_name(self):
         """Human-readable label for bank reconciliation (date, partner, reference, amount)."""
         self.ensure_one()
