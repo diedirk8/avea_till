@@ -82,7 +82,6 @@
                                         nolabel="1"
                                         placeholder="e.g. Electricity"
                                         class="o_avea_account_name_title"
-                                        options="{'enable_translations': False}"
                                     />
                                 </h1>
                                 <p class="o_avea_workspace_section_subtitle">
