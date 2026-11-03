@@ -42,10 +42,4 @@ patch(FormController.prototype, {
         return await super.beforeExecuteActionButton(clickParams);
     },
 
-    async afterExecuteActionButton(clickParams) {
-        await super.afterExecuteActionButton?.(clickParams);
-        if (clickParams.special === "save" && this._isAveaPricelistForm()) {
-            await this._returnToPricelistList();
-        }
-    },
 });

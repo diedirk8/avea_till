@@ -27,6 +27,20 @@ class ProductPricelist(models.Model):
         compute="_compute_avea_stats",
     )
     avea_notes = fields.Text(string="Notes")
+    avea_customer_ids = fields.Many2many(
+        "res.partner",
+        string="Customers on this list",
+        compute="_compute_avea_customer_ids",
+        inverse="_inverse_avea_customer_ids",
+        help="Customers assigned to this list. At the till, their sale uses these rules.",
+    )
+
+    def _avea_partner_env(self):
+        self.ensure_one()
+        partners = self.env["res.partner"]
+        if self.company_id:
+            return partners.with_company(self.company_id)
+        return partners
 
     def _avea_partner_domain_on_pricelist(self):
         """Partners with this list explicitly assigned (Odoo 19 stores it on specific_property_product_pricelist)."""
@@ -56,6 +70,30 @@ class ProductPricelist(models.Model):
                 ).search_count(partner_domain)
             else:
                 pricelist.avea_customer_count = Partner.search_count(partner_domain)
+
+    def _compute_avea_customer_ids(self):
+        for pricelist in self:
+            if not pricelist.id:
+                pricelist.avea_customer_ids = False
+                continue
+            pricelist.avea_customer_ids = pricelist._avea_partner_env().search(
+                pricelist._avea_partner_domain_on_pricelist()
+            )
+
+    def _inverse_avea_customer_ids(self):
+        for pricelist in self:
+            partners = pricelist._avea_partner_env()
+            current = partners.search(pricelist._avea_partner_domain_on_pricelist())
+            desired = pricelist.avea_customer_ids
+            to_add = desired - current
+            to_remove = current - desired
+            if to_add:
+                to_add.filtered(lambda partner: partner.customer_rank < 1).write(
+                    {"customer_rank": 1}
+                )
+                to_add.write({"specific_property_product_pricelist": pricelist.id})
+            if to_remove:
+                to_remove.write({"specific_property_product_pricelist": False})
 
     @api.constrains("avea_sales_platform_id", "avea_pos_available")
     def _check_avea_platform_pos_flag(self):

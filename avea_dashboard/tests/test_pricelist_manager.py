@@ -106,6 +106,92 @@ class TestAveaPricelistManager(TransactionCase):
         self.assertTrue(pricelist.avea_rule_summary)
         self.assertRegex(pricelist.avea_rule_summary, r"24")
 
+    def test_assign_customers_without_leaving_form(self):
+        pricelist = self.env["product.pricelist"].create(
+            {
+                "name": "Staff assign",
+                "company_id": self.company.id,
+            }
+        )
+        other = self.env["product.pricelist"].create(
+            {
+                "name": "Other list",
+                "company_id": self.company.id,
+            }
+        )
+        keep = self.env["res.partner"].create(
+            {
+                "name": "Keep on staff",
+                "customer_rank": 1,
+                "specific_property_product_pricelist": pricelist.id,
+            }
+        )
+        extra = self.env["res.partner"].create(
+            {
+                "name": "Move onto staff",
+                "customer_rank": 1,
+                "specific_property_product_pricelist": other.id,
+            }
+        )
+        drop = self.env["res.partner"].create(
+            {
+                "name": "Remove from staff",
+                "customer_rank": 1,
+                "specific_property_product_pricelist": pricelist.id,
+            }
+        )
+        pricelist.invalidate_recordset(["avea_customer_ids"])
+        pricelist.avea_customer_ids = keep | extra
+        self.assertEqual(keep.specific_property_product_pricelist, pricelist)
+        self.assertEqual(extra.specific_property_product_pricelist, pricelist)
+        self.assertFalse(drop.specific_property_product_pricelist)
+
+    def test_category_exception_overrides_all_products(self):
+        category = self.env["product.category"].create({"name": "Bird food"})
+        bird = self.env["product.template"].create(
+            {
+                "name": "Seed mix",
+                "list_price": 200.0,
+                "standard_price": 100.0,
+                "categ_id": category.id,
+                "type": "consu",
+                "sale_ok": True,
+            }
+        )
+        other = self.product
+        other.standard_price = 50.0
+        pricelist = self.env["product.pricelist"].create(
+            {
+                "name": "Staff with exception",
+                "company_id": self.company.id,
+            }
+        )
+        self.env["product.pricelist.item"].create(
+            [
+                {
+                    "pricelist_id": pricelist.id,
+                    "applied_on": "3_global",
+                    "compute_price": "formula",
+                    "base": "standard_price",
+                    "price_markup": 24.2,
+                    "price_round": 1.0,
+                },
+                {
+                    "pricelist_id": pricelist.id,
+                    "applied_on": "2_product_category",
+                    "categ_id": category.id,
+                    "compute_price": "formula",
+                    "base": "standard_price",
+                    "price_markup": 10.0,
+                    "price_round": 1.0,
+                },
+            ]
+        )
+        bird_price = pricelist._get_product_price(bird.product_variant_id, 1)
+        other_price = pricelist._get_product_price(other.product_variant_id, 1)
+        self.assertAlmostEqual(bird_price, 110.0, places=1)
+        self.assertAlmostEqual(other_price, 62.0, places=1)
+
     def test_cannot_delete_platform_pricelist(self):
         platform = self.env["avea.sales.platform"].create(
             {

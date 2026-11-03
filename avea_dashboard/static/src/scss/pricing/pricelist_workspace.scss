@@ -178,11 +178,37 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist) {
     }
 }
 
-.o_avea_pricelist_list_shell,
-.o_avea_pricelist_workspace {
+.o_avea_pricelist_list_shell {
     margin: 0;
     max-width: none;
     width: 100%;
+}
+
+.o_avea_pricelist_workspace {
+    align-items: start;
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: minmax(0, 1.7fr) minmax(16rem, 0.9fr);
+    margin: 0;
+    max-width: none;
+    width: 100%;
+}
+
+.o_avea_pricelist_main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.o_avea_pricelist_panel--customers {
+    min-width: 0;
+}
+
+@media (max-width: 991.98px) {
+    .o_avea_pricelist_workspace {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .o_avea_pricelist_list_hero {
