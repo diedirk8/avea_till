@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_bank_reconcile_apply_form" model="ir.ui.view">
+        <field name="name">avea.bank.reconcile.apply.form</field>
+        <field name="model">avea.bank.reconcile.apply</field>
+        <field name="arch" type="xml">
+            <form string="Match, split, or transfer">
+                <group>
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="journal_id" invisible="1"/>
+                    <field name="available_move_ids" invisible="1"/>
+                    <field name="available_transfer_journal_ids" invisible="1"/>
+                    <field name="description" readonly="1"/>
+                    <field name="amount" readonly="1" widget="monetary"/>
+                    <field name="mode" widget="radio"/>
+                </group>
+                <group invisible="mode != 'match'">
+                    <field
+                        name="move_ids"
+                        widget="many2many_tags"
+                        options="{'no_create': True}"
+                        placeholder="Open invoices or bills"
+                    />
+                    <field name="open_amount" readonly="1" widget="monetary"/>
+                </group>
+                <p class="text-muted" invisible="mode != 'match'">
+                    Money in matches customer invoices and supplier refunds.
+                    Money out matches supplier bills and customer refunds.
+                    Several documents must add up to the bank line.
+                    One document can be larger; the rest stays open.
+                </p>
+                <group invisible="mode != 'split'">
+                    <field name="split_total" readonly="1" widget="monetary"/>
+                </group>
+                <field
+                    name="split_line_ids"
+                    nolabel="1"
+                    invisible="mode != 'split'"
+                >
+                    <list editable="bottom">
+                        <field name="company_id" column_invisible="True"/>
+                        <field name="currency_id" column_invisible="True"/>
+                        <field name="account_id"/>
+                        <field name="name"/>
+                        <field name="amount" widget="monetary"/>
+                    </list>
+                </field>
+                <p class="text-muted" invisible="mode != 'split'">
+                    Use this when one bank payment covers more than one account.
+                    The amounts must add up to the bank line. Receivable, payable,
+                    and bank accounts stay on Match and Transfer.
+                </p>
+                <group invisible="mode != 'transfer'">
+                    <field name="transfer_journal_id" options="{'no_create': True, 'no_open': True}"/>
+                </group>
+                <p class="text-muted" invisible="mode != 'transfer'">
+                    Money out leaves this account. Money in arrived from the other account.
+                    The other side stays outstanding until you reconcile that account.
+                </p>
+                <footer>
+                    <button name="action_apply" type="object" string="Apply" class="btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

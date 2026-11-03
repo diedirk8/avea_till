@@ -109,6 +109,12 @@ class AveaBankReconciliation(models.Model):
         currency_field="currency_id",
         compute="_compute_reconciliation_balance",
     )
+    has_previous_statement = fields.Boolean(compute="_compute_reconciliation_balance")
+    previous_closing_balance = fields.Monetary(
+        string="Previous statement balance",
+        currency_field="currency_id",
+        compute="_compute_reconciliation_balance",
+    )
     statement_difference = fields.Monetary(
         string="Difference",
         currency_field="currency_id",
@@ -190,6 +196,10 @@ class AveaBankReconciliation(models.Model):
             reconciliation.outstanding_amount = outstanding_amount
             reconciliation.adjusted_book_balance = adjusted
             reconciliation.statement_difference = closing - adjusted
+            prior = reconciliation._avea_previous_reconciliation()
+            reconciliation.has_previous_statement = bool(prior)
+            reconciliation.previous_closing_balance = prior.closing_balance if prior else 0.0
+            warnings = []
             earlier_count = len(reconciliation._avea_opening_book_lines())
             if (
                 earlier_count
@@ -204,7 +214,18 @@ class AveaBankReconciliation(models.Model):
                         count=earlier_count,
                     )
                 )
-            warnings = []
+            if (
+                prior
+                and not currency.is_zero(
+                    (reconciliation.opening_balance or 0.0) - prior.closing_balance
+                )
+            ):
+                warnings.append(
+                    _(
+                        "The opening balance does not match the previous statement "
+                        "closing balance."
+                    )
+                )
             if (
                 reconciliation.balances_from_file
                 and reconciliation.line_ids
@@ -256,20 +277,24 @@ class AveaBankReconciliation(models.Model):
         )
         return sum(lines.mapped("balance"))
 
-    def _avea_has_prior_reconciliation(self):
+    def _avea_previous_reconciliation(self):
         self.ensure_one()
         if not self.journal_id or not self.date_from:
-            return False
-        return bool(
-            self.search_count(
-                [
-                    ("id", "!=", self.id),
-                    ("journal_id", "=", self.journal_id.id),
-                    ("state", "=", "done"),
-                    ("date_to", "<", self.date_from),
-                ]
-            )
+            return self.browse()
+        return self.search(
+            [
+                ("id", "!=", self.id),
+                ("journal_id", "=", self.journal_id.id),
+                ("state", "=", "done"),
+                ("date_to", "<", self.date_from),
+            ],
+            order="date_to desc, id desc",
+            limit=1,
         )
+
+    def _avea_has_prior_reconciliation(self):
+        self.ensure_one()
+        return bool(self._avea_previous_reconciliation())
 
     def _avea_matched_statement_lines(self):
         self.ensure_one()
@@ -1041,6 +1066,24 @@ class AveaBankReconcileLine(models.Model):
         if self.currency_id.compare_amounts(self.amount, 0.0) > 0:
             return "income"
         return "skip"
+
+    def action_open_allocate_wizard(self):
+        self.ensure_one()
+        if self.match_state in ("matched", "imported"):
+            raise UserError(_("This statement line is already matched."))
+        if self.currency_id.is_zero(self.amount):
+            raise UserError(_("This statement line has no amount."))
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Match, split, or transfer"),
+            "res_model": "avea.bank.reconcile.apply",
+            "view_mode": "form",
+            "target": "new",
+            "context": {
+                "default_reconcile_line_id": self.id,
+                "default_mode": "match",
+            },
+        }
 
     def action_open_booking_wizard(self):
         self.ensure_one()

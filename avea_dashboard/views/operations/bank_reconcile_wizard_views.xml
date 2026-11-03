@@ -103,6 +103,13 @@
                     class="btn-link"
                     invisible="match_state in ('matched', 'imported', 'skipped')"
                 />
+                <button
+                    name="action_open_allocate_wizard"
+                    type="object"
+                    string="Match, split, or transfer…"
+                    class="btn-link"
+                    invisible="match_state in ('matched', 'imported', 'skipped')"
+                />
                 <field name="match_hint" column_invisible="True"/>
                 <field name="candidate_statement_line_ids" column_invisible="True"/>
                 <field name="currency_id" column_invisible="True"/>
@@ -210,6 +217,13 @@
                 </div>
                 <group invisible="state == 'draft'" string="Does it balance?">
                     <group>
+                        <field name="has_previous_statement" invisible="1"/>
+                        <field
+                            name="previous_closing_balance"
+                            readonly="1"
+                            widget="monetary"
+                            invisible="not has_previous_statement"
+                        />
                         <field name="gl_balance" readonly="1" widget="monetary"/>
                         <field name="outstanding_amount" readonly="1" widget="monetary"/>
                         <field name="adjusted_book_balance" readonly="1" widget="monetary"/>

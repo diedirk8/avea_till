@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 
+from odoo import Command
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
@@ -398,3 +399,125 @@ Date Description Amount Balance Accrued Bank Charges
         )
         again._avea_match_lines()
         self.assertFalse(again.line_ids.statement_line_id)
+
+    def _reconcile_line(self, journal, amount, description="Allocate test"):
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2099-07-01",
+                "date_to": "2099-07-31",
+            }
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2099-07-18",
+                "description": description,
+                "amount": amount,
+            }
+        )
+        return line
+
+    def test_match_open_vendor_bill(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        partner = self.env["res.partner"].create({"name": "Avea Recon Supplier"})
+        expense = self.env["account.account"].search(
+            [
+                ("account_type", "=", "expense"),
+                ("company_ids", "in", self.env.company.id),
+            ],
+            limit=1,
+        )
+        if not expense:
+            return
+        bill = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": partner.id,
+                "invoice_date": "2099-07-18",
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "name": "Shop supplies",
+                            "account_id": expense.id,
+                            "quantity": 1,
+                            "price_unit": 88.0,
+                            "tax_ids": [Command.clear()],
+                        }
+                    )
+                ],
+            }
+        )
+        bill.action_post()
+        line = self._reconcile_line(journal, -bill.amount_residual, partner.name)
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "match",
+                "move_ids": [Command.set(bill.ids)],
+            }
+        )
+        wizard.action_apply()
+        self.assertEqual(line.match_state, "matched")
+        self.assertTrue(line.statement_line_id)
+        self.assertEqual(bill.payment_state, "paid")
+
+    def test_split_bank_line_across_two_accounts(self):
+        journal = self._bank_journal()
+        if not journal or not journal.suspense_account_id:
+            return
+        accounts = self.env["account.account"].search(
+            [
+                ("account_type", "=", "expense"),
+                ("company_ids", "in", self.env.company.id),
+            ],
+            limit=2,
+        )
+        if len(accounts) < 2:
+            return
+        line = self._reconcile_line(journal, -100.0, "Split payment")
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "split",
+                "split_line_ids": [
+                    Command.create(
+                        {"account_id": accounts[0].id, "name": "Fuel", "amount": 40.0}
+                    ),
+                    Command.create(
+                        {"account_id": accounts[1].id, "name": "Repairs", "amount": 60.0}
+                    ),
+                ],
+            }
+        )
+        wizard.action_apply()
+        self.assertEqual(line.match_state, "matched")
+        move_lines = line.statement_line_id.move_id.line_ids
+        fuel = move_lines.filtered(lambda item: item.account_id == accounts[0])
+        repairs = move_lines.filtered(lambda item: item.account_id == accounts[1])
+        self.assertAlmostEqual(fuel.debit, 40.0, places=2)
+        self.assertAlmostEqual(repairs.debit, 60.0, places=2)
+
+    def test_transfer_between_money_accounts(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        others = self.env.company._avea_transfer_journals() - journal
+        other = others[:1]
+        if not other:
+            return
+        line = self._reconcile_line(journal, -55.0, "Move to cash")
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "transfer",
+                "transfer_journal_id": other.id,
+            }
+        )
+        wizard.action_apply()
+        self.assertEqual(line.match_state, "matched")
+        self.assertEqual(line.statement_line_id.journal_id, journal)
+        self.assertAlmostEqual(line.statement_line_id.amount, -55.0, places=2)
