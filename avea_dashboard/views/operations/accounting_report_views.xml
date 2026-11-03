@@ -5,7 +5,7 @@
         <field name="name">avea.accounting.reports.home.form</field>
         <field name="model">avea.accounting.reports.home</field>
         <field name="arch" type="xml">
-            <form string="Reports" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--account o_avea_workspace--accounting-reports">
+            <form string="Reports" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report o_avea_workspace--accounting-reports">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="company_id" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
@@ -67,7 +67,7 @@
         <field name="name">avea.accounting.profit.loss.form</field>
         <field name="model">avea.accounting.profit.loss</field>
         <field name="arch" type="xml">
-            <form string="Profit and loss" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--account">
+            <form string="Profit and loss" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
                     <div class="o_avea_workspace_hero">
@@ -115,7 +115,7 @@
         <field name="name">avea.accounting.balance.sheet.form</field>
         <field name="model">avea.accounting.balance.sheet</field>
         <field name="arch" type="xml">
-            <form string="Balance sheet" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--account">
+            <form string="Balance sheet" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
                     <div class="o_avea_workspace_hero">
@@ -163,7 +163,7 @@
         <field name="name">avea.accounting.trial.balance.form</field>
         <field name="model">avea.accounting.trial.balance</field>
         <field name="arch" type="xml">
-            <form string="Trial balance" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--account">
+            <form string="Trial balance" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
                     <div class="o_avea_workspace_hero">
@@ -206,7 +206,7 @@
         <field name="name">avea.accounting.general.ledger.form</field>
         <field name="model">avea.accounting.general.ledger</field>
         <field name="arch" type="xml">
-            <form string="General ledger" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--account">
+            <form string="General ledger" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report">
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
                     <div class="o_avea_workspace_hero">
