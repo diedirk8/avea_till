@@ -168,6 +168,10 @@ class AveaNavMixin(models.AbstractModel):
                         ],
                     },
                     {
+                        "label": "Price lists",
+                        "menu_xmlid": "avea_till.menu_avea_pricelist_manager",
+                    },
+                    {
                         "label": "Promotions",
                         "menu_xmlid": "avea_till.menu_avea_promotion",
                     },

@@ -1,6 +1,7 @@
 from . import customer
 from . import credit
 from . import operations
+from . import pricing
 from . import promotion
 from . import sales_platform
 from . import stock

@@ -1,0 +1,100 @@
+// Price lists — Avea workspace (teal accent)
+
+.o_form_view.o_avea_workspace--pricelist,
+.o_list_view.o_avea_workspace--pricelist,
+.o_avea_workspace--pricelist {
+    --avea-brand: #0d9488;
+    --avea-brand-hover: #0f766e;
+    --avea-brand-soft: rgba(13, 148, 136, 0.12);
+    --avea-brand-border: rgba(13, 148, 136, 0.35);
+    --avea-brand-focus: rgba(13, 148, 136, 0.22);
+    --bs-primary: var(--avea-brand);
+    --bs-primary-rgb: 13, 148, 136;
+    --bs-link-color: var(--avea-brand);
+    --bs-link-hover-color: var(--avea-brand-hover);
+}
+
+.o_form_view.o_avea_workspace--pricelist {
+    .o_control_panel,
+    .o_form_statusbar,
+    header {
+        display: none !important;
+    }
+
+    .o_form_sheet_bg {
+        background: var(--o-webclient-background-color, #f4f5f7);
+    }
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand) !important;
+    }
+
+    .btn-primary,
+    .o_form_button_save {
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+        font-weight: 700;
+
+        &:hover,
+        &:focus,
+        &:active {
+            background-color: var(--avea-brand-hover) !important;
+            border-color: var(--avea-brand-hover) !important;
+        }
+    }
+
+    .btn-outline-primary {
+        color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+        font-weight: 600;
+
+        &:hover {
+            background-color: var(--avea-brand-soft) !important;
+        }
+    }
+}
+
+.o_avea_pricelist_list_shell,
+.o_avea_pricelist_workspace {
+    max-width: min(1280px, 100%);
+    margin: 0 auto;
+}
+
+.o_avea_pricelist_list_hero,
+.o_avea_pricelist_hero_actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.o_avea_pricelist_fields {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.o_avea_pricelist_field--wide {
+    grid-column: 1 / -1;
+}
+
+.o_avea_pricelist_panel {
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.o_list_view.o_avea_workspace--pricelist-list {
+    .o_control_panel {
+        display: none !important;
+    }
+}
+
+.o_avea_pricelist_list_footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.75rem 1rem 1.25rem;
+}

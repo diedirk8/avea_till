@@ -75,8 +75,9 @@ class TestAveaNav(TestPoSCommon):
         store_credit = customers["items"][1]
         self.assertEqual(store_credit["label"], "Store Credit")
         self.assertEqual(customers["items"][2]["label"], "Credit Reports")
-        self.assertEqual(customers["items"][3]["label"], "Promotions")
-        self.assertEqual(customers["items"][4]["label"], "Sales Platforms")
+        self.assertEqual(customers["items"][3]["label"], "Price lists")
+        self.assertEqual(customers["items"][4]["label"], "Promotions")
+        self.assertEqual(customers["items"][5]["label"], "Sales Platforms")
         self.assertIn("items", store_credit)
 
         money = next(s for s in nav["sections"] if s["id"] == "money")

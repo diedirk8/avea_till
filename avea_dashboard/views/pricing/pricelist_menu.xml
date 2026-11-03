@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_pricelist_manager"
+        name="Price lists"
+        parent="menu_avea_root"
+        action="action_avea_pricelist_manager"
+        groups="avea_till.group_avea_manager"
+        sequence="14"
+    />
+
+</odoo>

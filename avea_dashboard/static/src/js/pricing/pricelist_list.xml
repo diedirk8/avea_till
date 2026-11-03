@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.PricelistList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_pricelist_list_shell">
+                <div class="o_avea_workspace_sheet o_avea_pricelist_list_sheet">
+                    <div class="o_avea_workspace_hero o_avea_pricelist_list_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Customers</span>
+                            <h1 class="o_avea_workspace_title">Price lists</h1>
+                            <p class="o_avea_workspace_subtitle">
+                                Manage staff, trade, and customer price lists. Sales platform lists stay under Sales Platforms.
+                            </p>
+                            <div class="o_avea_period_selector o_avea_pricelist_filters">
+                                <button type="button" t-att-class="this._filterButtonClass('all')" t-on-click="() => this.onFilterClick('all')">
+                                    All
+                                </button>
+                                <button type="button" t-att-class="this._filterButtonClass('active')" t-on-click="() => this.onFilterClick('active')">
+                                    Active
+                                </button>
+                                <button type="button" t-att-class="this._filterButtonClass('inactive')" t-on-click="() => this.onFilterClick('inactive')">
+                                    Archived
+                                </button>
+                                <button type="button" t-att-class="this._filterButtonClass('pos')" t-on-click="() => this.onFilterClick('pos')">
+                                    On till
+                                </button>
+                            </div>
+                        </div>
+                        <div class="o_avea_pricelist_list_actions">
+                            <button type="button" class="btn btn-primary" t-on-click="() => this.onClickCreatePricelist()">
+                                New price list
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div class="o_avea_pricelist_list_footer">
+                <div
+                    t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                    class="o_avea_pricelist_pager o_cp_pager text-nowrap"
+                >
+                    <Pager t-props="env.config.pagerProps"/>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>
