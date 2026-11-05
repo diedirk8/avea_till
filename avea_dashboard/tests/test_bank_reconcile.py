@@ -202,6 +202,21 @@ Date Description Amount Balance Accrued Bank Charges
                 "amount": -1.07,
             }
         )
+        self.assertTrue(line.amount_spent_display)
+        self.assertFalse(line.amount_received_display)
+        self.assertFalse(line.is_card_settlement)
+        received = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-07-01",
+                "description": "Capitec card settlement (sales 30 Jun 2026)",
+                "amount": 651.57,
+            }
+        )
+        self.assertFalse(received.amount_spent_display)
+        self.assertTrue(received.amount_received_display)
+        self.assertTrue(received.is_card_settlement)
+        self.assertIn("Settle", received.booking_suggestion or "")
         self.assertIn("bank charge", (line.booking_suggestion or "").lower())
         line._avea_apply_booking_suggestion()
         self.assertEqual(line.import_action, "expense")

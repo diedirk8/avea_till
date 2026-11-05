@@ -182,8 +182,7 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
         if "card settlement" in blob and currency.compare_amounts(amount, 0.0) > 0:
             result["import_action"] = "income"
             result["booking_suggestion"] = _(
-                "Card settlement. The bank amount is after Capitec or Yoco took their fee. "
-                "Use Match, split, or transfer and choose Card settlement."
+                "Card batch after the fee. Use Settle."
             )
             return result
         if currency.compare_amounts(amount, 0.0) == 0:

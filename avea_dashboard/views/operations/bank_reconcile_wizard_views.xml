@@ -65,50 +65,64 @@
         <field name="name">avea.bank.reconcile.line.list</field>
         <field name="model">avea.bank.reconcile.line</field>
         <field name="arch" type="xml">
-            <list editable="bottom" create="false" delete="false" class="o_avea_bank_reconcile_lines">
+            <list create="false" delete="false" edit="false" class="o_avea_bank_reconcile_lines">
                 <field name="sequence" column_invisible="True"/>
                 <field name="journal_id" column_invisible="True"/>
-                <field name="bank_date"/>
+                <field name="bank_date" width="96px"/>
                 <field name="description"/>
                 <field name="reference" optional="hide"/>
-                <field name="amount" widget="monetary"/>
-                <field name="match_state" widget="badge" readonly="1"
+                <field name="amount" widget="monetary" optional="hide"/>
+                <field name="amount_spent_display" class="o_avea_bank_money"/>
+                <field name="amount_received_display" class="o_avea_bank_money"/>
+                <field name="is_card_settlement" column_invisible="True"/>
+                <field name="match_state" string="Status" widget="badge" readonly="1"
                     decoration-success="match_state == 'matched'"
                     decoration-info="match_state == 'possible'"
                     decoration-warning="match_state == 'unmatched'"
                     decoration-muted="match_state in ('imported', 'skipped')"/>
-                <field name="match_confidence" string="Match %" optional="show"/>
-                <field name="book_match_summary" string="On your books" readonly="1"/>
-                <field name="booking_suggestion" string="Suggested" readonly="1"
+                <field name="match_confidence" string="Match %" optional="hide"/>
+                <field name="book_match_summary" optional="hide" readonly="1"/>
+                <field name="booking_suggestion" string="Suggestion" readonly="1"
                     invisible="match_state in ('matched', 'imported', 'skipped')"/>
                 <field name="suggested_expense_account_id" column_invisible="True"/>
                 <field name="suggested_income_account_id" column_invisible="True"/>
-                <field name="statement_line_id" string="Change match" optional="show"
+                <field name="statement_line_id" optional="hide"
                     options="{'no_create': True, 'no_open': True}"
                     readonly="match_state in ('imported', 'skipped')"/>
                 <field name="match_locked" column_invisible="True"/>
+                <field name="import_action" optional="hide"/>
                 <button
                     name="action_accept_line_match"
                     type="object"
                     string="Accept"
                     class="btn-link"
                     invisible="match_state != 'possible'"
+                    title="Use this Avea entry for the bank line"
                 />
-                <field name="import_action" string="If unmatched"
-                    invisible="match_state in ('matched', 'imported')"/>
                 <button
                     name="action_open_booking_wizard"
                     type="object"
-                    string="Book…"
+                    string="Record"
                     class="btn-link"
-                    invisible="match_state in ('matched', 'imported', 'skipped')"
+                    invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement"
+                    title="Create the expense or income for this bank line"
                 />
                 <button
                     name="action_open_allocate_wizard"
                     type="object"
-                    string="Match, split, or transfer…"
+                    string="Match"
                     class="btn-link"
-                    invisible="match_state in ('matched', 'imported', 'skipped')"
+                    invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement"
+                    title="Link to an invoice, a bill, or a transfer"
+                />
+                <button
+                    name="action_open_allocate_wizard"
+                    type="object"
+                    string="Settle"
+                    class="btn-link"
+                    invisible="match_state in ('matched', 'imported', 'skipped') or not is_card_settlement"
+                    title="Enter the card sales before Capitec or Yoco took their fee"
+                    context="{'default_mode': 'settlement'}"
                 />
                 <field name="match_hint" column_invisible="True"/>
                 <field name="candidate_statement_line_ids" column_invisible="True"/>
@@ -254,13 +268,21 @@
                             <field name="unmatched_bank_count" class="oe_inline" readonly="1"/>
                         </span>
                         <span>
-                            <strong>On books, not on statement:</strong>
+                            <strong>In Avea, not on the statement:</strong>
                             <field name="orphan_book_count" class="oe_inline" readonly="1"/>
                         </span>
                     </div>
                 </group>
                 <notebook invisible="state != 'in_progress'">
                     <page string="Bank statement" name="bank_lines">
+                        <p class="text-muted o_avea_bank_recon_hint">
+                            Each row is one line from the bank.
+                            <strong>Spent</strong> left the account.
+                            <strong>Received</strong> came in.
+                            <strong>Record</strong> creates the expense or income in Avea.
+                            <strong>Match</strong> links the line to an invoice, a bill, or a transfer.
+                            <strong>Settle</strong> is for a Capitec or Yoco batch, where the fee is already taken off.
+                        </p>
                         <field
                             name="line_ids"
                             nolabel="1"
@@ -269,8 +291,8 @@
                     </page>
                     <page string="Missing from bank" name="book_lines">
                         <p class="text-muted">
-                            Outstanding items: on your books up to the statement end date
-                            and not on this statement. They stay outstanding until a later
+                            Payments already entered in Avea, up to the statement end date,
+                            that this statement does not show. They stay outstanding until a later
                             statement clears them. When this is your first reconciliation,
                             entries from before the statement are part of the opening balance
                             unless you mark them as still missing from the bank.

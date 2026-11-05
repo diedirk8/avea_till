@@ -5,7 +5,7 @@
         <field name="name">avea.bank.reconcile.apply.form</field>
         <field name="model">avea.bank.reconcile.apply</field>
         <field name="arch" type="xml">
-            <form string="Match, split, or transfer">
+            <form string="Match this bank line">
                 <group>
                     <field name="company_id" invisible="1"/>
                     <field name="currency_id" invisible="1"/>

@@ -87,25 +87,25 @@ class AveaBankReconciliation(models.Model):
         readonly=True,
     )
     prior_items_outstanding = fields.Boolean(
-        string="Older book entries are still missing from the bank",
+        string="Older entries are still missing from the bank",
         help="Leave this off when you are starting bank reconciliation and the "
-        "opening balances already agree. Book entries from before this statement "
+        "opening balances already agree. Entries from before this statement "
         "then stay in the opening balance. Turn it on when a payment from before "
         "this statement has still not appeared on the bank.",
     )
     gl_balance = fields.Monetary(
-        string="Balance on your books",
+        string="Balance in Avea",
         currency_field="currency_id",
         compute="_compute_reconciliation_balance",
     )
     outstanding_amount = fields.Monetary(
-        string="Outstanding on books",
+        string="Not on this statement yet",
         currency_field="currency_id",
         compute="_compute_reconciliation_balance",
-        help="Book entries up to the statement end that are not on this statement.",
+        help="Payments already entered in Avea, up to the statement end, that this statement does not show.",
     )
     adjusted_book_balance = fields.Monetary(
-        string="Books after outstanding items",
+        string="Avea after those items",
         currency_field="currency_id",
         compute="_compute_reconciliation_balance",
     )
@@ -790,6 +790,15 @@ class AveaBankReconcileLine(models.Model):
     description = fields.Char()
     reference = fields.Char()
     amount = fields.Monetary(currency_field="currency_id", required=True)
+    amount_spent_display = fields.Char(
+        string="Spent",
+        compute="_compute_money_columns",
+    )
+    amount_received_display = fields.Char(
+        string="Received",
+        compute="_compute_money_columns",
+    )
+    is_card_settlement = fields.Boolean(compute="_compute_is_card_settlement")
     balance_after = fields.Monetary(string="Bank balance", currency_field="currency_id")
     currency_id = fields.Many2one(related="reconciliation_id.currency_id")
     match_state = fields.Selection(
@@ -810,7 +819,7 @@ class AveaBankReconcileLine(models.Model):
             ("create", "Quick import (suspense)"),
             ("skip", "Skip"),
         ],
-        string="If unmatched",
+        string="Record as",
         default="expense",
         required=True,
     )
@@ -824,12 +833,12 @@ class AveaBankReconcileLine(models.Model):
     )
     statement_line_id = fields.Many2one(
         "account.bank.statement.line",
-        string="Link to book entry",
+        string="Already in Avea",
         domain="[('journal_id', '=', journal_id), ('avea_cleared', '=', False)]",
         context={"avea_bank_reconcile_labels": True},
     )
     book_match_summary = fields.Char(
-        string="On your books",
+        string="Linked entry",
         compute="_compute_book_match_summary",
     )
     match_confidence = fields.Float(string="Match %", readonly=True)
@@ -842,8 +851,8 @@ class AveaBankReconcileLine(models.Model):
     booking_suggestion = fields.Char(
         string="Suggested booking",
         compute="_compute_booking_suggestion",
-        help="Based on the bank description — like bank rules in Xero or QuickBooks. "
-        "Click Book… to confirm; nothing is posted until you do.",
+        help="Based on the bank description. Record creates the expense or income. "
+        "Nothing is posted until you confirm.",
     )
     suggested_expense_account_id = fields.Many2one(
         "account.account",
@@ -882,10 +891,28 @@ class AveaBankReconcileLine(models.Model):
                     score=line.match_confidence,
                     hint=line.match_hint,
                 )
-            elif line.match_state == "unmatched" and line.booking_suggestion:
-                line.book_match_summary = line.booking_suggestion
             else:
                 line.book_match_summary = False
+
+    @api.depends("amount", "currency_id")
+    def _compute_money_columns(self):
+        for line in self:
+            currency = line.currency_id or line.env.company.currency_id
+            if currency.compare_amounts(line.amount or 0.0, 0.0) < 0:
+                line.amount_spent_display = currency.format(abs(line.amount))
+                line.amount_received_display = ""
+            elif currency.compare_amounts(line.amount or 0.0, 0.0) > 0:
+                line.amount_spent_display = ""
+                line.amount_received_display = currency.format(line.amount)
+            else:
+                line.amount_spent_display = ""
+                line.amount_received_display = ""
+
+    @api.depends("description", "reference")
+    def _compute_is_card_settlement(self):
+        for line in self:
+            blob = " ".join(filter(None, [line.description or "", line.reference or ""])).lower()
+            line.is_card_settlement = "card settlement" in blob
 
     @api.depends(
         "description",
@@ -1075,13 +1102,13 @@ class AveaBankReconcileLine(models.Model):
             raise UserError(_("This statement line has no amount."))
         return {
             "type": "ir.actions.act_window",
-            "name": _("Match, split, or transfer"),
+            "name": _("Match this bank line"),
             "res_model": "avea.bank.reconcile.apply",
             "view_mode": "form",
             "target": "new",
             "context": {
                 "default_reconcile_line_id": self.id,
-                "default_mode": "match",
+                "default_mode": "settlement" if self.is_card_settlement else "match",
             },
         }
 
