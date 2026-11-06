@@ -895,3 +895,20 @@
         cursor: pointer;
     }
 }
+
+.o_avea_platform_reporting_block {
+    .o_avea_platform_reporting_totals {
+        margin-bottom: 0.75rem;
+    }
+
+    .o_avea_platform_sales_link {
+        color: var(--avea-brand, #c45c26) !important;
+        font-weight: 600;
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+.o_avea_platform_reporting_list .o_data_row {
+    cursor: default;
+}

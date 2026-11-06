@@ -1,0 +1,112 @@
+/* Avea product shell — suppress Odoo chrome and apply brand styling */
+
+body.o_avea_product_shell {
+    @include avea-brand-tokens;
+    --avea-search-radius: 0.45rem;
+    --avea-search-height: 2.35rem;
+
+    .o_action_manager {
+        @include avea-brand-chrome;
+    }
+
+    // -------------------------------------------------------------------------
+    // Suppress leaked Odoo navbar / systray chrome
+    // -------------------------------------------------------------------------
+
+    > .o_navbar:not(:has(.o_avea_shell)),
+    > .o_main_navbar:not(:has(.o_avea_shell)),
+    .o_navbar:not(:has(.o_avea_shell)) .o_main_navbar,
+    .o_menu_systray,
+    .o_user_menu:not(.o_avea_user_menu),
+    .o_switch_company_menu,
+    .o_user_avatar,
+    .o_burger_menu,
+    .o_mail_systray_item,
+    .o_MessagingMenu,
+    .o_ActivityMenu {
+        display: none !important;
+    }
+
+    a:not(.btn):not(.dropdown-item):not(.o_avea_sidebar_link):not(.o_avea_user_menu_item) {
+        color: var(--avea-brand);
+
+        &:hover {
+            color: var(--avea-brand-hover);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Avea search — unify Odoo search bars with workspace filter styling
+    // -------------------------------------------------------------------------
+
+    .o_control_panel {
+        .o_cp_searchview,
+        .o_searchview {
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            border-radius: var(--avea-search-radius);
+            box-shadow: none;
+            min-height: var(--avea-search-height);
+
+            &:focus-within {
+                border-color: var(--avea-brand);
+                box-shadow: 0 0 0 3px var(--avea-brand-soft);
+            }
+        }
+
+        .o_searchview_input_container,
+        .o_searchview_input,
+        .o_searchview_facet,
+        .o_searchview_autocomplete {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+
+        .o_searchview_facet .o_facet_values {
+            background: var(--avea-brand-soft);
+            color: var(--avea-brand);
+        }
+
+        .o_searchview_facet .o_facet_remove {
+            color: var(--avea-brand);
+        }
+
+        .o_searchview_dropdown_toggler,
+        .o_searchview_icon {
+            color: var(--o-gray-600, #6c757d);
+        }
+    }
+
+    .o_list_view .o_list_buttons .o_list_search_input,
+    .o_list_view input[type="search"],
+    .o_list_view .o_searchview,
+    .o_kanban_view .o_searchview,
+    .o_kanban_view input[type="search"] {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: var(--avea-search-radius);
+        min-height: var(--avea-search-height);
+
+        &:focus,
+        &:focus-within {
+            border-color: var(--avea-brand);
+            box-shadow: 0 0 0 3px var(--avea-brand-soft);
+            outline: none;
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Reduce Odoo chrome in content areas
+    // -------------------------------------------------------------------------
+
+    .o_action_manager .o_control_panel_breadcrumbs,
+    .o_action_manager .o_breadcrumb {
+        display: none !important;
+    }
+
+    .o_action_manager .o_control_panel_navigation {
+        display: none !important;
+    }
+
+}

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_stock_product_merge_form" model="ir.ui.view">
+        <field name="name">avea.stock.product.merge.form</field>
+        <field name="model">avea.stock.product.merge</field>
+        <field name="arch" type="xml">
+            <form string="Merge products" class="o_avea_workspace o_avea_workspace--stock">
+                <sheet class="o_avea_workspace_sheet">
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Stock</span>
+                            <h1 class="o_avea_workspace_title">Merge products</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Choose the product to keep. Sales, stock, and POS lines from the others
+                                move to that product; duplicates are archived. Single-variant products only.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="o_avea_stock_panel">
+                        <field name="product_tmpl_ids" invisible="1"/>
+                        <div class="o_avea_workspace_info_item o_avea_sales_platform_field--wide">
+                            <span class="o_avea_workspace_info_label">Keep this product</span>
+                            <field
+                                name="dst_product_tmpl_id"
+                                nolabel="1"
+                                options="{'no_create': True}"
+                            />
+                        </div>
+                    </div>
+                    <footer>
+                        <button
+                            name="action_merge_products"
+                            type="object"
+                            string="Merge"
+                            class="btn-primary"
+                        />
+                        <button string="Cancel" special="cancel" class="btn-secondary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

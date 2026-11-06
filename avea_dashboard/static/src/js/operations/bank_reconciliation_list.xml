@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.BankReconciliationList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_bank_recon_list_shell">
+                <div class="o_avea_workspace_sheet o_avea_bank_recon_list_sheet">
+                    <div class="o_avea_workspace_hero o_avea_bank_recon_list_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Money</span>
+                            <h1 class="o_avea_workspace_title">Bank reconciliations</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Upload FNB statements, match transactions to your books, and record
+                                expenses or income for anything still missing. Work is saved — come
+                                back anytime from this list.
+                            </p>
+                        </div>
+                        <div class="o_avea_bank_recon_list_actions">
+                            <button
+                                type="button"
+                                class="btn btn-primary"
+                                t-on-click="() => this.onClickNewReconciliation()"
+                            >
+                                New reconciliation
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

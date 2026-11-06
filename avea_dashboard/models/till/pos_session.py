@@ -128,10 +128,9 @@ class PosSession(models.Model):
     def _avea_activity_from_orders(self, orders):
         """Operational counts for a paid POS order recordset."""
         lines = orders.lines
-        discount_total = 0.0
-        for line in lines:
-            if line.discount:
-                discount_total += line.qty * line.price_unit * (line.discount / 100.0)
+        financial = self.env["pos.order.line"]._avea_performance_financial_summary(
+            orders
+        )
 
         refund_orders = orders.filtered(
             lambda order: order.is_refund
@@ -140,10 +139,15 @@ class PosSession(models.Model):
         return {
             "order_count": len(orders),
             "items_sold": sum(lines.mapped("qty")),
-            "discount_total": discount_total,
+            "discount_total": financial["discounts_given"],
             "refund_count": len(refund_orders),
             "refund_amount": abs(sum(refund_orders.mapped("amount_total"))),
         }
+
+    @api.model
+    def _avea_financial_summary_from_orders(self, orders):
+        """Sales, COGS, gross profit and discounts for paid POS orders."""
+        return self.env["pos.order.line"]._avea_performance_financial_summary(orders)
 
     @api.model
     def _avea_products_from_orders(self, orders, limit=None):
@@ -347,6 +351,8 @@ class PosSession(models.Model):
         correct_xmlid = "avea_till.group_avea_correct_payment"
         for user_data in response.get("res.users", []):
             user = self.env["res.users"].browse(user_data["id"])
+            home_action = user._avea_home_action() if user._avea_uses_product_shell() else False
+            user_data["avea_backend_action_id"] = home_action.id if home_action else False
             can_cash_up = user.has_group(cash_up_xmlid)
             can_correct = user.has_group(correct_xmlid)
             user_data["can_cash_up_own_till"] = can_cash_up

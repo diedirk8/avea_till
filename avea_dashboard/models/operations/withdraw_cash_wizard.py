@@ -8,14 +8,14 @@ OWNER_DRAWING_ACCOUNT_CODE = "300070"
 
 class AveaWithdrawCashWizard(models.TransientModel):
     _name = "avea.withdraw.cash.wizard"
-    _description = "Withdraw Cash"
+    _description = "Withdraw"
 
     cash_journal_id = fields.Many2one(
         "account.journal",
-        string="Cash from",
+        string="From",
         required=True,
         domain="[('id', 'in', available_journal_ids)]",
-        help="The cash account to take the money from.",
+        help="The cash or bank account the money leaves.",
     )
     available_journal_ids = fields.Many2many(
         "account.journal",
@@ -25,10 +25,10 @@ class AveaWithdrawCashWizard(models.TransientModel):
         [
             ("staff_advance", "Staff Advance"),
             ("salary_wages", "Salary / Wages"),
-            ("owner_drawing", "Owner Drawing"),
+            ("owner_drawing", "Owner / director"),
             ("other_expense", "Other Expense"),
         ],
-        string="Cash for",
+        string="For",
         required=True,
         default="owner_drawing",
     )
@@ -114,7 +114,7 @@ class AveaWithdrawCashWizard(models.TransientModel):
     def action_open_wizard(self):
         return {
             "type": "ir.actions.act_window",
-            "name": _("Withdraw Cash"),
+            "name": _("Withdraw"),
             "res_model": self._name,
             "view_mode": "form",
             "view_id": self.env.ref(
@@ -161,7 +161,7 @@ class AveaWithdrawCashWizard(models.TransientModel):
             raise UserError(
                 _(
                     "%(label)s is not set up in your accounts (%(code)s). "
-                    "Ask your accountant to configure it before withdrawing cash.",
+                    "Ask your accountant to configure it before recording a withdrawal.",
                     label=label,
                     code=code,
                 )
@@ -198,7 +198,7 @@ class AveaWithdrawCashWizard(models.TransientModel):
         if not allowed:
             raise UserError(
                 _(
-                    "No cash accounts are available for withdrawals. "
+                    "No cash or bank accounts are available for withdrawals. "
                     "Ask an administrator to select them under "
                     "Settings → Avea Dashboard."
                 )
@@ -206,7 +206,7 @@ class AveaWithdrawCashWizard(models.TransientModel):
         if not journal or journal not in allowed:
             raise UserError(
                 _(
-                    "Choose a cash account that is available for withdrawals. "
+                    "Choose a cash or bank account to withdraw from. "
                     "Ask an administrator to update Settings → Avea Dashboard "
                     "if the account you need is missing."
                 )
@@ -262,7 +262,7 @@ class AveaWithdrawCashWizard(models.TransientModel):
         return "\n".join(parts)
 
     def _avea_post_withdrawal(self):
-        """Reduce the selected cash account via a bank/cash statement line."""
+        """Reduce the selected cash or bank account via a statement line."""
         self.ensure_one()
         journal = self._avea_cash_journal()
         destination_account = self._avea_destination_account()
@@ -292,7 +292,7 @@ class AveaWithdrawCashWizard(models.TransientModel):
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": _("Cash withdrawn"),
+                "title": _("Withdrawn"),
                 "message": _(
                     "%(amount)s withdrawn from %(source)s for %(purpose)s.",
                     amount=formatLang(

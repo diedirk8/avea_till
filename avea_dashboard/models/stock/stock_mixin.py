@@ -7,6 +7,7 @@ from odoo.tools.float_utils import float_compare, float_round
 
 AVEA_RECEIVE_ORIGIN = "Avea Receive Stock"
 AVEA_STOCK_TAKE_ORIGIN = "Avea Stock Take"
+AVEA_INTERNAL_USE_ORIGIN = "Avea Use Stock"
 AVEA_SUPPLIER_COST_PRECISION = "Avea Supplier Cost"
 AVEA_PRODUCT_COST_PRECISION = "Product Price"
 
@@ -155,15 +156,21 @@ class AveaStockMixin(models.AbstractModel):
             )
         return payable
 
-    def _avea_pay_vendor_bill(self, bill, journal, partner, company, pay_date, payment_ref):
+    def _avea_pay_vendor_bill(
+        self, bill, journal, partner, company, pay_date, payment_ref, amount=None
+    ):
         """Pay a vendor bill from an Avea cash/bank journal.
 
         Matches Operational Expense: statement line + payable reconciliation.
         """
         payable = self._avea_supplier_payable_account(partner, company)
-        amount = bill.amount_residual
-        if bill.currency_id.is_zero(amount):
+        residual = bill.amount_residual
+        pay_amount = residual if amount is None else amount
+        pay_amount = bill.currency_id.round(pay_amount or 0.0)
+        if bill.currency_id.is_zero(pay_amount):
             return self.env["account.bank.statement.line"]
+        if bill.currency_id.compare_amounts(pay_amount, residual) > 0:
+            raise UserError(_("You cannot pay more than the amount still open."))
         statement_line = (
             self.env["account.bank.statement.line"]
             .sudo()
@@ -171,7 +178,7 @@ class AveaStockMixin(models.AbstractModel):
             .create(
                 {
                     "journal_id": journal.id,
-                    "amount": -amount,
+                    "amount": -pay_amount,
                     "date": pay_date,
                     "payment_ref": payment_ref,
                     "partner_id": partner.id,
@@ -189,3 +196,100 @@ class AveaStockMixin(models.AbstractModel):
         if len(to_reconcile) >= 2:
             to_reconcile.sudo().reconcile()
         return statement_line
+
+    @api.model
+    def _avea_journal_from_bill_payment(self, bill):
+        """Resolve cash/bank journal from how the vendor bill was reconciled."""
+        if not bill:
+            return self.env["account.journal"]
+        partner = bill.partner_id
+        company = bill.company_id
+        try:
+            payable = self._avea_supplier_payable_account(partner, company)
+        except UserError:
+            payable = self.env["account.account"].search(
+                [
+                    ("account_type", "=", "liability_payable"),
+                    ("company_id", "=", company.id),
+                ],
+                limit=1,
+            )
+        bill_lines = bill.line_ids.filtered(
+            lambda line: line.account_id == payable and line.reconciled
+        )
+        for bill_line in bill_lines:
+            partials = bill_line.matched_debit_ids | bill_line.matched_credit_ids
+            for partial in partials:
+                candidates = (partial.debit_move_id, partial.credit_move_id)
+                for aml in candidates:
+                    if not aml or aml.id == bill_line.id:
+                        continue
+                    statement_line = aml.statement_line_id
+                    if statement_line and statement_line.journal_id:
+                        return statement_line.journal_id
+                    payment = aml.payment_id
+                    if payment and payment.journal_id:
+                        return payment.journal_id
+        return self.env["account.journal"]
+
+    @api.model
+    def _avea_supplier_credit_available(self, partner, company):
+        """Posted vendor credit notes with an open balance for this supplier."""
+        if not partner:
+            return 0.0
+        credits = (
+            self.env["account.move"]
+            .sudo()
+            .with_company(company)
+            .search(
+                [
+                    ("partner_id", "=", partner.id),
+                    ("company_id", "=", company.id),
+                    ("move_type", "=", "in_refund"),
+                    ("state", "=", "posted"),
+                ]
+            )
+        )
+        total = 0.0
+        for credit in credits:
+            residual = abs(credit.amount_residual)
+            if not credit.currency_id.is_zero(residual):
+                total += residual
+        return company.currency_id.round(total)
+
+    @api.model
+    def _avea_apply_supplier_credits_to_bill(self, bill, partner, company):
+        """Reconcile open vendor credit notes against a vendor bill (oldest credits first)."""
+        if not bill or bill.currency_id.is_zero(bill.amount_residual):
+            return 0.0
+        payable = self._avea_supplier_payable_account(partner, company)
+        amount_before = bill.amount_residual
+        credits = (
+            self.env["account.move"]
+            .sudo()
+            .with_company(company)
+            .search(
+                [
+                    ("partner_id", "=", partner.id),
+                    ("company_id", "=", company.id),
+                    ("move_type", "=", "in_refund"),
+                    ("state", "=", "posted"),
+                ],
+                order="invoice_date asc, id asc",
+            )
+        )
+        for credit in credits:
+            if bill.currency_id.is_zero(bill.amount_residual):
+                break
+            if credit.currency_id.is_zero(abs(credit.amount_residual)):
+                continue
+            bill_lines = bill.line_ids.filtered(
+                lambda line: line.account_id == payable and not line.reconciled
+            )
+            credit_lines = credit.line_ids.filtered(
+                lambda line: line.account_id == payable and not line.reconciled
+            )
+            if not bill_lines or not credit_lines:
+                continue
+            (bill_lines + credit_lines).sudo().reconcile()
+        return company.currency_id.round(amount_before - bill.amount_residual)

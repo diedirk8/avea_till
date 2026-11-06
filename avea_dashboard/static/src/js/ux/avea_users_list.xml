@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.AveaUsersList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_users_list_shell">
+                <div class="o_avea_workspace_sheet o_avea_users_list_hero_sheet">
+                    <div class="o_avea_workspace_hero o_avea_users_list_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Settings</span>
+                            <h1 class="o_avea_workspace_title">Avea Users</h1>
+                            <p class="o_avea_workspace_lead">
+                                Add staff, set passwords, and choose what each person can see and do.
+                            </p>
+                        </div>
+                        <div class="o_avea_settings_hero_actions">
+                            <button
+                                type="button"
+                                class="btn btn-primary"
+                                t-on-click="onClickNewUser"
+                            >
+                                New user
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

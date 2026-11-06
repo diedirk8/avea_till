@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.AccountActivityList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_account_list_shell">
+                <div class="o_avea_workspace_sheet o_avea_account_list_sheet">
+                    <div class="o_avea_workspace_hero o_avea_account_list_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <button
+                                type="button"
+                                class="btn btn-link o_avea_account_back_btn"
+                                t-on-click="() => this.onClickBack()"
+                            >
+                                Back to account
+                            </button>
+                            <span class="o_avea_workspace_eyebrow">Money</span>
+                            <h1 class="o_avea_workspace_title">
+                                Activity on <t t-esc="accountName"/>
+                            </h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Posted income and expense on this account. Amounts this year match the figure on the account.
+                            </p>
+                            <div class="o_avea_account_list_search">
+                                <label class="o_avea_workspace_info_label" for="avea_account_activity_search">
+                                    Search
+                                </label>
+                                <input
+                                    id="avea_account_activity_search"
+                                    type="search"
+                                    class="form-control o_avea_account_list_search_input"
+                                    placeholder="What, who, or entry"
+                                    t-att-value="filterState.searchText"
+                                    t-on-input="(ev) => this.onSearchInput(ev)"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div class="o_avea_account_list_footer">
+                <div
+                    t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                    class="o_avea_account_pager o_cp_pager text-nowrap"
+                >
+                    <Pager t-props="env.config.pagerProps"/>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

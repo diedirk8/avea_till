@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_bank_reconciliation_list" model="ir.ui.view">
+        <field name="name">avea.bank.reconciliation.list</field>
+        <field name="model">avea.bank.reconciliation</field>
+        <field name="arch" type="xml">
+            <list
+                string="Bank reconciliations"
+                class="o_avea_bank_reconciliation_list"
+                js_class="avea_bank_reconciliation_list"
+                create="1"
+            >
+                <field name="name"/>
+                <field name="journal_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="matched_count" string="Matched"/>
+                <field name="unmatched_bank_count" string="Unmatched"/>
+                <field name="state" widget="badge"
+                    decoration-success="state == 'done'"
+                    decoration-info="state == 'in_progress'"
+                    decoration-muted="state == 'cancelled'"/>
+                <field name="user_id" widget="many2one_avatar_user" optional="show"/>
+                <field name="write_date" string="Last updated"/>
+                <field name="company_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_bank_reconciliation_search" model="ir.ui.view">
+        <field name="name">avea.bank.reconciliation.search</field>
+        <field name="model">avea.bank.reconciliation</field>
+        <field name="arch" type="xml">
+            <search string="Bank reconciliations">
+                <field name="name"/>
+                <field name="journal_id"/>
+                <field name="account_number"/>
+                <filter
+                    name="filter_in_progress"
+                    string="In progress"
+                    domain="[('state', '=', 'in_progress')]"
+                />
+                <filter
+                    name="filter_draft"
+                    string="Draft"
+                    domain="[('state', '=', 'draft')]"
+                />
+                <filter
+                    name="filter_done"
+                    string="Completed"
+                    domain="[('state', '=', 'done')]"
+                />
+                <separator/>
+                <filter
+                    name="filter_my"
+                    string="My reconciliations"
+                    domain="[('user_id', '=', uid)]"
+                />
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_bank_reconcile_line_list" model="ir.ui.view">
+        <field name="name">avea.bank.reconcile.line.list</field>
+        <field name="model">avea.bank.reconcile.line</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" edit="false" class="o_avea_bank_reconcile_lines">
+                <field name="sequence" column_invisible="True"/>
+                <field name="journal_id" column_invisible="True"/>
+                <field name="bank_date" width="96px"/>
+                <field name="description"/>
+                <field name="reference" optional="hide"/>
+                <field name="amount" widget="monetary" optional="hide"/>
+                <field name="amount_spent_display" class="o_avea_bank_money"/>
+                <field name="amount_received_display" class="o_avea_bank_money"/>
+                <field name="is_card_settlement" column_invisible="True"/>
+                <field name="match_state" string="Status" widget="badge" readonly="1"
+                    decoration-success="match_state == 'matched'"
+                    decoration-info="match_state == 'possible'"
+                    decoration-warning="match_state == 'unmatched'"
+                    decoration-muted="match_state in ('imported', 'skipped')"/>
+                <field name="match_confidence" string="Match %" optional="hide"/>
+                <field name="book_match_summary" optional="hide" readonly="1"/>
+                <field name="booking_suggestion" string="Suggestion" readonly="1"
+                    invisible="match_state in ('matched', 'imported', 'skipped')"/>
+                <field name="suggested_expense_account_id" column_invisible="True"/>
+                <field name="suggested_income_account_id" column_invisible="True"/>
+                <field name="statement_line_id" optional="hide"
+                    options="{'no_create': True, 'no_open': True}"
+                    readonly="match_state in ('imported', 'skipped')"/>
+                <field name="match_locked" column_invisible="True"/>
+                <field name="import_action" optional="hide"/>
+                <button
+                    name="action_accept_line_match"
+                    type="object"
+                    string="Accept"
+                    class="btn-link"
+                    invisible="match_state != 'possible'"
+                    title="Use this Avea entry for the bank line"
+                />
+                <button
+                    name="action_open_booking_wizard"
+                    type="object"
+                    string="Record"
+                    class="btn-link"
+                    invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement"
+                    title="Create the expense or income for this bank line"
+                />
+                <button
+                    name="action_open_allocate_wizard"
+                    type="object"
+                    string="Match"
+                    class="btn-link"
+                    invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement"
+                    title="Link to an invoice, a bill, or a transfer"
+                />
+                <button
+                    name="action_open_allocate_wizard"
+                    type="object"
+                    string="Settle"
+                    class="btn-link"
+                    invisible="match_state in ('matched', 'imported', 'skipped') or not is_card_settlement"
+                    title="Enter the card sales before Capitec or Yoco took their fee"
+                    context="{'default_mode': 'settlement'}"
+                />
+                <field name="match_hint" column_invisible="True"/>
+                <field name="candidate_statement_line_ids" column_invisible="True"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_bank_reconcile_book_line_list" model="ir.ui.view">
+        <field name="name">avea.bank.reconcile.book.line.list</field>
+        <field name="model">avea.bank.reconcile.book.line</field>
+        <field name="arch" type="xml">
+            <list create="false" delete="false" edit="false">
+                <field name="book_date"/>
+                <field name="label"/>
+                <field name="amount" widget="monetary"/>
+                <field name="currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_bank_reconciliation_form" model="ir.ui.view">
+        <field name="name">avea.bank.reconciliation.form</field>
+        <field name="model">avea.bank.reconciliation</field>
+        <field name="arch" type="xml">
+            <form string="Bank reconciliation" class="o_avea_wizard o_avea_bank_reconcile_wizard">
+                <field name="company_id" invisible="1"/>
+                <field name="currency_id" invisible="1"/>
+                <header>
+                    <button
+                        name="action_parse_statement"
+                        string="Load &amp; match"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state != 'draft'"
+                        data-hotkey="q"
+                    />
+                    <button
+                        name="action_refresh_matches"
+                        string="Refresh matches"
+                        type="object"
+                        invisible="state != 'in_progress'"
+                    />
+                    <button
+                        name="action_accept_possible_matches"
+                        string="Accept possible matches"
+                        type="object"
+                        invisible="state != 'in_progress' or possible_match_count == 0"
+                    />
+                    <button
+                        name="action_apply_reconciliation"
+                        string="Complete reconciliation"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state != 'in_progress'"
+                        data-hotkey="shift+q"
+                    />
+                    <button
+                        name="action_cancel_reconciliation"
+                        string="Cancel"
+                        type="object"
+                        invisible="state not in ('draft', 'in_progress')"
+                    />
+                    <button
+                        name="action_open_list"
+                        string="All reconciliations"
+                        type="object"
+                        class="btn-secondary"
+                    />
+                    <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
+                </header>
+                <div class="alert alert-info" role="status" invisible="state != 'draft'">
+                    Choose your bank account, attach your FNB statement below, then use
+                    <strong>Load &amp; match</strong> in the header (orange button). Your work is
+                    saved automatically — reopen anytime from <strong>Money → Bank reconciliations</strong>.
+                </div>
+                <group invisible="state != 'draft'">
+                    <group>
+                        <field name="name" readonly="1"/>
+                        <field name="journal_id" options="{'no_create': True, 'no_open': True}"/>
+                        <field
+                            name="statement_file"
+                            filename="statement_filename"
+                            string="Statement file (PDF, CSV, or OFX)"
+                        />
+                        <field name="statement_filename" invisible="1"/>
+                    </group>
+                </group>
+                <group invisible="state == 'draft'">
+                    <group>
+                        <field name="name" readonly="1"/>
+                        <field name="journal_id" readonly="1"/>
+                        <field name="source_format" readonly="1"/>
+                        <field name="account_number" readonly="1"/>
+                    </group>
+                    <group>
+                        <field name="date_from" readonly="1"/>
+                        <field name="date_to" readonly="1"/>
+                        <field name="opening_balance" readonly="state == 'done'" widget="monetary"/>
+                        <field name="closing_balance" readonly="state == 'done'" widget="monetary"/>
+                        <field name="balances_from_file" invisible="1"/>
+                    </group>
+                </group>
+                <div class="alert alert-warning" role="status" invisible="state == 'draft' or not balance_warning">
+                    <field name="balance_warning" nolabel="1" readonly="1"/>
+                </div>
+                <group invisible="state == 'draft'" string="Does it balance?">
+                    <group>
+                        <field name="has_previous_statement" invisible="1"/>
+                        <field
+                            name="previous_closing_balance"
+                            readonly="1"
+                            widget="monetary"
+                            invisible="not has_previous_statement"
+                        />
+                        <field name="gl_balance" readonly="1" widget="monetary"/>
+                        <field name="outstanding_amount" readonly="1" widget="monetary"/>
+                        <field name="adjusted_book_balance" readonly="1" widget="monetary"/>
+                    </group>
+                    <group>
+                        <field name="statement_difference" readonly="1" widget="monetary"/>
+                        <field name="show_prior_outstanding_option" invisible="1"/>
+                        <field
+                            name="prior_items_outstanding"
+                            invisible="not show_prior_outstanding_option"
+                        />
+                    </group>
+                </group>
+                <group invisible="state != 'in_progress'">
+                    <div class="o_row">
+                        <span class="me-3">
+                            <strong>Matched:</strong>
+                            <field name="matched_count" class="oe_inline" readonly="1"/>
+                            /
+                            <field name="import_count" class="oe_inline" readonly="1"/>
+                        </span>
+                        <span class="me-3">
+                            <strong>Possible matches:</strong>
+                            <field name="possible_match_count" class="oe_inline" readonly="1"/>
+                        </span>
+                        <span class="me-3">
+                            <strong>Unmatched on statement:</strong>
+                            <field name="unmatched_bank_count" class="oe_inline" readonly="1"/>
+                        </span>
+                        <span>
+                            <strong>In Avea, not on the statement:</strong>
+                            <field name="orphan_book_count" class="oe_inline" readonly="1"/>
+                        </span>
+                    </div>
+                </group>
+                <notebook invisible="state != 'in_progress'">
+                    <page string="Bank statement" name="bank_lines">
+                        <p class="text-muted o_avea_bank_recon_hint">
+                            Each row is one line from the bank.
+                            <strong>Spent</strong> left the account.
+                            <strong>Received</strong> came in.
+                            <strong>Record</strong> creates the expense or income in Avea.
+                            <strong>Match</strong> links the line to an invoice, a bill, or a transfer.
+                            <strong>Settle</strong> is for a Capitec or Yoco batch, where the fee is already taken off.
+                        </p>
+                        <field
+                            name="line_ids"
+                            nolabel="1"
+                            context="{'avea_bank_reconcile_labels': True}"
+                        />
+                    </page>
+                    <page string="Missing from bank" name="book_lines">
+                        <p class="text-muted">
+                            Payments already entered in Avea, up to the statement end date,
+                            that this statement does not show. They stay outstanding until a later
+                            statement clears them. When this is your first reconciliation,
+                            entries from before the statement are part of the opening balance
+                            unless you mark them as still missing from the bank.
+                        </p>
+                        <field name="book_line_ids" nolabel="1"/>
+                    </page>
+                </notebook>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_bank_reconciliation" model="ir.actions.act_window">
+        <field name="name">Bank reconciliations</field>
+        <field name="res_model">avea.bank.reconciliation</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_bank_reconciliation_search"/>
+        <field name="target">current</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No bank reconciliations yet
+            </p>
+            <p>
+                Click <strong>New reconciliation</strong> above the list (or use
+                <strong>Money → New bank reconciliation</strong>), then upload your FNB
+                statement PDF.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_avea_new_bank_reconciliation" model="ir.actions.server">
+        <field name="name">New bank reconciliation</field>
+        <field name="model_id" ref="model_avea_bank_reconciliation"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_new_reconciliation()</field>
+    </record>
+
+    <record id="action_avea_bank_reconcile_wizard" model="ir.actions.server">
+        <field name="name">Bank reconciliation</field>
+        <field name="model_id" ref="model_avea_bank_reconcile_wizard"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_wizard()</field>
+    </record>
+
+</odoo>

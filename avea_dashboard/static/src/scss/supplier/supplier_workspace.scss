@@ -1,0 +1,26 @@
+.o_avea_workspace--supplier,
+.o_list_view.o_avea_workspace--supplier {
+    --avea-brand: #c45c26;
+    --avea-brand-hover: #a84d1f;
+    --avea-brand-soft: rgba(196, 92, 38, 0.12);
+    --avea-brand-border: rgba(196, 92, 38, 0.35);
+}
+
+.o_form_view.o_avea_workspace--supplier {
+    .o_avea_supplier_open_hint {
+        margin: 0 0 0.65rem;
+        max-width: 40rem;
+    }
+
+    .o_avea_customer_main .o_list_renderer {
+        max-height: 22rem;
+    }
+
+    .o_avea_supplier_outstanding .o_list_renderer {
+        max-height: 28rem;
+    }
+
+    .o_avea_supplier_payment_panel .btn-primary {
+        margin-top: 0.25rem;
+    }
+}

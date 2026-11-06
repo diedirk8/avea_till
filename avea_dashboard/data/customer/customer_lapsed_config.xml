@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo noupdate="1">
+
+    <record id="config_avea_customer_lapsed_days" model="ir.config_parameter">
+        <field name="key">avea_till.customer_lapsed_days</field>
+        <field name="value">90</field>
+    </record>
+
+    <record id="config_avea_customer_lapsed_min_orders" model="ir.config_parameter">
+        <field name="key">avea_till.customer_lapsed_min_orders</field>
+        <field name="value">2</field>
+    </record>
+
+    <record id="config_avea_customer_pattern_min_orders" model="ir.config_parameter">
+        <field name="key">avea_till.customer_pattern_min_orders</field>
+        <field name="value">3</field>
+    </record>
+
+    <record id="config_avea_customer_pattern_overdue_factor" model="ir.config_parameter">
+        <field name="key">avea_till.customer_pattern_overdue_factor</field>
+        <field name="value">2.5</field>
+    </record>
+
+    <record id="config_avea_customer_pattern_min_absence_days" model="ir.config_parameter">
+        <field name="key">avea_till.customer_pattern_min_absence_days</field>
+        <field name="value">14</field>
+    </record>
+
+    <record id="config_avea_customer_pattern_lookback_months" model="ir.config_parameter">
+        <field name="key">avea_till.customer_pattern_lookback_months</field>
+        <field name="value">18</field>
+    </record>
+
+    <record id="config_avea_customer_pattern_min_gap_days" model="ir.config_parameter">
+        <field name="key">avea_till.customer_pattern_min_gap_days</field>
+        <field name="value">14</field>
+    </record>
+
+</odoo>

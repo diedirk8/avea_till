@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_accounting_reports_home_form" model="ir.ui.view">
+        <field name="name">avea.accounting.reports.home.form</field>
+        <field name="model">avea.accounting.reports.home</field>
+        <field name="arch" type="xml">
+            <form string="Reports" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report o_avea_workspace--accounting-reports">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Accounting</span>
+                            <h1 class="o_avea_workspace_title">Reports</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Simple financial reports from your posted accounts — the same numbers your accountant
+                                uses, without opening Odoo Accounting.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="o_avea_account_panel o_avea_accounting_reports_period">
+                        <h2 class="o_avea_workspace_section_title">Period</h2>
+                        <div class="o_avea_account_fields">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Show</span>
+                                <field name="period" nolabel="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item" invisible="period != 'custom'">
+                                <span class="o_avea_workspace_info_label">From</span>
+                                <field name="date_from" nolabel="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item" invisible="period != 'custom'">
+                                <span class="o_avea_workspace_info_label">To</span>
+                                <field name="date_to" nolabel="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item o_avea_account_field--wide">
+                                <span class="o_avea_workspace_info_label">Range</span>
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_avea_accounting_reports_grid">
+                        <button name="action_open_profit_loss" type="object" class="btn btn-outline-secondary o_avea_accounting_report_card">
+                            <span class="o_avea_accounting_report_card_title">Profit and loss</span>
+                            <span class="o_avea_accounting_report_card_hint">Income and expenses for the period</span>
+                        </button>
+                        <button name="action_open_balance_sheet" type="object" class="btn btn-outline-secondary o_avea_accounting_report_card">
+                            <span class="o_avea_accounting_report_card_title">Balance sheet</span>
+                            <span class="o_avea_accounting_report_card_hint">Assets, liabilities, and equity at the end date</span>
+                        </button>
+                        <button name="action_open_trial_balance" type="object" class="btn btn-outline-secondary o_avea_accounting_report_card">
+                            <span class="o_avea_accounting_report_card_title">Trial balance</span>
+                            <span class="o_avea_accounting_report_card_hint">Debits and credits by account</span>
+                        </button>
+                        <button name="action_open_general_ledger" type="object" class="btn btn-outline-secondary o_avea_accounting_report_card">
+                            <span class="o_avea_accounting_report_card_title">General ledger</span>
+                            <span class="o_avea_accounting_report_card_hint">Posted entries in date order</span>
+                        </button>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_accounting_profit_loss_form" model="ir.ui.view">
+        <field name="name">avea.accounting.profit.loss.form</field>
+        <field name="model">avea.accounting.profit.loss</field>
+        <field name="arch" type="xml">
+            <form string="Profit and loss" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <button name="action_back" type="object" string="Back to reports" class="btn btn-link o_avea_account_back_btn"/>
+                            <span class="o_avea_workspace_eyebrow">Accounting</span>
+                            <h1 class="o_avea_workspace_title">Profit and loss</h1>
+                            <div class="o_avea_period_range">
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                        </div>
+                        <div class="o_avea_workspace_hero_stats">
+                            <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary">
+                                <span class="o_avea_workspace_hero_stat_label">Net profit</span>
+                                <field name="net_profit" nolabel="1" readonly="1" widget="monetary" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Income</span>
+                                <field name="total_income" nolabel="1" readonly="1" widget="monetary" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Expenses</span>
+                                <field name="total_expense" nolabel="1" readonly="1" widget="monetary" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_avea_accounting_report_exports">
+                        <span class="o_avea_accounting_report_exports_label">Export</span>
+                        <button name="action_export_csv" type="object" string="CSV" class="btn btn-secondary"/>
+                        <button name="action_export_xlsx" type="object" string="Excel" class="btn btn-secondary"/>
+                        <button name="action_export_pdf" type="object" string="PDF" class="btn btn-secondary"/>
+                    </div>
+                    <div class="o_avea_workspace_ledger_card o_avea_accounting_report_table_card">
+                        <field name="line_ids" nolabel="1" readonly="1">
+                            <list create="false" edit="false" delete="false" default_order="sequence"
+                                decoration-bf="is_section_header or is_total"
+                                decoration-info="is_section_header"
+                                decoration-muted="is_total and not is_section_header"
+                                class="o_avea_accounting_report_lines">
+                                <field name="section_label" column_invisible="True"/>
+                                <field name="account_code" string="Code" optional="show"/>
+                                <field name="account_name" string="Account"/>
+                                <field name="amount" string="Amount" widget="monetary" invisible="is_section_header"/>
+                                <field name="is_section_header" column_invisible="True"/>
+                                <field name="is_total" column_invisible="True"/>
+                                <field name="currency_id" column_invisible="True"/>
+                            </list>
+                        </field>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_accounting_balance_sheet_form" model="ir.ui.view">
+        <field name="name">avea.accounting.balance.sheet.form</field>
+        <field name="model">avea.accounting.balance.sheet</field>
+        <field name="arch" type="xml">
+            <form string="Balance sheet" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <button name="action_back" type="object" string="Back to reports" class="btn btn-link o_avea_account_back_btn"/>
+                            <span class="o_avea_workspace_eyebrow">Accounting</span>
+                            <h1 class="o_avea_workspace_title">Balance sheet</h1>
+                            <div class="o_avea_period_range">
+                                As at <field name="as_at_display" nolabel="1" readonly="1" class="d-inline"/>
+                            </div>
+                        </div>
+                        <div class="o_avea_workspace_hero_stats">
+                            <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary">
+                                <span class="o_avea_workspace_hero_stat_label">Assets</span>
+                                <field name="total_assets" nolabel="1" readonly="1" widget="monetary" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Liabilities</span>
+                                <field name="total_liabilities" nolabel="1" readonly="1" widget="monetary" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Equity</span>
+                                <field name="total_equity" nolabel="1" readonly="1" widget="monetary" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_avea_accounting_report_exports">
+                        <span class="o_avea_accounting_report_exports_label">Export</span>
+                        <button name="action_export_csv" type="object" string="CSV" class="btn btn-secondary"/>
+                        <button name="action_export_xlsx" type="object" string="Excel" class="btn btn-secondary"/>
+                        <button name="action_export_pdf" type="object" string="PDF" class="btn btn-secondary"/>
+                    </div>
+                    <div class="o_avea_workspace_ledger_card o_avea_accounting_report_table_card">
+                        <field name="line_ids" nolabel="1" readonly="1">
+                            <list create="false" edit="false" delete="false" default_order="sequence"
+                                decoration-bf="is_section_header or is_total"
+                                decoration-info="is_section_header"
+                                decoration-muted="is_total and not is_section_header"
+                                class="o_avea_accounting_report_lines">
+                                <field name="section_label" column_invisible="True"/>
+                                <field name="account_code" string="Code" optional="show"/>
+                                <field name="account_name" string="Account"/>
+                                <field name="amount" string="Amount" widget="monetary" invisible="is_section_header"/>
+                                <field name="is_section_header" column_invisible="True"/>
+                                <field name="is_total" column_invisible="True"/>
+                                <field name="currency_id" column_invisible="True"/>
+                            </list>
+                        </field>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_accounting_trial_balance_form" model="ir.ui.view">
+        <field name="name">avea.accounting.trial.balance.form</field>
+        <field name="model">avea.accounting.trial.balance</field>
+        <field name="arch" type="xml">
+            <form string="Trial balance" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <button name="action_back" type="object" string="Back to reports" class="btn btn-link o_avea_account_back_btn"/>
+                            <span class="o_avea_workspace_eyebrow">Accounting</span>
+                            <h1 class="o_avea_workspace_title">Trial balance</h1>
+                            <div class="o_avea_period_range">
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                        </div>
+                        <div class="o_avea_workspace_hero_stats">
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Total debit</span>
+                                <field name="total_debit" nolabel="1" readonly="1" widget="monetary" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                            <div class="o_avea_workspace_hero_stat">
+                                <span class="o_avea_workspace_hero_stat_label">Total credit</span>
+                                <field name="total_credit" nolabel="1" readonly="1" widget="monetary" class="o_avea_workspace_hero_stat_value"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_avea_accounting_report_exports">
+                        <span class="o_avea_accounting_report_exports_label">Export</span>
+                        <button name="action_export_csv" type="object" string="CSV" class="btn btn-secondary"/>
+                        <button name="action_export_xlsx" type="object" string="Excel" class="btn btn-secondary"/>
+                        <button name="action_export_pdf" type="object" string="PDF" class="btn btn-secondary"/>
+                    </div>
+                    <div class="o_avea_workspace_ledger_card o_avea_accounting_report_table_card">
+                        <field name="line_ids" nolabel="1" readonly="1">
+                            <list create="false" edit="false" delete="false" class="o_avea_accounting_report_lines">
+                                <field name="account_code" string="Code"/>
+                                <field name="account_name" string="Account"/>
+                                <field name="debit" string="Debit" widget="monetary"/>
+                                <field name="credit" string="Credit" widget="monetary"/>
+                                <field name="currency_id" column_invisible="True"/>
+                            </list>
+                        </field>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_accounting_general_ledger_form" model="ir.ui.view">
+        <field name="name">avea.accounting.general.ledger.form</field>
+        <field name="model">avea.accounting.general.ledger</field>
+        <field name="arch" type="xml">
+            <form string="General ledger" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--accounting-report">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <button name="action_back" type="object" string="Back to reports" class="btn btn-link o_avea_account_back_btn"/>
+                            <span class="o_avea_workspace_eyebrow">Accounting</span>
+                            <h1 class="o_avea_workspace_title">General ledger</h1>
+                            <div class="o_avea_period_range">
+                                <field name="period_range_display" nolabel="1" readonly="1"/>
+                            </div>
+                            <p class="o_avea_workspace_section_subtitle">Showing the latest 5,000 posted lines in this period.</p>
+                        </div>
+                    </div>
+                    <div class="o_avea_accounting_report_exports">
+                        <span class="o_avea_accounting_report_exports_label">Export</span>
+                        <button name="action_export_csv" type="object" string="CSV" class="btn btn-secondary"/>
+                        <button name="action_export_xlsx" type="object" string="Excel" class="btn btn-secondary"/>
+                        <button name="action_export_pdf" type="object" string="PDF" class="btn btn-secondary"/>
+                    </div>
+                    <div class="o_avea_workspace_ledger_card o_avea_accounting_report_table_card">
+                        <field name="line_ids" nolabel="1" readonly="1">
+                            <list create="false" edit="false" delete="false" class="o_avea_accounting_report_lines">
+                                <field name="date" string="Date"/>
+                                <field name="move_name" string="Entry"/>
+                                <field name="account_code" string="Code" optional="show"/>
+                                <field name="account_name" string="Account"/>
+                                <field name="label" string="What"/>
+                                <field name="partner_name" string="Who"/>
+                                <field name="debit" string="Debit" widget="monetary"/>
+                                <field name="credit" string="Credit" widget="monetary"/>
+                                <field name="currency_id" column_invisible="True"/>
+                            </list>
+                        </field>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_accounting_reports_home" model="ir.actions.server">
+        <field name="name">Reports</field>
+        <field name="model_id" ref="model_avea_accounting_reports_home"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_home()</field>
+    </record>
+
+    <record id="action_avea_accounting_profit_loss" model="ir.actions.server">
+        <field name="name">Profit and loss</field>
+        <field name="model_id" ref="model_avea_accounting_profit_loss"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_report(period='ytd')</field>
+    </record>
+
+    <record id="action_avea_accounting_balance_sheet" model="ir.actions.server">
+        <field name="name">Balance sheet</field>
+        <field name="model_id" ref="model_avea_accounting_balance_sheet"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_report(period='ytd')</field>
+    </record>
+
+    <record id="action_avea_accounting_trial_balance" model="ir.actions.server">
+        <field name="name">Trial balance</field>
+        <field name="model_id" ref="model_avea_accounting_trial_balance"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_report(period='ytd')</field>
+    </record>
+
+    <record id="action_avea_accounting_general_ledger" model="ir.actions.server">
+        <field name="name">General ledger</field>
+        <field name="model_id" ref="model_avea_accounting_general_ledger"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_open_report(period='ytd')</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_account_list" model="ir.ui.view">
+        <field name="name">account.account.list.avea</field>
+        <field name="model">account.account</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list
+                string="Accounts"
+                class="o_avea_account_table"
+                js_class="avea_account_list"
+                create="1"
+                delete="0"
+                duplicate="0"
+                default_order="account_type, name"
+            >
+                <field name="code" string="Code"/>
+                <field name="name" string="Account"/>
+                <field name="avea_kind" string="Kind"/>
+                <field
+                    name="avea_ytd_amount"
+                    string="This year"
+                    widget="monetary"
+                    options="{'currency_field': 'avea_currency_id'}"
+                />
+                <field name="avea_entry_count" string="Entries this year" optional="show"/>
+                <field name="active" string="In use" widget="boolean_toggle"/>
+                <field name="avea_currency_id" column_invisible="True"/>
+                <field name="account_type" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_account_search" model="ir.ui.view">
+        <field name="name">account.account.search.avea</field>
+        <field name="model">account.account</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <search string="Accounts">
+                <field
+                    name="name"
+                    string="Account"
+                    filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"
+                />
+                <field name="code"/>
+                <filter
+                    string="Income"
+                    name="income"
+                    domain="[('account_type', 'in', ('income', 'income_other'))]"
+                />
+                <filter
+                    string="Expense"
+                    name="expense"
+                    domain="[('account_type', 'in', ('expense', 'expense_other', 'expense_direct_cost'))]"
+                />
+                <separator/>
+                <filter string="In use" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_account_form" model="ir.ui.view">
+        <field name="name">account.account.form.avea</field>
+        <field name="model">account.account</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <form string="Account" class="o_avea_workspace o_avea_workspace--account" js_class="avea_account_form">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="account_type" invisible="1"/>
+                    <field name="avea_currency_id" invisible="1"/>
+                    <field name="avea_has_entries" invisible="1"/>
+                    <field name="avea_is_asset_account" invisible="1"/>
+                    <field name="avea_is_pnl_account" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero o_avea_account_hero">
+                        <div class="o_avea_account_hero_top">
+                            <div class="o_avea_workspace_hero_intro">
+                                <span class="o_avea_workspace_eyebrow">Accounting</span>
+                                <h1 class="o_avea_workspace_title">
+                                    <span class="o_avea_account_code_badge" invisible="not code">
+                                        <field name="code" nolabel="1" readonly="1" class="o_avea_account_code_badge_value"/>
+                                    </span>
+                                    <field
+                                        name="name"
+                                        nolabel="1"
+                                        placeholder="e.g. Electricity"
+                                        class="o_avea_account_name_title"
+                                        readonly="avea_is_asset_account"
+                                    />
+                                </h1>
+                                <p class="o_avea_workspace_section_subtitle" invisible="not avea_is_pnl_account">
+                                    Income and expense accounts used when you record money.
+                                    Add Expense picks expense accounts. Paying a named supplier stays under Add Expense.
+                                    Extra income (not till sales) belongs on an income account.
+                                </p>
+                                <p class="o_avea_workspace_section_subtitle" invisible="not avea_is_asset_account">
+                                    Asset on the books. Balances here are from posted accounting entries.
+                                    Day-to-day cash and bank till balances stay under Money → Account Balances.
+                                </p>
+                            </div>
+                            <div class="o_avea_workspace_hero_stats" invisible="not id">
+                                <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary" invisible="not avea_is_pnl_account">
+                                    <span class="o_avea_workspace_hero_stat_label">This year</span>
+                                    <field
+                                        name="avea_ytd_amount"
+                                        nolabel="1"
+                                        readonly="1"
+                                        widget="monetary"
+                                        options="{'currency_field': 'avea_currency_id'}"
+                                        class="o_avea_workspace_hero_stat_value"
+                                    />
+                                </div>
+                                <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary" invisible="not avea_is_asset_account">
+                                    <span class="o_avea_workspace_hero_stat_label">Balance</span>
+                                    <field
+                                        name="avea_balance"
+                                        nolabel="1"
+                                        readonly="1"
+                                        widget="monetary"
+                                        options="{'currency_field': 'avea_currency_id'}"
+                                        class="o_avea_workspace_hero_stat_value"
+                                    />
+                                </div>
+                                <div class="o_avea_workspace_hero_stat" invisible="not id or not avea_is_pnl_account">
+                                    <span class="o_avea_workspace_hero_stat_label">Entries this year</span>
+                                    <field name="avea_entry_count" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_avea_account_hero_actions">
+                            <div class="o_avea_account_hero_actions_tools" invisible="not id">
+                                <button
+                                    name="action_avea_view_activity"
+                                    type="object"
+                                    string="View activity"
+                                    class="btn btn-secondary"
+                                />
+                            </div>
+                            <div class="o_avea_account_hero_actions_save" invisible="avea_is_asset_account">
+                                <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
+                                <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
+                            </div>
+                            <div class="o_avea_account_hero_actions_save" invisible="not avea_is_asset_account">
+                                <button string="Back" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_account_workspace" invisible="not avea_is_pnl_account">
+                        <div class="o_avea_account_panel">
+                            <h2 class="o_avea_workspace_section_title">Account</h2>
+                            <p class="o_avea_account_panel_hint">
+                                Use Expense for costs you pick on Add Expense.
+                                Use Income for money in that is not a till sale.
+                                Wages, drawings, and director payments stay on Withdraw.
+                            </p>
+                            <div class="o_avea_account_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Code</span>
+                                    <field name="code" nolabel="1" placeholder="e.g. 610080"/>
+                                    <span class="o_avea_account_code_hint" invisible="id">
+                                        Suggested from accounts like this one. Change it only if your accountant
+                                        uses a different number.
+                                    </span>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_account_field--wide">
+                                    <span class="o_avea_workspace_info_label">Kind</span>
+                                    <field name="avea_kind" nolabel="1" required="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">In use</span>
+                                    <field name="active" nolabel="1" widget="boolean_toggle"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_account_workspace" invisible="not avea_is_asset_account">
+                        <div class="o_avea_account_panel">
+                            <h2 class="o_avea_workspace_section_title">Asset account</h2>
+                            <p class="o_avea_account_panel_hint">
+                                Kind and code come from your chart of accounts. To change balances, record money
+                                under Money or ask your accountant to post adjustments.
+                            </p>
+                            <div class="o_avea_account_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Code</span>
+                                    <field name="code" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_account_field--wide">
+                                    <span class="o_avea_workspace_info_label">Kind</span>
+                                    <field name="avea_kind" nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">In use</span>
+                                    <field name="active" nolabel="1" widget="boolean_toggle" readonly="1"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_account_activity_list" model="ir.ui.view">
+        <field name="name">account.move.line.list.avea.activity</field>
+        <field name="model">account.move.line</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list
+                string="Activity"
+                create="false"
+                delete="false"
+                edit="false"
+                default_order="date desc, id desc"
+                class="o_avea_account_activity_table"
+                js_class="avea_account_activity"
+            >
+                <field name="date" string="Date"/>
+                <field name="move_name" string="Entry"/>
+                <field name="name" string="What"/>
+                <field name="partner_id" string="Who"/>
+                <field
+                    name="avea_signed_amount"
+                    string="Amount"
+                    widget="monetary"
+                    sum="Total"
+                    options="{'currency_field': 'company_currency_id'}"
+                />
+                <field name="company_currency_id" column_invisible="True"/>
+                <field name="account_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_account_activity_search" model="ir.ui.view">
+        <field name="name">account.move.line.search.avea.activity</field>
+        <field name="model">account.move.line</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <search string="Activity">
+                <field
+                    name="name"
+                    string="What"
+                    filter_domain="['|', '|', ('name', 'ilike', self), ('move_name', 'ilike', self), ('partner_id', 'ilike', self)]"
+                />
+                <field name="partner_id" string="Who"/>
+                <field name="move_name" string="Entry"/>
+                <filter
+                    string="This year"
+                    name="this_year"
+                    domain="[('date', '&gt;=', (context_today()).strftime('%Y-01-01'))]"
+                />
+            </search>
+        </field>
+    </record>
+
+    <record id="action_avea_account_manager" model="ir.actions.act_window">
+        <field name="name">Income &amp; expense accounts</field>
+        <field name="res_model">account.account</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_account_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_account_form')}),
+        ]"/>
+        <field name="search_view_id" ref="view_avea_account_search"/>
+        <field name="domain">[('account_type', 'in', ('income', 'income_other', 'expense', 'expense_other', 'expense_direct_cost'))]</field>
+        <field name="context">{
+            'avea_account_workspace': True,
+            'default_account_type': 'expense',
+            'default_avea_kind': 'expense',
+            'search_default_active': 1,
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add an income or expense account
+            </p>
+            <p>
+                These accounts are the list you pick from on Add Expense and Record Income.
+            </p>
+        </field>
+    </record>
+
+    <record id="view_avea_asset_account_list" model="ir.ui.view">
+        <field name="name">account.account.list.avea.asset</field>
+        <field name="model">account.account</field>
+        <field name="priority">98</field>
+        <field name="arch" type="xml">
+            <list
+                string="Asset accounts"
+                class="o_avea_account_table"
+                js_class="avea_account_list"
+                create="0"
+                delete="0"
+                edit="0"
+                duplicate="0"
+                default_order="account_type, name"
+            >
+                <field name="code" string="Code"/>
+                <field name="name" string="Account"/>
+                <field name="avea_kind" string="Kind"/>
+                <field
+                    name="avea_balance"
+                    string="Balance"
+                    widget="monetary"
+                    options="{'currency_field': 'avea_currency_id'}"
+                />
+                <field name="active" string="In use" widget="boolean_toggle" readonly="1"/>
+                <field name="avea_currency_id" column_invisible="True"/>
+                <field name="account_type" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_asset_account_search" model="ir.ui.view">
+        <field name="name">account.account.search.avea.asset</field>
+        <field name="model">account.account</field>
+        <field name="priority">98</field>
+        <field name="arch" type="xml">
+            <search string="Asset accounts">
+                <field
+                    name="name"
+                    string="Account"
+                    filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"
+                />
+                <field name="code"/>
+                <filter string="In use" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_avea_asset_account_manager" model="ir.actions.act_window">
+        <field name="name">Asset accounts</field>
+        <field name="res_model">account.account</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_asset_account_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_account_form')}),
+        ]"/>
+        <field name="search_view_id" ref="view_avea_asset_account_search"/>
+        <field name="domain">[('account_type', 'in', ('asset_receivable', 'asset_cash', 'asset_current', 'asset_non_current', 'asset_fixed', 'asset_prepayments'))]</field>
+        <field name="context">{
+            'avea_asset_workspace': True,
+            'avea_account_workspace': True,
+            'search_default_active': 1,
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No asset accounts found
+            </p>
+            <p>
+                Cash, bank, debtors, and fixed assets appear here with their current balance.
+            </p>
+        </field>
+    </record>
+
+</odoo>
