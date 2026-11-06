@@ -5,3 +5,14 @@
     --avea-brand-soft: rgba(196, 92, 38, 0.12);
     --avea-brand-border: rgba(196, 92, 38, 0.35);
 }
+
+.o_form_view.o_avea_workspace--supplier {
+    .o_avea_supplier_open_hint {
+        margin: 0 0 0.65rem;
+        max-width: 40rem;
+    }
+
+    .o_avea_customer_main .o_list_renderer {
+        max-height: 22rem;
+    }
+}

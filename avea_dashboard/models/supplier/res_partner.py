@@ -50,6 +50,11 @@ class ResPartnerSupplierCentre(models.Model):
         store=True,
         currency_field="avea_supplier_currency_id",
     )
+    avea_open_vendor_move_ids = fields.Many2many(
+        "account.move",
+        string="Open bills",
+        compute="_compute_avea_open_vendor_moves",
+    )
 
     @api.depends(
         "company_id",
@@ -113,6 +118,27 @@ class ResPartnerSupplierCentre(models.Model):
             partner.avea_supplier_payable = payable.get(partner.id, 0.0)
             partner.avea_supplier_credit_available = credit.get(partner.id, 0.0)
 
+    @api.depends(
+        "invoice_ids.state",
+        "invoice_ids.move_type",
+        "invoice_ids.amount_residual",
+    )
+    def _compute_avea_open_vendor_moves(self):
+        Move = self.env["account.move"].sudo()
+        for partner in self:
+            if not partner.id:
+                partner.avea_open_vendor_move_ids = Move.browse()
+                continue
+            partner.avea_open_vendor_move_ids = Move.search(
+                [
+                    ("partner_id", "=", partner.id),
+                    ("move_type", "in", ("in_invoice", "in_refund")),
+                    ("state", "=", "posted"),
+                    ("amount_residual", "!=", 0),
+                ],
+                order="invoice_date desc, id desc",
+            )
+
     @api.model_create_multi
     def create(self, vals_list):
         if self.env.context.get("avea_supplier_workspace"):
@@ -159,6 +185,37 @@ class ResPartnerSupplierCentre(models.Model):
         ctx["default_avea_supplier_id"] = self.id
         action["context"] = ctx
         return action
+
+    def action_avea_open_what_we_owe(self):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("What we owe %s", self.display_name),
+            "res_model": "account.move",
+            "view_mode": "list,form",
+            "views": [
+                (
+                    self.env.ref("avea_till.view_avea_supplier_open_bill_list").id,
+                    "list",
+                ),
+                (
+                    self.env.ref("avea_till.view_avea_supplier_bill_form").id,
+                    "form",
+                ),
+            ],
+            "domain": [
+                ("partner_id", "=", self.id),
+                ("move_type", "in", ("in_invoice", "in_refund")),
+                ("state", "=", "posted"),
+                ("amount_residual", "!=", 0),
+            ],
+            "context": {
+                "avea_supplier_workspace": True,
+                "create": False,
+                "delete": False,
+            },
+            "target": "current",
+        }
 
     def action_avea_open_supplier_receipts(self):
         self.ensure_one()

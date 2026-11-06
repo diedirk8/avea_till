@@ -122,6 +122,73 @@ class TestAveaSupplierCentre(TestPoSCommon):
         partner.invalidate_recordset()
         self.assertEqual(partner.avea_supplier_product_count, 1)
 
+    def _create_unpaid_bill(self, partner, amount, ref="AKWA-1"):
+        product = self.env["product.product"].search(
+            [("purchase_ok", "=", True)], limit=1
+        )
+        if not product:
+            product = self.env["product.product"].create(
+                {
+                    "name": "Supplier Bill Product",
+                    "purchase_ok": True,
+                    "sale_ok": True,
+                    "is_storable": True,
+                    "list_price": amount,
+                    "standard_price": amount,
+                }
+            )
+        bill = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": partner.id,
+                "invoice_date": "2026-10-01",
+                "ref": ref,
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "product_id": product.id,
+                            "name": "Akwa feed",
+                            "quantity": 1,
+                            "price_unit": amount,
+                        }
+                    )
+                ],
+            }
+        )
+        bill.action_post()
+        return bill
+
+    def test_unpaid_bill_shows_in_what_we_owe(self):
+        partner = self.env["res.partner"].create(
+            {"name": "Akwa", "supplier_rank": 1}
+        )
+        bill = self._create_unpaid_bill(partner, 81000.0)
+        partner.invalidate_recordset()
+        self.assertIn(bill, partner.avea_open_vendor_move_ids)
+        self.assertGreater(partner.avea_supplier_payable, 0)
+        action = partner.action_avea_open_what_we_owe()
+        self.assertEqual(action["res_model"], "account.move")
+        self.assertIn(("partner_id", "=", partner.id), action["domain"])
+        self.assertIn(("amount_residual", "!=", 0), action["domain"])
+        self.assertEqual(bill.avea_supplier_bill_source, "bill")
+        self.assertTrue(bill.avea_supplier_bill_label)
+
+    def test_manager_can_read_open_supplier_bill(self):
+        partner = self.env["res.partner"].create(
+            {"name": "Readable Bill Supplier", "supplier_rank": 1}
+        )
+        bill = self._create_unpaid_bill(partner, 250.0, ref="READ-1")
+        found = (
+            self.env["account.move"]
+            .with_user(self.manager)
+            .search([("id", "=", bill.id)])
+        )
+        self.assertEqual(found, bill)
+        view_id = bill.with_user(self.manager).get_formview_id()
+        self.assertEqual(
+            view_id, self.env.ref("avea_till.view_avea_supplier_bill_form").id
+        )
+
     def test_supplier_centre_action_is_wired(self):
         action = self.env.ref("avea_till.action_avea_supplier_centre")
         self.assertEqual(action.res_model, "res.partner")
