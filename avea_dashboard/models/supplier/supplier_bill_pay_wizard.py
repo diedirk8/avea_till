@@ -6,7 +6,6 @@ from odoo.exceptions import UserError
 class AveaSupplierBillPayWizard(models.TransientModel):
     _name = "avea.supplier.bill.pay.wizard"
     _description = "Record Supplier Bill Payment"
-    _inherit = ["avea.stock.mixin"]
 
     bill_id = fields.Many2one(
         "account.move",
@@ -75,7 +74,9 @@ class AveaSupplierBillPayWizard(models.TransientModel):
             partner = wizard.partner_id
             company = wizard.company_id
             available = (
-                self._avea_supplier_credit_available(partner, company)
+                self.env["avea.stock.mixin"]._avea_supplier_credit_available(
+                    partner, company
+                )
                 if partner and company
                 else 0.0
             )
@@ -114,7 +115,7 @@ class AveaSupplierBillPayWizard(models.TransientModel):
         company = bill.company_id
         credit_applied = 0.0
         if self.use_supplier_credit:
-            credit_applied = self._avea_apply_supplier_credits_to_bill(
+            credit_applied = self.env["avea.stock.mixin"]._avea_apply_supplier_credits_to_bill(
                 bill, partner, company
             )
             bill.invalidate_recordset(["amount_residual", "payment_state"])
@@ -128,7 +129,7 @@ class AveaSupplierBillPayWizard(models.TransientModel):
             allowed = self.company_id.sudo()._avea_expense_journals()
             if not self.journal_id or self.journal_id not in allowed:
                 raise UserError(_("Choose a cash or bank account to pay from."))
-            self._avea_pay_vendor_bill(
+            self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
                 bill,
                 self.journal_id,
                 partner,
