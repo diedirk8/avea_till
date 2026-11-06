@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
+from odoo.tools.safe_eval import safe_eval
 
 
 class ResPartnerSupplierCentre(models.Model):
@@ -70,31 +71,31 @@ class ResPartnerSupplierCentre(models.Model):
         partner_ids = [partner.id for partner in self if partner.id]
         if partner_ids:
             Move = self.env["account.move"].sudo()
-            bill_groups = Move.read_group(
-                [
+            bill_groups = Move._read_group(
+                domain=[
                     ("partner_id", "in", partner_ids),
                     ("move_type", "=", "in_invoice"),
                     ("state", "=", "posted"),
                 ],
-                ["amount_total:sum", "amount_residual:sum"],
-                ["partner_id"],
+                groupby=["partner_id"],
+                aggregates=["amount_total:sum", "amount_residual:sum"],
             )
-            for row in bill_groups:
-                partner_id = row["partner_id"][0]
-                spend[partner_id] = row.get("amount_total", 0.0) or 0.0
-                payable[partner_id] = row.get("amount_residual", 0.0) or 0.0
-            credit_groups = Move.read_group(
-                [
+            for partner, total, residual in bill_groups:
+                partner_id = partner.id if isinstance(partner, models.Model) else partner
+                spend[partner_id] = total or 0.0
+                payable[partner_id] = residual or 0.0
+            credit_groups = Move._read_group(
+                domain=[
                     ("partner_id", "in", partner_ids),
                     ("move_type", "=", "in_refund"),
                     ("state", "=", "posted"),
                 ],
-                ["amount_residual:sum"],
-                ["partner_id"],
+                groupby=["partner_id"],
+                aggregates=["amount_residual:sum"],
             )
-            for row in credit_groups:
-                partner_id = row["partner_id"][0]
-                credit[partner_id] = abs(row.get("amount_residual", 0.0) or 0.0)
+            for partner, residual in credit_groups:
+                partner_id = partner.id if isinstance(partner, models.Model) else partner
+                credit[partner_id] = abs(residual or 0.0)
         for partner in self:
             partner.avea_supplier_currency_id = (
                 partner.company_id.currency_id or currency
@@ -144,12 +145,17 @@ class ResPartnerSupplierCentre(models.Model):
 
     def action_avea_open_supplier_products(self):
         self.ensure_one()
-        action = self.env.ref("avea_till.action_avea_stock_workspace").read()[0]
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_stock_workspace"
+        )
         action["name"] = _("Products from %s", self.display_name)
         action["domain"] = [
             ("avea_supplier_id", "=", self.id),
         ]
-        ctx = dict(action.get("context") or {})
+        ctx = action.get("context") or {}
+        if isinstance(ctx, str):
+            ctx = safe_eval(ctx, {"uid": self.env.uid})
+        ctx = dict(ctx)
         ctx["default_avea_supplier_id"] = self.id
         action["context"] = ctx
         return action
