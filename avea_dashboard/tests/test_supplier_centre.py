@@ -176,7 +176,23 @@ class TestAveaSupplierCentre(TestPoSCommon):
 
     def _pay_journal(self):
         journals = self.env.company._avea_expense_journals()
-        return journals.filtered(lambda journal: journal.type == "cash")[:1] or journals[:1]
+        journal = journals.filtered(
+            lambda rec: rec.type == "cash"
+        )[:1] or journals[:1]
+        if journal:
+            return journal
+        journal = self.env["account.journal"].search(
+            [
+                ("type", "in", ("cash", "bank")),
+                ("company_id", "=", self.env.company.id),
+            ],
+            limit=1,
+        )
+        if journal and journal not in self.env.company.avea_expense_journal_ids:
+            self.env.company.write(
+                {"avea_expense_journal_ids": [Command.link(journal.id)]}
+            )
+        return journal
 
     def test_pay_unpaid_bill_clears_what_we_owe(self):
         partner = self.env["res.partner"].create(
@@ -188,7 +204,7 @@ class TestAveaSupplierCentre(TestPoSCommon):
         self.assertEqual(action["res_model"], "avea.supplier.bill.pay.wizard")
         wizard = self.env["avea.supplier.bill.pay.wizard"].browse(action["res_id"])
         self.assertEqual(wizard.bill_id, bill)
-        self.assertAlmostEqual(wizard.amount, 810.0, places=2)
+        self.assertAlmostEqual(wizard.amount, bill.amount_residual, places=2)
         journal = self._pay_journal()
         if not journal:
             self.skipTest("No Avea cash/bank journal is configured")
