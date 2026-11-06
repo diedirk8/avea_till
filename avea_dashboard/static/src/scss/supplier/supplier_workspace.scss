@@ -15,4 +15,12 @@
     .o_avea_customer_main .o_list_renderer {
         max-height: 22rem;
     }
+
+    .o_avea_supplier_outstanding .o_list_renderer {
+        max-height: 28rem;
+    }
+
+    .o_avea_supplier_payment_panel .btn-primary {
+        margin-top: 0.25rem;
+    }
 }

@@ -156,15 +156,21 @@ class AveaStockMixin(models.AbstractModel):
             )
         return payable
 
-    def _avea_pay_vendor_bill(self, bill, journal, partner, company, pay_date, payment_ref):
+    def _avea_pay_vendor_bill(
+        self, bill, journal, partner, company, pay_date, payment_ref, amount=None
+    ):
         """Pay a vendor bill from an Avea cash/bank journal.
 
         Matches Operational Expense: statement line + payable reconciliation.
         """
         payable = self._avea_supplier_payable_account(partner, company)
-        amount = bill.amount_residual
-        if bill.currency_id.is_zero(amount):
+        residual = bill.amount_residual
+        pay_amount = residual if amount is None else amount
+        pay_amount = bill.currency_id.round(pay_amount or 0.0)
+        if bill.currency_id.is_zero(pay_amount):
             return self.env["account.bank.statement.line"]
+        if bill.currency_id.compare_amounts(pay_amount, residual) > 0:
+            raise UserError(_("You cannot pay more than the amount still open."))
         statement_line = (
             self.env["account.bank.statement.line"]
             .sudo()
@@ -172,7 +178,7 @@ class AveaStockMixin(models.AbstractModel):
             .create(
                 {
                     "journal_id": journal.id,
-                    "amount": -amount,
+                    "amount": -pay_amount,
                     "date": pay_date,
                     "payment_ref": payment_ref,
                     "partner_id": partner.id,

@@ -172,6 +172,54 @@ class TestAveaSupplierCentre(TestPoSCommon):
         self.assertIn(("amount_residual", "!=", 0), action["domain"])
         self.assertEqual(bill.avea_supplier_bill_source, "bill")
         self.assertTrue(bill.avea_supplier_bill_label)
+        self.assertTrue(bill.avea_can_pay_bill)
+
+    def _pay_journal(self):
+        journals = self.env.company._avea_expense_journals()
+        return journals.filtered(lambda journal: journal.type == "cash")[:1] or journals[:1]
+
+    def test_pay_unpaid_bill_clears_what_we_owe(self):
+        partner = self.env["res.partner"].create(
+            {"name": "Akwa Pay", "supplier_rank": 1}
+        )
+        bill = self._create_unpaid_bill(partner, 810.0, ref="AKWA-PAY")
+        self.assertTrue(bill.avea_can_pay_bill)
+        action = bill.action_avea_pay_supplier_bill()
+        self.assertEqual(action["res_model"], "avea.supplier.bill.pay.wizard")
+        wizard = self.env["avea.supplier.bill.pay.wizard"].browse(action["res_id"])
+        self.assertEqual(wizard.bill_id, bill)
+        self.assertAlmostEqual(wizard.amount, 810.0, places=2)
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        wizard.journal_id = journal
+        result = wizard.action_pay()
+        self.assertEqual(result["res_model"], "res.partner")
+        self.assertEqual(result["res_id"], partner.id)
+        bill.invalidate_recordset()
+        partner.invalidate_recordset()
+        self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
+        self.assertFalse(bill.avea_can_pay_bill)
+        self.assertNotIn(bill, partner.avea_open_vendor_move_ids)
+
+    def test_manager_can_pay_open_supplier_bill(self):
+        partner = self.env["res.partner"].create(
+            {"name": "Manager Pay Supplier", "supplier_rank": 1}
+        )
+        bill = self._create_unpaid_bill(partner, 125.0, ref="MGR-PAY")
+        action = bill.with_user(self.manager).action_avea_pay_supplier_bill()
+        wizard = (
+            self.env["avea.supplier.bill.pay.wizard"]
+            .with_user(self.manager)
+            .browse(action["res_id"])
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        wizard.journal_id = journal
+        wizard.action_pay()
+        bill.invalidate_recordset()
+        self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
 
     def test_manager_can_read_open_supplier_bill(self):
         partner = self.env["res.partner"].create(

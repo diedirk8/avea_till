@@ -190,7 +190,7 @@ class ResPartnerSupplierCentre(models.Model):
         self.ensure_one()
         return {
             "type": "ir.actions.act_window",
-            "name": _("What we owe %s", self.display_name),
+            "name": _("Outstanding bills — %s", self.display_name),
             "res_model": "account.move",
             "view_mode": "list,form",
             "views": [

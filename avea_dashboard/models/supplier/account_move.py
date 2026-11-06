@@ -17,7 +17,7 @@ class AccountMoveSupplierBill(models.Model):
             ("credit", "Credit note"),
             ("bill", "Supplier bill"),
         ],
-        string="Source",
+        string="Bill type",
         compute="_compute_avea_supplier_bill_info",
     )
     avea_linked_receive_id = fields.Many2one(
@@ -25,17 +25,19 @@ class AccountMoveSupplierBill(models.Model):
         string="Stock receipt",
         compute="_compute_avea_supplier_bill_info",
     )
-    avea_can_pay_from_receive = fields.Boolean(
+    avea_can_pay_bill = fields.Boolean(
         compute="_compute_avea_supplier_bill_info",
     )
 
     @api.depends(
         "move_type",
+        "state",
         "ref",
         "name",
         "invoice_origin",
         "invoice_line_ids.name",
         "amount_residual",
+        "currency_id",
     )
     def _compute_avea_supplier_bill_info(self):
         Receive = self.env["avea.stock.receive"].sudo()
@@ -44,7 +46,12 @@ class AccountMoveSupplierBill(models.Model):
         for move in self:
             receive = receive_by_bill.get(move.id)
             move.avea_linked_receive_id = receive
-            move.avea_can_pay_from_receive = bool(receive and receive.can_pay_bill)
+            move.avea_can_pay_bill = bool(
+                move.move_type == "in_invoice"
+                and move.state == "posted"
+                and move.currency_id
+                and not move.currency_id.is_zero(move.amount_residual)
+            )
             if move.move_type == "in_refund":
                 move.avea_supplier_bill_source = "credit"
                 move.avea_supplier_bill_label = (
@@ -116,14 +123,42 @@ class AccountMoveSupplierBill(models.Model):
             view_xmlid="avea_till.view_avea_stock_receive_history_form",
         )
 
+    def action_avea_open_supplier(self):
+        self.ensure_one()
+        if not self.partner_id:
+            raise UserError(_("This bill has no supplier."))
+        return self.partner_id.action_avea_open_supplier()
+
     def action_avea_pay_supplier_bill(self):
         self.ensure_one()
-        receive = self.avea_linked_receive_id
-        if receive and receive.can_pay_bill:
-            return receive.action_open_pay_bill_wizard()
-        raise UserError(
-            _(
-                "This bill is not an unpaid stock receipt. "
-                "If it is an expense, record the payment from Money."
+        if not self.avea_can_pay_bill:
+            raise UserError(_("This bill is already paid or is not a supplier bill."))
+        journals = (
+            self.company_id.sudo()._avea_expense_journals()
+            if self.company_id
+            else self.env["account.journal"]
+        )
+        default_journal = journals.filtered(
+            lambda journal: journal.type == "cash"
+        )[:1] or journals[:1]
+        wizard = (
+            self.env["avea.supplier.bill.pay.wizard"]
+            .sudo()
+            .create(
+                {
+                    "bill_id": self.id,
+                    "amount": self.amount_residual,
+                    "pay_date": fields.Date.context_today(self),
+                    "journal_id": default_journal.id if default_journal else False,
+                }
             )
         )
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Record payment"),
+            "res_model": "avea.supplier.bill.pay.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+            "context": {"avea_supplier_workspace": True},
+        }

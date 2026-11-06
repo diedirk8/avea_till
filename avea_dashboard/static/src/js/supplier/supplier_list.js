@@ -92,7 +92,7 @@ export class AveaSupplierListController extends ListController {
 
     get listSubtitle() {
         return _t(
-            "Search by name, phone, email, or VAT. Open a supplier to receive stock or record an expense."
+            "Search by name, phone, email, or VAT. Open a supplier to see outstanding bills, receive stock, or record an expense."
         );
     }
 
