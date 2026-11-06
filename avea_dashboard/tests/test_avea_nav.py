@@ -44,7 +44,7 @@ class TestAveaNav(TestPoSCommon):
         sections = self._section_ids(self.manager)
         self.assertEqual(
             sections,
-            ["business", "sessions", "stock", "customers", "accounting", "money"],
+            ["business", "sessions", "stock", "customers", "suppliers", "accounting", "money"],
         )
         nav = self.manager._avea_nav_structure()
         self.assertTrue(nav["home"])
@@ -79,6 +79,9 @@ class TestAveaNav(TestPoSCommon):
         self.assertEqual(customers["items"][4]["label"], "Promotions")
         self.assertEqual(customers["items"][5]["label"], "Sales Platforms")
         self.assertIn("items", store_credit)
+
+        suppliers = next(s for s in nav["sections"] if s["id"] == "suppliers")
+        self.assertEqual(suppliers["items"][0]["label"], "Suppliers")
 
         accounting = next(s for s in nav["sections"] if s["id"] == "accounting")
         accounting_labels = [item["label"] for item in accounting["items"]]

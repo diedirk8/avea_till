@@ -182,6 +182,17 @@ class AveaNavMixin(models.AbstractModel):
                 ],
             },
             {
+                "id": "suppliers",
+                "label": "Suppliers",
+                "min_role": "manager",
+                "items": [
+                    {
+                        "label": "Suppliers",
+                        "menu_xmlid": "avea_till.menu_avea_supplier_centre",
+                    },
+                ],
+            },
+            {
                 "id": "accounting",
                 "label": "Accounting",
                 "min_role": "manager",

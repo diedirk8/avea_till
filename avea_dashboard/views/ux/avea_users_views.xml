@@ -120,7 +120,7 @@
                                         invisible="avea_is_odoo_administrator"
                                     >
                                         <strong>Cashier</strong> — sell and cash up own till.
-                                        <strong>Manager</strong> — stock, money, customers, Avea settings (incl. users).
+                                        <strong>Manager</strong> — stock, money, customers, suppliers, Avea settings (incl. users).
                                         <strong>Owner</strong> — same as manager plus highest Avea role (assign only if you are owner/admin).
                                         This is not the same as Odoo administrator.
                                     </p>

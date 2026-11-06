@@ -331,7 +331,14 @@ class ResPartner(models.Model):
 
     def _avea_use_customer_workspace_form(self):
         self.ensure_one()
-        return bool(self.customer_rank)
+        if self.env.context.get("avea_supplier_workspace"):
+            return False
+        if self.env.context.get("avea_customer_workspace"):
+            return True
+        return bool(self.customer_rank) and not (
+            hasattr(self, "_avea_use_supplier_workspace_form")
+            and self._avea_use_supplier_workspace_form()
+        )
 
     def _avea_paid_pos_order_domain(self):
         self.ensure_one()
@@ -387,8 +394,14 @@ class ResPartner(models.Model):
         if access_uid:
             user = self.env["res.users"].browse(access_uid)
         if hasattr(user, "_avea_uses_product_shell") and user._avea_uses_product_shell():
-            if len(self) == 1 and self._avea_use_customer_workspace_form():
-                return self.env.ref("avea_till.view_avea_customer_form").id
+            if len(self) == 1:
+                if (
+                    hasattr(self, "_avea_use_supplier_workspace_form")
+                    and self._avea_use_supplier_workspace_form()
+                ):
+                    return self.env.ref("avea_till.view_avea_supplier_form").id
+                if self._avea_use_customer_workspace_form():
+                    return self.env.ref("avea_till.view_avea_customer_form").id
         return super().get_formview_id(access_uid=access_uid)
 
     def get_formview_action(self, access_uid=None):
@@ -397,12 +410,22 @@ class ResPartner(models.Model):
         if access_uid:
             user = self.env["res.users"].browse(access_uid)
         if hasattr(user, "_avea_uses_product_shell") and user._avea_uses_product_shell():
-            if len(self) == 1 and self._avea_use_customer_workspace_form():
-                view_id = self.env.ref("avea_till.view_avea_customer_form").id
-                action["views"] = [(view_id, "form")]
-                ctx = dict(action.get("context") or {})
-                ctx["avea_customer_workspace"] = True
-                action["context"] = ctx
+            if len(self) == 1:
+                if (
+                    hasattr(self, "_avea_use_supplier_workspace_form")
+                    and self._avea_use_supplier_workspace_form()
+                ):
+                    view_id = self.env.ref("avea_till.view_avea_supplier_form").id
+                    action["views"] = [(view_id, "form")]
+                    ctx = dict(action.get("context") or {})
+                    ctx["avea_supplier_workspace"] = True
+                    action["context"] = ctx
+                elif self._avea_use_customer_workspace_form():
+                    view_id = self.env.ref("avea_till.view_avea_customer_form").id
+                    action["views"] = [(view_id, "form")]
+                    ctx = dict(action.get("context") or {})
+                    ctx["avea_customer_workspace"] = True
+                    action["context"] = ctx
         return action
 
     @api.model
