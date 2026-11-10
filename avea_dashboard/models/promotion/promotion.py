@@ -55,6 +55,16 @@ class AveaPromotion(models.Model):
     )
     discount_percent = fields.Float(string="Discount %")
     discount_amount = fields.Monetary(string="Amount off", currency_field="currency_id")
+    apply_on = fields.Selection(
+        [
+            ("product", "Each product"),
+            ("ticket", "Ticket total"),
+        ],
+        string="Apply",
+        default="ticket",
+        help="Each product: the deal comes off every matching item scanned. "
+        "Ticket total: the deal comes off the whole ticket once.",
+    )
     spend_minimum = fields.Monetary(string="Spend at least", currency_field="currency_id")
     buy_quantity = fields.Float(string="Buy quantity", default=2)
     get_quantity = fields.Float(string="Free quantity", default=1)
@@ -145,6 +155,7 @@ class AveaPromotion(models.Model):
         "deal_type",
         "discount_percent",
         "discount_amount",
+        "apply_on",
         "spend_minimum",
         "buy_quantity",
         "get_quantity",
@@ -182,21 +193,35 @@ class AveaPromotion(models.Model):
             parts.append(f"{qty_display} × {name}")
         return parts
 
+    def _default_apply_on_for_vals(self, vals):
+        deal_type = vals.get("deal_type", "percent_off")
+        if deal_type not in ("percent_off", "fixed_amount"):
+            return "ticket"
+        scope = vals.get("product_scope", "all")
+        return "product" if scope in ("products", "category") else "ticket"
+
     def _is_per_item_discount(self):
-        """Specific products and categories apply once per matching unit, not once per ticket."""
+        """True when % off / amount off should apply to every matching unit."""
         self.ensure_one()
-        return self.product_scope in ("products", "category")
+        if self.deal_type not in ("percent_off", "fixed_amount"):
+            return False
+        return self.apply_on == "product"
 
     def _format_deal_line(self):
         self.ensure_one()
         symbol = self.currency_id.symbol or ""
         if self.deal_type == "percent_off":
-            return _("%(percent)s%% off", percent=self.discount_percent or 0)
+            deal = _("%(percent)s%% off", percent=self.discount_percent or 0)
+            if self._is_per_item_discount():
+                return _("%(deal)s each", deal=deal)
+            if self.apply_on == "ticket":
+                return _("%(deal)s the ticket", deal=deal)
+            return deal
         if self.deal_type == "fixed_amount":
             amount = f"{symbol} {self.discount_amount:.2f}"
             if self._is_per_item_discount():
                 return _("%(amount)s off each", amount=amount)
-            return _("%(amount)s off", amount=amount)
+            return _("%(amount)s off the ticket", amount=amount)
         if self.deal_type == "buy_x_get_y":
             return _(
                 "Buy %(buy)s get %(free)s free",
@@ -288,7 +313,14 @@ class AveaPromotion(models.Model):
         else:
             deal = self._format_deal_line()
             products = self._format_products_label()
-            blurb = _("%(deal)s on %(products)s.", deal=deal, products=products)
+            if self.deal_type in ("percent_off", "fixed_amount") and self.apply_on == "ticket":
+                blurb = _(
+                    "%(deal)s when it includes %(products)s.",
+                    deal=deal,
+                    products=products,
+                )
+            else:
+                blurb = _("%(deal)s on %(products)s.", deal=deal, products=products)
         if self.promo_code:
             blurb = _("%(blurb)s Cashiers enter code %(code)s at the till.", blurb=blurb, code=self.promo_code)
         else:
@@ -304,6 +336,13 @@ class AveaPromotion(models.Model):
             self.product_category_id = False
             # Do not auto-create an empty combo line — that made incomplete forms
             # fail "missing fields" validation when leaving without saving.
+        self._onchange_apply_on_for_scope()
+
+    @api.onchange("product_scope")
+    def _onchange_apply_on_for_scope(self):
+        if self.deal_type not in ("percent_off", "fixed_amount"):
+            return
+        self.apply_on = "product" if self.product_scope in ("products", "category") else "ticket"
 
     @api.constrains(
         "deal_type",
@@ -364,7 +403,8 @@ class AveaPromotion(models.Model):
     def _rule_scope_vals(self):
         self.ensure_one()
         vals = {
-            "minimum_qty": 0,
+            "minimum_qty": 1 if self.product_scope in ("products", "category") else 0,
+            "minimum_amount": 0,
             "product_ids": [Command.set([])],
             "product_category_id": False,
         }
@@ -381,6 +421,10 @@ class AveaPromotion(models.Model):
             "discount_product_ids": [Command.set([])],
             "discount_product_category_id": False,
         }
+        # Ticket total always discounts the whole order; the rule still decides
+        # whether the ticket qualifies (e.g. it contains the promo products).
+        if self.deal_type in ("percent_off", "fixed_amount") and not self._is_per_item_discount():
+            return vals
         if self.product_scope == "category":
             vals.update(
                 {
@@ -426,9 +470,6 @@ class AveaPromotion(models.Model):
                 **self._reward_scope_vals(),
             }
         elif self.deal_type == "fixed_amount":
-            # Product/category amount-off is per matching unit so scanning two of
-            # the same promo item (or two items from the list) both get the deal.
-            # All-products stays once per ticket.
             per_item = self._is_per_item_discount()
             rule_vals.update(
                 {
@@ -618,6 +659,8 @@ class AveaPromotion(models.Model):
         for vals in vals_list:
             if vals.get("open_ended"):
                 vals["date_to"] = False
+            if "apply_on" not in vals:
+                vals["apply_on"] = self._default_apply_on_for_vals(vals)
         promotions = super().create(vals_list)
         promotions._sync_loyalty_program()
         return promotions
@@ -641,6 +684,7 @@ class AveaPromotion(models.Model):
             "deal_type",
             "discount_percent",
             "discount_amount",
+            "apply_on",
             "spend_minimum",
             "buy_quantity",
             "get_quantity",

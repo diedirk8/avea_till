@@ -191,11 +191,24 @@
                                             <span class="o_avea_workspace_info_label">Amount off</span>
                                             <field name="discount_amount" nolabel="1"/>
                                         </div>
+                                        <div
+                                            class="o_avea_workspace_info_item o_avea_promotion_fields_span"
+                                            invisible="deal_type not in ('percent_off', 'fixed_amount')"
+                                        >
+                                            <span class="o_avea_workspace_info_label">Apply</span>
+                                            <field name="apply_on" nolabel="1" widget="radio" options="{'horizontal': true}"/>
+                                        </div>
                                         <p
                                             class="o_avea_promotion_panel_hint o_avea_promotion_fields_span"
-                                            invisible="deal_type != 'fixed_amount' or product_scope == 'all'"
+                                            invisible="deal_type not in ('percent_off', 'fixed_amount') or apply_on != 'product'"
                                         >
-                                            Comes off every matching item on the ticket, not only the first one.
+                                            Comes off every matching item scanned.
+                                        </p>
+                                        <p
+                                            class="o_avea_promotion_panel_hint o_avea_promotion_fields_span"
+                                            invisible="deal_type not in ('percent_off', 'fixed_amount') or apply_on != 'ticket'"
+                                        >
+                                            Comes off the whole ticket once.
                                         </p>
                                         <div class="o_avea_workspace_info_item" invisible="deal_type != 'spend_x_save'">
                                             <span class="o_avea_workspace_info_label">Spend at least</span>

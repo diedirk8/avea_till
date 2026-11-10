@@ -47,6 +47,7 @@ class TestAveaPromotionLoyaltyMapping(TransactionCase):
         self.assertEqual(reward.discount_applicability, "specific")
         self._assert_specific_products(rule.product_ids, product_a | product_b)
         self._assert_specific_products(reward.discount_product_ids, product_a | product_b)
+        self.assertEqual(promo.apply_on, "product")
         self.assertEqual(promo.deal_summary, f"{promo.currency_id.symbol} 60.00 off each")
 
     def test_fixed_amount_on_all_products_stays_once_per_order(self):
@@ -65,7 +66,8 @@ class TestAveaPromotionLoyaltyMapping(TransactionCase):
         self.assertEqual(reward.discount_mode, "per_order")
         self.assertEqual(reward.discount, 20.0)
         self.assertEqual(reward.discount_applicability, "order")
-        self.assertEqual(promo.deal_summary, f"{promo.currency_id.symbol} 20.00 off")
+        self.assertEqual(promo.apply_on, "ticket")
+        self.assertEqual(promo.deal_summary, f"{promo.currency_id.symbol} 20.00 off the ticket")
 
     def test_fixed_amount_on_category_is_per_unit(self):
         category = self.env["product.category"].create({"name": "Promo biscuits"})
@@ -144,3 +146,57 @@ class TestAveaPromotionLoyaltyMapping(TransactionCase):
         self.assertEqual(promo.program_id.reward_ids.id, reward_id)
         self.assertEqual(promo.program_id.reward_ids.discount, 45.0)
         self.assertEqual(promo.program_id.reward_ids.discount_mode, "per_point")
+
+    def test_specific_products_can_apply_once_to_the_ticket(self):
+        product = self._product("Ticket biscuit")
+        promo = self.env["avea.promotion"].create(
+            {
+                "name": "Once off the ticket",
+                "deal_type": "fixed_amount",
+                "discount_amount": 60.0,
+                "product_scope": "products",
+                "product_ids": [Command.set(product.ids)],
+                "apply_on": "ticket",
+                "open_ended": True,
+            }
+        )
+        self.assertEqual(promo.apply_on, "ticket")
+        self.assertEqual(promo.program_id.rule_ids.reward_point_mode, "order")
+        self.assertEqual(promo.program_id.rule_ids.minimum_qty, 1.0)
+        self.assertEqual(promo.program_id.reward_ids.discount_mode, "per_order")
+        self.assertEqual(promo.program_id.reward_ids.discount_applicability, "order")
+        self.assertEqual(promo.deal_summary, f"{promo.currency_id.symbol} 60.00 off the ticket")
+
+    def test_all_products_can_apply_per_item(self):
+        promo = self.env["avea.promotion"].create(
+            {
+                "name": "Every item R5 off",
+                "deal_type": "fixed_amount",
+                "discount_amount": 5.0,
+                "product_scope": "all",
+                "apply_on": "product",
+                "open_ended": True,
+            }
+        )
+        self.assertEqual(promo.program_id.rule_ids.reward_point_mode, "unit")
+        self.assertEqual(promo.program_id.reward_ids.discount_mode, "per_point")
+        self.assertEqual(promo.program_id.reward_ids.discount_applicability, "order")
+        self.assertEqual(promo.deal_summary, f"{promo.currency_id.symbol} 5.00 off each")
+
+    def test_write_apply_on_switches_mapping(self):
+        product = self._product("Switch biscuit")
+        promo = self.env["avea.promotion"].create(
+            {
+                "name": "Switch apply on",
+                "deal_type": "fixed_amount",
+                "discount_amount": 60.0,
+                "product_scope": "products",
+                "product_ids": [Command.set(product.ids)],
+                "open_ended": True,
+            }
+        )
+        self.assertEqual(promo.apply_on, "product")
+        promo.write({"apply_on": "ticket"})
+        self.assertEqual(promo.program_id.rule_ids.reward_point_mode, "order")
+        self.assertEqual(promo.program_id.reward_ids.discount_mode, "per_order")
+        self.assertEqual(promo.program_id.reward_ids.discount_applicability, "order")
