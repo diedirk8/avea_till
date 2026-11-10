@@ -363,7 +363,11 @@ class AveaPromotion(models.Model):
 
     def _rule_scope_vals(self):
         self.ensure_one()
-        vals = {"minimum_qty": 0}
+        vals = {
+            "minimum_qty": 0,
+            "product_ids": [Command.set([])],
+            "product_category_id": False,
+        }
         if self.product_scope == "category":
             vals["product_category_id"] = self.product_category_id.id
         elif self.product_scope == "products":
@@ -372,17 +376,19 @@ class AveaPromotion(models.Model):
 
     def _reward_scope_vals(self):
         self.ensure_one()
-        vals = {}
-        if self.product_scope == "all":
-            vals["discount_applicability"] = "order"
-        elif self.product_scope == "category":
+        vals = {
+            "discount_applicability": "order",
+            "discount_product_ids": [Command.set([])],
+            "discount_product_category_id": False,
+        }
+        if self.product_scope == "category":
             vals.update(
                 {
                     "discount_applicability": "specific",
                     "discount_product_category_id": self.product_category_id.id,
                 }
             )
-        else:
+        elif self.product_scope == "products":
             vals.update(
                 {
                     "discount_applicability": "specific",
@@ -404,7 +410,7 @@ class AveaPromotion(models.Model):
             program_type = "promo_code"
             rule_vals.update({"code": self.promo_code.strip(), "mode": "with_code"})
         else:
-            rule_vals["mode"] = "auto"
+            rule_vals.update({"mode": "auto", "code": False})
 
         if self.deal_type == "percent_off":
             rule_vals.update(
@@ -556,17 +562,45 @@ class AveaPromotion(models.Model):
             "avea_combo_price": self.combo_price if self.deal_type == "combo_price" else 0.0,
             "avea_combo_components": combo_components,
             "avea_promotion_id": self.id,
-            "rule_ids": [Command.clear(), Command.create(rule_vals)],
-            "reward_ids": [Command.clear(), Command.create(reward_vals)],
+            "rule_ids": [Command.create(rule_vals)],
+            "reward_ids": [Command.create(reward_vals)],
         }
+
+    def _avea_command_create_vals(self, commands):
+        for command in commands or []:
+            if command and command[0] in (Command.CREATE, 0):
+                return dict(command[2] or {})
+        return {}
+
+    def _avea_write_or_create_loyalty_child(self, records, vals, model_name, program):
+        """Update the live rule/reward in place so POS history is not deleted."""
+        if not vals:
+            return
+        if records:
+            records[0].sudo().write(vals)
+            return
+        child_vals = dict(vals)
+        child_vals["program_id"] = program.id
+        self.env[model_name].sudo().create(child_vals)
 
     def _sync_loyalty_program(self):
         Program = self.env["loyalty.program"].sudo()
         for promotion in self:
             vals = promotion._prepare_loyalty_program_vals()
+            rule_vals = promotion._avea_command_create_vals(vals.pop("rule_ids", []))
+            reward_vals = promotion._avea_command_create_vals(vals.pop("reward_ids", []))
             if promotion.program_id:
-                promotion.program_id.write(vals)
+                program = promotion.program_id.sudo()
+                program.write(vals)
+                promotion._avea_write_or_create_loyalty_child(
+                    program.rule_ids, rule_vals, "loyalty.rule", program
+                )
+                promotion._avea_write_or_create_loyalty_child(
+                    program.reward_ids, reward_vals, "loyalty.reward", program
+                )
             else:
+                vals["rule_ids"] = [Command.create(rule_vals)] if rule_vals else []
+                vals["reward_ids"] = [Command.create(reward_vals)] if reward_vals else []
                 promotion.program_id = Program.create(vals)
             promotion._rename_combo_discount_product()
 

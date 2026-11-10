@@ -124,3 +124,23 @@ class TestAveaPromotionLoyaltyMapping(TransactionCase):
         self.assertEqual(promo.program_id.rule_ids.reward_point_mode, "unit")
         self.assertEqual(promo.program_id.reward_ids.discount_mode, "per_point")
         self.assertEqual(promo.program_id.reward_ids.discount, 55.0)
+
+    def test_resync_keeps_existing_reward_records(self):
+        product = self._product("Historic biscuit")
+        promo = self.env["avea.promotion"].create(
+            {
+                "name": "Keep reward ids",
+                "deal_type": "fixed_amount",
+                "discount_amount": 60.0,
+                "product_scope": "products",
+                "product_ids": [Command.set(product.ids)],
+                "open_ended": True,
+            }
+        )
+        rule_id = promo.program_id.rule_ids.id
+        reward_id = promo.program_id.reward_ids.id
+        promo.write({"discount_amount": 45.0})
+        self.assertEqual(promo.program_id.rule_ids.id, rule_id)
+        self.assertEqual(promo.program_id.reward_ids.id, reward_id)
+        self.assertEqual(promo.program_id.reward_ids.discount, 45.0)
+        self.assertEqual(promo.program_id.reward_ids.discount_mode, "per_point")
