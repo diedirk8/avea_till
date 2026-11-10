@@ -16,6 +16,7 @@ def migrate(cr, version):
         """
     )
     env = api.Environment(cr, SUPERUSER_ID, {})
+    env.invalidate_all()
     promotions = env["avea.promotion"].with_context(active_test=False).search([])
     if promotions:
         promotions._sync_loyalty_program()
