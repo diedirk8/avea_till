@@ -182,13 +182,21 @@ class AveaPromotion(models.Model):
             parts.append(f"{qty_display} × {name}")
         return parts
 
+    def _is_per_item_discount(self):
+        """Specific products and categories apply once per matching unit, not once per ticket."""
+        self.ensure_one()
+        return self.product_scope in ("products", "category")
+
     def _format_deal_line(self):
         self.ensure_one()
         symbol = self.currency_id.symbol or ""
         if self.deal_type == "percent_off":
             return _("%(percent)s%% off", percent=self.discount_percent or 0)
         if self.deal_type == "fixed_amount":
-            return _("%(amount)s off", amount=f"{symbol} {self.discount_amount:.2f}")
+            amount = f"{symbol} {self.discount_amount:.2f}"
+            if self._is_per_item_discount():
+                return _("%(amount)s off each", amount=amount)
+            return _("%(amount)s off", amount=amount)
         if self.deal_type == "buy_x_get_y":
             return _(
                 "Buy %(buy)s get %(free)s free",
@@ -399,7 +407,12 @@ class AveaPromotion(models.Model):
             rule_vals["mode"] = "auto"
 
         if self.deal_type == "percent_off":
-            rule_vals.update({"reward_point_amount": 1, "reward_point_mode": "order"})
+            rule_vals.update(
+                {
+                    "reward_point_amount": 1,
+                    "reward_point_mode": "unit" if self._is_per_item_discount() else "order",
+                }
+            )
             reward_vals = {
                 "required_points": 1,
                 "discount": self.discount_percent,
@@ -407,11 +420,20 @@ class AveaPromotion(models.Model):
                 **self._reward_scope_vals(),
             }
         elif self.deal_type == "fixed_amount":
-            rule_vals.update({"reward_point_amount": 1, "reward_point_mode": "order"})
+            # Product/category amount-off is per matching unit so scanning two of
+            # the same promo item (or two items from the list) both get the deal.
+            # All-products stays once per ticket.
+            per_item = self._is_per_item_discount()
+            rule_vals.update(
+                {
+                    "reward_point_amount": 1,
+                    "reward_point_mode": "unit" if per_item else "order",
+                }
+            )
             reward_vals = {
                 "required_points": 1,
                 "discount": self.discount_amount,
-                "discount_mode": "per_order",
+                "discount_mode": "per_point" if per_item else "per_order",
                 **self._reward_scope_vals(),
             }
         elif self.deal_type == "spend_x_save":

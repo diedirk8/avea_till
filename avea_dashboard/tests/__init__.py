@@ -7,6 +7,7 @@ from . import test_stock_internal_use
 from . import test_stock_catalogue_bulk
 from . import test_stock_history
 from . import test_promotion_schedule
+from . import test_promotion_loyalty_mapping
 from . import test_product_pricing_tax
 from . import test_product_label_print
 from . import test_stock_take
