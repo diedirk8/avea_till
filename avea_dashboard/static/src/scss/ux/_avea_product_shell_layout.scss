@@ -82,6 +82,7 @@ body.o_avea_product_shell {
 
     // Promotion form is taller than the viewport. overflow-x: clip on this pane
     // swallows overflow-y unless the action manager is a bounded scroller.
+    // Matching rules are repeated in _avea_catalogue_list_pane.scss (loads last).
     .o_action_manager.o_avea_promotion_form_action_manager,
     .o_action_manager:has(.o_form_view.o_avea_workspace--promotion),
     .o_action_manager:has(.o_avea_workspace--promotion):not(:has(.o_avea_workspace--promotion-list)) {
@@ -100,6 +101,7 @@ body.o_avea_product_shell {
         .o_form_view,
         .o_form_renderer,
         .o_form_sheet_bg,
+        .o_form_sheet,
         .o_avea_workspace_sheet {
             display: block !important;
             flex: none !important;
@@ -107,6 +109,8 @@ body.o_avea_product_shell {
             max-height: none !important;
             min-height: 0 !important;
             overflow: visible !important;
+            overflow-x: visible !important;
+            overflow-y: visible !important;
         }
     }
 

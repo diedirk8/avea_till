@@ -316,3 +316,45 @@ body.o_avea_product_shell #{$o_avea_catalogue_list_views} {
         }
     }
 }
+
+// Promotion form: this file loads last so overflow-x:clip on the product shell
+// cannot swallow vertical scroll. The form controller also pins these styles
+// inline (Stock Take pattern) because :has() is not enough on its own.
+body.o_avea_product_shell .o_action_manager.o_avea_promotion_form_action_manager,
+body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--promotion),
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--promotion):not(:has(.o_avea_workspace--promotion-list)) {
+    display: block !important;
+    height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
+    max-height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: auto !important;
+
+    &::-webkit-scrollbar {
+        display: block !important;
+        width: 12px;
+    }
+
+    > .o_action,
+    .o_action,
+    .o_content,
+    .o_view_controller,
+    .o_form_view,
+    .o_form_renderer,
+    .o_form_sheet_bg,
+    .o_form_sheet,
+    .o_avea_workspace,
+    .o_avea_workspace_sheet {
+        display: block !important;
+        flex: none !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+    }
+}
