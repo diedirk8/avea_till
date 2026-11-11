@@ -80,6 +80,36 @@ body.o_avea_product_shell {
         }
     }
 
+    // Promotion form is taller than the viewport. overflow-x: clip on this pane
+    // swallows overflow-y unless the action manager is a bounded scroller.
+    .o_action_manager.o_avea_promotion_form_action_manager,
+    .o_action_manager:has(.o_form_view.o_avea_workspace--promotion),
+    .o_action_manager:has(.o_avea_workspace--promotion):not(:has(.o_avea_workspace--promotion-list)) {
+        height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
+        max-height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+
+        > .o_action,
+        .o_action,
+        .o_content,
+        .o_view_controller,
+        .o_form_view,
+        .o_form_renderer,
+        .o_form_sheet_bg,
+        .o_avea_workspace_sheet {
+            display: block !important;
+            flex: none !important;
+            height: auto !important;
+            max-height: none !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+        }
+    }
+
     // Keep readable insets for standard workspace pages (not flush catalogue lists).
     .o_avea_workspace:not(.o_avea_catalogue_flush) .o_avea_workspace_sheet {
         box-sizing: border-box;

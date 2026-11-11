@@ -782,32 +782,9 @@
     cursor: pointer;
 }
 
-// Product-shell overflow-x:clip ancestors swallow vertical scroll. Make the
-// action pane the scroller so the product list and rest of the form can move.
-body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--promotion) {
-    height: calc(100vh - var(--avea-topbar-height));
-    max-height: calc(100vh - var(--avea-topbar-height));
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-
-    .o_action,
-    .o_content,
-    .o_view_controller,
-    .o_form_view.o_avea_workspace--promotion,
-    .o_form_view.o_avea_workspace--promotion .o_form_renderer,
-    .o_form_view.o_avea_workspace--promotion .o_form_sheet_bg,
-    .o_form_view.o_avea_workspace--promotion .o_avea_workspace_sheet {
-        display: block !important;
-        flex: none !important;
-        height: auto !important;
-        max-height: none !important;
-        min-height: 0 !important;
-        overflow: visible !important;
-        overflow-x: visible !important;
-        overflow-y: visible !important;
-    }
-}
+// Product-shell overflow-x:clip ancestors swallow vertical scroll. The
+// matching rules live in ux/_avea_product_shell_layout.scss (loaded last)
+// plus o_avea_promotion_form_action_manager from the form controller.
 
 .o_avea_workspace--promotion-list {
     .o_control_panel {
