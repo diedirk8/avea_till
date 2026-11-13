@@ -590,11 +590,20 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
         return candidates
 
     @api.model
-    def _avea_promotion_target_product_lines(self, reward_line):
+    def _avea_promotion_target_product_lines(self, reward_line, program=None):
+        """Product lines this reward/combo actually moved — never the whole ticket by default."""
         targets = self._avea_reward_discount_target_lines(reward_line)
+        promotion = program.avea_promotion_id if program else False
+        scoped = self._avea_promotion_scope_product_lines(reward_line.order_id, promotion)
+        if targets and scoped:
+            return targets & scoped
         if targets:
             return targets
-        return self._avea_reward_discount_product_line_candidates(reward_line.order_id)
+        if scoped:
+            return scoped
+        if promotion and promotion.apply_on == "ticket" and promotion.product_scope == "all":
+            return self._avea_reward_discount_product_line_candidates(reward_line.order_id)
+        return self.env["pos.order.line"]
 
     @api.model
     def _avea_promotion_empty_analysis(self):
@@ -708,14 +717,7 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
 
             for program, line in discount_lines:
                 discount_amount = add_discount_line(program, line)
-                targets = self._avea_promotion_target_product_lines(line)
-                if line.avea_combo_program_id:
-                    targets = (
-                        self._avea_promotion_scope_product_lines(
-                            order, program.avea_promotion_id
-                        )
-                        or targets
-                    )
+                targets = self._avea_promotion_target_product_lines(line, program)
                 if not targets:
                     continue
                 weights = [abs(float(target.qty or 0.0)) for target in targets]

@@ -265,3 +265,31 @@ class TestAveaBusinessPerformancePromotions(TestPoSCommon):
         dashboard = self.Performance.create({"period": "today"})
         self.assertTrue(dashboard.show_promotions)
         self.assertEqual(dashboard.promotion_line_ids.discount_display, "Extra Loyalty Points")
+
+    def test_unrelated_ticket_products_are_not_attributed(self):
+        promo = self.Promotion.create(
+            {
+                "name": "Biscuits only",
+                "deal_type": "fixed_amount",
+                "discount_amount": 60.0,
+                "product_scope": "products",
+                "product_ids": [Command.set([self.product_a.id])],
+                "open_ended": True,
+            }
+        )
+        order, _session = self._create_paid_order(
+            lines=[(self.product_a, 1), (self.product_plain, 1)],
+            uuid="perf-promo-scope",
+        )
+        self._add_reward_line(
+            order,
+            product=self.product_a,
+            program=promo.program_id,
+            amount=-60.0,
+            name="R 60.00 off each",
+            code="",
+        )
+        analysis = self.Line._avea_promotion_analysis(order)
+        product_ids = {row["product_id"] for row in analysis["products"]}
+        self.assertEqual(product_ids, {self.product_a.id})
+        self.assertAlmostEqual(analysis["promotions"][0]["discount_given"], 60.0, places=2)
