@@ -14,6 +14,7 @@
                     <field name="show_profit_products" invisible="1"/>
                     <field name="show_profit_categories" invisible="1"/>
                     <field name="show_platform_reporting" invisible="1"/>
+                    <field name="show_promotions" invisible="1"/>
                     <field name="platform_sales_ex_tax" invisible="1"/>
                     <field name="platform_gross_profit" invisible="1"/>
                     <field name="platform_commission" invisible="1"/>
@@ -255,6 +256,86 @@
                                     <field name="currency_id" column_invisible="True"/>
                                 </list>
                             </field>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_workspace_block o_avea_promotion_reporting_block">
+                        <div class="o_avea_workspace_block_heading">
+                            <h2 class="o_avea_workspace_section_title">Promotions</h2>
+                            <span class="o_avea_workspace_section_meta">Till deals for this period · excluding tax</span>
+                        </div>
+                        <div class="o_avea_session_products_empty" invisible="show_promotions">
+                            <p class="o_avea_session_products_empty_text">No promotions applied in this period.</p>
+                        </div>
+                        <div invisible="not show_promotions">
+                            <div class="o_avea_workspace_kpi_grid o_avea_promotion_reporting_totals">
+                                <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--primary">
+                                    <span class="o_avea_workspace_kpi_label">Promo tickets</span>
+                                    <field name="promo_ticket_count" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                </div>
+                                <div class="o_avea_workspace_kpi_card">
+                                    <span class="o_avea_workspace_kpi_label">Units on promo</span>
+                                    <field name="promo_unit_count" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                </div>
+                                <div class="o_avea_workspace_kpi_card">
+                                    <span class="o_avea_workspace_kpi_label">Promo discount</span>
+                                    <field name="promo_discount" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                </div>
+                                <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
+                                    <span class="o_avea_workspace_kpi_label">Promo sales</span>
+                                    <field name="promo_sales_ex_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
+                                </div>
+                            </div>
+                            <div class="o_avea_overview_visuals">
+                                <div class="o_avea_overview_visual_panel">
+                                    <div class="o_avea_workspace_block_heading">
+                                        <div class="o_avea_overview_visual_heading">
+                                            <h2 class="o_avea_workspace_section_title">Deals that fired</h2>
+                                            <p class="o_avea_workspace_section_subtitle">Discount given, or the deal type when it is not a price-off</p>
+                                        </div>
+                                    </div>
+                                    <div class="o_avea_workspace_ledger_card o_avea_products_sold_card">
+                                        <field name="promotion_line_ids" nolabel="1" readonly="1">
+                                            <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                                <field name="name" string="Promotion"/>
+                                                <field name="deal_summary" string="Deal"/>
+                                                <field name="order_count" string="Tickets"/>
+                                                <field name="quantity" string="Qty"/>
+                                                <field name="discount_display" string="Discount / type"/>
+                                                <field name="sales_ex_tax" string="Sales" widget="monetary"/>
+                                                <field name="discount_given" column_invisible="True"/>
+                                                <field name="deal_type_label" column_invisible="True"/>
+                                                <field name="promotion_id" column_invisible="True"/>
+                                                <field name="currency_id" column_invisible="True"/>
+                                            </list>
+                                        </field>
+                                    </div>
+                                </div>
+                                <div class="o_avea_overview_visual_panel">
+                                    <div class="o_avea_workspace_block_heading">
+                                        <div class="o_avea_overview_visual_heading">
+                                            <h2 class="o_avea_workspace_section_title">Products sold on promotions</h2>
+                                            <p class="o_avea_workspace_section_subtitle">What moved, and what the deal took off</p>
+                                        </div>
+                                    </div>
+                                    <div class="o_avea_workspace_ledger_card o_avea_products_sold_card">
+                                        <field name="promotion_product_line_ids" nolabel="1" readonly="1">
+                                            <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                                <field name="product_display" string="Product"/>
+                                                <field name="promotion_name" string="Promotion"/>
+                                                <field name="quantity" string="Qty"/>
+                                                <field name="discount_display" string="Discount / type"/>
+                                                <field name="sales_ex_tax" string="Sales" widget="monetary"/>
+                                                <field name="discount_given" column_invisible="True"/>
+                                                <field name="deal_type_label" column_invisible="True"/>
+                                                <field name="promotion_id" column_invisible="True"/>
+                                                <field name="product_id" column_invisible="True"/>
+                                                <field name="currency_id" column_invisible="True"/>
+                                            </list>
+                                        </field>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

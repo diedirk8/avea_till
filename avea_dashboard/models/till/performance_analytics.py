@@ -6,8 +6,11 @@ Ranking methodology and gross-profit cost basis are defined in ADR-010
 import math
 import re
 
+from collections import defaultdict
+
 from odoo import _, api, models
 from odoo.tools.float_utils import float_is_zero
+from odoo.tools.misc import formatLang
 
 PERFORMANCE_RANK_LIMIT = 8
 
@@ -470,4 +473,353 @@ class PosOrderLinePerformanceAnalytics(models.AbstractModel):
             "top_categories": self._avea_performance_score_rows(category_aggs),
             "profit_products": self._avea_performance_profit_rows(product_aggs),
             "profit_categories": self._avea_performance_profit_rows(category_aggs),
+        }
+
+    PROMOTION_PRODUCT_ROW_LIMIT = 40
+    _AVEA_PROMOTION_PROGRAM_TYPES = frozenset(
+        ("promotion", "promo_code", "buy_x_get_y")
+    )
+
+    @api.model
+    def _avea_is_reportable_promotion_program(self, program):
+        """Avea till deals, plus native POS promotions (not loyalty clubs)."""
+        if not program:
+            return False
+        if program.avea_promotion_id or program.avea_is_combo:
+            return True
+        return (program.program_type or "") in self._AVEA_PROMOTION_PROGRAM_TYPES
+
+    @api.model
+    def _avea_promotion_program_for_line(self, line):
+        Program = self.env["loyalty.program"]
+        program = False
+        if line.avea_combo_program_id:
+            program = Program.browse(line.avea_combo_program_id).exists()
+        elif line.reward_id:
+            program = line.reward_id.program_id
+        elif "coupon_id" in line._fields and line.coupon_id:
+            program = line.coupon_id.program_id
+        if program and self._avea_is_reportable_promotion_program(program):
+            return program
+        return Program.browse()
+
+    @api.model
+    def _avea_promotion_programs_on_order(self, order):
+        programs = self.env["loyalty.program"]
+        for line in order.lines:
+            programs |= self._avea_promotion_program_for_line(line)
+        point_ids = order.coupon_point_ids if "coupon_point_ids" in order._fields else []
+        for rec in point_ids:
+            program = getattr(rec, "program_id", False)
+            if not program:
+                coupon = getattr(rec, "coupon_id", False)
+                program = coupon.program_id if coupon else False
+            if program and self._avea_is_reportable_promotion_program(program):
+                programs |= program
+        return programs
+
+    @api.model
+    def _avea_promotion_meta(self, program):
+        promotion = program.avea_promotion_id
+        if promotion:
+            deal_type = promotion.deal_type or ""
+            labels = dict(promotion._fields["deal_type"].selection)
+            return {
+                "promotion_id": promotion.id,
+                "program_id": program.id,
+                "name": promotion.name or program.name,
+                "deal_type": deal_type,
+                "deal_type_label": labels.get(deal_type) or _("Promotion"),
+                "deal_summary": promotion.deal_summary or labels.get(deal_type) or _("Promotion"),
+            }
+        if program.avea_is_combo:
+            label = _("Combo Price")
+            return {
+                "promotion_id": False,
+                "program_id": program.id,
+                "name": program.name,
+                "deal_type": "combo_price",
+                "deal_type_label": label,
+                "deal_summary": label,
+            }
+        type_labels = {
+            "buy_x_get_y": _("Buy X Get Y"),
+            "promo_code": _("Promo code"),
+            "promotion": _("Promotion"),
+        }
+        label = type_labels.get(program.program_type or "", _("Promotion"))
+        return {
+            "promotion_id": False,
+            "program_id": program.id,
+            "name": program.name,
+            "deal_type": program.program_type or "promotion",
+            "deal_type_label": label,
+            "deal_summary": label,
+        }
+
+    @api.model
+    def _avea_promotion_discount_display(self, amount, deal_type_label, currency=None):
+        currency = currency or self.env.company.currency_id
+        if not currency.is_zero(amount or 0.0):
+            return formatLang(self.env, amount, currency_obj=currency)
+        return deal_type_label or _("Promotion")
+
+    @api.model
+    def _avea_promotion_scope_product_lines(self, order, promotion):
+        candidates = self._avea_reward_discount_product_line_candidates(order)
+        if not promotion:
+            return candidates
+        if promotion.deal_type == "combo_price":
+            combo_products = promotion.combo_line_ids.mapped("product_id")
+            if combo_products:
+                return candidates.filtered(lambda line: line.product_id in combo_products)
+        if promotion.product_scope == "products" and promotion.product_ids:
+            return candidates.filtered(lambda line: line.product_id in promotion.product_ids)
+        if promotion.product_scope == "category" and promotion.product_category_id:
+            category = promotion.product_category_id
+            return candidates.filtered(
+                lambda line: line.product_id.categ_id
+                and (
+                    line.product_id.categ_id == category
+                    or line.product_id.categ_id.parent_path
+                    and line.product_id.categ_id.parent_path.startswith(
+                        category.parent_path or ""
+                    )
+                )
+            )
+        return candidates
+
+    @api.model
+    def _avea_promotion_target_product_lines(self, reward_line):
+        targets = self._avea_reward_discount_target_lines(reward_line)
+        if targets:
+            return targets
+        return self._avea_reward_discount_product_line_candidates(reward_line.order_id)
+
+    @api.model
+    def _avea_promotion_empty_analysis(self):
+        return {
+            "summary": {
+                "order_count": 0,
+                "unit_count": 0.0,
+                "discount_given": 0.0,
+                "sales_ex_tax": 0.0,
+                "promotion_count": 0,
+            },
+            "promotions": [],
+            "products": [],
+        }
+
+    @api.model
+    def _avea_promotion_analysis(self, orders):
+        """Period promotion analysis: deals that fired, products sold, discount or type."""
+        empty = self._avea_promotion_empty_analysis()
+        if not orders:
+            return empty
+
+        currency = self.env.company.currency_id
+        buckets = {}
+        product_buckets = {}
+        summary_order_ids = set()
+        summary_product_line_ids = set()
+        summary_discount_line_ids = set()
+        summary_discount = 0.0
+
+        def bucket_for(program):
+            key = program.id
+            if key not in buckets:
+                meta = self._avea_promotion_meta(program)
+                buckets[key] = {
+                    **meta,
+                    "order_ids": set(),
+                    "unit_count": 0.0,
+                    "discount_given": 0.0,
+                    "sales_ex_tax": 0.0,
+                    "product_line_ids": set(),
+                    "discount_line_ids": set(),
+                }
+            return buckets[key]
+
+        def add_product_line(program, line, allocated_discount=0.0):
+            if not line or not line.product_id:
+                return
+            if line.product_id.type in ("service", "combo") or line.combo_line_ids:
+                return
+            metrics = self._avea_performance_line_metrics(line)
+            bucket = bucket_for(program)
+            if line.id not in bucket["product_line_ids"]:
+                bucket["product_line_ids"].add(line.id)
+                bucket["unit_count"] += abs(metrics["qty"])
+                bucket["sales_ex_tax"] += metrics["revenue_ex_tax"]
+                summary_product_line_ids.add(line.id)
+            product_key = (program.id, line.product_id.id)
+            row = product_buckets.setdefault(
+                product_key,
+                {
+                    "promotion_id": bucket["promotion_id"],
+                    "program_id": program.id,
+                    "promotion_name": bucket["name"],
+                    "deal_type_label": bucket["deal_type_label"],
+                    "product_id": line.product_id.id,
+                    "product_display": self._avea_performance_product_label(line.product_id),
+                    "quantity": 0.0,
+                    "discount_given": 0.0,
+                    "sales_ex_tax": 0.0,
+                    "line_ids": set(),
+                },
+            )
+            if line.id not in row["line_ids"]:
+                row["line_ids"].add(line.id)
+                row["quantity"] += abs(metrics["qty"])
+                row["sales_ex_tax"] += metrics["revenue_ex_tax"]
+            row["discount_given"] += allocated_discount
+
+        def add_discount_line(program, line):
+            if not line or line.id in summary_discount_line_ids:
+                return 0.0
+            amount = self._avea_performance_discount_given(line)
+            summary_discount_line_ids.add(line.id)
+            bucket = bucket_for(program)
+            bucket["discount_line_ids"].add(line.id)
+            bucket["discount_given"] += amount
+            nonlocal summary_discount
+            summary_discount += amount
+            return amount
+
+        for order in orders:
+            programs = self._avea_promotion_programs_on_order(order)
+            if not programs:
+                continue
+            summary_order_ids.add(order.id)
+            for program in programs:
+                bucket_for(program)["order_ids"].add(order.id)
+
+            allocated_product_ids = set()
+            discount_lines = []
+            tagged_product_lines = []
+            for line in order.lines:
+                program = self._avea_promotion_program_for_line(line)
+                if not program:
+                    continue
+                if line.avea_combo_program_id or line.is_reward_line:
+                    discount_lines.append((program, line))
+                else:
+                    tagged_product_lines.append((program, line))
+
+            for program, line in discount_lines:
+                discount_amount = add_discount_line(program, line)
+                targets = self._avea_promotion_target_product_lines(line)
+                if line.avea_combo_program_id:
+                    targets = (
+                        self._avea_promotion_scope_product_lines(
+                            order, program.avea_promotion_id
+                        )
+                        or targets
+                    )
+                if not targets:
+                    continue
+                weights = [abs(float(target.qty or 0.0)) for target in targets]
+                weight_total = sum(weights) or float(len(targets) or 1)
+                for target, weight in zip(targets, weights):
+                    share = (
+                        discount_amount * (weight / weight_total) if weight_total else 0.0
+                    )
+                    add_product_line(program, target, allocated_discount=share)
+                    allocated_product_ids.add(target.id)
+
+            for program, line in tagged_product_lines:
+                line_discount = 0.0
+                if line.id not in summary_discount_line_ids:
+                    line_discount = self._avea_performance_discount_given(line)
+                    if line_discount:
+                        add_discount_line(program, line)
+                add_product_line(program, line, allocated_discount=line_discount)
+                allocated_product_ids.add(line.id)
+
+            for program in programs:
+                scoped = self._avea_promotion_scope_product_lines(
+                    order, program.avea_promotion_id
+                )
+                for line in scoped:
+                    if line.id in allocated_product_ids:
+                        continue
+                    add_product_line(program, line)
+
+        promotion_rows = []
+        for bucket in buckets.values():
+            discount = bucket["discount_given"]
+            promotion_rows.append(
+                {
+                    "promotion_id": bucket["promotion_id"] or False,
+                    "program_id": bucket["program_id"],
+                    "name": bucket["name"],
+                    "deal_type": bucket["deal_type"],
+                    "deal_type_label": bucket["deal_type_label"],
+                    "deal_summary": bucket["deal_summary"],
+                    "order_count": len(bucket["order_ids"]),
+                    "quantity": bucket["unit_count"],
+                    "discount_given": discount,
+                    "discount_display": self._avea_promotion_discount_display(
+                        discount, bucket["deal_type_label"], currency
+                    ),
+                    "sales_ex_tax": bucket["sales_ex_tax"],
+                }
+            )
+        promotion_rows.sort(
+            key=lambda row: (
+                -abs(row["discount_given"]),
+                -row["sales_ex_tax"],
+                -row["quantity"],
+                row["name"] or "",
+            )
+        )
+
+        product_rows = []
+        for row in product_buckets.values():
+            product_rows.append(
+                {
+                    "promotion_id": row["promotion_id"] or False,
+                    "program_id": row["program_id"],
+                    "promotion_name": row["promotion_name"],
+                    "deal_type_label": row["deal_type_label"],
+                    "product_id": row["product_id"],
+                    "product_display": row["product_display"],
+                    "quantity": row["quantity"],
+                    "discount_given": row["discount_given"],
+                    "discount_display": self._avea_promotion_discount_display(
+                        row["discount_given"], row["deal_type_label"], currency
+                    ),
+                    "sales_ex_tax": row["sales_ex_tax"],
+                }
+            )
+        product_rows.sort(
+            key=lambda row: (
+                -row["quantity"],
+                -abs(row["discount_given"]),
+                -row["sales_ex_tax"],
+                row["product_display"] or "",
+            )
+        )
+        product_rows = product_rows[: self.PROMOTION_PRODUCT_ROW_LIMIT]
+
+        summary_units = 0.0
+        summary_sales = 0.0
+        if summary_product_line_ids:
+            product_lines = self.env["pos.order.line"].browse(list(summary_product_line_ids))
+            self._avea_performance_ensure_line_costs(product_lines)
+            for line in product_lines:
+                metrics = self._avea_performance_line_metrics(line)
+                summary_units += abs(metrics["qty"])
+                summary_sales += metrics["revenue_ex_tax"]
+
+        return {
+            "summary": {
+                "order_count": len(summary_order_ids),
+                "unit_count": summary_units,
+                "discount_given": summary_discount,
+                "sales_ex_tax": summary_sales,
+                "promotion_count": len(promotion_rows),
+            },
+            "promotions": promotion_rows,
+            "products": product_rows,
         }

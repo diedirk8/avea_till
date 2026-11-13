@@ -85,6 +85,68 @@ class AveaBusinessPerformanceLine(models.TransientModel):
     )
 
 
+class AveaBusinessPerformancePromotionLine(models.TransientModel):
+    _name = "avea.business.performance.promotion.line"
+    _description = "Business Performance Promotion"
+    _order = "discount_given desc, sales_ex_tax desc, id"
+
+    dashboard_id = fields.Many2one(
+        "avea.business.performance",
+        string="Performance",
+        required=True,
+        ondelete="cascade",
+    )
+    currency_id = fields.Many2one(related="dashboard_id.currency_id")
+    promotion_id = fields.Many2one("avea.promotion", readonly=True)
+    name = fields.Char(string="Promotion", readonly=True)
+    deal_summary = fields.Char(string="Deal", readonly=True)
+    deal_type_label = fields.Char(string="Type", readonly=True)
+    order_count = fields.Integer(string="Tickets", readonly=True)
+    quantity = fields.Float(string="Qty", digits="Product Unit", readonly=True)
+    discount_given = fields.Monetary(
+        string="Discount",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    discount_display = fields.Char(string="Discount / type", readonly=True)
+    sales_ex_tax = fields.Monetary(
+        string="Sales",
+        currency_field="currency_id",
+        readonly=True,
+    )
+
+
+class AveaBusinessPerformancePromotionProductLine(models.TransientModel):
+    _name = "avea.business.performance.promotion.product.line"
+    _description = "Business Performance Promotion Product"
+    _order = "quantity desc, discount_given desc, id"
+
+    dashboard_id = fields.Many2one(
+        "avea.business.performance",
+        string="Performance",
+        required=True,
+        ondelete="cascade",
+    )
+    currency_id = fields.Many2one(related="dashboard_id.currency_id")
+    promotion_id = fields.Many2one("avea.promotion", readonly=True)
+    promotion_name = fields.Char(string="Promotion", readonly=True)
+    product_id = fields.Many2one("product.product", readonly=True)
+    product_display = fields.Char(string="Product", readonly=True)
+    deal_type_label = fields.Char(string="Type", readonly=True)
+    quantity = fields.Float(string="Qty", digits="Product Unit", readonly=True)
+    discount_given = fields.Monetary(
+        string="Discount",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    discount_display = fields.Char(string="Discount / type", readonly=True)
+    sales_ex_tax = fields.Monetary(
+        string="Sales",
+        currency_field="currency_id",
+        readonly=True,
+    )
+
+
 class AveaBusinessPerformance(models.TransientModel):
     _name = "avea.business.performance"
     _description = "Business Performance"
@@ -233,6 +295,31 @@ class AveaBusinessPerformance(models.TransientModel):
         compute="_compute_platform_reporting",
         currency_field="currency_id",
     )
+    promotion_line_ids = fields.One2many(
+        "avea.business.performance.promotion.line",
+        "dashboard_id",
+        string="Promotions",
+        readonly=True,
+    )
+    promotion_product_line_ids = fields.One2many(
+        "avea.business.performance.promotion.product.line",
+        "dashboard_id",
+        string="Promotion products",
+        readonly=True,
+    )
+    show_promotions = fields.Boolean(compute="_compute_promotion_reporting")
+    promo_ticket_count = fields.Integer(readonly=True)
+    promo_unit_count = fields.Float(digits="Product Unit", readonly=True)
+    promo_discount = fields.Monetary(
+        string="Promo discount",
+        currency_field="currency_id",
+        readonly=True,
+    )
+    promo_sales_ex_tax = fields.Monetary(
+        string="Promo sales",
+        currency_field="currency_id",
+        readonly=True,
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -275,6 +362,13 @@ class AveaBusinessPerformance(models.TransientModel):
             dashboard.platform_gross_profit = sum(lines.mapped("gross_profit"))
             dashboard.platform_commission = sum(lines.mapped("commission"))
             dashboard.platform_contribution = sum(lines.mapped("contribution"))
+
+    @api.depends("promotion_line_ids", "promotion_product_line_ids")
+    def _compute_promotion_reporting(self):
+        for dashboard in self:
+            dashboard.show_promotions = bool(
+                dashboard.promotion_line_ids or dashboard.promotion_product_line_ids
+            )
 
     def _currency_delta_display(self, delta):
         currency = self.env.company.currency_id
@@ -468,6 +562,56 @@ class AveaBusinessPerformance(models.TransientModel):
                     rows.append(vals)
             if rows:
                 Line.create(rows)
-            windows = dashboard._period_windows(dashboard.period or PERIOD_TODAY)
-            orders = dashboard._paid_orders_between(*windows["data_current"])
             dashboard._reporting_populate_platform_lines(dashboard, orders)
+            dashboard._populate_promotions(orders)
+
+    def _populate_promotions(self, orders):
+        self.ensure_one()
+        PromoLine = self.env["avea.business.performance.promotion.line"]
+        ProductLine = self.env["avea.business.performance.promotion.product.line"]
+        PromoLine.search([("dashboard_id", "=", self.id)]).unlink()
+        ProductLine.search([("dashboard_id", "=", self.id)]).unlink()
+        analysis = self.env["pos.order.line"]._avea_promotion_analysis(orders)
+        summary = analysis["summary"]
+        self.write(
+            {
+                "promo_ticket_count": summary["order_count"],
+                "promo_unit_count": summary["unit_count"],
+                "promo_discount": summary["discount_given"],
+                "promo_sales_ex_tax": summary["sales_ex_tax"],
+            }
+        )
+        promo_rows = [
+            {
+                "dashboard_id": self.id,
+                "promotion_id": row["promotion_id"] or False,
+                "name": row["name"],
+                "deal_summary": row["deal_summary"],
+                "deal_type_label": row["deal_type_label"],
+                "order_count": row["order_count"],
+                "quantity": row["quantity"],
+                "discount_given": row["discount_given"],
+                "discount_display": row["discount_display"],
+                "sales_ex_tax": row["sales_ex_tax"],
+            }
+            for row in analysis["promotions"]
+        ]
+        if promo_rows:
+            PromoLine.create(promo_rows)
+        product_rows = [
+            {
+                "dashboard_id": self.id,
+                "promotion_id": row["promotion_id"] or False,
+                "promotion_name": row["promotion_name"],
+                "product_id": row["product_id"] or False,
+                "product_display": row["product_display"],
+                "deal_type_label": row["deal_type_label"],
+                "quantity": row["quantity"],
+                "discount_given": row["discount_given"],
+                "discount_display": row["discount_display"],
+                "sales_ex_tax": row["sales_ex_tax"],
+            }
+            for row in analysis["products"]
+        ]
+        if product_rows:
+            ProductLine.create(product_rows)

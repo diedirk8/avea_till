@@ -13,6 +13,7 @@ from . import test_product_label_print
 from . import test_stock_take
 from . import test_sales_ledger
 from . import test_business_performance
+from . import test_business_performance_promotions
 from . import test_performance_profit_cogs
 from . import test_business_reporting_financials
 from . import test_financial_drilldown
