@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="avea_web_layout" inherit_id="web.layout">
+        <xpath expr="//title" position="replace">
+            <title t-esc="title or 'Avea'"/>
+        </xpath>
+        <xpath expr="//link[@rel='shortcut icon']" position="attributes">
+            <attribute name="t-att-href">x_icon or '/avea_till/static/description/icon.png'</attribute>
+            <attribute name="type">image/png</attribute>
+        </xpath>
+    </template>
+
+    <template id="avea_login_layout" inherit_id="web.login_layout">
+        <xpath expr="//a[contains(@href, 'www.odoo.com')]" position="replace">
+            <span class="o_avea_login_brand">Avea</span>
+        </xpath>
+    </template>
+
+    <template id="avea_brand_promotion_message" inherit_id="web.brand_promotion_message">
+        <xpath expr="//t[@t-set='odoo_logo']" position="replace">
+            <t t-set="odoo_logo">
+                <span class="badge text-bg-light">Avea</span>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>

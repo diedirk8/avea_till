@@ -23,17 +23,22 @@ class AveaStockReturnLine(models.TransientModel):
     product_id = fields.Many2one(
         "product.product",
         string="Product",
-        required=True,
+        compute="_compute_product_id",
+        store=True,
         readonly=True,
     )
     qty_received = fields.Float(
         string="Received",
         digits="Product Unit",
+        compute="_compute_return_qty_from_move",
+        store=True,
         readonly=True,
     )
     qty_available = fields.Float(
         string="Available to return",
         digits="Product Unit",
+        compute="_compute_return_qty_from_move",
+        store=True,
         readonly=True,
     )
     quantity = fields.Float(
@@ -43,6 +48,30 @@ class AveaStockReturnLine(models.TransientModel):
         default=0.0,
     )
     currency_id = fields.Many2one(related="return_id.currency_id")
+
+    @api.depends("move_id", "move_id.product_id")
+    def _compute_product_id(self):
+        for line in self:
+            line.product_id = line.move_id.product_id
+
+    @api.depends(
+        "move_id",
+        "move_id.quantity",
+        "move_id.state",
+        "move_id.move_dest_ids.quantity",
+        "move_id.move_dest_ids.state",
+        "move_id.move_dest_ids.origin_returned_move_id",
+    )
+    def _compute_return_qty_from_move(self):
+        Return = self.env["avea.stock.return"]
+        for line in self:
+            move = line.move_id
+            if not move or move.state != "done":
+                line.qty_received = 0.0
+                line.qty_available = 0.0
+                continue
+            line.qty_received = move.quantity
+            line.qty_available = Return._avea_qty_available_to_return(move)
 
 
 class AveaStockReturn(models.TransientModel):
@@ -61,6 +90,15 @@ class AveaStockReturn(models.TransientModel):
         string="Currency",
         required=True,
         default=lambda self: self.env.company.currency_id,
+    )
+    lookup_invoice_number = fields.Char(
+        string="Supplier invoice number",
+        help="Type the invoice number from the supplier and click Find receipt.",
+    )
+    lookup_partner_id = fields.Many2one(
+        "res.partner",
+        string="Supplier (optional)",
+        help="Narrow the search when several suppliers use similar invoice numbers.",
     )
     picking_id = fields.Many2one(
         "stock.picking",
@@ -108,6 +146,27 @@ class AveaStockReturn(models.TransientModel):
             order = picking.move_ids.purchase_line_id.order_id[:1]
             wizard.invoice_number = order.partner_ref or picking.origin or picking.name
 
+    def action_find_receipt_by_invoice(self):
+        self.ensure_one()
+        if not (self.lookup_invoice_number or "").strip():
+            raise ValidationError(_("Enter the supplier invoice number to search."))
+        picking = self.env["stock.picking"]._avea_find_receipt_for_return(
+            self.lookup_invoice_number,
+            partner=self.lookup_partner_id,
+            company=self.company_id,
+        )
+        if not picking:
+            raise ValidationError(
+                _(
+                    "No received stock was found for invoice “%(invoice)s”. "
+                    "Check the number or pick the receipt from the list.",
+                    invoice=self.lookup_invoice_number.strip(),
+                )
+            )
+        self.picking_id = picking
+        self._onchange_picking_id()
+        return False
+
     @api.onchange("picking_id")
     def _onchange_picking_id(self):
         self.line_ids = [Command.clear()]
@@ -123,8 +182,6 @@ class AveaStockReturn(models.TransientModel):
                     {
                         "move_id": move.id,
                         "product_id": move.product_id.id,
-                        "qty_received": move.quantity,
-                        "qty_available": available,
                         "quantity": 0.0,
                     }
                 )
@@ -143,8 +200,7 @@ class AveaStockReturn(models.TransientModel):
         return move.product_uom.round(quantity)
 
     @api.model
-    def action_open_return(self):
-        wizard = self.create({})
+    def _avea_return_form_action(self, wizard):
         view_id = self.env.ref("avea_till.view_avea_stock_return_form").id
         return {
             "type": "ir.actions.act_window",
@@ -158,31 +214,105 @@ class AveaStockReturn(models.TransientModel):
             "context": {"clear_breadcrumbs": True},
         }
 
+    @api.model
+    def action_open_return(self):
+        wizard = self.create({})
+        return self._avea_return_form_action(wizard)
+
+    @api.model
+    def action_open_return_for_picking(self, picking):
+        wizard = self.create(
+            {
+                "picking_id": picking.id,
+                "company_id": picking.company_id.id,
+                "return_date": fields.Date.context_today(self),
+            }
+        )
+        wizard._onchange_picking_id()
+        return self._avea_return_form_action(wizard)
+
     def action_open_receive(self):
         return self.env["avea.stock.receive"].action_open_receive()
 
     def action_return_stock(self):
         self.ensure_one()
+        self._avea_sync_return_lines_from_picking()
         lines = self._avea_return_lines()
         return_picking = self._avea_create_return_picking(lines)
         self._avea_complete_picking(return_picking, date_done=self.return_date)
         credit = self._avea_create_supplier_credit(lines)
+        self._avea_create_return_history(lines, return_picking, credit)
         return self._avea_success(return_picking, credit)
+
+    def _avea_create_return_history(self, lines, return_picking, credit):
+        self.ensure_one()
+        self.env["avea.stock.return.history"].sudo().create(
+            {
+                "company_id": self.company_id.id,
+                "currency_id": self.currency_id.id,
+                "user_id": self.env.user.id,
+                "partner_id": (self.partner_id or self.picking_id.partner_id).id,
+                "receipt_picking_id": self.picking_id.id,
+                "return_picking_id": return_picking.id,
+                "credit_id": credit.id if credit else False,
+                "invoice_number": self.invoice_number,
+                "return_date": self.return_date,
+                "line_ids": [
+                    Command.create(
+                        {
+                            "product_id": line.product_id.id,
+                            "quantity": line.quantity,
+                            "move_id": line.move_id.id,
+                        }
+                    )
+                    for line in lines
+                ],
+            }
+        )
+
+    def _avea_sync_return_lines_from_picking(self):
+        """Keep user quantities but ensure every line is tied to a move (and product)."""
+        self.ensure_one()
+        if not self.picking_id:
+            return
+        qty_by_move = {
+            line.move_id.id: line.quantity
+            for line in self.line_ids
+            if line.move_id
+        }
+        valid_move_ids = set(
+            self.picking_id.move_ids.filtered(lambda move: move.state == "done").ids
+        )
+        if not valid_move_ids:
+            return
+        if any(
+            line.move_id and line.move_id.id not in valid_move_ids for line in self.line_ids
+        ):
+            self._onchange_picking_id()
+            for line in self.line_ids:
+                if line.move_id.id in qty_by_move:
+                    line.quantity = qty_by_move[line.move_id.id]
+            return
+        for line in self.line_ids.filtered(lambda ln: ln.move_id and not ln.product_id):
+            line.product_id = line.move_id.product_id
 
     def _avea_return_lines(self):
         self.ensure_one()
         if not self.picking_id:
             raise ValidationError(_("Choose the receipt to return."))
-        lines = self.line_ids.filtered(lambda line: line.quantity > 0)
+        lines = self.line_ids.filtered(
+            lambda line: line.move_id and line.product_id and line.quantity > 0
+        )
         if not lines:
             raise ValidationError(_("Enter the quantity to return for at least one product."))
         for line in lines:
             rounding = line.move_id.product_uom.rounding
-            if float_compare(line.quantity, line.qty_available, precision_rounding=rounding) > 0:
+            available = self._avea_qty_available_to_return(line.move_id)
+            if float_compare(line.quantity, available, precision_rounding=rounding) > 0:
                 raise ValidationError(
                     _(
                         "You can return at most %(available)s of %(product)s.",
-                        available=line.qty_available,
+                        available=available,
                         product=line.product_id.display_name,
                     )
                 )

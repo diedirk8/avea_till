@@ -1,0 +1,367 @@
+// Accounts — Avea money workspace
+
+.o_form_view.o_avea_workspace--account,
+.o_list_view.o_avea_workspace--account,
+.o_avea_workspace--account {
+    --avea-brand: #0f766e;
+    --avea-brand-hover: #115e59;
+    --avea-brand-soft: rgba(15, 118, 110, 0.12);
+    --avea-brand-border: rgba(15, 118, 110, 0.35);
+    --avea-brand-focus: rgba(15, 118, 110, 0.22);
+    --bs-primary: var(--avea-brand);
+    --bs-primary-rgb: 15, 118, 110;
+    --bs-link-color: var(--avea-brand);
+    --bs-link-hover-color: var(--avea-brand-hover);
+}
+
+.o_form_view.o_avea_workspace--account,
+.o_avea_workspace--account {
+    .o_control_panel,
+    .o_form_statusbar,
+    header {
+        display: none !important;
+    }
+
+    .o_form_sheet_bg {
+        background: var(--o-webclient-background-color, #f4f5f7);
+    }
+
+    .o_avea_workspace_sheet {
+        height: auto;
+        margin: 0;
+        max-width: none;
+        overflow: visible;
+        padding-top: 1.15rem;
+        padding-bottom: 3rem;
+    }
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand) !important;
+    }
+
+    .o_avea_account_hero {
+        align-items: stretch;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_account_hero_top {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.25rem;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .o_avea_account_hero_top .o_avea_workspace_hero_intro {
+        flex: 1 1 18rem;
+        margin-bottom: 0;
+        min-width: 0;
+    }
+
+    .o_avea_account_hero .o_avea_workspace_hero_stats {
+        flex: 1 1 16rem;
+        margin-top: 0.15rem;
+        min-width: 0;
+    }
+
+    .o_avea_workspace_section_subtitle {
+        max-width: 42rem;
+    }
+
+    .o_avea_account_name_title input {
+        font-size: inherit;
+        font-weight: inherit;
+    }
+
+    .o_avea_workspace_title {
+        align-items: baseline;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem 0.75rem;
+    }
+
+    .o_avea_account_code_badge {
+        background: var(--avea-brand-soft);
+        border: 1px solid var(--avea-brand-border);
+        border-radius: 0.45rem;
+        color: var(--avea-brand);
+        display: inline-flex;
+        flex-shrink: 0;
+        font-family: var(
+            --o-font-family-monospace,
+            ui-monospace,
+            SFMono-Regular,
+            Menlo,
+            Monaco,
+            Consolas,
+            monospace
+        );
+        font-size: 0.82rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        line-height: 1.35;
+        padding: 0.15rem 0.55rem;
+    }
+
+    .o_avea_account_code_badge_value {
+        width: auto;
+    }
+
+    .o_avea_account_code_hint {
+        color: var(--o-gray-600, #6c757d);
+        display: block;
+        font-size: 0.82rem;
+        line-height: 1.45;
+        margin-top: 0.35rem;
+        max-width: 28rem;
+    }
+
+    .o_avea_account_name_title .o_field_input_buttons {
+        display: none !important;
+    }
+
+    .btn-primary,
+    .btn.btn-primary,
+    .o_form_button_save {
+        --bs-btn-bg: var(--avea-brand);
+        --bs-btn-border-color: var(--avea-brand);
+        --bs-btn-hover-bg: var(--avea-brand-hover);
+        --bs-btn-hover-border-color: var(--avea-brand-hover);
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+        font-weight: 700;
+    }
+
+    .btn-secondary {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        color: var(--o-gray-800, #343a40);
+        font-weight: 600;
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--avea-brand);
+        box-shadow: 0 0 0 0.2rem var(--avea-brand-focus);
+    }
+
+    .o_field_widget.o_field_boolean_toggle .form-check-input:checked {
+        background-color: var(--avea-brand);
+        border-color: var(--avea-brand);
+    }
+}
+
+.o_avea_account_hero_actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    justify-content: space-between;
+
+    .btn {
+        min-height: 2.45rem;
+        min-width: 7.5rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+.o_avea_account_hero_actions_tools,
+.o_avea_account_hero_actions_save {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.o_avea_account_hero_actions_save {
+    margin-left: auto;
+}
+
+.o_avea_account_workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.o_avea_account_panel {
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+}
+
+.o_avea_account_panel_hint {
+    color: var(--o-gray-600, #6c757d);
+    font-size: 0.9rem;
+    margin: 0 0 1rem;
+    max-width: 42rem;
+}
+
+.o_avea_account_fields {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.o_avea_account_field--wide {
+    grid-column: 1 / -1;
+}
+
+.o_avea_account_list_shell {
+    margin: 0;
+    max-width: none;
+    width: 100%;
+}
+
+.o_list_view.o_avea_workspace--account-list,
+.o_list_view.o_avea_workspace--account-activity {
+    .o_control_panel {
+        display: none !important;
+    }
+}
+
+.o_avea_workspace--account-list,
+.o_avea_workspace--account-activity {
+    background-color: var(--o-webclient-background-color, #f4f5f7);
+    flex: 0 0 auto !important;
+    height: auto !important;
+    min-height: 0;
+    min-width: 0;
+    padding: 1.25rem 1.5rem 2rem;
+
+    .o_avea_account_list_sheet {
+        padding: 0;
+        width: 100%;
+    }
+
+    .o_avea_account_list_hero {
+        align-items: flex-start;
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-bottom: none;
+        border-radius: 0.75rem 0.75rem 0 0;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: space-between;
+        margin: 0;
+        padding: 1.25rem 1.35rem 1rem;
+    }
+
+    .o_avea_account_list_actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-left: auto;
+    }
+
+    .o_avea_account_list_search {
+        margin-top: 0.85rem;
+        max-width: 28rem;
+    }
+
+    .o_avea_account_list_search_input {
+        min-height: 2.35rem;
+    }
+
+    .o_avea_account_filters {
+        margin-top: 0.85rem;
+    }
+
+    > .o_content {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0;
+        border-top: none;
+        flex: 0 0 auto !important;
+        height: auto !important;
+        margin: 0;
+        min-height: 0 !important;
+        overflow-x: auto;
+        overflow-y: visible;
+        padding: 0 !important;
+        width: 100%;
+
+        .o_list_renderer {
+            border: none;
+            height: auto !important;
+            margin: 0;
+            min-height: 0 !important;
+        }
+    }
+
+    .o_list_table {
+        thead th {
+            background: var(--o-gray-100, #f8f9fa);
+            color: var(--o-gray-600, #6c757d);
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .o_data_row {
+            cursor: pointer;
+        }
+
+        td[name="avea_ytd_amount"],
+        th[data-name="avea_ytd_amount"],
+        td[name="avea_signed_amount"],
+        th[data-name="avea_signed_amount"] {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+    }
+
+    .o_avea_account_list_footer {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .o_avea_account_pager {
+        background: #fff;
+        border: 1px solid var(--o-gray-300, #dee2e6);
+        border-radius: 0 0 0.75rem 0.75rem;
+        border-top: 1px solid var(--o-gray-200, #e9ecef);
+        display: flex;
+        justify-content: flex-end;
+        margin: 0;
+        padding: 0.65rem 1rem 0.75rem;
+        width: 100%;
+    }
+}
+
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-list),
+body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--account .o_avea_account_hero) {
+    height: calc(100vh - var(--avea-topbar-height));
+    max-height: calc(100vh - var(--avea-topbar-height));
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+
+    .o_action,
+    .o_content,
+    .o_view_controller,
+    .o_list_view.o_avea_workspace--account-list,
+    .o_form_view.o_avea_workspace--account,
+    .o_form_view.o_avea_workspace--account .o_form_sheet_bg,
+    .o_form_view.o_avea_workspace--account .o_avea_workspace_sheet {
+        display: block !important;
+        flex: none !important;
+        height: auto !important;
+        max-height: none !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        min-width: 0 !important;
+        overflow: visible !important;
+        width: 100% !important;
+    }
+}
+
+.o_avea_account_table .o_data_row {
+    cursor: pointer;
+}

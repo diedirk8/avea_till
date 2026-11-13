@@ -1,0 +1,310 @@
+# -*- coding: utf-8 -*-
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
+
+from odoo.addons.avea_till.models.stock.supplier_invoice_reader import (
+    AveaSupplierInvoiceReader,
+)
+
+
+COLUMN = """
+Tax Invoice INV-532070
+October 26, 2026
+Unit Price Excl.
+VAT
+PFD-RC-CA-0000000160
+RC-Mini Puppy 2kg
+(165020)
+624A1RCA22
+2027-12-07
+1
+250.25
+0.00
+PFD-RC-CA-0000000220
+RC-Mini Adult 2kg
+(10403310)
+622B1RCA10
+2027-11-23
+2
+249.96
+0.00
+15
+15
+Subtotal
+15% VAT
+250.25
+499.92
+750.17
+Total Amount Incl VAT
+1,350.61
+"""
+
+INCLUSIVE = """
+Tax Invoice INV100
+Invoice date: 28/10/2026
+Prices include VAT
+2 Zzqx Phantom Pellet 9kg 115.00 230.00
+"""
+
+EXCLUSIVE = """
+Supplier Invoice INV200
+Date: 2026-10-28
+Prices exclude VAT
+PE-ABC123 Avea Invoice Match Kibble 2 50.00 100.00
+Unknown Grooming Brush 1 30.00 30.00
+VAT 15% 19.50
+Total 149.50
+"""
+
+FEEDER_387 = """
+Invoice
+
+Invoice Number 387
+
+Date
+29 Oct 2026
+
+Due Date
+29 Oct 2026
+
+To
+Pets Empire
+
+From
+The Feeder Co
+
+Item
+
+Quantity
+
+Crickets - Small - 500ml - WS
+
+Mealworms - 1kg - WS
+
+Frozen Mice - Pinkies - 10 - WS
+
+Frozen Mice - Fuzzies - 10 - WS
+
+Shipping - STK5 - NT
+
+Bank Account
+Bank: First National Bank
+
+1
+
+1
+
+3
+
+3
+
+1
+
+Price
+
+R 20,00
+
+R 390,00
+
+R 99,00
+
+R 117,00
+
+R 180,00
+
+Amount
+
+R 20,00
+
+R 390,00
+
+R 297,00
+
+R 351,00
+
+R 180,00
+
+Total
+
+R 1 238,00
+"""
+
+
+@tagged("post_install", "-at_install", "avea_invoice_read")
+class TestSupplierInvoiceRead(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.product = cls.env["product.product"].create(
+            {
+                "name": "Avea Invoice Match Kibble",
+                "default_code": "PE-ABC123",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+                "sale_ok": True,
+                "list_price": 80.0,
+                "standard_price": 40.0,
+            }
+        )
+
+    def test_stacked_columns_like_feeder_co(self):
+        parsed = AveaSupplierInvoiceReader.parse_text(FEEDER_387)
+        self.assertEqual(parsed["invoice_number"], "387")
+        self.assertEqual(str(parsed["invoice_date"]), "2026-10-29")
+        self.assertEqual(len(parsed["lines"]), 5)
+        self.assertEqual(parsed["lines"][0]["description"], "Crickets - Small - 500ml - WS")
+        self.assertEqual(parsed["lines"][0]["quantity"], 1.0)
+        self.assertEqual(parsed["lines"][0]["unit_price"], 20.0)
+        self.assertEqual(parsed["lines"][2]["quantity"], 3.0)
+        self.assertEqual(parsed["lines"][2]["unit_price"], 99.0)
+        self.assertEqual(parsed["lines"][-1]["description"], "Shipping - STK5 - NT")
+
+    def test_column_invoice_like_biofarm(self):
+        parsed = AveaSupplierInvoiceReader.parse_text(COLUMN)
+        self.assertEqual(parsed["vat_mode"], "exclusive")
+        self.assertEqual(parsed["invoice_number"], "INV-532070")
+        self.assertEqual(str(parsed["invoice_date"]), "2026-10-26")
+        self.assertEqual(len(parsed["lines"]), 2)
+        self.assertEqual(parsed["lines"][0]["description"], "RC-Mini Puppy 2kg (165020)")
+        self.assertEqual(parsed["lines"][0]["quantity"], 1.0)
+        self.assertEqual(parsed["lines"][0]["unit_price"], 250.25)
+        self.assertIn("PFD-RC-CA-0000000160", parsed["lines"][0]["codes"])
+        self.assertEqual(parsed["lines"][1]["quantity"], 2.0)
+        self.assertEqual(parsed["lines"][1]["unit_price"], 249.96)
+        self.assertAlmostEqual(parsed["subtotal"], 750.17, places=2)
+
+    def test_parse_vat_and_skip_totals(self):
+        parsed = AveaSupplierInvoiceReader.parse_text(EXCLUSIVE)
+        self.assertEqual(parsed["vat_mode"], "exclusive")
+        self.assertEqual(parsed["invoice_number"], "INV200")
+        self.assertEqual(len(parsed["lines"]), 2)
+        self.assertEqual(parsed["lines"][0]["codes"], ["PE-ABC123"])
+        self.assertEqual(parsed["lines"][0]["quantity"], 2.0)
+        self.assertEqual(parsed["lines"][0]["unit_price"], 50.0)
+        self.assertNotIn("vat", parsed["lines"][1]["description"].lower())
+
+    def test_inclusive_prices_become_ex_tax(self):
+        parsed = AveaSupplierInvoiceReader.parse_text(INCLUSIVE)
+        self.assertEqual(parsed["vat_mode"], "inclusive")
+        receive = self.env["avea.stock.receive"].create({})
+        receive._avea_apply_invoice_reading(parsed)
+        self.assertFalse(receive.line_ids)
+        self.assertEqual(len(receive.unmatched_line_ids), 1)
+        self.assertAlmostEqual(receive.unmatched_line_ids.price_unit, 100.0, places=2)
+
+    def test_sku_match_and_unknown_line(self):
+        parsed = AveaSupplierInvoiceReader.parse_text(EXCLUSIVE)
+        receive = self.env["avea.stock.receive"].create({})
+        receive._avea_apply_invoice_reading(parsed)
+        self.assertEqual(receive.line_ids.product_id, self.product)
+        self.assertEqual(receive.line_ids.quantity, 2.0)
+        self.assertEqual(receive.line_ids.price_unit, 50.0)
+        self.assertEqual(len(receive.unmatched_line_ids), 1)
+        self.assertIn("Brush", receive.unmatched_line_ids.description)
+        self.assertIn("Matched 1.", receive.invoice_read_summary)
+        self.assertIn("Not found 1.", receive.invoice_read_summary)
+
+    def test_read_uploaded_text_invoice(self):
+        receive = self.env["avea.stock.receive"].create({})
+        receive.write(
+            {
+                "invoice_document_filename": "invoice.txt",
+                "invoice_document": __import__("base64")
+                .b64encode(EXCLUSIVE.encode())
+                .decode(),
+            }
+        )
+        receive.action_read_supplier_invoice()
+        self.assertEqual(receive.invoice_number, "INV200")
+        self.assertEqual(receive.line_ids.product_id, self.product)
+        self.assertTrue(receive.unmatched_line_ids)
+
+    def test_same_size_wins_and_different_pack_is_only_suggested(self):
+        adult = self.env["product.product"].create(
+            {
+                "name": "Zzqx Mini Adult 2kg",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+            }
+        )
+        self.env["product.product"].create(
+            {
+                "name": "Zzqx Mini Adult 8kg",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+            }
+        )
+        pouch = self.env["product.product"].create(
+            {
+                "name": "Zzqx Puppy Wet Pouch 85g",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+            }
+        )
+        receive = self.env["avea.stock.receive"].create({})
+        product, suggestion, code = receive._avea_match_invoice_product(
+            "Zzqx Mini Adult 2kg (10403310)",
+            ["PFD-RC-CA-0000000220", "10403310"],
+            None,
+        )
+        self.assertEqual(product, adult)
+        self.assertFalse(suggestion)
+        self.assertEqual(code, "PFD-RC-CA-0000000220")
+        product, suggestion, _code = receive._avea_match_invoice_product(
+            "Zzqx Puppy Wet Pouch 12 x 85 g",
+            [],
+            None,
+        )
+        self.assertFalse(product)
+        self.assertEqual(suggestion, pouch)
+
+    def test_adding_a_line_stores_the_supplier_code(self):
+        partner = self.env["res.partner"].create(
+            {"name": "Avea Invoice Supplier", "supplier_rank": 1}
+        )
+        product = self.env["product.product"].create(
+            {
+                "name": "Avea Invoice Code Product",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+            }
+        )
+        receive = self.env["avea.stock.receive"].create({"partner_id": partner.id})
+        unmatched = self.env["avea.stock.receive.unmatched"].create(
+            {
+                "receive_id": receive.id,
+                "description": "Something 2kg",
+                "quantity": 1,
+                "price_unit": 10,
+                "supplier_code": "PFD-RC-CA-0000000999",
+                "product_id": product.id,
+            }
+        )
+        unmatched.action_add_to_receive()
+        self.assertEqual(product.product_tmpl_id.avea_supplier_id, partner)
+        self.assertEqual(product.product_tmpl_id.avea_supplier_code, "PFD-RC-CA-0000000999")
+        self.assertEqual(receive.line_ids.product_id, product)
+
+    def test_refuses_to_replace_existing_lines(self):
+        receive = self.env["avea.stock.receive"].create(
+            {
+                "line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 10,
+                        },
+                    )
+                ]
+            }
+        )
+        with self.assertRaises(Exception):
+            receive.action_read_supplier_invoice()

@@ -1,0 +1,22 @@
+// Shelf labels printed from 80mm receipt stock on product label wizard (HTML print path).
+
+@media print {
+    @page {
+        size: 80mm auto;
+        margin: 0;
+    }
+
+    html,
+    body {
+        width: 80mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .header,
+    .footer,
+    .o_report_layout .header,
+    .o_report_layout .footer {
+        display: none !important;
+    }
+}

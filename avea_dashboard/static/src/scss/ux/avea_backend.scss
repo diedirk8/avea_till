@@ -1,0 +1,103 @@
+/* Avea backend chrome (asset bundle rev 129 — bust caches after Sass fix) */
+
+:root {
+    --avea-brand: #c45c26;
+    --avea-brand-soft: rgba(196, 92, 38, 0.12);
+    --avea-header-border: #e8eaed;
+    --avea-header-text: #1f2937;
+}
+
+.o_avea_login_brand {
+    color: var(--avea-brand);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.o_database_list .card-body .border-bottom {
+    border-color: var(--avea-header-border) !important;
+}
+
+// Odoo confirmation/alert dialogs (portal on <body>, not inside workspace forms)
+.o_dialog .modal-footer .btn-primary,
+.o_dialog footer .btn-primary,
+.o_dialog .modal-footer .btn.btn-primary,
+.o_dialog footer .btn.btn-primary {
+    --bs-btn-bg: var(--avea-brand);
+    --bs-btn-border-color: var(--avea-brand);
+    --bs-btn-hover-bg: #a84d1f;
+    --bs-btn-hover-border-color: #a84d1f;
+    --bs-btn-active-bg: #a84d1f;
+    --bs-btn-active-border-color: #a84d1f;
+    background-color: var(--avea-brand) !important;
+    border-color: var(--avea-brand) !important;
+    color: #fff !important;
+
+    &:hover,
+    &:focus,
+    &:active {
+        background-color: #a84d1f !important;
+        border-color: #a84d1f !important;
+        color: #fff !important;
+    }
+}
+
+// Odoo RPC badge (bottom-right) and shared inline loading hints.
+@keyframes o_avea_loading_spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@mixin o_avea_loading_spinner($size: 0.875rem) {
+    animation: o_avea_loading_spin 0.65s linear infinite;
+    border: 2px solid var(--avea-brand-soft, rgba(196, 92, 38, 0.12));
+    border-radius: 50%;
+    border-top-color: var(--avea-brand, #c45c26);
+    content: "";
+    flex-shrink: 0;
+    height: $size;
+    width: $size;
+}
+
+.o_loading_indicator {
+    align-items: center;
+    background: #fff;
+    border: 1px solid var(--avea-header-border, #e8eaed);
+    border-radius: 0.5rem;
+    bottom: 1.15rem;
+    box-shadow: 0 8px 22px rgba(16, 24, 40, 0.1);
+    color: var(--avea-header-text, #1f2937);
+    display: inline-flex;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    gap: 0.5rem;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    padding: 0.5rem 0.85rem;
+    right: 1.15rem;
+
+    &::before {
+        @include o_avea_loading_spinner;
+    }
+}
+
+.o_avea_loading_hint {
+    align-items: center;
+    color: var(--o-gray-600, #6c757d);
+    display: flex;
+    font-size: 0.875rem;
+    font-weight: 500;
+    gap: 0.55rem;
+    justify-content: center;
+    padding: 1.25rem 0.75rem;
+    text-align: center;
+
+    &::before {
+        @include o_avea_loading_spinner(1rem);
+    }
+}
+
+.o_blockUI:not(.o_blockUI_invisible) {
+    backdrop-filter: blur(3px);
+    background: rgba(31, 41, 55, 0.42);
+}

@@ -9,10 +9,42 @@ import { patch } from "@web/core/utils/patch";
 import { ViewButton } from "@web/views/view_button/view_button";
 
 const PRICING_BUTTON = "action_open_pricing_wizard";
+const ADD_UNMATCHED_BUTTON = "action_add_to_receive";
+
+let _aveaReceiveButtonBusy = false;
 
 function _aveaReceiveRoot(record) {
     const root = record?.model?.root;
     return root?.resModel === "avea.stock.receive" ? root : null;
+}
+
+/** Odoo 19 many2one values are {id, display_name}. Older data used [id, name]. */
+function _aveaM2oId(value) {
+    if (!value) {
+        return null;
+    }
+    if (Array.isArray(value)) {
+        return value[0] || null;
+    }
+    if (typeof value === "number") {
+        return value;
+    }
+    return value.id || null;
+}
+
+function _aveaSameCost(left, right) {
+    return Math.abs((left || 0) - (right || 0)) < 0.00005;
+}
+
+function _aveaNotify(env, message) {
+    env.services.notification?.add(message, { type: "danger" });
+}
+
+async function _aveaSaveReceive(root, lineRecord) {
+    if (!root.resId || lineRecord?.isNew || (await root.isDirty())) {
+        return Boolean(await root.save());
+    }
+    return true;
 }
 
 function _aveaFindReceiveLine(root, productId, priceUnit) {
@@ -21,14 +53,14 @@ function _aveaFindReceiveLine(root, productId, priceUnit) {
         return null;
     }
     const matches = lines.filter(
-        (line) => line.data?.product_id?.[0] === productId
+        (line) => _aveaM2oId(line.data?.product_id) === productId
     );
     if (!matches.length) {
         return null;
     }
     if (typeof priceUnit === "number") {
-        const exact = matches.find(
-            (line) => Math.abs((line.data.price_unit || 0) - priceUnit) < 0.00005
+        const exact = matches.find((line) =>
+            _aveaSameCost(line.data.price_unit, priceUnit)
         );
         if (exact?.resId) {
             return exact;
@@ -37,62 +69,146 @@ function _aveaFindReceiveLine(root, productId, priceUnit) {
     return matches.find((line) => line.resId) || matches[matches.length - 1];
 }
 
+function _aveaFindUnmatchedLine(root, snapshot) {
+    let matches = (root.data?.unmatched_line_ids?.records || []).filter(
+        (line) => (line.data?.description || "") === snapshot.description
+    );
+    if (!matches.length) {
+        return null;
+    }
+    if (typeof snapshot.priceUnit === "number") {
+        const priced = matches.filter((line) =>
+            _aveaSameCost(line.data.price_unit, snapshot.priceUnit)
+        );
+        if (priced.length) {
+            matches = priced;
+        }
+    }
+    if (snapshot.productId) {
+        const withProduct = matches.filter(
+            (line) => _aveaM2oId(line.data?.product_id) === snapshot.productId
+        );
+        if (withProduct.length) {
+            matches = withProduct;
+        }
+    }
+    return matches.find((line) => line.resId) || null;
+}
+
 async function _aveaOpenPricingWizard(env, lineRecord) {
     const root = _aveaReceiveRoot(lineRecord);
-    if (!root) {
+    if (!root || _aveaReceiveButtonBusy) {
         return false;
     }
-    const orm = env.services.orm;
-    const actionService = env.services.action;
-    const data = lineRecord.data || {};
-    const productId = data.product_id?.[0];
-    const priceUnit = data.price_unit;
-    if (!productId) {
+    _aveaReceiveButtonBusy = true;
+    try {
+        if (typeof root.isDirty === "function") {
+            await root.isDirty();
+        }
+        const data = lineRecord.data || {};
+        const productId = _aveaM2oId(data.product_id);
+        const priceUnit = data.price_unit;
+        if (!productId) {
+            _aveaNotify(env, "Choose a product first.");
+            return false;
+        }
+        if (!(await _aveaSaveReceive(root, lineRecord))) {
+            return false;
+        }
+        await root.load();
+        const persisted = _aveaFindReceiveLine(root, productId, priceUnit);
+        if (!persisted?.resId) {
+            _aveaNotify(env, "Could not open pricing for this line. Try again.");
+            return false;
+        }
+        const action = await env.services.orm.call(
+            "avea.stock.receive.line",
+            PRICING_BUTTON,
+            [[persisted.resId]]
+        );
+        if (!action) {
+            return false;
+        }
+        await env.services.action.doAction(action, {
+            onClose: async () => {
+                try {
+                    await root.load();
+                } catch (_e) {
+                    // ignore reload errors after dialog close
+                }
+            },
+        });
+        return true;
+    } finally {
+        _aveaReceiveButtonBusy = false;
+    }
+}
+
+async function _aveaAddUnmatchedLine(env, lineRecord) {
+    const root = _aveaReceiveRoot(lineRecord);
+    if (!root || _aveaReceiveButtonBusy) {
         return false;
     }
-    if (root.isDirty && !(await root.save())) {
-        return false;
+    _aveaReceiveButtonBusy = true;
+    try {
+        if (typeof root.isDirty === "function") {
+            await root.isDirty();
+        }
+        const data = lineRecord.data || {};
+        const snapshot = {
+            description: data.description || "",
+            priceUnit: data.price_unit,
+            productId: _aveaM2oId(data.product_id),
+        };
+        if (!snapshot.productId) {
+            _aveaNotify(env, "Choose the product that matches this invoice line.");
+            return false;
+        }
+        if (!(await _aveaSaveReceive(root, lineRecord))) {
+            return false;
+        }
+        await root.load();
+        const persisted = _aveaFindUnmatchedLine(root, snapshot);
+        if (!persisted?.resId) {
+            _aveaNotify(env, "Could not add this line. Try again.");
+            return false;
+        }
+        await env.services.orm.call(
+            "avea.stock.receive.unmatched",
+            ADD_UNMATCHED_BUTTON,
+            [[persisted.resId]]
+        );
+        await root.load();
+        return true;
+    } finally {
+        _aveaReceiveButtonBusy = false;
     }
-    await root.load();
-    const persisted = _aveaFindReceiveLine(root, productId, priceUnit);
-    if (!persisted?.resId) {
-        return false;
-    }
-    const action = await orm.call(
-        "avea.stock.receive.line",
-        PRICING_BUTTON,
-        [[persisted.resId]]
-    );
-    if (!action) {
-        return false;
-    }
-    await actionService.doAction(action, {
-        onClose: async () => {
-            try {
-                await root.load();
-            } catch (_e) {
-                // ignore reload errors after dialog close
-            }
-        },
-    });
-    return true;
 }
 
 /**
- * Odoo blocks object buttons on unsaved x2many rows ("Please save your changes first").
- * Intercept the Receive Stock pricing button and save the receive form first.
+ * Editable x2many rows block object buttons until the parent is saved
+ * ("Please save your changes first"). Invoice reading fills those rows
+ * without saving, so Add and Pricing save the receive, then run.
  */
 patch(ViewButton.prototype, {
     async onClick(ev, newWindow) {
+        const name = this.clickParams?.name;
+        const record = this.props.record;
+        const receiveRoot = _aveaReceiveRoot(record);
+        if (name === PRICING_BUTTON && receiveRoot) {
+            ev?.preventDefault?.();
+            ev?.stopPropagation?.();
+            await _aveaOpenPricingWizard(this.env, record);
+            return;
+        }
         if (
-            this.props.onClick &&
-            this.clickParams?.name === PRICING_BUTTON &&
-            this.props.record?.isNew &&
-            _aveaReceiveRoot(this.props.record)
+            name === ADD_UNMATCHED_BUTTON &&
+            receiveRoot &&
+            record?.resModel === "avea.stock.receive.unmatched"
         ) {
             ev?.preventDefault?.();
             ev?.stopPropagation?.();
-            await _aveaOpenPricingWizard(this.env, this.props.record);
+            await _aveaAddUnmatchedLine(this.env, record);
             return;
         }
         return super.onClick(ev, newWindow);
@@ -130,7 +246,7 @@ export class AveaStockReceiveFormController extends FormController {
 
     async _aveaEnsureReceiveSaved() {
         const root = this.model.root;
-        if (!root.isDirty) {
+        if (root.resId && !(await root.isDirty())) {
             return true;
         }
         return Boolean(await root.save());
@@ -147,7 +263,7 @@ export class AveaStockReceiveFormController extends FormController {
         const lines = root.data?.line_ids?.records || [];
         for (const record of lines) {
             const data = record.data || {};
-            const productId = data.product_id?.[0];
+            const productId = _aveaM2oId(data.product_id);
             const priceUnit = data.price_unit;
             if (!productId || !data.avea_open_pricing_wizard) {
                 continue;

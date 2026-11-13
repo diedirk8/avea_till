@@ -138,6 +138,25 @@ class TestAveaStockReceivePricing(TransactionCase):
         wizard._avea_recompute_from_cost_retail()
         self.assertAlmostEqual(wizard._avea_resolve_new_cost(), 50.1234, places=4)
 
+    def test_pricing_wizard_keeps_edited_retail_after_stale_markup_onchange(self):
+        line = self._create_receive(qty=1.0, cost=126.25).line_ids
+        wizard = (
+            self.env["avea.stock.receive.pricing.wizard"]
+            .with_context(default_line_id=line.id)
+            .create({"line_id": line.id})
+        )
+        stale_markup = wizard.new_markup
+        target_retail = (wizard.new_retail or 0.0) + 1.0
+        wizard.new_retail = target_retail
+        wizard._onchange_new_retail()
+        wizard.new_markup = stale_markup
+        wizard._onchange_new_markup()
+        self.assertAlmostEqual(wizard.new_retail, target_retail, places=2)
+
+        wizard.action_update_cost_and_pricing()
+        self.template.invalidate_recordset()
+        self.assertAlmostEqual(self.template.list_price, target_retail, places=2)
+
     def test_receive_multiple_units_at_different_supplier_cost(self):
         """Existing stock + new receipt must not rewrite Avea cost when kept."""
         self.env["stock.quant"].with_context(inventory_mode=True).create(

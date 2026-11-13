@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="avea_till.AveaLoadQuotePopup">
+        <Dialog title.translate="Load quote" size="'md'">
+            <p class="text-muted mb-2">
+                Quotes still inside their 14 days. Adding one puts the products on this sale.
+                The quote stays saved.
+            </p>
+            <input
+                class="form-control mb-3"
+                placeholder="Customer or quote number"
+                t-att-value="state.search"
+                t-on-input="onSearchInput"
+            />
+            <div t-if="state.loading" class="text-muted">Loading quotes…</div>
+            <div t-elif="!state.quotes.length" class="text-muted">No quotes are still valid.</div>
+            <div t-else="" class="d-flex flex-column gap-2">
+                <button
+                    t-foreach="state.quotes"
+                    t-as="quote"
+                    t-key="quote.id"
+                    type="button"
+                    class="btn btn-light text-start avea-load-quote-row"
+                    t-on-click="() => this.addQuote(quote.id)"
+                    t-att-disabled="state.busy"
+                >
+                    <span class="d-flex justify-content-between gap-2">
+                        <strong t-esc="quote.name"/>
+                        <span t-esc="quote.amount_total_display"/>
+                    </span>
+                    <span class="d-block text-muted small">
+                        <t t-esc="quote.partner_name"/>
+                        · <t t-esc="quote.quote_date_display"/>
+                        · valid until <t t-esc="quote.valid_until_display"/>
+                    </span>
+                </button>
+            </div>
+            <t t-set-slot="footer">
+                <button class="btn btn-secondary" t-on-click="props.close" t-att-disabled="state.busy">
+                    Close
+                </button>
+            </t>
+        </Dialog>
+    </t>
+
+</templates>

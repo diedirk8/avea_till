@@ -1,0 +1,31 @@
+.o_avea_workspace--users,
+.o_avea_users_list_shell {
+    .o_avea_users_list_hero_sheet {
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_users_list_hero {
+        margin-bottom: 0;
+    }
+}
+
+.o_avea_workspace--users {
+    .o_avea_users_title_field {
+        font: inherit;
+        color: inherit;
+        border: none;
+        background: transparent;
+        padding: 0;
+        width: 100%;
+        max-width: 28rem;
+
+        &:focus {
+            outline: none;
+            box-shadow: none;
+        }
+    }
+
+    .o_avea_users_list .o_data_row {
+        cursor: pointer;
+    }
+}

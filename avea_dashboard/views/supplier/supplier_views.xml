@@ -1,0 +1,528 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_supplier_search" model="ir.ui.view">
+        <field name="name">avea.supplier.search</field>
+        <field name="model">res.partner</field>
+        <field name="priority">2</field>
+        <field name="arch" type="xml">
+            <search string="Suppliers">
+                <field name="name" string="Supplier" filter_domain="['|', '|', '|', ('name', 'ilike', self), ('email', 'ilike', self), ('phone', 'ilike', self), ('vat', 'ilike', self)]"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="vat" string="VAT number"/>
+                <field name="city"/>
+                <separator/>
+                <filter string="We owe them" name="avea_supplier_owing" domain="[('avea_supplier_payable', '>', 0)]"/>
+                <filter string="Has supplier credit" name="avea_supplier_has_credit" domain="[('avea_supplier_credit_available', '>', 0)]"/>
+                <filter string="Supplies products" name="avea_supplier_has_products" domain="[('avea_supplier_product_count', '>', 0)]"/>
+                <separator/>
+                <filter string="Active" name="avea_active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="avea_archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="City" name="group_city" context="{'group_by': 'city'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_supplier_list" model="ir.ui.view">
+        <field name="name">avea.supplier.list</field>
+        <field name="model">res.partner</field>
+        <field name="priority">2</field>
+        <field name="arch" type="xml">
+            <list
+                string="Suppliers"
+                class="o_avea_customer_list o_avea_supplier_list"
+                js_class="avea_supplier_list"
+                create="1"
+                delete="0"
+                duplicate="0"
+                default_order="name asc"
+            >
+                <button
+                    name="action_avea_open_supplier"
+                    type="object"
+                    string="Open"
+                    icon="fa-external-link"
+                    title="Open supplier"
+                    class="btn-link"
+                />
+                <field name="display_name" string="Supplier" class="o_avea_customer_wrap_cell"/>
+                <field name="phone" optional="show"/>
+                <field name="email" optional="show" class="o_avea_customer_wrap_cell"/>
+                <field name="vat" string="VAT" optional="hide"/>
+                <field name="avea_supplier_product_count" string="Products" optional="show"/>
+                <field name="avea_supplier_last_receipt" string="Last receipt" optional="show"/>
+                <field name="avea_supplier_currency_id" column_invisible="True"/>
+                <field
+                    name="avea_supplier_payable"
+                    string="We owe"
+                    widget="monetary"
+                    options="{'currency_field': 'avea_supplier_currency_id'}"
+                />
+                <field
+                    name="avea_supplier_credit_available"
+                    string="Their credit"
+                    widget="monetary"
+                    optional="show"
+                    options="{'currency_field': 'avea_supplier_currency_id'}"
+                />
+                <field
+                    name="avea_supplier_spend_total"
+                    string="Purchases"
+                    widget="monetary"
+                    optional="show"
+                    options="{'currency_field': 'avea_supplier_currency_id'}"
+                />
+                <field name="city" optional="hide"/>
+                <field name="active" string="Active" widget="boolean_toggle" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_supplier_form" model="ir.ui.view">
+        <field name="name">avea.supplier.form</field>
+        <field name="model">res.partner</field>
+        <field name="priority">2</field>
+        <field name="arch" type="xml">
+            <form string="Supplier" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--supplier">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_type" invisible="1"/>
+                    <field name="is_company" invisible="1"/>
+                    <field name="supplier_rank" invisible="1"/>
+                    <field name="customer_rank" invisible="1"/>
+                    <field name="avea_supplier_currency_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Suppliers</span>
+                            <h1 class="o_avea_workspace_title">
+                                <field name="name" nolabel="1" placeholder="Supplier name" class="o_avea_customer_name_title"/>
+                            </h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Outstanding bills, contact, products, and receipts.
+                            </p>
+                        </div>
+                        <div class="o_avea_customer_hero_actions">
+                            <button
+                                string="Receive stock"
+                                name="action_avea_receive_stock"
+                                type="object"
+                                class="btn btn-primary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Add expense"
+                                name="action_avea_add_supplier_expense"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Products"
+                                name="action_avea_open_supplier_products"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Receipts"
+                                name="action_avea_open_supplier_receipts"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button string="Save" special="save" class="btn btn-secondary" data-hotkey="s"/>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_customer_workspace">
+                        <div class="o_avea_customer_main">
+                        <div class="o_avea_stock_product_panel o_avea_supplier_outstanding" invisible="not id">
+                            <div class="o_avea_customer_panel_heading">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-list-alt" title="Outstanding bills" aria-hidden="true"/>
+                                    Outstanding bills
+                                </h2>
+                                <button
+                                    name="action_avea_open_what_we_owe"
+                                    type="object"
+                                    string="View all"
+                                    class="btn btn-link btn-sm"
+                                    invisible="not avea_open_vendor_move_ids"
+                                />
+                            </div>
+                            <p class="text-muted o_avea_supplier_open_hint" invisible="not avea_open_vendor_move_ids">
+                                These unpaid bills add up to <strong>We owe</strong>.
+                                Open a bill to see the lines, then record a payment from cash or bank.
+                            </p>
+                            <p class="text-muted o_avea_supplier_open_hint" invisible="avea_open_vendor_move_ids">
+                                Nothing outstanding. Receive stock or add an expense to create a bill.
+                            </p>
+                            <field
+                                name="avea_open_vendor_move_ids"
+                                nolabel="1"
+                                readonly="1"
+                            >
+                                <list create="false" edit="false" delete="false" default_order="invoice_date desc">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="invoice_date" string="Date"/>
+                                    <field name="avea_supplier_bill_source" string="Type"/>
+                                    <field name="avea_supplier_bill_label" string="What this is"/>
+                                    <field name="ref" string="Their invoice" optional="show"/>
+                                    <field name="amount_total" string="Total" widget="monetary"/>
+                                    <field name="amount_residual" string="Still open" widget="monetary"/>
+                                    <button
+                                        name="action_avea_pay_supplier_bill"
+                                        type="object"
+                                        string="Pay"
+                                        class="btn-link"
+                                        invisible="not avea_can_pay_bill"
+                                    />
+                                    <button
+                                        name="action_avea_open_linked_receive"
+                                        type="object"
+                                        string="Receipt"
+                                        class="btn-link"
+                                        invisible="not avea_linked_receive_id"
+                                    />
+                                    <field name="avea_linked_receive_id" column_invisible="True"/>
+                                    <field name="avea_can_pay_bill" column_invisible="True"/>
+                                </list>
+                            </field>
+                        </div>
+
+                        <div class="o_avea_stock_product_panel">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-truck" title="Contact" aria-hidden="true"/>
+                                Contact
+                            </h2>
+                            <div class="o_avea_stock_product_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Email</span>
+                                    <field name="email" nolabel="1" widget="email"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Phone</span>
+                                    <field name="phone" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">VAT number</span>
+                                    <field name="vat" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
+                                    <span class="o_avea_workspace_info_label">Street</span>
+                                    <field name="street" nolabel="1" placeholder="Street address"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">City</span>
+                                    <field name="city" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Country</span>
+                                    <field name="country_id" nolabel="1" options="{'no_create': True}"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="o_avea_stock_product_panel" invisible="not id">
+                            <div class="o_avea_customer_panel_heading">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-cubes" title="Products" aria-hidden="true"/>
+                                    Products they supply
+                                </h2>
+                                <button
+                                    name="action_avea_open_supplier_products"
+                                    type="object"
+                                    string="View all"
+                                    class="btn btn-link btn-sm"
+                                />
+                            </div>
+                            <field name="avea_supplierinfo_ids" nolabel="1" readonly="1" options="{'no_open': True}">
+                                <list create="false" edit="false" delete="false">
+                                    <field name="product_tmpl_id" string="Product"/>
+                                    <field name="product_code" string="Their code"/>
+                                    <field name="price" string="Cost EX VAT"/>
+                                    <field name="min_qty" string="Min qty" optional="hide"/>
+                                </list>
+                            </field>
+                        </div>
+
+                        <div class="o_avea_stock_product_panel" invisible="not id">
+                            <div class="o_avea_customer_panel_heading">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-archive" title="Receipts" aria-hidden="true"/>
+                                    Stock receipts
+                                </h2>
+                                <button
+                                    name="action_avea_open_supplier_receipts"
+                                    type="object"
+                                    string="View all"
+                                    class="btn btn-link btn-sm"
+                                />
+                            </div>
+                            <field
+                                name="avea_stock_receive_ids"
+                                nolabel="1"
+                                readonly="1"
+                                domain="[('state', '=', 'done')]"
+                                options="{'no_open': True}"
+                            >
+                                <list create="false" edit="false" delete="false" default_order="received_date desc">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="received_date" string="Received"/>
+                                    <field name="invoice_number" string="Invoice"/>
+                                    <field name="amount_total" string="Total" widget="monetary"/>
+                                    <field name="payment_status" string="Payment"/>
+                                </list>
+                            </field>
+                        </div>
+
+                        </div>
+
+                        <aside class="o_avea_customer_summary">
+                            <div class="o_avea_stock_product_summary_card">
+                                <div class="o_avea_stock_product_summary_header">
+                                    <span class="o_avea_stock_product_summary_eyebrow">Balances</span>
+                                    <h2 class="o_avea_stock_product_summary_title">At a glance</h2>
+                                </div>
+                                <div class="o_avea_stock_product_summary_block">
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">We owe</span>
+                                        <field name="avea_supplier_payable" nolabel="1" widget="monetary" readonly="1" options="{'currency_field': 'avea_supplier_currency_id'}"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Their credit</span>
+                                        <field name="avea_supplier_credit_available" nolabel="1" widget="monetary" readonly="1" options="{'currency_field': 'avea_supplier_currency_id'}"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Purchases</span>
+                                        <field name="avea_supplier_spend_total" nolabel="1" widget="monetary" readonly="1" options="{'currency_field': 'avea_supplier_currency_id'}"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Products</span>
+                                        <field name="avea_supplier_product_count" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Last receipt</span>
+                                        <field name="avea_supplier_last_receipt" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
+                                <div class="o_avea_stock_product_summary_block">
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Active</span>
+                                        <field name="active" nolabel="1" widget="boolean_toggle"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_supplier_open_bill_list" model="ir.ui.view">
+        <field name="name">avea.supplier.open.bill.list</field>
+        <field name="model">account.move</field>
+        <field name="priority">40</field>
+        <field name="arch" type="xml">
+            <list
+                string="Outstanding bills"
+                create="false"
+                delete="false"
+                edit="false"
+                default_order="invoice_date desc, id desc"
+                class="o_avea_customer_list o_avea_supplier_open_bill_list"
+            >
+                <field name="currency_id" column_invisible="True"/>
+                <field name="invoice_date" string="Date"/>
+                <field name="partner_id" string="Supplier" optional="hide"/>
+                <field name="avea_supplier_bill_source" string="Type"/>
+                <field name="avea_supplier_bill_label" string="What this is"/>
+                <field name="ref" string="Their invoice"/>
+                <field name="amount_total" string="Total" widget="monetary"/>
+                <field name="amount_residual" string="Still open" widget="monetary"/>
+                <button
+                    name="action_avea_pay_supplier_bill"
+                    type="object"
+                    string="Pay"
+                    class="btn-link"
+                    invisible="not avea_can_pay_bill"
+                />
+                <button
+                    name="action_avea_open_linked_receive"
+                    type="object"
+                    string="Receipt"
+                    class="btn-link"
+                    invisible="not avea_linked_receive_id"
+                />
+                <field name="avea_linked_receive_id" column_invisible="True"/>
+                <field name="avea_can_pay_bill" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_supplier_bill_form" model="ir.ui.view">
+        <field name="name">avea.supplier.bill.form</field>
+        <field name="model">account.move</field>
+        <field name="priority">40</field>
+        <field name="arch" type="xml">
+            <form string="Supplier bill" create="false" delete="false" edit="false" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--supplier">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="move_type" invisible="1"/>
+                    <field name="state" invisible="1"/>
+                    <field name="avea_linked_receive_id" invisible="1"/>
+                    <field name="avea_can_pay_bill" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Suppliers</span>
+                            <h1 class="o_avea_workspace_title">
+                                <field name="avea_supplier_bill_label" nolabel="1" readonly="1"/>
+                            </h1>
+                            <p class="o_avea_workspace_section_subtitle" invisible="not avea_can_pay_bill">
+                                Record a payment from cash or bank to clear this bill.
+                            </p>
+                            <p class="o_avea_workspace_section_subtitle" invisible="avea_can_pay_bill or move_type == 'in_refund'">
+                                This bill is paid.
+                            </p>
+                            <p class="o_avea_workspace_section_subtitle" invisible="move_type != 'in_refund'">
+                                This credit note reduces what you owe this supplier.
+                            </p>
+                        </div>
+                        <div class="o_avea_customer_hero_actions">
+                            <button
+                                string="Record payment"
+                                name="action_avea_pay_supplier_bill"
+                                type="object"
+                                class="btn btn-primary"
+                                invisible="not avea_can_pay_bill"
+                            />
+                            <button
+                                string="Open stock receipt"
+                                name="action_avea_open_linked_receive"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not avea_linked_receive_id"
+                            />
+                            <button
+                                string="Back to supplier"
+                                name="action_avea_open_supplier"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not partner_id"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="o_avea_customer_workspace">
+                        <div class="o_avea_customer_main">
+                            <div class="o_avea_stock_product_panel o_avea_supplier_payment_panel" invisible="not avea_can_pay_bill">
+                                <h2 class="o_avea_workspace_section_title">Payment</h2>
+                                <p class="text-muted o_avea_supplier_open_hint">
+                                    Choose the cash or bank account the money left, the date, and the amount.
+                                    You can pay in full or in part.
+                                </p>
+                                <button
+                                    string="Record payment"
+                                    name="action_avea_pay_supplier_bill"
+                                    type="object"
+                                    class="btn btn-primary"
+                                />
+                            </div>
+                            <div class="o_avea_stock_product_panel">
+                                <h2 class="o_avea_workspace_section_title">Bill</h2>
+                                <div class="o_avea_stock_product_fields">
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Supplier</span>
+                                        <field name="partner_id" nolabel="1" readonly="1" options="{'no_open': True}"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Date</span>
+                                        <field name="invoice_date" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Type</span>
+                                        <field name="avea_supplier_bill_source" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Their invoice</span>
+                                        <field name="ref" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Our number</span>
+                                        <field name="name" nolabel="1" readonly="1"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_avea_stock_product_panel">
+                                <h2 class="o_avea_workspace_section_title">Lines</h2>
+                                <field name="invoice_line_ids" nolabel="1" readonly="1" domain="[('display_type', '=', 'product')]">
+                                    <list create="false" edit="false" delete="false">
+                                        <field name="currency_id" column_invisible="True"/>
+                                        <field name="name" string="Description"/>
+                                        <field name="quantity" string="Qty"/>
+                                        <field name="price_unit" string="Price"/>
+                                        <field name="price_subtotal" string="EX VAT" widget="monetary"/>
+                                    </list>
+                                </field>
+                            </div>
+                        </div>
+                        <aside class="o_avea_customer_summary">
+                            <div class="o_avea_stock_product_summary_card">
+                                <div class="o_avea_stock_product_summary_header">
+                                    <span class="o_avea_stock_product_summary_eyebrow">Amount</span>
+                                    <h2 class="o_avea_stock_product_summary_title">Open balance</h2>
+                                </div>
+                                <div class="o_avea_stock_product_summary_block">
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Total</span>
+                                        <field name="amount_total" nolabel="1" widget="monetary" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Still open</span>
+                                        <field name="amount_residual" nolabel="1" widget="monetary" readonly="1"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_supplier_centre" model="ir.actions.act_window">
+        <field name="name">Suppliers</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_supplier_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_supplier_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_supplier_form')}),
+        ]"/>
+        <field name="target">main</field>
+        <field name="context">{
+            'avea_supplier_workspace': True,
+            'clear_breadcrumbs': True,
+            'no_breadcrumbs': True,
+            'default_supplier_rank': 1,
+            'default_is_company': True,
+            'res_partner_search_mode': 'supplier',
+        }</field>
+        <field name="domain">[('supplier_rank', '>', 0)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first supplier
+            </p>
+            <p>
+                Suppliers created here are used when you receive stock and record expenses.
+            </p>
+        </field>
+    </record>
+
+</odoo>

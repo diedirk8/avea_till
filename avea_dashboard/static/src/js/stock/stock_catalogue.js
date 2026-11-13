@@ -1,13 +1,18 @@
 /** @odoo-module **/
 
 import { FormController } from "@web/views/form/form_controller";
+import { Pager } from "@web/core/pager/pager";
 import { ListController } from "@web/views/list/list_controller";
 import { listView } from "@web/views/list/list_view";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { registry } from "@web/core/registry";
 import { patch } from "@web/core/utils/patch";
 import { useService } from "@web/core/utils/hooks";
 import { debounce } from "@web/core/utils/timing";
-import { useState, onMounted } from "@odoo/owl";
+import { useState, onMounted, onWillUnmount } from "@odoo/owl";
+
+const ACTION_MANAGER_SCROLL_CLASS = "o_avea_stock_catalogue_action_manager";
+const BODY_PAGE_CLASS = "o_avea_stock_catalogue_page";
 
 const BASE_DOMAIN = [
     ["sale_ok", "=", true],
@@ -28,6 +33,8 @@ const ARRANGE_OPTIONS = [
     { value: "name_desc", label: "Product Z–A" },
     { value: "stock_asc", label: "Stock Low–High" },
     { value: "stock_desc", label: "Stock High–Low" },
+    { value: "barcode_asc", label: "Barcode A–Z (blank first)" },
+    { value: "barcode_desc", label: "Barcode Z–A" },
 ];
 
 const ORDER_BY_MAP = {
@@ -37,6 +44,8 @@ const ORDER_BY_MAP = {
     name_desc: [{ name: "name", asc: false }],
     stock_asc: [{ name: "avea_stock_qty", asc: true }],
     stock_desc: [{ name: "avea_stock_qty", asc: false }],
+    barcode_asc: [{ name: "avea_barcode_sort", asc: true }],
+    barcode_desc: [{ name: "avea_barcode_sort", asc: false }],
 };
 
 /**
@@ -61,10 +70,13 @@ patch(FormController.prototype, {
 
 export class AveaStockCatalogueController extends ListController {
     static template = "avea_till.StockCatalogueList";
+    static components = { ...ListController.components, Pager };
 
     setup() {
         super.setup();
         this.orm = useService("orm");
+        this.actionService = useService("action");
+        this.dialog = useService("dialog");
         this.filterState = useState({
             productName: "",
             sku: "",
@@ -79,12 +91,33 @@ export class AveaStockCatalogueController extends ListController {
             categories: [],
         });
         this._applyFiltersDebounced = debounce(() => this.applyFilters(), 300);
-        onMounted(() => this._onFiltersMounted());
+        onMounted(() => {
+            document.body.classList.add(BODY_PAGE_CLASS);
+            this._setupScrollShell();
+            this._onFiltersMounted();
+        });
+        queueMicrotask(() => this._setupScrollShell());
+        onWillUnmount(() => {
+            document.body.classList.remove(BODY_PAGE_CLASS);
+            this._teardownScrollShell();
+        });
+    }
+
+    _actionManagerEl() {
+        return document.querySelector(".o_action_manager");
+    }
+
+    _setupScrollShell() {
+        this._actionManagerEl()?.classList.add(ACTION_MANAGER_SCROLL_CLASS);
+    }
+
+    _teardownScrollShell() {
+        this._actionManagerEl()?.classList.remove(ACTION_MANAGER_SCROLL_CLASS);
     }
 
     get className() {
         const base = this.props.className || "";
-        return `${base} o_avea_workspace o_avea_workspace--stock-catalogue`.trim();
+        return `${base} o_avea_catalogue_flush o_avea_workspace o_avea_workspace--stock o_avea_workspace--stock-catalogue o_avea_workspace--stock-catalogue-list`.trim();
     }
 
     get display() {
@@ -96,9 +129,97 @@ export class AveaStockCatalogueController extends ListController {
             ...display,
             controlPanel: {
                 ...display.controlPanel,
-                layoutActions: false,
+                // Show Odoo's selection bar (Actions, Export, Archive, …) when rows are selected.
+                layoutActions: this.hasSelectedRecords,
             },
         };
+    }
+
+    get selectedCount() {
+        if (this.isDomainSelected) {
+            return this.model.root.count;
+        }
+        return this.model.root.selection.length;
+    }
+
+    discardCatalogueSelection() {
+        this.discardSelection();
+    }
+
+    async _selectedTemplateIds() {
+        return await this.model.root.getResIds(true);
+    }
+
+    async _callBulk(method) {
+        const ids = await this._selectedTemplateIds();
+        if (!ids.length) {
+            return;
+        }
+        const result = await this.orm.call("product.template", method, [ids]);
+        await this.model.load();
+        this.discardCatalogueSelection();
+        if (result && typeof result === "object" && result.type === "ir.actions.act_window") {
+            await this.actionService.doAction(result);
+        }
+    }
+
+    async onBulkArchive() {
+        await this._callBulk("action_avea_bulk_archive");
+    }
+
+    async onBulkRestore() {
+        await this._callBulk("action_avea_bulk_unarchive");
+    }
+
+    async onBulkEnablePos() {
+        await this._callBulk("action_avea_bulk_enable_pos");
+    }
+
+    async onBulkDisablePos() {
+        await this._callBulk("action_avea_bulk_disable_pos");
+    }
+
+    async onBulkMerge() {
+        const ids = await this._selectedTemplateIds();
+        if (ids.length < 2) {
+            return;
+        }
+        const action = await this.orm.call(
+            "product.template",
+            "action_avea_open_merge_wizard",
+            [ids]
+        );
+        await this.actionService.doAction(action);
+    }
+
+    async onBulkPrintLabels() {
+        const ids = await this._selectedTemplateIds();
+        if (!ids.length) {
+            return;
+        }
+        const action = await this.orm.call(
+            "product.template",
+            "action_open_label_layout",
+            [ids]
+        );
+        await this.actionService.doAction(action);
+    }
+
+    async onBulkDelete() {
+        const ids = await this._selectedTemplateIds();
+        if (!ids.length) {
+            return;
+        }
+        this.dialog.add(ConfirmationDialog, {
+            title: "Delete products",
+            body: `Permanently delete ${ids.length} selected product(s)? This cannot be undone.`,
+            confirm: async () => {
+                await this.orm.call("product.template", "action_avea_bulk_delete", [ids]);
+                await this.model.load();
+                this.discardCatalogueSelection();
+            },
+            cancel: () => {},
+        });
     }
 
     get stockStatusOptions() {

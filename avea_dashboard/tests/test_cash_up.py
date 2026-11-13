@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+from unittest.mock import patch
+
 from odoo import Command, fields
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
 from odoo.addons.point_of_sale.tests.common import TestPoSCommon
 
@@ -178,6 +180,51 @@ class TestAveaCashUpPaymentReconciliation(TestPoSCommon):
         self.assertEqual(kinds["cash"], self.product.lst_price)
         self.assertEqual(expected["cash_register_expected"], 100.0 + self.product.lst_price)
         self.assertEqual(expected["transaction_count"], 3)
+
+    def test_negative_store_credit_counted_reconciles(self):
+        """Issued Store Credit is a negative payment total and must cash up cleanly."""
+        issued = 64.0
+        self.assertEqual(
+            self.CashUp._avea_normalize_counted_payments({"store_credit": -issued}),
+            {"store_credit": -issued},
+        )
+        session = self._open_session(1000.0)
+        self._sync_order(
+            session,
+            lines=[(self.product, 1)],
+            payments=[(self.cash_pm1, self.product.lst_price)],
+            uuid="cash-up-sc-sale",
+        )
+        base = session.get_avea_payment_reconciliation_expected()
+        for line in base["lines"]:
+            if line["kind"] == "store_credit":
+                line["expected"] = -issued
+        base["total_expected"] = sum(line["expected"] for line in base["lines"])
+        with patch.object(
+            type(session),
+            "get_avea_payment_reconciliation_expected",
+            return_value=base,
+        ):
+            reconciliation = self._reconciliation(
+                session,
+                session.cash_register_balance_end,
+                {"store_credit": -issued},
+            )
+        store_credit = next(
+            line for line in reconciliation["lines"] if line["kind"] == "store_credit"
+        )
+        self.assertEqual(store_credit["difference"], 0.0)
+        self.assertEqual(reconciliation["total_difference"], 0.0)
+        self.CashUp._avea_validate_variance_reason(
+            reconciliation,
+            False,
+            session.currency_id,
+            cash_difference=0.0,
+        )
+
+    def test_other_payment_kinds_still_reject_negative_counts(self):
+        with self.assertRaises(UserError):
+            self.CashUp._avea_normalize_counted_payments({"card": -10.0})
 
     def test_refund_reduces_payment_expected(self):
         session = self._open_session(0.0)
@@ -652,3 +699,96 @@ class TestAveaCashUpPaymentReconciliation(TestPoSCommon):
         self.assertEqual(session.get_avea_transaction_count(), 3)
         self.assertEqual(preview["transaction_count"], 3)
         self.assertIsInstance(preview["transaction_count"], int)
+
+
+@tagged("post_install", "-at_install", "avea_till")
+class TestAveaRegisterClosureReportEmail(TestAveaCashUpPaymentReconciliation):
+    def test_register_closure_report_recipients_parsing(self):
+        self.company.avea_register_closure_report_email = (
+            "owner@example.com; manager@example.com"
+        )
+        recipients = self.company._avea_register_closure_report_recipients()
+        self.assertEqual(
+            recipients,
+            ["owner@example.com", "manager@example.com"],
+        )
+
+    def test_register_closure_report_invalid_email_raises(self):
+        with self.assertRaises(ValidationError):
+            self.company.avea_register_closure_report_email = "not-an-email"
+
+    def test_register_closure_report_email_not_sent_when_blank(self):
+        self.company.avea_register_closure_report_email = False
+        session = self._open_session(1000.0)
+        cash_up = self._create_stored_cash_up(
+            session,
+            self.CashUp._avea_amounts(session, 1000.0),
+            self._reconciliation(session, 1000.0),
+        )
+        before = self.env["mail.mail"].search_count([])
+        sent = cash_up._send_register_closure_report_email(session)
+        self.assertFalse(sent)
+        self.assertEqual(self.env["mail.mail"].search_count([]), before)
+
+    def test_register_closure_report_email_sent_with_pdf(self):
+        self.company.write(
+            {
+                "avea_register_closure_report_email": "zreport@example.com",
+                "avea_receipt_sender_email": "sender@example.com",
+            }
+        )
+        session = self._open_session(1000.0)
+        self._sync_order(
+            session,
+            lines=[(self.product, 1)],
+            payments=[(self.cash_pm1, self.product.lst_price)],
+            uuid="cash-up-z-report",
+        )
+        amounts = self.CashUp._avea_amounts(session, session.cash_register_balance_end)
+        reconciliation = self._reconciliation(session, amounts["counted"])
+        cash_up = self._create_stored_cash_up(session, amounts, reconciliation)
+        sent = cash_up._send_register_closure_report_email(session)
+        self.assertTrue(sent)
+        mail = self.env["mail.mail"].search(
+            [("email_to", "ilike", "zreport@example.com")],
+            order="id desc",
+            limit=1,
+        )
+        self.assertTrue(mail)
+        self.assertIn("Register Closure Report", mail.subject)
+        self.assertIn(session.name, mail.subject)
+        self.assertIn("Total sales", mail.body_html or "")
+        self.assertIn("Payment reconciliation", mail.body_html or "")
+        self.assertTrue(mail.attachment_ids)
+        self.assertTrue(mail.attachment_ids[0].name.lower().endswith(".pdf"))
+
+    def test_register_closure_report_email_shows_variance_notice(self):
+        self.company.write(
+            {
+                "avea_register_closure_report_email": "zreport@example.com",
+                "avea_receipt_sender_email": "sender@example.com",
+            }
+        )
+        session = self._open_session(1000.0)
+        self._sync_order(
+            session,
+            lines=[(self.product, 1)],
+            payments=[(self.cash_pm1, self.product.lst_price)],
+            uuid="cash-up-z-report-variance",
+        )
+        amounts = self.CashUp._avea_amounts(session, 1900.0)
+        reconciliation = self._reconciliation(session, 1900.0)
+        cash_up = self._create_stored_cash_up(
+            session,
+            amounts,
+            reconciliation,
+            variance_reason="Short cash",
+        )
+        cash_up._send_register_closure_report_email(session)
+        mail = self.env["mail.mail"].search(
+            [("email_to", "ilike", "zreport@example.com")],
+            order="id desc",
+            limit=1,
+        )
+        self.assertIn("Cash up discrepancy noticed", mail.body_html or "")
+        self.assertIn("Short cash", mail.body_html or "")

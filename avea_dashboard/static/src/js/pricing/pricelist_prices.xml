@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.PricelistPricesList" t-inherit="web.ListView" t-inherit-mode="primary">
+        <xpath expr="//Layout" position="before">
+            <div class="o_avea_pricelist_list_shell">
+                <div class="o_avea_workspace_sheet o_avea_pricelist_list_sheet">
+                    <div class="o_avea_workspace_hero o_avea_pricelist_list_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <button
+                                type="button"
+                                class="btn btn-link o_avea_pricelist_back_btn"
+                                t-on-click="() => this.onClickBack()"
+                            >
+                                Back to rules
+                            </button>
+                            <span class="o_avea_workspace_eyebrow">Customers</span>
+                            <h1 class="o_avea_workspace_title">
+                                Prices on <t t-esc="pricelistName"/>
+                            </h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                What this list charges at the till. Shelf prices in Stock stay as they are.
+                            </p>
+                            <div class="o_avea_pricelist_prices_search">
+                                <label class="o_avea_workspace_info_label" for="avea_pricelist_prices_search">
+                                    Search
+                                </label>
+                                <input
+                                    id="avea_pricelist_prices_search"
+                                    type="search"
+                                    class="form-control o_avea_pricelist_prices_search_input"
+                                    placeholder="Product, code, barcode, or category"
+                                    t-att-value="filterState.searchText"
+                                    t-on-input="(ev) => this.onSearchInput(ev)"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+        <xpath expr="//t[@t-component='props.Renderer']" position="after">
+            <div class="o_avea_pricelist_list_footer">
+                <div
+                    t-if="env.config.pagerProps and env.config.pagerProps.total > 0"
+                    class="o_avea_pricelist_pager o_cp_pager text-nowrap"
+                >
+                    <Pager t-props="env.config.pagerProps"/>
+                </div>
+            </div>
+        </xpath>
+    </t>
+
+</templates>

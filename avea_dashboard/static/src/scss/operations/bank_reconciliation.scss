@@ -1,0 +1,94 @@
+.o_avea_bank_reconcile_wizard {
+    .o_form_sheet {
+        max-width: none;
+    }
+
+    .o_avea_bank_recon_hint {
+        margin-bottom: 0.75rem;
+        max-width: 62rem;
+    }
+
+    .o_avea_bank_reconcile_lines {
+        .o_list_renderer {
+            .o_list_table {
+                table-layout: auto;
+                width: max-content;
+                min-width: 100%;
+
+                th,
+                td {
+                    overflow: visible;
+                    text-overflow: clip;
+                    vertical-align: top;
+                }
+
+                th[data-name="description"],
+                td[name="description"],
+                th[data-name="booking_suggestion"],
+                td[name="booking_suggestion"] {
+                    min-width: 14rem;
+                    white-space: normal;
+                }
+
+                th[data-name="bank_date"],
+                td[name="bank_date"] {
+                    white-space: nowrap;
+                    width: 6.5rem;
+                }
+
+                th[data-name="amount_spent_display"],
+                td[name="amount_spent_display"],
+                th[data-name="amount_received_display"],
+                td[name="amount_received_display"],
+                td.o_avea_bank_money {
+                    text-align: right;
+                    white-space: nowrap;
+                    width: 7.5rem;
+                }
+
+                th[data-name="match_state"],
+                td[name="match_state"] {
+                    white-space: nowrap;
+                    width: 7rem;
+                }
+
+                td.o_list_button,
+                th.o_list_button_header,
+                .o_list_button {
+                    overflow: visible;
+                    text-overflow: clip;
+                    white-space: nowrap;
+                    width: 1%;
+                }
+
+                button {
+                    white-space: nowrap;
+                }
+            }
+        }
+    }
+}
+
+.o_avea_workspace--bank-recon {
+    .o_avea_bank_recon_list_shell {
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_bank_recon_list_hero {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .o_avea_bank_recon_list_actions {
+        flex-shrink: 0;
+
+        .btn-primary {
+            min-height: 2.75rem;
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
+        }
+    }
+}
