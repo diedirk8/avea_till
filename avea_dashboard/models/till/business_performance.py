@@ -106,11 +106,11 @@ class AveaBusinessPerformancePromotionLine(models.TransientModel):
     order_count = fields.Integer(string="Tickets", readonly=True)
     quantity = fields.Float(string="Qty", digits="Product Unit", readonly=True)
     discount_given = fields.Monetary(
-        string="Taken off",
+        string="Discount",
         currency_field="currency_id",
         readonly=True,
     )
-    discount_display = fields.Char(string="Taken off", readonly=True)
+    discount_display = fields.Char(string="Discount", readonly=True)
     sales_ex_tax = fields.Monetary(
         string="Sold for",
         currency_field="currency_id",
@@ -137,11 +137,11 @@ class AveaBusinessPerformancePromotionProductLine(models.TransientModel):
     deal_type_label = fields.Char(string="Type", readonly=True)
     quantity = fields.Float(string="Qty", digits="Product Unit", readonly=True)
     discount_given = fields.Monetary(
-        string="Taken off",
+        string="Discount",
         currency_field="currency_id",
         readonly=True,
     )
-    discount_display = fields.Char(string="Taken off", readonly=True)
+    discount_display = fields.Char(string="Discount", readonly=True)
     sales_ex_tax = fields.Monetary(
         string="Sold for",
         currency_field="currency_id",
@@ -313,7 +313,7 @@ class AveaBusinessPerformance(models.TransientModel):
     promo_ticket_count = fields.Integer(readonly=True)
     promo_unit_count = fields.Float(digits="Product Unit", readonly=True)
     promo_discount = fields.Monetary(
-        string="Taken off",
+        string="Discount",
         currency_field="currency_id",
         readonly=True,
     )
@@ -673,11 +673,10 @@ class AveaBusinessPerformance(models.TransientModel):
         )
 
     def _promotion_discount_stat(self, line):
-        display = line.discount_display or line.deal_type_label or "—"
-        amount = line.discount_given or 0.0
-        if self.currency_id and self.currency_id.is_zero(amount):
-            return self._promotion_card_stat(_("Deal type"), display)
-        return self._promotion_card_stat(_("Taken off"), display)
+        return self._promotion_card_stat(
+            _("Discount"),
+            line.discount_display or line.deal_type_label or "—",
+        )
 
     def _promotion_card_html(self, *, title, subtitle, stats):
         subtitle_html = Markup("")

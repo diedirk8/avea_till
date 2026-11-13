@@ -278,7 +278,7 @@
                                     <field name="promo_unit_count" nolabel="1" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 </div>
                                 <div class="o_avea_workspace_kpi_card">
-                                    <span class="o_avea_workspace_kpi_label">Taken off</span>
+                                    <span class="o_avea_workspace_kpi_label">Discount</span>
                                     <field name="promo_discount" nolabel="1" widget="monetary" readonly="1" class="o_avea_workspace_kpi_value"/>
                                 </div>
                                 <div class="o_avea_workspace_kpi_card o_avea_workspace_kpi_card--positive">
@@ -291,7 +291,7 @@
                                     <div class="o_avea_workspace_block_heading">
                                         <div class="o_avea_overview_visual_heading">
                                             <h2 class="o_avea_workspace_section_title">Deals that fired</h2>
-                                            <p class="o_avea_workspace_section_subtitle">Taken off is what the deal removed. Sold for is what those items rang up after the deal.</p>
+                                            <p class="o_avea_workspace_section_subtitle">Discount is what the deal removed. Sold for is what those items rang up after the deal.</p>
                                         </div>
                                     </div>
                                     <div class="o_avea_promotion_analysis_cards">
@@ -304,7 +304,7 @@
                                                 <field name="deal_summary" string="Deal"/>
                                                 <field name="order_count" string="Tickets"/>
                                                 <field name="quantity" string="Qty"/>
-                                                <field name="discount_display" string="Taken off"/>
+                                                <field name="discount_display" string="Discount"/>
                                                 <field name="sales_ex_tax" string="Sold for" widget="monetary"/>
                                                 <field name="discount_given" column_invisible="True"/>
                                                 <field name="deal_type_label" column_invisible="True"/>
@@ -318,7 +318,7 @@
                                     <div class="o_avea_workspace_block_heading">
                                         <div class="o_avea_overview_visual_heading">
                                             <h2 class="o_avea_workspace_section_title">Products sold on promotions</h2>
-                                            <p class="o_avea_workspace_section_subtitle">What moved, what came off, and what they sold for after the deal</p>
+                                            <p class="o_avea_workspace_section_subtitle">What moved, the discount, and what they sold for after the deal</p>
                                         </div>
                                     </div>
                                     <div class="o_avea_promotion_analysis_cards">
@@ -330,7 +330,7 @@
                                                 <field name="product_display" string="Product"/>
                                                 <field name="promotion_name" string="Promotion"/>
                                                 <field name="quantity" string="Qty"/>
-                                                <field name="discount_display" string="Taken off"/>
+                                                <field name="discount_display" string="Discount"/>
                                                 <field name="sales_ex_tax" string="Sold for" widget="monetary"/>
                                                 <field name="discount_given" column_invisible="True"/>
                                                 <field name="deal_type_label" column_invisible="True"/>
