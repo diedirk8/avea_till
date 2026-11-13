@@ -106,13 +106,13 @@ class AveaBusinessPerformancePromotionLine(models.TransientModel):
     order_count = fields.Integer(string="Tickets", readonly=True)
     quantity = fields.Float(string="Qty", digits="Product Unit", readonly=True)
     discount_given = fields.Monetary(
-        string="Discount",
+        string="Taken off",
         currency_field="currency_id",
         readonly=True,
     )
-    discount_display = fields.Char(string="Discount / type", readonly=True)
+    discount_display = fields.Char(string="Taken off", readonly=True)
     sales_ex_tax = fields.Monetary(
-        string="Sales",
+        string="Sold for",
         currency_field="currency_id",
         readonly=True,
     )
@@ -137,13 +137,13 @@ class AveaBusinessPerformancePromotionProductLine(models.TransientModel):
     deal_type_label = fields.Char(string="Type", readonly=True)
     quantity = fields.Float(string="Qty", digits="Product Unit", readonly=True)
     discount_given = fields.Monetary(
-        string="Discount",
+        string="Taken off",
         currency_field="currency_id",
         readonly=True,
     )
-    discount_display = fields.Char(string="Discount / type", readonly=True)
+    discount_display = fields.Char(string="Taken off", readonly=True)
     sales_ex_tax = fields.Monetary(
-        string="Sales",
+        string="Sold for",
         currency_field="currency_id",
         readonly=True,
     )
@@ -313,12 +313,12 @@ class AveaBusinessPerformance(models.TransientModel):
     promo_ticket_count = fields.Integer(readonly=True)
     promo_unit_count = fields.Float(digits="Product Unit", readonly=True)
     promo_discount = fields.Monetary(
-        string="Promo discount",
+        string="Taken off",
         currency_field="currency_id",
         readonly=True,
     )
     promo_sales_ex_tax = fields.Monetary(
-        string="Promo sales",
+        string="Sold for",
         currency_field="currency_id",
         readonly=True,
     )
@@ -672,6 +672,13 @@ class AveaBusinessPerformance(models.TransientModel):
             + Markup("</span></div>")
         )
 
+    def _promotion_discount_stat(self, line):
+        display = line.discount_display or line.deal_type_label or "—"
+        amount = line.discount_given or 0.0
+        if self.currency_id and self.currency_id.is_zero(amount):
+            return self._promotion_card_stat(_("Deal type"), display)
+        return self._promotion_card_stat(_("Taken off"), display)
+
     def _promotion_card_html(self, *, title, subtitle, stats):
         subtitle_html = Markup("")
         if subtitle:
@@ -705,12 +712,9 @@ class AveaBusinessPerformance(models.TransientModel):
                             _("Qty"),
                             self._format_promotion_qty(line.quantity),
                         ),
+                        self._promotion_discount_stat(line),
                         self._promotion_card_stat(
-                            _("Discount"),
-                            line.discount_display or line.deal_type_label or "—",
-                        ),
-                        self._promotion_card_stat(
-                            _("Sales"),
+                            _("Sold for"),
                             self._format_promotion_money(line.sales_ex_tax),
                         ),
                     ],
@@ -733,12 +737,9 @@ class AveaBusinessPerformance(models.TransientModel):
                             _("Qty"),
                             self._format_promotion_qty(line.quantity),
                         ),
+                        self._promotion_discount_stat(line),
                         self._promotion_card_stat(
-                            _("Discount"),
-                            line.discount_display or line.deal_type_label or "—",
-                        ),
-                        self._promotion_card_stat(
-                            _("Sales"),
+                            _("Sold for"),
                             self._format_promotion_money(line.sales_ex_tax),
                         ),
                     ],

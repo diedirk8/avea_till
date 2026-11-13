@@ -138,6 +138,8 @@ class TestAveaBusinessPerformancePromotions(TestPoSCommon):
         self.assertIn(self.product_a.name, dashboard.promotion_product_line_ids.mapped("product_display"))
         self.assertIn("BarkVember biscuits", dashboard.promotion_deal_cards_html)
         self.assertIn("off each", dashboard.promotion_deal_cards_html)
+        self.assertIn("Taken off", dashboard.promotion_deal_cards_html)
+        self.assertIn("Sold for", dashboard.promotion_deal_cards_html)
         self.assertIn(self.product_a.name, dashboard.promotion_product_cards_html)
 
     def test_combo_price_shows_type_and_component_products(self):
@@ -271,6 +273,8 @@ class TestAveaBusinessPerformancePromotions(TestPoSCommon):
         self.assertTrue(dashboard.show_promotions)
         self.assertEqual(dashboard.promotion_line_ids.discount_display, "Extra Loyalty Points")
         self.assertIn("Extra Loyalty Points", dashboard.promotion_deal_cards_html)
+        self.assertIn("Deal type", dashboard.promotion_deal_cards_html)
+        self.assertIn("Sold for", dashboard.promotion_deal_cards_html)
         self.assertIn(self.product_a.name, dashboard.promotion_product_cards_html)
 
     def test_unrelated_ticket_products_are_not_attributed(self):
