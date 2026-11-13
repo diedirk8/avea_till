@@ -1,3 +1,5 @@
+from markupsafe import Markup, escape
+
 from odoo import _, api, fields, models
 from odoo.tools.misc import formatLang
 
@@ -320,6 +322,16 @@ class AveaBusinessPerformance(models.TransientModel):
         currency_field="currency_id",
         readonly=True,
     )
+    promotion_deal_cards_html = fields.Html(
+        string="Promotion deal cards",
+        compute="_compute_promotion_cards_html",
+        sanitize=False,
+    )
+    promotion_product_cards_html = fields.Html(
+        string="Promotion product cards",
+        compute="_compute_promotion_cards_html",
+        sanitize=False,
+    )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -368,6 +380,31 @@ class AveaBusinessPerformance(models.TransientModel):
         for dashboard in self:
             dashboard.show_promotions = bool(
                 dashboard.promotion_line_ids or dashboard.promotion_product_line_ids
+            )
+
+    @api.depends(
+        "promotion_line_ids",
+        "promotion_line_ids.name",
+        "promotion_line_ids.deal_summary",
+        "promotion_line_ids.deal_type_label",
+        "promotion_line_ids.order_count",
+        "promotion_line_ids.quantity",
+        "promotion_line_ids.discount_display",
+        "promotion_line_ids.sales_ex_tax",
+        "promotion_product_line_ids",
+        "promotion_product_line_ids.product_display",
+        "promotion_product_line_ids.promotion_name",
+        "promotion_product_line_ids.deal_type_label",
+        "promotion_product_line_ids.quantity",
+        "promotion_product_line_ids.discount_display",
+        "promotion_product_line_ids.sales_ex_tax",
+        "currency_id",
+    )
+    def _compute_promotion_cards_html(self):
+        for dashboard in self:
+            dashboard.promotion_deal_cards_html = dashboard._build_promotion_deal_cards_html()
+            dashboard.promotion_product_cards_html = (
+                dashboard._build_promotion_product_cards_html()
             )
 
     def _currency_delta_display(self, delta):
@@ -615,3 +652,98 @@ class AveaBusinessPerformance(models.TransientModel):
         ]
         if product_rows:
             ProductLine.create(product_rows)
+
+    def _format_promotion_qty(self, quantity):
+        formatted = formatLang(self.env, quantity or 0.0, dp="Product Unit")
+        if "," in formatted and "." not in formatted:
+            return formatted.rstrip("0").rstrip(",")
+        return formatted.rstrip("0").rstrip(".")
+
+    def _format_promotion_money(self, amount):
+        self.ensure_one()
+        return formatLang(self.env, amount or 0.0, currency_obj=self.currency_id)
+
+    def _promotion_card_stat(self, label, value):
+        return (
+            Markup('<div class="o_avea_promo_card_stat"><span class="o_avea_promo_card_stat_label">')
+            + escape(label or "")
+            + Markup('</span><span class="o_avea_promo_card_stat_value">')
+            + escape(value or "")
+            + Markup("</span></div>")
+        )
+
+    def _promotion_card_html(self, *, title, subtitle, stats):
+        subtitle_html = Markup("")
+        if subtitle:
+            subtitle_html = (
+                Markup('<p class="o_avea_promo_card_subtitle">')
+                + escape(subtitle)
+                + Markup("</p>")
+            )
+        return (
+            Markup('<article class="o_avea_promo_card"><h3 class="o_avea_promo_card_title">')
+            + escape(title or "")
+            + Markup("</h3>")
+            + subtitle_html
+            + Markup('<div class="o_avea_promo_card_stats">')
+            + Markup("").join(stats)
+            + Markup("</div></article>")
+        )
+
+    def _build_promotion_deal_cards_html(self):
+        self.ensure_one()
+        cards = []
+        for line in self.promotion_line_ids:
+            subtitle = line.deal_summary or line.deal_type_label
+            cards.append(
+                self._promotion_card_html(
+                    title=line.name,
+                    subtitle=subtitle if subtitle != line.name else False,
+                    stats=[
+                        self._promotion_card_stat(_("Tickets"), str(line.order_count or 0)),
+                        self._promotion_card_stat(
+                            _("Qty"),
+                            self._format_promotion_qty(line.quantity),
+                        ),
+                        self._promotion_card_stat(
+                            _("Discount"),
+                            line.discount_display or line.deal_type_label or "—",
+                        ),
+                        self._promotion_card_stat(
+                            _("Sales"),
+                            self._format_promotion_money(line.sales_ex_tax),
+                        ),
+                    ],
+                )
+            )
+        if not cards:
+            return False
+        return Markup('<div class="o_avea_promo_card_list">') + Markup("").join(cards) + Markup("</div>")
+
+    def _build_promotion_product_cards_html(self):
+        self.ensure_one()
+        cards = []
+        for line in self.promotion_product_line_ids:
+            cards.append(
+                self._promotion_card_html(
+                    title=line.product_display,
+                    subtitle=line.promotion_name,
+                    stats=[
+                        self._promotion_card_stat(
+                            _("Qty"),
+                            self._format_promotion_qty(line.quantity),
+                        ),
+                        self._promotion_card_stat(
+                            _("Discount"),
+                            line.discount_display or line.deal_type_label or "—",
+                        ),
+                        self._promotion_card_stat(
+                            _("Sales"),
+                            self._format_promotion_money(line.sales_ex_tax),
+                        ),
+                    ],
+                )
+            )
+        if not cards:
+            return False
+        return Markup('<div class="o_avea_promo_card_list">') + Markup("").join(cards) + Markup("</div>")

@@ -797,7 +797,7 @@
             max-height: none;
         }
 
-        .o_avea_products_sold_list:not(.o_avea_products_profit_list) .o_list_table {
+        .o_avea_products_sold_list:not(.o_avea_products_profit_list):not(.o_avea_promotion_analysis_list) .o_list_table {
             min-width: 0;
             table-layout: fixed;
             width: 100%;

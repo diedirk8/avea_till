@@ -294,9 +294,12 @@
                                             <p class="o_avea_workspace_section_subtitle">Discount given, or the deal type when it is not a price-off</p>
                                         </div>
                                     </div>
-                                    <div class="o_avea_workspace_ledger_card o_avea_products_sold_card">
+                                    <div class="o_avea_promotion_analysis_cards">
+                                        <field name="promotion_deal_cards_html" nolabel="1" readonly="1" widget="html"/>
+                                    </div>
+                                    <div class="o_avea_workspace_ledger_card o_avea_products_sold_card o_avea_promotion_analysis_table">
                                         <field name="promotion_line_ids" nolabel="1" readonly="1">
-                                            <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                            <list create="false" edit="false" delete="false" class="o_avea_products_sold_list o_avea_promotion_analysis_list">
                                                 <field name="name" string="Promotion"/>
                                                 <field name="deal_summary" string="Deal"/>
                                                 <field name="order_count" string="Tickets"/>
@@ -318,9 +321,12 @@
                                             <p class="o_avea_workspace_section_subtitle">What moved, and what the deal took off</p>
                                         </div>
                                     </div>
-                                    <div class="o_avea_workspace_ledger_card o_avea_products_sold_card">
+                                    <div class="o_avea_promotion_analysis_cards">
+                                        <field name="promotion_product_cards_html" nolabel="1" readonly="1" widget="html"/>
+                                    </div>
+                                    <div class="o_avea_workspace_ledger_card o_avea_products_sold_card o_avea_promotion_analysis_table">
                                         <field name="promotion_product_line_ids" nolabel="1" readonly="1">
-                                            <list create="false" edit="false" delete="false" class="o_avea_products_sold_list">
+                                            <list create="false" edit="false" delete="false" class="o_avea_products_sold_list o_avea_promotion_analysis_list">
                                                 <field name="product_display" string="Product"/>
                                                 <field name="promotion_name" string="Promotion"/>
                                                 <field name="quantity" string="Qty"/>

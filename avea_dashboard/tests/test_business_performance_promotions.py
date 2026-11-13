@@ -68,6 +68,8 @@ class TestAveaBusinessPerformancePromotions(TestPoSCommon):
         self.assertEqual(dashboard.promo_ticket_count, 0)
         self.assertFalse(dashboard.promotion_line_ids)
         self.assertFalse(dashboard.promotion_product_line_ids)
+        self.assertFalse(dashboard.promotion_deal_cards_html)
+        self.assertFalse(dashboard.promotion_product_cards_html)
 
     def test_manual_discount_is_not_a_promotion(self):
         order, _session = self._create_paid_order(
@@ -134,6 +136,9 @@ class TestAveaBusinessPerformancePromotions(TestPoSCommon):
         self.assertAlmostEqual(dashboard.promo_discount, 120.0, places=2)
         self.assertEqual(dashboard.promotion_line_ids.name, "BarkVember biscuits")
         self.assertIn(self.product_a.name, dashboard.promotion_product_line_ids.mapped("product_display"))
+        self.assertIn("BarkVember biscuits", dashboard.promotion_deal_cards_html)
+        self.assertIn("off each", dashboard.promotion_deal_cards_html)
+        self.assertIn(self.product_a.name, dashboard.promotion_product_cards_html)
 
     def test_combo_price_shows_type_and_component_products(self):
         promo = self.Promotion.create(
@@ -265,6 +270,8 @@ class TestAveaBusinessPerformancePromotions(TestPoSCommon):
         dashboard = self.Performance.create({"period": "today"})
         self.assertTrue(dashboard.show_promotions)
         self.assertEqual(dashboard.promotion_line_ids.discount_display, "Extra Loyalty Points")
+        self.assertIn("Extra Loyalty Points", dashboard.promotion_deal_cards_html)
+        self.assertIn(self.product_a.name, dashboard.promotion_product_cards_html)
 
     def test_unrelated_ticket_products_are_not_attributed(self):
         promo = self.Promotion.create(
