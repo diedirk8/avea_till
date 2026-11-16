@@ -144,6 +144,55 @@ class AveaAccountingReportMixin(models.AbstractModel):
             return "equity"
         return False
 
+    def action_period_mtd(self):
+        self.ensure_one()
+        return self.action_open_report(period="mtd")
+
+    def action_period_ytd(self):
+        self.ensure_one()
+        return self.action_open_report(period="ytd")
+
+    def action_period_last_30(self):
+        self.ensure_one()
+        return self.action_open_report(period="last_30")
+
+    def action_period_custom(self):
+        self.ensure_one()
+        today = fields.Date.context_today(self)
+        if self.period == PERIOD_CUSTOM:
+            date_from = self.date_from or today.replace(day=1)
+            date_to = self.date_to or today
+        else:
+            date_from = today.replace(day=1)
+            date_to = today
+        return self.action_open_report(
+            period=PERIOD_CUSTOM,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
+    def action_apply_period(self):
+        self.ensure_one()
+        return self.action_open_report(
+            period=PERIOD_CUSTOM,
+            date_from=self.date_from,
+            date_to=self.date_to,
+        )
+
+    def action_back(self):
+        return self.env["avea.accounting.reports.home"].action_open_home()
+
+    def _avea_action_form(self, title):
+        self.ensure_one()
+        return {
+            "type": "ir.actions.act_window",
+            "name": title,
+            "res_model": self._name,
+            "view_mode": "form",
+            "res_id": self.id,
+            "target": "current",
+        }
+
 
 class AveaAccountingReportsHome(models.TransientModel):
     _name = "avea.accounting.reports.home"
@@ -175,6 +224,11 @@ class AveaAccountingReportsHome(models.TransientModel):
                 record.period, record.date_from, record.date_to
             )
             record.period_range_display = record._avea_report_range_label(start, end)
+
+    @api.onchange("date_from", "date_to")
+    def _onchange_report_dates(self):
+        if self.date_from and self.date_to:
+            self.period = PERIOD_CUSTOM
 
     @api.model
     def action_open_home(self):
@@ -248,9 +302,9 @@ class AveaAccountingProfitLoss(models.TransientModel):
     _description = "Profit and loss"
     _inherit = ["avea.accounting.report.mixin", "avea.accounting.report.export.mixin"]
 
-    period = fields.Selection(_PERIOD_SELECTION, readonly=True)
-    date_from = fields.Date(readonly=True)
-    date_to = fields.Date(readonly=True)
+    period = fields.Selection(_PERIOD_SELECTION)
+    date_from = fields.Date()
+    date_to = fields.Date()
     period_range_display = fields.Char(readonly=True)
     currency_id = fields.Many2one(
         "res.currency",
@@ -404,20 +458,6 @@ class AveaAccountingProfitLoss(models.TransientModel):
             rows,
         )
 
-    def action_back(self):
-        return self.env["avea.accounting.reports.home"].action_open_home()
-
-    def _avea_action_form(self, title):
-        self.ensure_one()
-        return {
-            "type": "ir.actions.act_window",
-            "name": title,
-            "res_model": self._name,
-            "view_mode": "form",
-            "res_id": self.id,
-            "target": "current",
-        }
-
 
 class AveaAccountingBalanceSheetLine(models.TransientModel):
     _name = "avea.accounting.balance.sheet.line"
@@ -446,9 +486,9 @@ class AveaAccountingBalanceSheet(models.TransientModel):
     _description = "Balance sheet"
     _inherit = ["avea.accounting.report.mixin", "avea.accounting.report.export.mixin"]
 
-    period = fields.Selection(_PERIOD_SELECTION, readonly=True)
-    date_from = fields.Date(readonly=True)
-    date_to = fields.Date(readonly=True)
+    period = fields.Selection(_PERIOD_SELECTION)
+    date_from = fields.Date()
+    date_to = fields.Date()
     period_range_display = fields.Char(readonly=True)
     as_at_display = fields.Char(readonly=True)
     currency_id = fields.Many2one("res.currency", readonly=True)
@@ -463,7 +503,7 @@ class AveaAccountingBalanceSheet(models.TransientModel):
 
     @api.model
     def action_open_report(self, *, period="ytd", date_from=None, date_to=None):
-        period, _start, end = self._avea_report_resolve_dates(period, date_from, date_to)
+        period, start, end = self._avea_report_resolve_dates(period, date_from, date_to)
         currency = self._avea_report_currency()
         domain = [
             ("company_id", "=", self._avea_report_company().id),
@@ -501,7 +541,7 @@ class AveaAccountingBalanceSheet(models.TransientModel):
         report = self.create(
             {
                 "period": period,
-                "date_from": end,
+                "date_from": start,
                 "date_to": end,
                 "period_range_display": self._avea_report_range_label(end, end),
                 "as_at_display": format_date(self.env, end, date_format="d MMMM y"),
@@ -589,20 +629,6 @@ class AveaAccountingBalanceSheet(models.TransientModel):
         ]
         return (_("Balance sheet"), "balance_sheet", period, summaries, headers, rows)
 
-    def action_back(self):
-        return self.env["avea.accounting.reports.home"].action_open_home()
-
-    def _avea_action_form(self, title):
-        self.ensure_one()
-        return {
-            "type": "ir.actions.act_window",
-            "name": title,
-            "res_model": self._name,
-            "view_mode": "form",
-            "res_id": self.id,
-            "target": "current",
-        }
-
 
 class AveaAccountingTrialBalanceLine(models.TransientModel):
     _name = "avea.accounting.trial.balance.line"
@@ -627,9 +653,9 @@ class AveaAccountingTrialBalance(models.TransientModel):
     _description = "Trial balance"
     _inherit = ["avea.accounting.report.mixin", "avea.accounting.report.export.mixin"]
 
-    period = fields.Selection(_PERIOD_SELECTION, readonly=True)
-    date_from = fields.Date(readonly=True)
-    date_to = fields.Date(readonly=True)
+    period = fields.Selection(_PERIOD_SELECTION)
+    date_from = fields.Date()
+    date_to = fields.Date()
     period_range_display = fields.Char(readonly=True)
     currency_id = fields.Many2one("res.currency", readonly=True)
     total_debit = fields.Monetary(currency_field="currency_id", readonly=True)
@@ -735,20 +761,6 @@ class AveaAccountingTrialBalance(models.TransientModel):
             rows,
         )
 
-    def action_back(self):
-        return self.env["avea.accounting.reports.home"].action_open_home()
-
-    def _avea_action_form(self, title):
-        self.ensure_one()
-        return {
-            "type": "ir.actions.act_window",
-            "name": title,
-            "res_model": self._name,
-            "view_mode": "form",
-            "res_id": self.id,
-            "target": "current",
-        }
-
 
 class AveaAccountingGeneralLedgerLine(models.TransientModel):
     _name = "avea.accounting.general.ledger.line"
@@ -777,9 +789,9 @@ class AveaAccountingGeneralLedger(models.TransientModel):
     _description = "General ledger"
     _inherit = ["avea.accounting.report.mixin", "avea.accounting.report.export.mixin"]
 
-    period = fields.Selection(_PERIOD_SELECTION, readonly=True)
-    date_from = fields.Date(readonly=True)
-    date_to = fields.Date(readonly=True)
+    period = fields.Selection(_PERIOD_SELECTION)
+    date_from = fields.Date()
+    date_to = fields.Date()
     period_range_display = fields.Char(readonly=True)
     currency_id = fields.Many2one("res.currency", readonly=True)
     line_ids = fields.One2many(
@@ -875,17 +887,3 @@ class AveaAccountingGeneralLedger(models.TransientModel):
             headers,
             rows,
         )
-
-    def action_back(self):
-        return self.env["avea.accounting.reports.home"].action_open_home()
-
-    def _avea_action_form(self, title):
-        self.ensure_one()
-        return {
-            "type": "ir.actions.act_window",
-            "name": title,
-            "res_model": self._name,
-            "view_mode": "form",
-            "res_id": self.id,
-            "target": "current",
-        }

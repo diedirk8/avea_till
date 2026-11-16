@@ -77,3 +77,52 @@ class TestAveaAccountingReports(TransactionCase):
         export = report.action_export_csv()
         self.assertEqual(export["type"], "ir.actions.act_url")
         self.assertIn("/web/content/", export["url"])
+
+    def test_profit_loss_apply_custom_dates(self):
+        action = self._env()["avea.accounting.profit.loss"].action_open_report(
+            period="ytd"
+        )
+        report = self._env()["avea.accounting.profit.loss"].browse(action["res_id"])
+        report.date_from = "2026-05-13"
+        report.date_to = "2026-08-31"
+        refreshed = report.action_apply_period()
+        new = self._env()["avea.accounting.profit.loss"].browse(refreshed["res_id"])
+        self.assertEqual(new.period, "custom")
+        self.assertEqual(str(new.date_from), "2026-05-13")
+        self.assertEqual(str(new.date_to), "2026-08-31")
+
+    def test_profit_loss_month_to_date_button(self):
+        action = self._env()["avea.accounting.profit.loss"].action_open_report(
+            period="ytd"
+        )
+        report = self._env()["avea.accounting.profit.loss"].browse(action["res_id"])
+        refreshed = report.action_period_mtd()
+        new = self._env()["avea.accounting.profit.loss"].browse(refreshed["res_id"])
+        self.assertEqual(new.period, "mtd")
+        self.assertEqual(new.date_from.month, new.date_to.month)
+        self.assertEqual(new.date_from.year, new.date_to.year)
+
+    def test_balance_sheet_as_at_uses_to_date(self):
+        action = self._env()["avea.accounting.balance.sheet"].action_open_report(
+            period="custom",
+            date_from="2026-05-13",
+            date_to="2026-08-31",
+        )
+        report = self._env()["avea.accounting.balance.sheet"].browse(action["res_id"])
+        self.assertEqual(str(report.date_from), "2026-05-13")
+        self.assertEqual(str(report.date_to), "2026-08-31")
+        self.assertIn("31 August 2026", report.as_at_display)
+
+    def test_home_typed_dates_open_custom_profit_loss(self):
+        home = self._env()["avea.accounting.reports.home"].create(
+            {
+                "period": "custom",
+                "date_from": "2026-05-13",
+                "date_to": "2026-08-31",
+            }
+        )
+        action = home.action_open_profit_loss()
+        report = self._env()["avea.accounting.profit.loss"].browse(action["res_id"])
+        self.assertEqual(report.period, "custom")
+        self.assertEqual(str(report.date_from), "2026-05-13")
+        self.assertEqual(str(report.date_to), "2026-08-31")
