@@ -333,8 +333,10 @@
                     <div class="o_avea_account_panel o_avea_bank_recon_setup" invisible="state != 'draft' or not has_previous_statement">
                         <h2 class="o_avea_workspace_section_title">Last completed statement</h2>
                         <p class="o_avea_account_panel_hint">
-                            New recon starts here. After you load the next FNB file, Avea checks
-                            that the file opening matches this closing.
+                            New recon starts here. FNB Gold Business statements often
+                            begin on this last day — that shared day is expected.
+                            After you load the next FNB file, Avea checks that the
+                            opening continues from this closing.
                         </p>
                         <div class="o_avea_account_fields">
                             <div class="o_avea_workspace_info_item">

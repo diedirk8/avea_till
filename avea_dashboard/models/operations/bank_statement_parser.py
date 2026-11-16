@@ -602,6 +602,10 @@ class AveaBankStatementParser:
             tx["date"] = _parse_dd_mon(tx.pop("date_label"), period_start, period_end)
         transactions = [tx for tx in transactions if tx.get("date")]
         meta = cls._parse_fnb_pdf_meta(full_text, period_end)
+        if period_start:
+            meta["date_from"] = period_start
+        if period_end:
+            meta["date_to"] = period_end
         if opening_balance is not None:
             meta["opening_balance"] = opening_balance
         if closing_balance is not None:
@@ -612,6 +616,10 @@ class AveaBankStatementParser:
     def _parse_fnb_pdf_text(cls, text: str) -> dict[str, Any]:
         period_start, period_end = cls._extract_fnb_statement_period(text)
         meta = cls._parse_fnb_pdf_meta(text, period_end)
+        if period_start:
+            meta["date_from"] = period_start
+        if period_end:
+            meta["date_to"] = period_end
         transactions = cls._parse_fnb_gold_business_pdf(text, period_start, period_end)
         if not transactions:
             transactions = cls._parse_fnb_pdf_single_line_rows(text, period_start, period_end)
@@ -826,7 +834,7 @@ class AveaBankStatementParser:
             "statement_date": meta.get("statement_date"),
             "opening_balance": meta.get("opening_balance"),
             "closing_balance": meta.get("closing_balance"),
-            "date_from": min(dates) if dates else None,
-            "date_to": max(dates) if dates else None,
+            "date_from": meta.get("date_from") or (min(dates) if dates else None),
+            "date_to": meta.get("date_to") or (max(dates) if dates else None),
             "transactions": transactions,
         }

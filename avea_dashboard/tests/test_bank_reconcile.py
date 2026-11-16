@@ -83,6 +83,8 @@ FNB App Payment From Cash
         self.assertGreaterEqual(len(parsed["transactions"]), 2)
         self.assertEqual(parsed["transactions"][0]["amount"], -5599.41)
         self.assertEqual(parsed["transactions"][1]["amount"], 1000.0)
+        self.assertEqual(str(parsed["date_from"]), "2026-06-30")
+        self.assertEqual(str(parsed["date_to"]), "2026-07-31")
 
     def test_parse_fnb_pdf_text(self):
         content = """
@@ -955,6 +957,82 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
         action = Recon.action_new_reconciliation()
         self.assertEqual(action["res_id"], nxt.id)
         self.assertEqual(Recon.action_create_draft(), nxt.id)
+
+    def test_fnb_statement_may_start_on_the_previous_closing_day(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        prior = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "done",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "opening_balance": 7584.04,
+                "closing_balance": 9873.06,
+                "balances_from_file": True,
+            }
+        )
+        nxt = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-31",
+                "date_to": "2026-09-30",
+                "opening_balance": 9000.0,
+                "closing_balance": 12126.94,
+                "balances_from_file": True,
+            }
+        )
+        self.env["avea.bank.reconcile.line"].create(
+            [
+                {
+                    "reconciliation_id": nxt.id,
+                    "bank_date": "2026-08-31",
+                    "description": "Last August settlement",
+                    "amount": 873.06,
+                },
+                {
+                    "reconciliation_id": nxt.id,
+                    "bank_date": "2026-09-01",
+                    "description": "September sale",
+                    "amount": 2253.88,
+                },
+            ]
+        )
+        self.assertEqual(nxt._avea_previous_reconciliation(), prior)
+        self.assertFalse(nxt._avea_overlap_warning())
+        warning = nxt.balance_warning or ""
+        self.assertNotIn("already covers this period", warning)
+        self.assertNotIn("opening balance does not match", warning)
+
+    def test_interior_period_overlap_still_warns(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "done",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "opening_balance": 7584.04,
+                "closing_balance": 9873.06,
+                "balances_from_file": True,
+            }
+        )
+        nxt = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-15",
+                "date_to": "2026-09-30",
+                "opening_balance": 8000.0,
+                "closing_balance": 9000.0,
+            }
+        )
+        self.assertTrue(nxt._avea_overlap_warning())
+        self.assertIn("already covers this period", nxt.balance_warning or "")
 
     def test_brought_forward_fnb_recons_are_idempotent(self):
         Recon = self.env["avea.bank.reconciliation"]

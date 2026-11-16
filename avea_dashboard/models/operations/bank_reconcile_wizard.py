@@ -551,6 +551,7 @@ class AveaBankReconciliation(models.Model):
         "account_number",
         "state",
         "line_ids.amount",
+        "line_ids.bank_date",
         "line_ids.match_state",
         "line_ids.statement_line_id",
         "book_line_ids.amount",
@@ -591,7 +592,8 @@ class AveaBankReconciliation(models.Model):
             if (
                 prior
                 and not currency.is_zero(
-                    (reconciliation.opening_balance or 0.0) - prior.closing_balance
+                    reconciliation._avea_implied_previous_closing()
+                    - (prior.closing_balance or 0.0)
                 )
             ):
                 warnings.append(
@@ -664,8 +666,28 @@ class AveaBankReconciliation(models.Model):
         if self.ids:
             domain.append(("id", "!=", self.id))
         if self.date_from:
-            domain.append(("date_to", "<", self.date_from))
+            # FNB Gold Business statements start on the last day of the
+            # previous cycle, so the prior recon may end on this date_from.
+            domain.append(("date_to", "<=", self.date_from))
         return self.search(domain, order="date_to desc, id desc", limit=1)
+
+    def _avea_implied_previous_closing(self):
+        """Opening on this file, plus any lines on the shared FNB start day."""
+        self.ensure_one()
+        opening = self.opening_balance or 0.0
+        prior = self._avea_previous_reconciliation()
+        if (
+            prior
+            and prior.date_to
+            and self.date_from
+            and prior.date_to == self.date_from
+        ):
+            opening += sum(
+                self.line_ids.filtered(
+                    lambda line: line.bank_date == self.date_from
+                ).mapped("amount")
+            )
+        return opening
 
     def _avea_has_prior_reconciliation(self):
         self.ensure_one()
@@ -743,8 +765,8 @@ class AveaBankReconciliation(models.Model):
                 ("id", "!=", self.id),
                 ("journal_id", "=", self.journal_id.id),
                 ("state", "=", "done"),
-                ("date_from", "<=", self.date_to),
-                ("date_to", ">=", self.date_from),
+                ("date_from", "<", self.date_to),
+                ("date_to", ">", self.date_from),
             ],
             limit=1,
         )
