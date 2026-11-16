@@ -168,7 +168,7 @@
   <li><strong>In hand, reconstructed:</strong> 37–39 (Oct–Dec 2024), 41–45 (Feb–Jun 2025), 47–49 (Aug–Oct 2025).</li>
   <li><strong>In hand, Avea live month:</strong> 59 (Aug 2026).</li>
   <li><strong>Still needed:</strong> 40 (Jan 2025), 46 (Jul 2025), 50–58 (Nov 2025 through Jul 2026).</li>
-  <li><strong>Card machines now in hand:</strong> Yoco payouts CSV 1 Jan 2024 – 17 Nov 2026 (838 payouts), Capitec merchant statements issued 1 Sep 2024 – 1 Jun 2025, plus the July 2026 merchant statement.</li>
+  <li><strong>Card machines now in hand:</strong> Yoco payouts CSV 1 Jan 2024 – 17 Nov 2026 (838 payouts). Capitec merchant statements from Aug 2024 through Mar 2026, plus July 2026.</li>
 </ul>
 <div class="callout warn">
   <div class="label">Cannot close the books yet</div>
@@ -567,11 +567,10 @@
 </p>
 <h3>Capitec merchant statements</h3>
 <p>
-  Capitec files are named by the <em>issued</em> date. The September 2024 file
-  is the August 2024 trading month (period 2 Aug – 1 Sep), and so on. Net
-  deposits match FNB PosSettle credits in every full overlapping month.
-  Two FNB lines named “Capitec” are not the card machine: R 189.00 Capitec Thyson
-  (Oct 2024) and R 1,000.00 Capitec B Botha (Feb 2025).
+  Capitec files are named by the <em>issued</em> date. Net PosSettle credits
+  now match every overlapping FNB machine line. A handful of FNB credits that
+  say “Capitec” are people, not the card machine: Thyson R 189, B Botha R 1,000,
+  S Brown R 168, Adinie Grove R 450, J Littlewood R 340.
 </p>
 <table>
   <thead>
@@ -586,24 +585,64 @@
     </tr>
   </thead>
   <tbody>
-    <tr><td>1 Sep 2024</td><td>2 Aug – 1 Sep 2024</td><td class="num">R 111,894.57</td><td class="num">R 1,524.09</td><td class="num">R 546.25</td><td class="num">R 110,370.33</td><td>Matches (1 Aug FNB line is before this file)</td></tr>
-    <tr><td>1 Oct 2024</td><td>2 Sep – 1 Oct 2024</td><td class="num">R 145,647.97</td><td class="num">R 1,990.66</td><td class="num">R 546.25</td><td class="num">R 143,657.16</td><td>Matches statement 36/37</td></tr>
+    <tr><td>1 Sep 2024</td><td>2 Aug – 1 Sep 2024</td><td class="num">R 111,894.57</td><td class="num">R 1,524.09</td><td class="num">R 546.25</td><td class="num">R 110,370.33</td><td>Matches (1 Aug FNB is before this file)</td></tr>
+    <tr><td>1 Oct 2024</td><td>2 Sep – 1 Oct 2024</td><td class="num">R 145,647.97</td><td class="num">R 1,990.66</td><td class="num">R 546.25</td><td class="num">R 143,657.16</td><td>Matches</td></tr>
     <tr><td>1 Nov 2024</td><td>2 Oct – 1 Nov 2024</td><td class="num">R 106,688.00</td><td class="num">R 1,368.11</td><td class="num">R 546.25</td><td class="num">R 105,319.76</td><td>Matches</td></tr>
     <tr><td>1 Dec 2024</td><td>2 Nov – 1 Dec 2024</td><td class="num">R 111,818.94</td><td class="num">R 1,391.49</td><td class="num">R 546.25</td><td class="num">R 110,427.32</td><td>Matches</td></tr>
     <tr><td>1 Jan 2025</td><td>2 Dec – 1 Jan 2025</td><td class="num">R 114,715.93</td><td class="num">R 1,423.90</td><td class="num">R 546.25</td><td class="num">R 113,291.91</td><td>Matches</td></tr>
-    <tr><td>1 Feb 2025</td><td>2 Jan – 1 Feb 2025</td><td class="num">R 72,720.91</td><td class="num">R 957.82</td><td class="num">R 546.25</td><td class="num">R 71,762.97</td><td>Fills Jan 2025 hole + Feb</td></tr>
+    <tr><td>1 Feb 2025</td><td>2 Jan – 1 Feb 2025</td><td class="num">R 72,720.91</td><td class="num">R 957.82</td><td class="num">R 546.25</td><td class="num">R 71,762.97</td><td>Fills Jan 2025 hole</td></tr>
     <tr><td>1 Mar 2025</td><td>2 Feb – 1 Mar 2025</td><td class="num">R 67,434.78</td><td class="num">R 927.77</td><td class="num">R 546.25</td><td class="num">R 66,506.90</td><td>Matches</td></tr>
     <tr><td>1 Apr 2025</td><td>2 Mar – 1 Apr 2025</td><td class="num">R 101,486.71</td><td class="num">R 1,376.50</td><td class="num">R 546.25</td><td class="num">R 100,110.21</td><td>Matches</td></tr>
     <tr><td>1 May 2025</td><td>2 Apr – 1 May 2025</td><td class="num">R 83,464.28</td><td class="num">R 1,106.30</td><td class="num">R 0.00</td><td class="num">R 82,357.98</td><td>Matches · rental billed late</td></tr>
-    <tr><td>1 Jun 2025</td><td>2 May – 1 Jun 2025</td><td class="num">R 83,974.00</td><td class="num">R 1,014.82</td><td class="num">R 546.25</td><td class="num">R 82,959.23</td><td>Matches May; 1 Jun only of June</td></tr>
-    <tr><td>6 Aug 2026</td><td>Jul 2026</td><td class="num">R 54,189.50</td><td class="num">R 746.81</td><td class="num">—</td><td class="num">R 53,442.69</td><td>Have FNB 59 for August, not July</td></tr>
+    <tr><td>1 Jun 2025</td><td>2 May – 1 Jun 2025</td><td class="num">R 83,974.00</td><td class="num">R 1,014.82</td><td class="num">R 546.25</td><td class="num">R 82,959.23</td><td>Matches</td></tr>
+    <tr><td>1 Jul 2025</td><td>2 Jun – 1 Jul 2025</td><td class="num">R 70,069.31</td><td class="num">R 921.34</td><td class="num">R 1,092.50</td><td class="num">R 69,148.12</td><td>Matches Jun FNB</td></tr>
+    <tr><td>1 Aug 2025</td><td>2 Jul – 1 Aug 2025</td><td class="num">R 77,045.80</td><td class="num">R 1,002.22</td><td class="num">R 546.25</td><td class="num">R 76,043.70</td><td>Fills Jul 2025 hole</td></tr>
+    <tr><td>1 Sep 2025</td><td>2 Aug – 31 Aug 2025</td><td class="num">R 96,651.37</td><td class="num">R 1,241.84</td><td class="num">R 546.25</td><td class="num">R 95,409.64</td><td>Matches Aug FNB</td></tr>
+    <tr><td>1 Oct 2025</td><td>2 Sep – 1 Oct 2025</td><td class="num">R 54,961.74</td><td class="num">R 724.68</td><td class="num">R 546.25</td><td class="num">R 54,237.17</td><td>Matches Sep FNB</td></tr>
+    <tr><td>1 Nov 2025</td><td>2 Oct – 1 Nov 2025</td><td class="num">R 67,184.26</td><td class="num">R 902.81</td><td class="num">R 546.25</td><td class="num">R 66,281.61</td><td>Matches Oct FNB</td></tr>
+    <tr><td>4 Dec 2025</td><td>2 Nov – 30 Nov 2025</td><td class="num">R 83,203.64</td><td class="num">R 1,990.37</td><td class="num">—</td><td class="num">R 81,213.27</td><td>Fills Nov 2025 hole</td></tr>
+    <tr><td>5 Jan 2026</td><td>2 Dec – 1 Jan 2026</td><td class="num">R 76,132.69</td><td class="num">R 1,332.09</td><td class="num">—</td><td class="num">R 74,816.90</td><td>Fills Dec 2025 hole</td></tr>
+    <tr><td>4 Feb 2026</td><td>2 Jan – 1 Feb 2026</td><td class="num">R 71,879.15</td><td class="num">R 1,701.79</td><td class="num">R 546.25</td><td class="num">R 70,177.36</td><td>Fills Jan 2026 hole</td></tr>
+    <tr><td>4 Mar 2026</td><td>2 Feb – 1 Mar 2026</td><td class="num">R 55,980.50</td><td class="num">R 772.81</td><td class="num">R 546.25</td><td class="num">R 55,207.69</td><td>Fills Feb 2026 hole</td></tr>
+    <tr><td>4 Apr 2026</td><td>2 Mar – 1 Apr 2026</td><td class="num">R 65,361.46</td><td class="num">R 828.61</td><td class="num">R 546.25</td><td class="num">R 64,532.85</td><td>Fills Mar 2026; 1 Apr only</td></tr>
+    <tr><td>6 Aug 2026</td><td>Jul 2026</td><td class="num">R 54,189.50</td><td class="num">R 746.81</td><td class="num">—</td><td class="num">R 53,442.69</td><td>Fills Jul 2026 hole</td></tr>
+  </tbody>
+</table>
+<h3>Card machines on months still missing FNB</h3>
+<p>
+  Yoco + Capitec net that should appear on those bank statements. Capitec for
+  April 2026 is only the 1 Apr settlement; May and June 2026 Capitec are still
+  outstanding.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Month</th>
+      <th>Need FNB</th>
+      <th class="num">Yoco net</th>
+      <th class="num">Capitec net</th>
+      <th class="num">Combined</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="miss"><td>Jan 2025</td><td>40</td><td class="num">R 74,513.86</td><td class="num">R 74,177.71</td><td class="num">R 148,691.57</td></tr>
+    <tr class="miss"><td>Jul 2025</td><td>46</td><td class="num">R 57,977.49</td><td class="num">R 73,465.21</td><td class="num">R 131,442.70</td></tr>
+    <tr class="miss"><td>Nov 2025</td><td>50</td><td class="num">R 60,901.89</td><td class="num">R 81,828.13</td><td class="num">R 142,730.02</td></tr>
+    <tr class="miss"><td>Dec 2025</td><td>51</td><td class="num">R 76,633.46</td><td class="num">R 72,004.84</td><td class="num">R 148,638.30</td></tr>
+    <tr class="miss"><td>Jan 2026</td><td>52</td><td class="num">R 54,230.83</td><td class="num">R 65,661.69</td><td class="num">R 119,892.52</td></tr>
+    <tr class="miss"><td>Feb 2026</td><td>53</td><td class="num">R 62,319.00</td><td class="num">R 51,998.21</td><td class="num">R 114,317.21</td></tr>
+    <tr class="miss"><td>Mar 2026</td><td>54</td><td class="num">R 55,513.51</td><td class="num">R 70,305.68</td><td class="num">R 125,819.19</td></tr>
+    <tr class="miss"><td>Apr 2026</td><td>55</td><td class="num">R 43,112.61</td><td class="num">R 4,764.38</td><td class="num">R 47,876.99</td></tr>
+    <tr class="miss"><td>May 2026</td><td>56</td><td class="num">R 14,796.93</td><td class="num">—</td><td class="num">R 14,796.93</td></tr>
+    <tr class="miss"><td>Jun 2026</td><td>57</td><td class="num">R 39,313.99</td><td class="num">—</td><td class="num">R 39,313.99</td></tr>
+    <tr class="miss"><td>Jul 2026</td><td>58</td><td class="num">R 55,332.69</td><td class="num">R 53,442.69</td><td class="num">R 108,775.38</td></tr>
   </tbody>
 </table>
 <p class="small">
-  Capitec still needed: merchant statements issued 1 Jul 2025 through
-  1 Aug 2026, except the July 2026 file already uploaded. Terminal rental is
-  R 546.25 (R 475 + VAT) and hits FNB as a separate Magtape Debit, not inside
-  the PosSettle credit.
+  Terminal rental is R 546.25 (R 475 + VAT) and hits FNB as a separate Magtape
+  Debit, not inside the PosSettle credit. Capitec still needed: merchant
+  statements issued around 4 May, 4 Jun, 4 Jul and 4 Sep 2026 (April, May, June
+  and August 2026 trading).
 </p>
 
 <h2 id="next">6. What to send next</h2>
@@ -636,10 +675,9 @@
   </tbody>
 </table>
 <p>
-  Yoco is done — do not re-export it. Still useful: Capitec merchant PDFs
-  issued 1 Jul 2025, then monthly through 1 Aug 2026 (skip July 2026, we have
-  that one). Those split gross machine totals from commission for the months
-  FNB only shows as a net PosSettle.
+  Yoco is done — do not re-export it. Capitec is done through March 2026 plus
+  July 2026. Still useful: Capitec merchant PDFs issued around 4 May, 4 Jun,
+  4 Jul and 4 Sep 2026 (April, May, June and August 2026 trading).
 </p>
 <div class="callout ok">
   <div class="label">Stop capturing into QuickBooks</div>
@@ -650,7 +688,7 @@
 <p class="small">
   Source: FNB Gold Business tax invoice/statements 35–39, 41–45, 47–49, 59
   for account 62920038462; Yoco payouts 1 Jan 2024 – 17 Nov 2026; Capitec
-  merchant statements issued 1 Sep 2024 – 1 Jun 2025 and 6 Aug 2026;
+  merchant statements issued 1 Sep 2024 – 4 Apr 2026 and 6 Aug 2026;
   QuickBooks recon summary dated 30 Sep 24. Parsed 16 November 2026
   (Africa/Johannesburg).
 </p>

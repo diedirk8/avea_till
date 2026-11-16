@@ -669,6 +669,24 @@ Batch Total
         self.assertAlmostEqual(parsed["payouts"][1]["net_amount"], 5584.27)
         self.assertAlmostEqual(parsed["payouts"][1]["gross_amount"], 5673.00)
 
+    def test_parse_capitec_drops_scrambled_gross_column(self):
+        content = """
+Merchant Statement
+Capitec Bank Limited
+All settlements
+02/07/2026 CAPITEC 0207PosSettle 260701 R100.00
+03/07/2026 CAPITEC 0307PosSettle 260702 R200.00
+Settlements for card machine
+02/07/2026 CAPITEC 0207PosSettle 260701 R250.00
+03/07/2026 CAPITEC 0307PosSettle 260702 R50.00
+"""
+        parsed = AveaMerchantPayoutParser._parse_capitec_text(content)
+        self.assertEqual(len(parsed["payouts"]), 2)
+        self.assertAlmostEqual(parsed["payouts"][0]["net_amount"], 100.0)
+        self.assertAlmostEqual(parsed["payouts"][0]["gross_amount"], 100.0)
+        self.assertAlmostEqual(parsed["payouts"][0]["fee_amount"], 0.0)
+        self.assertAlmostEqual(parsed["payouts"][1]["net_amount"], 200.0)
+
     def test_yoco_file_rejected_as_bank_statement(self):
         journal = self._bank_journal()
         if not journal:

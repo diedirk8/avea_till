@@ -229,6 +229,12 @@ class AveaMerchantPayoutParser:
                     "state": "paid",
                 }
             )
+        clamped_fee = round(sum(row["fee_amount"] for row in payouts), 2)
+        raw_fee = round(sum(row["gross_amount"] - row["net_amount"] for row in payouts), 2)
+        if clamped_fee - raw_fee > 1:
+            for row in payouts:
+                row["gross_amount"] = row["net_amount"]
+                row["fee_amount"] = 0.0
         dates = [row["payout_date"] for row in payouts]
         return {
             "provider": "capitec",
