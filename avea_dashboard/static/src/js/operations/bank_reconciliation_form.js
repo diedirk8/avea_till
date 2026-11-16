@@ -40,7 +40,7 @@ function _unlockList(el) {
     el.style.setProperty("max-height", "none", "important");
     el.style.setProperty("min-height", "22rem", "important");
     el.style.setProperty("overflow", "visible", "important");
-    el.style.setProperty("overflow-x", "auto", "important");
+    el.style.setProperty("overflow-x", "hidden", "important");
     el.style.setProperty("overflow-y", "visible", "important");
 }
 

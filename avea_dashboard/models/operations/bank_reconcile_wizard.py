@@ -1066,11 +1066,17 @@ class AveaBankReconciliation(models.Model):
 
     def action_refresh_matches(self):
         self.ensure_one()
-        self._avea_match_lines()
-        self._avea_load_merchant_files()
-        self._avea_apply_booking_suggestions()
+        self._avea_refresh_after_merchant_files()
         self._avea_find_orphan_book_lines()
         return self._avea_action_form()
+
+    def _avea_refresh_after_merchant_files(self):
+        for reconciliation in self:
+            if reconciliation.state != "in_progress":
+                continue
+            reconciliation._avea_load_merchant_files()
+            reconciliation._avea_match_lines()
+            reconciliation._avea_apply_booking_suggestions()
 
     def _avea_load_merchant_files(self):
         self.ensure_one()
@@ -1122,7 +1128,7 @@ class AveaBankReconciliation(models.Model):
                     date_from=parsed["date_from"],
                     date_to=parsed["date_to"],
                 )
-            attachment.write(
+            attachment.with_context(avea_skip_merchant_refresh=True).write(
                 {
                     "provider": parsed["provider"],
                     "date_from": parsed.get("date_from"),
@@ -2088,6 +2094,33 @@ class AveaBankReconcileMerchantFile(models.Model):
     date_from = fields.Date(readonly=True)
     date_to = fields.Date(readonly=True)
     period_warning = fields.Char(readonly=True)
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        records = super().create(vals_list)
+        records._avea_notify_reconciliation()
+        return records
+
+    def write(self, vals):
+        res = super().write(vals)
+        if "datas" in vals:
+            self._avea_notify_reconciliation()
+        return res
+
+    def unlink(self):
+        recons = self.mapped("reconciliation_id").filtered(
+            lambda rec: rec.state == "in_progress"
+        )
+        res = super().unlink()
+        recons.exists()._avea_refresh_after_merchant_files()
+        return res
+
+    def _avea_notify_reconciliation(self):
+        if self.env.context.get("avea_skip_merchant_refresh"):
+            return
+        self.mapped("reconciliation_id").filtered(
+            lambda rec: rec.state == "in_progress"
+        )._avea_refresh_after_merchant_files()
 
 
 class AveaBankReconcileMerchantPayout(models.Model):

@@ -468,9 +468,20 @@
                     <div class="o_avea_account_panel" invisible="state == 'draft'">
                         <h2 class="o_avea_workspace_section_title">Card machines</h2>
                         <p class="o_avea_account_panel_hint">
-                            Till card sales should be close to the Yoco and Capitec files.
-                            A large gap usually means the wrong month was uploaded.
+                            Add the Yoco CSV and Capitec merchant PDF here, even after the FNB
+                            statement is loaded. Avea matches them as soon as you attach them.
+                            Till card sales should be close to those files.
                         </p>
+                        <field name="merchant_file_ids" nolabel="1" invisible="state == 'done'">
+                            <list editable="bottom">
+                                <field name="datas" filename="filename" string="Yoco CSV or Capitec PDF"/>
+                                <field name="filename" string="Filename"/>
+                                <field name="provider"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="period_warning"/>
+                            </list>
+                        </field>
                         <div class="o_avea_account_fields">
                             <div class="o_avea_workspace_info_item">
                                 <span class="o_avea_workspace_info_label">Till card sales</span>
@@ -606,21 +617,10 @@
                         </page>
                         <page string="Card machines" name="merchant_payouts">
                             <p class="text-muted">
-                                Each row is one Yoco or Capitec payout. The amount the bank received
+                                Each row is one Yoco or Capitec payout from the files in
+                                <strong>Card machines</strong> above. The amount the bank received
                                 is after fees. Yoco capital is a loan repayment, not shop sales.
-                                After you add a file, click <strong>Refresh matches</strong>.
                             </p>
-                            <field name="merchant_file_ids" nolabel="1" invisible="state == 'done'">
-                                <list editable="bottom">
-                                    <field name="filename" column_invisible="True"/>
-                                    <field name="datas" filename="filename" string="File"/>
-                                    <field name="filename" string="Filename"/>
-                                    <field name="provider"/>
-                                    <field name="date_from"/>
-                                    <field name="date_to"/>
-                                    <field name="period_warning"/>
-                                </list>
-                            </field>
                             <field name="merchant_payout_ids" nolabel="1">
                                 <list create="false" delete="false" edit="false">
                                     <field name="payout_date"/>

@@ -790,6 +790,37 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
             places=2,
         )
 
+    def test_yoco_file_can_be_added_after_the_statement_is_loaded(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        fnb = """Date,Description,Amount
+2026-08-01,Yoco card settlement (sales 1 Aug 2026),3062.51
+"""
+        yoco = """sep=,
+Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
+2026/08/01 00:01:04,3062.51,99.50,13.00,602.29,paid
+"""
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "draft",
+                "statement_file": base64.b64encode(fnb.encode()),
+                "statement_filename": "statement.csv",
+            }
+        )
+        reconciliation.action_parse_statement()
+        self.assertFalse(reconciliation.merchant_payout_ids)
+        self.env["avea.bank.reconcile.merchant.file"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "datas": base64.b64encode(yoco.encode()),
+                "filename": "Yoco-payouts.csv",
+            }
+        )
+        self.assertTrue(reconciliation.merchant_payout_ids)
+        self.assertEqual(reconciliation.line_ids[:1].merchant_payout_id, reconciliation.merchant_payout_ids[:1])
+
     def test_statement_dates_are_editable_and_refresh_card_period(self):
         journal = self._bank_journal()
         if not journal:
@@ -881,6 +912,8 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
         self.assertIn("o_avea_bank_reconcile_wizard", arch)
         self.assertIn('js_class="avea_bank_reconciliation_form"', arch)
         self.assertIn("Bank statement", arch)
+        self.assertIn("Yoco CSV or Capitec PDF", arch)
+        self.assertIn("even after the FNB", arch)
         journal = self._bank_journal()
         if not journal:
             return
