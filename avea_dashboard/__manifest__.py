@@ -21,7 +21,7 @@ Features:
 - Receive Stock, Return Stock, Stock Take, and Use Stock (internal consumption)
 - Avea Promotions (wrapper over Odoo Discount & Loyalty), including Combo Price
 """,
-    "version": "19.0.3.14.204",
+    "version": "19.0.3.14.205",
     "author": "Avea Software",
     "website": "https://github.com/diedirk8/avea_dashboard",
     "license": "LGPL-3",
@@ -180,6 +180,7 @@ Features:
             "avea_till/static/src/scss/operations/bank_reconciliation.scss",
             "avea_till/static/src/js/operations/bank_reconciliation_list.xml",
             "avea_till/static/src/js/operations/bank_reconciliation_list.js",
+            "avea_till/static/src/js/operations/bank_reconciliation_form.js",
             "avea_till/static/src/scss/stock/stock_workspace.scss",
             "avea_till/static/src/scss/customer/customer_workspace.scss",
             "avea_till/static/src/scss/supplier/supplier_workspace.scss",

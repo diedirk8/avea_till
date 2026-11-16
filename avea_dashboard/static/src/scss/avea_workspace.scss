@@ -915,8 +915,11 @@ body.o_avea_product_shell .o_list_view.o_avea_bank_reconciliation_list {
         max-width: none;
     }
 
+    .o_list_renderer,
     .o_list_renderer.table-responsive {
-        min-height: 55vh;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 22rem;
     }
 
     header .o_statusbar_status + button,

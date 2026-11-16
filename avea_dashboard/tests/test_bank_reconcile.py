@@ -873,3 +873,20 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
         reconciliation.statement_filename = "fnb.pdf"
         reconciliation.statement_file = base64.b64encode(b"placeholder")
         self.assertEqual(reconciliation.next_step_kind, "load")
+
+    def test_reconciliation_form_keeps_the_statement_table_on_the_page(self):
+        view = self.env.ref("avea_till.view_avea_bank_reconciliation_form")
+        arch = view.arch_db or ""
+        self.assertIn("display_line_ids", arch)
+        self.assertIn("o_avea_bank_reconcile_wizard", arch)
+        self.assertIn('js_class="avea_bank_reconciliation_form"', arch)
+        self.assertIn("Bank statement", arch)
+        journal = self._bank_journal()
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "draft"}
+        )
+        action = reconciliation._avea_action_form()
+        self.assertEqual(action["view_id"], view.id)
+        self.assertEqual(action["views"], [(view.id, "form")])

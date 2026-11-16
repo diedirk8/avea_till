@@ -321,8 +321,11 @@ body.o_avea_product_shell #{$o_avea_catalogue_list_views} {
 // cannot swallow vertical scroll. The form controller also pins these styles
 // inline (Stock Take pattern) because :has() is not enough on its own.
 body.o_avea_product_shell .o_action_manager.o_avea_promotion_form_action_manager,
+body.o_avea_product_shell .o_action_manager.o_avea_bank_recon_form_action_manager,
 body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--promotion),
-body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--promotion):not(:has(.o_avea_workspace--promotion-list)) {
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--promotion):not(:has(.o_avea_workspace--promotion-list)),
+body.o_avea_product_shell .o_action_manager:has(.o_avea_bank_reconcile_wizard),
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--bank-recon-form) {
     display: block !important;
     height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
     max-height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
@@ -355,6 +358,41 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--promotion):no
         min-height: 0 !important;
         overflow: visible !important;
         overflow-x: visible !important;
+        overflow-y: visible !important;
+    }
+}
+
+// Bank recon: the statement x2many sits in a notebook. Product-shell
+// overflow-x:clip plus Odoo's flex list height collapses that table to 0px,
+// leaving only the hint and the 1–40 pager. Unlock the list on both the
+// classic wizard class and the newer workspace form.
+body.o_avea_product_shell .o_action_manager.o_avea_bank_recon_form_action_manager,
+body.o_avea_product_shell .o_action_manager:has(.o_avea_bank_reconcile_wizard),
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--bank-recon-form) {
+    .o_notebook,
+    .o_notebook_content,
+    .tab-content,
+    .tab-pane.active,
+    .tab-pane.show,
+    .o_field_x2many,
+    .o_field_one2many,
+    .o_field_x2many_list,
+    .o_list_view {
+        display: block !important;
+        flex: none !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+    }
+
+    .o_list_renderer {
+        display: block !important;
+        flex: none !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 22rem !important;
+        overflow-x: auto !important;
         overflow-y: visible !important;
     }
 }

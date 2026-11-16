@@ -7,13 +7,14 @@
     --bs-link-color: var(--avea-brand);
     --bs-link-hover-color: var(--avea-brand-hover);
 
-    .o_control_panel {
-        display: none !important;
-    }
-
-    .o_form_statusbar,
-    header {
-        display: none !important;
+    // Only hide the classic header when the in-sheet next-step bar is present.
+    // Live DBs that still have the old recon XML keep Refresh / Complete visible.
+    &:has(.o_avea_bank_recon_next) {
+        .o_control_panel,
+        .o_form_statusbar,
+        header {
+            display: none !important;
+        }
     }
 
     .o_form_sheet_bg {
@@ -143,6 +144,34 @@
     .o_avea_bank_recon_filter_count {
         color: var(--o-gray-600, #6c757d);
         font-size: 0.85rem;
+    }
+
+    .o_notebook,
+    .o_notebook_content,
+    .tab-content,
+    .tab-pane.active,
+    .tab-pane.show,
+    .o_field_x2many,
+    .o_field_one2many,
+    .o_field_x2many_list,
+    .o_list_view {
+        display: block;
+        flex: none;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0;
+        overflow: visible !important;
+    }
+
+    .o_list_renderer,
+    .o_avea_bank_reconcile_lines .o_list_renderer {
+        display: block;
+        flex: none;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 22rem;
+        overflow-x: auto !important;
+        overflow-y: visible !important;
     }
 
     .o_avea_bank_reconcile_lines {

@@ -69,6 +69,7 @@
                 create="false"
                 delete="false"
                 edit="false"
+                limit="80"
                 default_order="match_work_rank, bank_date, sequence, id"
                 decoration-warning="match_state == 'unmatched'"
                 decoration-info="match_state == 'possible'"
@@ -158,7 +159,7 @@
         <field name="name">avea.bank.reconciliation.form</field>
         <field name="model">avea.bank.reconciliation</field>
         <field name="arch" type="xml">
-            <form string="Bank reconciliation" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--bank-recon-form o_avea_bank_reconcile_wizard">
+            <form string="Bank reconciliation" class="o_avea_workspace o_avea_workspace--overview o_avea_workspace--bank-recon-form o_avea_bank_reconcile_wizard" js_class="avea_bank_reconciliation_form">
                 <field name="company_id" invisible="1"/>
                 <field name="currency_id" invisible="1"/>
                 <field name="name" invisible="1"/>
@@ -494,6 +495,7 @@
                                     create="false"
                                     delete="false"
                                     edit="false"
+                                    limit="80"
                                     default_order="match_work_rank, bank_date, sequence, id"
                                     decoration-warning="match_state == 'unmatched'"
                                     decoration-info="match_state == 'possible'"
