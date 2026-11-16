@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Pets Empire FNB bridge ledger — October 2024 onward</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 18mm 16mm;
+      @bottom-left {
+        content: "Pets Empire  ·  FNB Gold Business 62920038462";
+        font-family: Inter, "Liberation Sans", sans-serif;
+        font-size: 8.5pt;
+        color: #6b645e;
+      }
+      @bottom-right {
+        content: "Page " counter(page);
+        font-family: Inter, "Liberation Sans", sans-serif;
+        font-size: 8.5pt;
+        color: #6b645e;
+      }
+    }
+    @page :first {
+      margin: 0;
+      @bottom-left { content: none; }
+      @bottom-right { content: none; }
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0; color: #1c1917;
+      font-family: Inter, "Liberation Sans", sans-serif;
+      font-size: 10.5pt; line-height: 1.45;
+    }
+    h1, h2, h3 { font-weight: 600; letter-spacing: -0.02em; color: #1c1917; }
+    h1 { font-size: 22pt; line-height: 1.2; margin: 0 0 8pt; }
+    h2 {
+      font-size: 14pt; margin: 18pt 0 8pt; padding-bottom: 4pt;
+      border-bottom: 1.5pt solid #c45c26; page-break-after: avoid;
+    }
+    h3 { font-size: 11.5pt; margin: 14pt 0 6pt; page-break-after: avoid; }
+    p { margin: 0 0 8pt; }
+    strong { font-weight: 600; }
+    ol, ul { margin: 0 0 10pt; padding-left: 18pt; }
+    li { margin: 0 0 4pt; }
+    .cover {
+      min-height: 297mm; background: #1c1917; color: #faf7f4;
+      padding: 28mm 18mm 22mm; page-break-after: always;
+    }
+    .cover .eyebrow {
+      color: #c45c26; font-size: 11pt; font-weight: 600;
+      letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 28mm;
+    }
+    .cover h1 { color: #faf7f4; font-size: 30pt; line-height: 1.12; max-width: 155mm; margin-bottom: 12pt; }
+    .cover .lede { font-size: 13pt; line-height: 1.4; color: #d6cfc8; max-width: 155mm; margin-bottom: 28mm; }
+    .cover .meta { margin-top: 36mm; font-size: 10pt; color: #a8a09a; }
+    .cover .meta div { margin-bottom: 3pt; }
+    .cover .bar { width: 28mm; height: 4pt; background: #c45c26; margin: 14pt 0 22pt; }
+    .callout {
+      border-left: 3.5pt solid #c45c26; background: #fbf4ee;
+      padding: 8pt 10pt; margin: 10pt 0 12pt; page-break-inside: avoid;
+    }
+    .callout.warn { border-left-color: #b45309; background: #fff7ed; }
+    .callout.ok { border-left-color: #3f6b4a; background: #f1f6f2; }
+    .callout .label {
+      font-size: 8pt; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: #c45c26; margin-bottom: 2pt;
+    }
+    .callout.warn .label { color: #b45309; }
+    .callout.ok .label { color: #3f6b4a; }
+    table { width: 100%; border-collapse: collapse; margin: 6pt 0 12pt; font-size: 8.6pt; }
+    th {
+      text-align: left; background: #f4eee9; color: #1c1917; font-weight: 600;
+      padding: 5pt 6pt; border-bottom: 1pt solid #d8cfc7;
+    }
+    td { padding: 4.5pt 6pt; border-bottom: 0.6pt solid #ece6e0; vertical-align: top; }
+    td.num, th.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    tr.okrow td { background: #f1f6f2; }
+    tr.miss td { background: #fff7ed; }
+    tr.muted td { color: #6b645e; }
+    .small { font-size: 9pt; color: #5c564f; }
+    .toc a { color: inherit; text-decoration: none; }
+    .toc td { padding-top: 7pt; padding-bottom: 7pt; font-size: 10.5pt; }
+    .toc .pg { text-align: right; width: 14mm; color: #6b645e; }
+    .toc .pg a::after { content: target-counter(attr(href), page); }
+    .kpi { display: table; width: 100%; margin: 0 0 12pt; }
+    .kpi > div { display: table-cell; width: 25%; padding: 8pt 10pt; background: #f4eee9; border-right: 2pt solid #fff; }
+    .kpi > div:last-child { border-right: 0; }
+    .kpi .k { font-size: 8pt; letter-spacing: 0.08em; text-transform: uppercase; color: #6b645e; margin-bottom: 3pt; }
+    .kpi .v { font-size: 13pt; font-weight: 600; }
+    #months, #money, #next { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="eyebrow">Pets Empire · Books</div>
+  <h1>FNB bridge ledger from the QuickBooks cutoff</h1>
+  <div class="bar"></div>
+  <p class="lede">
+    QuickBooks Desktop was last reconciled on 30 September 2024 at
+    <strong style="color:#faf7f4">R 13,592.32</strong>. That figure is the
+    closing balance of FNB Gold Business statement 36, to the cent.
+    These pages reconstruct every FNB statement you have uploaded since then,
+    and list the months still needed.
+  </p>
+  <div class="meta">
+    <div>FNB Gold Business 62920038462 · *PETS EMPIRE (PTY) LTD</div>
+    <div>Statements 35–39, 41–45, 47–49 and 59 parsed 16 November 2026</div>
+    <div>Africa/Johannesburg</div>
+  </div>
+</section>
+
+<h2>Contents</h2>
+<table class="toc">
+  <tr><td><a href="#cutoff">1. The last trusted date</a></td><td class="pg"><a href="#cutoff"></a></td></tr>
+  <tr><td><a href="#have">2. What you uploaded</a></td><td class="pg"><a href="#have"></a></td></tr>
+  <tr><td><a href="#months">3. Month-by-month FNB balances</a></td><td class="pg"><a href="#months"></a></td></tr>
+  <tr><td><a href="#money">4. How money moved after the cutoff</a></td><td class="pg"><a href="#money"></a></td></tr>
+  <tr><td><a href="#next">5. What to send next</a></td><td class="pg"><a href="#next"></a></td></tr>
+</table>
+
+<div class="kpi">
+  <div><div class="k">Last trusted balance</div><div class="v">R 13,592.32</div></div>
+  <div><div class="k">Statements parsed</div><div class="v">14 of 25</div></div>
+  <div><div class="k">Gap months rebuilt</div><div class="v">11</div></div>
+  <div><div class="k">Still missing</div><div class="v">11 months</div></div>
+</div>
+
+<h2 id="cutoff">1. The last trusted date</h2>
+<p>
+  QuickBooks Desktop 2012 / Enterprise Solutions 13.0 was last finished on
+  <strong>30 September 2024</strong>. The recon summary you exported and FNB
+  statement 36 are the same set of numbers:
+</p>
+<table>
+  <thead>
+    <tr><th></th><th class="num">QuickBooks recon 30 Sep 24</th><th class="num">FNB statement 36</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Beginning / opening balance</td><td class="num">R 8,734.02</td><td class="num">R 8,734.02</td></tr>
+    <tr><td>Deposits and credits</td><td class="num">R 185,076.88</td><td class="num">R 185,076.88</td></tr>
+    <tr><td>Cheques and payments</td><td class="num">−R 180,218.58</td><td class="num">−R 180,218.58</td></tr>
+    <tr><td>Cleared / closing balance</td><td class="num"><strong>R 13,592.32</strong></td><td class="num"><strong>R 13,592.32</strong></td></tr>
+  </tbody>
+</table>
+<div class="callout ok">
+  <div class="label">Cutoff locked</div>
+  Do not recapture 2024 into QuickBooks. Statement 36 is the last month that
+  was ticked. Everything from 1 October 2024 (statement 37) is the bridge we
+  rebuild from FNB. The R 47,913.83 still sitting on the Pets Empire register
+  in QuickBooks is uncleared later entries, not a real bank balance.
+</div>
+<p class="small">
+  Statement 35 (August 2024) was also parsed. Its closing balance of R 8,734.02
+  is the opening of statement 36, so the chain into the cutoff is clean.
+  Every parsed statement also adds internally: opening + credits + debits = closing.
+</p>
+
+<h2 id="have">2. What you uploaded</h2>
+<p>
+  Thirteen Gold Business PDFs arrived this morning, plus statement 59 from the
+  earlier August 2026 recon. FNB numbers them consecutively. One number = one
+  calendar month on this account.
+</p>
+<ul>
+  <li><strong>In hand, before the cutoff:</strong> 35 (Aug 2024), 36 (Sep 2024, trusted).</li>
+  <li><strong>In hand, reconstructed:</strong> 37–39 (Oct–Dec 2024), 41–45 (Feb–Jun 2025), 47–49 (Aug–Oct 2025).</li>
+  <li><strong>In hand, Avea live month:</strong> 59 (Aug 2026).</li>
+  <li><strong>Still needed:</strong> 40 (Jan 2025), 46 (Jul 2025), 50–58 (Nov 2025 through Jul 2026).</li>
+</ul>
+<div class="callout warn">
+  <div class="label">Cannot close the books yet</div>
+  A continuous ledger needs every statement in order. January 2025 and July 2025
+  are single-month holes. November 2025 through July 2026 is a nine-month hole,
+  and it includes Avea’s live start on 13 May 2026. Download those PDFs from
+  FNB Online Banking the same way you did these (Tax invoice/statement number
+  on page 1).
+</div>
+
+<h2 id="months">3. Month-by-month FNB balances</h2>
+<p>
+  Amounts below are the bank’s figures, not QuickBooks and not Avea. Credits
+  are money in; debits are money out. The highlighted row is the last finished
+  QuickBooks recon.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Stmt</th>
+      <th>Month</th>
+      <th>Statement period</th>
+      <th class="num">Opening</th>
+      <th class="num">Credits</th>
+      <th class="num">Debits</th>
+      <th class="num">Closing</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+        <tr class="muted">
+          <td>35</td>
+          <td>Aug 2024</td>
+          <td>31 July 2024 – 31 August 2024</td>
+          <td class="num">R 4,695.96</td>
+          <td class="num">R 206,776.10</td>
+          <td class="num">-R 202,738.04</td>
+          <td class="num">R 8,734.02</td>
+          <td>Checked</td>
+        </tr>
+        <tr class="okrow">
+          <td>36</td>
+          <td>Sep 2024</td>
+          <td>31 August 2024 – 30 September 2024</td>
+          <td class="num">R 8,734.02</td>
+          <td class="num">R 185,076.88</td>
+          <td class="num">-R 180,218.58</td>
+          <td class="num">R 13,592.32</td>
+          <td>Trusted cutoff</td>
+        </tr>
+        <tr class="">
+          <td>37</td>
+          <td>Oct 2024</td>
+          <td>30 September 2024 – 31 October 2024</td>
+          <td class="num">R 13,592.32</td>
+          <td class="num">R 277,653.31</td>
+          <td class="num">-R 285,625.33</td>
+          <td class="num">R 5,620.30</td>
+          <td>Parsed</td>
+        </tr>
+        <tr class="">
+          <td>38</td>
+          <td>Nov 2024</td>
+          <td>31 October 2024 – 30 November 2024</td>
+          <td class="num">R 5,620.30</td>
+          <td class="num">R 271,319.88</td>
+          <td class="num">-R 257,604.92</td>
+          <td class="num">R 19,335.26</td>
+          <td>Parsed</td>
+        </tr>
+        <tr class="">
+          <td>39</td>
+          <td>Dec 2024</td>
+          <td>30 November 2024 – 31 December 2024</td>
+          <td class="num">R 19,335.26</td>
+          <td class="num">R 233,509.03</td>
+          <td class="num">-R 240,339.56</td>
+          <td class="num">R 12,504.73</td>
+          <td>Parsed</td>
+        </tr>
+            <tr class="miss">
+              <td>40</td>
+              <td>Jan 2025</td>
+              <td colspan="5">Not uploaded. Net movement across this gap: -R 3,365.76
+                (from R 12,504.73 to R 9,138.97).</td>
+              <td>Need PDF GOLD BUSINESS ACCOUNT 40</td>
+            </tr>
+        <tr class="">
+          <td>41</td>
+          <td>Feb 2025</td>
+          <td>31 January 2025 – 28 February 2025</td>
+          <td class="num">R 9,138.97</td>
+          <td class="num">R 167,937.99</td>
+          <td class="num">-R 168,428.13</td>
+          <td class="num">R 8,648.83</td>
+          <td>Parsed</td>
+        </tr>
+        <tr class="">
+          <td>42</td>
+          <td>Mar 2025</td>
+          <td>28 February 2025 – 31 March 2025</td>
+          <td class="num">R 8,648.83</td>
+          <td class="num">R 212,026.81</td>
+          <td class="num">-R 205,407.52</td>
+          <td class="num">R 15,268.12</td>
+          <td>Parsed</td>
+        </tr>
+        <tr class="">
+          <td>43</td>
+          <td>Apr 2025</td>
+          <td>31 March 2025 – 30 April 2025</td>
+          <td class="num">R 15,268.12</td>
+          <td class="num">R 164,495.00</td>
+          <td class="num">-R 171,636.63</td>
+          <td class="num">R 8,126.49</td>
+          <td>Parsed</td>
+        </tr>
+        <tr class="">
+          <td>44</td>
+          <td>May 2025</td>
+          <td>30 April 2025 – 31 May 2025</td>
+          <td class="num">R 8,126.49</td>
+          <td class="num">R 149,888.79</td>
+          <td class="num">-R 144,706.94</td>
+          <td class="num">R 13,308.34</td>
+          <td>Parsed</td>
+        </tr>
+        <tr class="">
+          <td>45</td>
+          <td>Jun 2025</td>
+          <td>31 May 2025 – 30 June 2025</td>
+          <td class="num">R 13,308.34</td>
+          <td class="num">R 117,921.50</td>
+          <td class="num">-R 117,339.03</td>
+          <td class="num">R 13,890.81</td>
+          <td>Parsed</td>
+        </tr>
+            <tr class="miss">
+              <td>46</td>
+              <td>Jul 2025</td>
+              <td colspan="5">Not uploaded. Net movement across this gap: -R 9,185.92
+                (from R 13,890.81 to R 4,704.89).</td>
+              <td>Need PDF GOLD BUSINESS ACCOUNT 46</td>
+            </tr>
+        <tr class="">
+          <td>47</td>
+          <td>Aug 2025</td>
+          <td>31 July 2025 – 31 August 2025</td>
+          <td class="num">R 4,704.89</td>
+          <td class="num">R 186,677.24</td>
+          <td class="num">-R 177,362.22</td>
+          <td class="num">R 14,019.91</td>
+          <td>Parsed</td>
+        </tr>
+        <tr class="">
+          <td>48</td>
+          <td>Sep 2025</td>
+          <td>31 August 2025 – 30 September 2025</td>
+          <td class="num">R 14,019.91</td>
+          <td class="num">R 183,083.17</td>
+          <td class="num">-R 191,728.28</td>
+          <td class="num">R 5,374.80</td>
+          <td>Parsed</td>
+        </tr>
+        <tr class="">
+          <td>49</td>
+          <td>Oct 2025</td>
+          <td>30 September 2025 – 31 October 2025</td>
+          <td class="num">R 5,374.80</td>
+          <td class="num">R 262,629.49</td>
+          <td class="num">-R 254,162.80</td>
+          <td class="num">R 13,841.49</td>
+          <td>Parsed</td>
+        </tr>
+            <tr class="miss">
+              <td>50–58</td>
+              <td>Nov 2025 – Jul 2026</td>
+              <td colspan="5">Not uploaded. Net movement across this gap: -R 6,257.45
+                (from R 13,841.49 to R 7,584.04).</td>
+              <td>Need PDF GOLD BUSINESS ACCOUNT 50 through 58</td>
+            </tr>
+        <tr class="">
+          <td>59</td>
+          <td>Aug 2026</td>
+          <td>31 July 2026 – 31 August 2026</td>
+          <td class="num">R 7,584.04</td>
+          <td class="num">R 153,891.82</td>
+          <td class="num">-R 151,602.80</td>
+          <td class="num">R 9,873.06</td>
+          <td>Already in hand</td>
+        </tr>
+  </tbody>
+</table>
+<p class="small">
+  Consecutive uploaded statements chain: each closing balance is the next
+  opening balance. The three orange rows are inferred from the statements on
+  either side, not from a PDF.
+</p>
+
+<h2 id="money">4. How money moved after the cutoff</h2>
+<p>
+  For the 11 reconstructed months (Oct–Dec 2024, Feb–Jun 2025, Aug–Oct 2025)
+  FNB shows R 2,227,142.21 in and -R 2,214,341.36 out,
+  net R 12,800.85 across
+  1917 lines. Categories are taken from the FNB description.
+  They are a working split for the bridge ledger, not a full set of journals.
+</p>
+<table>
+  <thead>
+    <tr><th>Category</th><th class="num">Lines</th><th class="num">Net on FNB</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Capitec card settlements</td><td class='num'>298</td><td class='num'>R 957,889.07</td></tr><tr><td>Yoco card settlements</td><td class='num'>272</td><td class='num'>R 605,551.83</td></tr><tr><td>Cash deposits (ADT / teller)</td><td class='num'>21</td><td class='num'>R 66,270.00</td></tr><tr><td>Cash banked via FNB app</td><td class='num'>1</td><td class='num'>R 2,000.00</td></tr><tr><td>Customer EFTs / Netcash</td><td class='num'>86</td><td class='num'>R 130,612.23</td></tr><tr><td>Other receipts (incl. savings in, refunds)</td><td class='num'>20</td><td class='num'>R 120,013.88</td></tr><tr><td>Stock and supplier payments</td><td class='num'>333</td><td class='num'>-R 1,055,064.91</td></tr><tr><td>Salaries and wages</td><td class='num'>104</td><td class='num'>-R 290,076.99</td></tr><tr><td>Xalindri Fence &amp; Steel (related)</td><td class='num'>85</td><td class='num'>-R 142,596.58</td></tr><tr><td>Owner / director payments</td><td class='num'>36</td><td class='num'>-R 26,360.00</td></tr><tr><td>Transfers to savings / investment</td><td class='num'>125</td><td class='num'>-R 27,058.00</td></tr><tr><td>Business card purchases</td><td class='num'>254</td><td class='num'>-R 91,301.65</td></tr><tr><td>Transfers out to cash</td><td class='num'>25</td><td class='num'>-R 24,288.00</td></tr><tr><td>Prepaid electricity / airtime</td><td class='num'>47</td><td class='num'>-R 29,084.00</td></tr><tr><td>Accounting fees</td><td class='num'>10</td><td class='num'>-R 17,900.00</td></tr><tr><td>FNB service and payment fees</td><td class='num'>136</td><td class='num'>-R 7,705.45</td></tr><tr><td>Capitec device / merchant fees</td><td class='num'>11</td><td class='num'>-R 6,008.75</td></tr><tr><td>Yoco capital / deductions</td><td class='num'>5</td><td class='num'>-R 1,515.00</td></tr><tr><td>Other payments</td><td class='num'>48</td><td class='num'>-R 150,576.83</td></tr>
+  </tbody>
+</table>
+<h3>Card machines and cash, month by month</h3>
+<p>
+  Capitec still dwarfs Yoco on this account. Cash deposits are lumpy — some
+  months have none on the statement at all.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Stmt</th><th>Month</th>
+      <th class="num">Yoco in</th>
+      <th class="num">Capitec in</th>
+      <th class="num">Cash banked</th>
+      <th class="num">Stock / suppliers out</th>
+      <th class="num">Closing</th>
+    </tr>
+  </thead>
+  <tbody>
+    
+    <tr>
+      <td>37</td>
+      <td>Oct 2024</td>
+      <td class="num">R 37,520.58</td>
+      <td class="num">R 115,652.09</td>
+      <td class="num">R 0.00</td>
+      <td class="num">-R 103,117.25</td>
+      <td class="num">R 5,620.30</td>
+    </tr>
+    <tr>
+      <td>38</td>
+      <td>Nov 2024</td>
+      <td class="num">R 56,089.71</td>
+      <td class="num">R 100,178.95</td>
+      <td class="num">R 0.00</td>
+      <td class="num">-R 122,237.98</td>
+      <td class="num">R 19,335.26</td>
+    </tr>
+    <tr>
+      <td>39</td>
+      <td>Dec 2024</td>
+      <td class="num">R 67,025.64</td>
+      <td class="num">R 118,054.91</td>
+      <td class="num">R 10,450.00</td>
+      <td class="num">-R 116,133.09</td>
+      <td class="num">R 12,504.73</td>
+    </tr>
+    <tr>
+      <td>41</td>
+      <td>Feb 2025</td>
+      <td class="num">R 57,009.26</td>
+      <td class="num">R 68,580.25</td>
+      <td class="num">R 19,200.00</td>
+      <td class="num">-R 98,597.39</td>
+      <td class="num">R 8,648.83</td>
+    </tr>
+    <tr>
+      <td>42</td>
+      <td>Mar 2025</td>
+      <td class="num">R 49,382.37</td>
+      <td class="num">R 95,678.01</td>
+      <td class="num">R 5,150.00</td>
+      <td class="num">-R 110,823.87</td>
+      <td class="num">R 15,268.12</td>
+    </tr>
+    <tr>
+      <td>43</td>
+      <td>Apr 2025</td>
+      <td class="num">R 44,400.42</td>
+      <td class="num">R 87,064.04</td>
+      <td class="num">R 4,800.00</td>
+      <td class="num">-R 93,231.66</td>
+      <td class="num">R 8,126.49</td>
+    </tr>
+    <tr>
+      <td>44</td>
+      <td>May 2025</td>
+      <td class="num">R 47,128.81</td>
+      <td class="num">R 77,330.47</td>
+      <td class="num">R 10,320.00</td>
+      <td class="num">-R 69,226.75</td>
+      <td class="num">R 13,308.34</td>
+    </tr>
+    <tr>
+      <td>45</td>
+      <td>Jun 2025</td>
+      <td class="num">R 31,623.13</td>
+      <td class="num">R 72,668.07</td>
+      <td class="num">R 0.00</td>
+      <td class="num">-R 44,968.19</td>
+      <td class="num">R 13,890.81</td>
+    </tr>
+    <tr>
+      <td>47</td>
+      <td>Aug 2025</td>
+      <td class="num">R 49,463.19</td>
+      <td class="num">R 93,057.43</td>
+      <td class="num">R 5,400.00</td>
+      <td class="num">-R 80,893.22</td>
+      <td class="num">R 14,019.91</td>
+    </tr>
+    <tr>
+      <td>48</td>
+      <td>Sep 2025</td>
+      <td class="num">R 77,207.89</td>
+      <td class="num">R 62,756.95</td>
+      <td class="num">R 12,950.00</td>
+      <td class="num">-R 93,363.15</td>
+      <td class="num">R 5,374.80</td>
+    </tr>
+    <tr>
+      <td>49</td>
+      <td>Oct 2025</td>
+      <td class="num">R 88,700.83</td>
+      <td class="num">R 66,867.90</td>
+      <td class="num">R 0.00</td>
+      <td class="num">-R 122,472.36</td>
+      <td class="num">R 13,841.49</td>
+    </tr>
+  </tbody>
+</table>
+<div class="callout">
+  <div class="label">What this is not</div>
+  These months cannot be matched to Lightspeed or Avea POS tickets. The shop
+  was not on Avea until 13 May 2026, and Lightspeed history is not in these
+  files. The FNB statement is the source of truth for the bank account. Sales
+  mix, till cash-ups, and stock invoices for the gap still have to come from
+  Lightspeed / supplier paper if you want a full P&amp;L, not only a bank
+  ledger.
+</div>
+
+<h2 id="next">5. What to send next</h2>
+<p>Download these from FNB Online Banking and upload them here, in this order:</p>
+<table>
+  <thead>
+    <tr><th>Priority</th><th>Statement</th><th>Month</th><th class="num">Known from / to</th><th>Why</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td><td>GOLD BUSINESS ACCOUNT 40</td><td>Jan 2025</td>
+      <td class="num">R 12,504.73 → R 9,138.97</td>
+      <td>Single month between Dec 2024 and Feb 2025.</td>
+    </tr>
+    <tr>
+      <td>2</td><td>GOLD BUSINESS ACCOUNT 46</td><td>Jul 2025</td>
+      <td class="num">R 13,890.81 → R 4,704.89</td>
+      <td>Single month between Jun and Aug 2025. Largest one-month drop.</td>
+    </tr>
+    <tr>
+      <td>3</td><td>GOLD BUSINESS ACCOUNT 50–55</td><td>Nov 2025 – Apr 2026</td>
+      <td class="num">R 13,841.49 onward</td>
+      <td>Closes the pre-Avea gap up to 12 May 2026.</td>
+    </tr>
+    <tr>
+      <td>4</td><td>GOLD BUSINESS ACCOUNT 56–58</td><td>May – Jul 2026</td>
+      <td class="num">through R 7,584.04</td>
+      <td>Avea live months. These are the ones we tick in Avea Money, together with Yoco CSVs and Capitec merchant PDFs.</td>
+    </tr>
+  </tbody>
+</table>
+<p>
+  Optional but useful with those months: Yoco payouts CSV and the Capitec
+  merchant statement for the same period. They split gross card sales from
+  fees. Without them we still have the <em>net</em> that landed on FNB.
+</p>
+<div class="callout ok">
+  <div class="label">Stop capturing into QuickBooks</div>
+  Leave QBD frozen at 30 September 2024. Do not type 2025 or 2026 into that
+  company file. The bridge lives on FNB (these pages) and then on Avea from
+  13 May 2026.
+</div>
+<p class="small">
+  Source: FNB Gold Business tax invoice/statements 35–39, 41–45, 47–49, 59
+  for account 62920038462, and QuickBooks recon summary + recon detail dated
+  30 Sep 24. Parsed 16 November 2026.
+</p>
+</body>
+</html>
