@@ -7,6 +7,7 @@ import { registry } from "@web/core/registry";
 import { debounce } from "@web/core/utils/timing";
 import { useState } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
+import { useAveaListPaneScroll } from "./avea_list_pane_scroll";
 
 export class AveaAccountActivityController extends ListController {
     static template = "avea_till.AccountActivityList";
@@ -17,6 +18,7 @@ export class AveaAccountActivityController extends ListController {
         this.actionService = useService("action");
         this.filterState = useState({ searchText: "" });
         this._applySearchDebounced = debounce(() => this.applySearch(), 300);
+        useAveaListPaneScroll();
     }
 
     get className() {

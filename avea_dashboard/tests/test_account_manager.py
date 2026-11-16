@@ -225,6 +225,12 @@ class TestAveaAccountManager(TransactionCase):
                 avea_account_workspace=True
             ).write({"name": "Do not rename cash"})
 
+    def test_account_activity_view_uses_the_scrollable_list(self):
+        view = self.env.ref("avea_till.view_avea_account_activity_list")
+        arch = view.arch_db or ""
+        self.assertIn('js_class="avea_account_activity"', arch)
+        self.assertIn("o_avea_account_activity_table", arch)
+
     def test_nav_accounting_lists_accounts(self):
         nav = self.manager._avea_nav_structure()
         accounting = next(

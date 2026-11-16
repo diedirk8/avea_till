@@ -401,7 +401,7 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--bank-recon-fo
 // stock history, …). overflow-x: clip on the product shell turns overflow-y
 // into clip as well, so the page cannot scroll. Catalogue lists keep their
 // own inner table scroller via :has(.o_avea_catalogue_flush) above.
-body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace):not(:has(.o_avea_catalogue_flush)) {
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace):not(:has(.o_avea_catalogue_flush)):not(:has(.o_avea_workspace--account-activity)):not(:has(.o_avea_workspace--account-list)) {
     display: block !important;
     height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
     max-height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
@@ -437,5 +437,81 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace):not(:has(.o_a
         max-height: none !important;
         overflow-x: auto !important;
         overflow-y: visible !important;
+    }
+}
+
+// Account activity + account lists: keep the title still and scroll the
+// table. This must win over the workspace page-scroll rule above, which
+// otherwise sets overflow-y:visible on the renderer and leaves no thumb.
+body.o_avea_product_shell .o_action_manager.o_avea_list_pane_action_manager,
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-list),
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-activity) {
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
+    max-height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+
+    > .o_action,
+    .o_action,
+    .o_view_controller,
+    .o_list_view,
+    .o_list_view.o_avea_workspace--account-list,
+    .o_list_view.o_avea_workspace--account-activity,
+    .o_avea_workspace {
+        display: flex !important;
+        flex: 1 1 auto !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        overflow-x: hidden !important;
+        overflow-y: hidden !important;
+    }
+
+    .o_avea_account_list_shell,
+    .o_avea_account_list_footer,
+    .o_avea_account_pager {
+        flex: 0 0 auto !important;
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .o_content {
+        display: flex !important;
+        flex: 1 1 auto !important;
+        flex-direction: column !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .o_list_renderer {
+        display: block !important;
+        flex: 1 1 auto !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: auto !important;
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        scrollbar-gutter: stable;
+        scrollbar-width: auto !important;
+        -webkit-overflow-scrolling: touch;
+
+        &::-webkit-scrollbar {
+            display: block !important;
+            width: 12px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: rgba(73, 80, 87, 0.55);
+            border-radius: 999px;
+        }
     }
 }

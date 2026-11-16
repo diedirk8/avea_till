@@ -228,8 +228,10 @@
 .o_avea_workspace--account-list,
 .o_avea_workspace--account-activity {
     background-color: var(--o-webclient-background-color, #f4f5f7);
-    flex: 0 0 auto !important;
-    height: auto !important;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    height: 100%;
     min-height: 0;
     min-width: 0;
     padding: 1.25rem 1.5rem 2rem;
@@ -274,25 +276,43 @@
         margin-top: 0.85rem;
     }
 
-    > .o_content {
+    > .o_content,
+    .o_content {
         background: #fff;
         border: 1px solid var(--o-gray-300, #dee2e6);
         border-radius: 0;
         border-top: none;
-        flex: 0 0 auto !important;
+        flex: 1 1 auto !important;
         height: auto !important;
         margin: 0;
         min-height: 0 !important;
-        overflow-x: auto;
-        overflow-y: visible;
+        overflow: hidden;
         padding: 0 !important;
         width: 100%;
 
         .o_list_renderer {
             border: none;
+            flex: 1 1 auto;
             height: auto !important;
             margin: 0;
-            min-height: 0 !important;
+            max-height: calc(100vh - 22rem);
+            min-height: 12rem;
+            overflow: auto !important;
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+            scrollbar-gutter: stable;
+            scrollbar-width: auto;
+            -webkit-overflow-scrolling: touch;
+
+            &::-webkit-scrollbar {
+                display: block;
+                width: 12px;
+            }
+
+            &::-webkit-scrollbar-thumb {
+                background: rgba(73, 80, 87, 0.55);
+                border-radius: 999px;
+            }
         }
     }
 
@@ -335,8 +355,6 @@
     }
 }
 
-body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-list),
-body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-activity),
 body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--account .o_avea_account_hero) {
     height: calc(100vh - var(--avea-topbar-height));
     max-height: calc(100vh - var(--avea-topbar-height));
@@ -347,8 +365,6 @@ body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--a
     .o_action,
     .o_content,
     .o_view_controller,
-    .o_list_view.o_avea_workspace--account-list,
-    .o_list_view.o_avea_workspace--account-activity,
     .o_form_view.o_avea_workspace--account,
     .o_form_view.o_avea_workspace--account .o_form_sheet_bg,
     .o_form_view.o_avea_workspace--account .o_avea_workspace_sheet {
@@ -361,6 +377,73 @@ body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--a
         min-width: 0 !important;
         overflow: visible !important;
         width: 100% !important;
+    }
+}
+
+// Account activity / account lists: the table scrolls, the title stays put.
+// overflow-x:clip on the product shell otherwise clips the list with no thumb.
+body.o_avea_product_shell .o_action_manager.o_avea_list_pane_action_manager,
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-list),
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-activity) {
+    display: flex !important;
+    flex-direction: column !important;
+    height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
+    max-height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
+    overflow: hidden !important;
+    overflow-x: hidden !important;
+    overflow-y: hidden !important;
+
+    .o_action,
+    .o_view_controller,
+    .o_list_view.o_avea_workspace--account-list,
+    .o_list_view.o_avea_workspace--account-activity {
+        display: flex !important;
+        flex: 1 1 auto !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        width: 100% !important;
+    }
+
+    .o_avea_account_list_shell,
+    .o_avea_account_list_footer,
+    .o_avea_account_pager {
+        flex: 0 0 auto !important;
+        overflow: visible !important;
+    }
+
+    .o_content {
+        display: flex !important;
+        flex: 1 1 auto !important;
+        flex-direction: column !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .o_list_renderer {
+        flex: 1 1 auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: auto !important;
+        overflow-x: auto !important;
+        overflow-y: auto !important;
+        scrollbar-gutter: stable;
+        scrollbar-width: auto !important;
+        -webkit-overflow-scrolling: touch;
+
+        &::-webkit-scrollbar {
+            display: block !important;
+            width: 12px;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background: rgba(73, 80, 87, 0.55);
+            border-radius: 999px;
+        }
     }
 }
 

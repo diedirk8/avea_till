@@ -6,6 +6,7 @@ import { listView } from "@web/views/list/list_view";
 import { registry } from "@web/core/registry";
 import { debounce } from "@web/core/utils/timing";
 import { useState } from "@odoo/owl";
+import { useAveaListPaneScroll } from "./avea_list_pane_scroll";
 
 const FILTER_NAMES = new Set(["income", "expense", "active", "inactive"]);
 
@@ -17,6 +18,7 @@ export class AveaAccountListController extends ListController {
         super.setup();
         this.bannerState = useState({ activeFilter: "all", searchText: "" });
         this._applySearchDebounced = debounce(() => this.applyAccountSearch(), 300);
+        useAveaListPaneScroll();
     }
 
     get isAssetList() {
