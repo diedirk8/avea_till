@@ -15,11 +15,40 @@ from .merchant_payout_parser import AveaMerchantPayoutParser
 _MATCH_AUTO = 70.0
 _MATCH_SUGGEST = 60.0
 
+# Pets Empire FNB Gold Business Account — Avea live months from the
+# May–August 2026 working papers. New recons start from the last closing.
+_AVEA_BROUGHT_FORWARD_BANK_RECONS = (
+    {
+        "date_from": "2026-05-13",
+        "date_to": "2026-05-31",
+        "opening_balance": 4760.98,
+        "closing_balance": 10315.77,
+    },
+    {
+        "date_from": "2026-06-01",
+        "date_to": "2026-06-30",
+        "opening_balance": 10315.77,
+        "closing_balance": 7907.38,
+    },
+    {
+        "date_from": "2026-07-01",
+        "date_to": "2026-07-31",
+        "opening_balance": 7907.38,
+        "closing_balance": 7584.04,
+    },
+    {
+        "date_from": "2026-08-01",
+        "date_to": "2026-08-31",
+        "opening_balance": 7584.04,
+        "closing_balance": 9873.06,
+    },
+)
+
 
 class AveaBankReconciliation(models.Model):
     _name = "avea.bank.reconciliation"
     _description = "Bank Reconciliation"
-    _order = "write_date desc, id desc"
+    _order = "date_to desc, id desc"
 
     name = fields.Char(string="Reference", compute="_compute_name", store=True)
     state = fields.Selection(
@@ -208,6 +237,15 @@ class AveaBankReconciliation(models.Model):
         currency_field="currency_id",
         compute="_compute_reconciliation_balance",
     )
+    previous_statement_label = fields.Char(
+        string="Last completed statement",
+        compute="_compute_reconciliation_balance",
+    )
+    brought_forward = fields.Boolean(
+        string="Brought forward from FNB books",
+        help="Opening and closing were taken from the FNB statement without "
+        "loading every line into this screen.",
+    )
     statement_difference = fields.Monetary(
         string="Difference",
         currency_field="currency_id",
@@ -394,6 +432,23 @@ class AveaBankReconciliation(models.Model):
             )
         if self.state == "draft":
             if not self.statement_file:
+                prior = self._avea_previous_reconciliation()
+                if prior:
+                    return (
+                        "upload",
+                        _("Continue from the last statement"),
+                        _(
+                            "Last statement closed at %(amount)s on %(date)s. "
+                            "Upload the next FNB statement. Opening should be that amount.",
+                            amount=currency.format(prior.closing_balance or 0.0),
+                            date=self.env["avea.reporting.workspace.mixin"]._reporting_format_day_range(
+                                prior.date_to, prior.date_to
+                            )
+                            if prior.date_to
+                            else _("the last recon"),
+                        ),
+                        False,
+                    )
                 return (
                     "upload",
                     _("Upload the bank statement"),
@@ -486,6 +541,7 @@ class AveaBankReconciliation(models.Model):
         "journal_id",
         "company_id",
         "currency_id",
+        "date_from",
         "date_to",
         "opening_balance",
         "closing_balance",
@@ -513,6 +569,9 @@ class AveaBankReconciliation(models.Model):
             prior = reconciliation._avea_previous_reconciliation()
             reconciliation.has_previous_statement = bool(prior)
             reconciliation.previous_closing_balance = prior.closing_balance if prior else 0.0
+            reconciliation.previous_statement_label = (
+                prior._avea_period_range_label() or prior.display_name if prior else False
+            )
             warnings = []
             earlier_count = len(reconciliation._avea_opening_book_lines())
             if (
@@ -593,18 +652,19 @@ class AveaBankReconciliation(models.Model):
 
     def _avea_previous_reconciliation(self):
         self.ensure_one()
-        if not self.journal_id or not self.date_from:
+        if not self.journal_id:
             return self.browse()
-        return self.search(
-            [
-                ("id", "!=", self.id),
-                ("journal_id", "=", self.journal_id.id),
-                ("state", "=", "done"),
-                ("date_to", "<", self.date_from),
-            ],
-            order="date_to desc, id desc",
-            limit=1,
-        )
+        domain = [
+            ("journal_id", "=", self.journal_id.id),
+            ("company_id", "=", (self.company_id or self.env.company).id),
+            ("state", "=", "done"),
+            ("date_to", "!=", False),
+        ]
+        if self.ids:
+            domain.append(("id", "!=", self.id))
+        if self.date_from:
+            domain.append(("date_to", "<", self.date_from))
+        return self.search(domain, order="date_to desc, id desc", limit=1)
 
     def _avea_has_prior_reconciliation(self):
         self.ensure_one()
@@ -780,6 +840,7 @@ class AveaBankReconciliation(models.Model):
 
     @api.model
     def action_open_list(self):
+        self._avea_ensure_brought_forward_recons()
         list_view_id = self.env.ref(
             "avea_till.view_avea_bank_reconciliation_list"
         ).id
@@ -800,20 +861,115 @@ class AveaBankReconciliation(models.Model):
 
     @api.model
     def action_create_draft(self):
-        """Public RPC entry: create an empty draft reconciliation and return its id."""
+        """Public RPC entry: start the next recon from the last completed one."""
+        self._avea_ensure_brought_forward_recons()
         journal = self._avea_default_bank_journal()
-        reconciliation = self.create(
+        empty = self.search(
+            [
+                ("company_id", "=", self.env.company.id),
+                ("journal_id", "=", journal.id if journal else False),
+                ("state", "=", "draft"),
+                ("line_ids", "=", False),
+            ],
+            order="id desc",
+            limit=1,
+        )
+        reconciliation = empty or self.create(
             {
                 "journal_id": journal.id if journal else False,
                 "state": "draft",
             }
         )
+        reconciliation._avea_apply_last_completed_defaults()
         return reconciliation.id
+
+    def _avea_apply_last_completed_defaults(self):
+        """Copy the last completed closing balance onto a new draft."""
+        for rec in self:
+            if rec.state != "draft" or rec.line_ids:
+                continue
+            last = rec._avea_previous_reconciliation()
+            if not last:
+                continue
+            vals = {}
+            currency = rec.currency_id or self.env.company.currency_id
+            if currency.is_zero(rec.opening_balance or 0.0):
+                vals["opening_balance"] = last.closing_balance
+            if not rec.date_from and last.date_to:
+                vals["date_from"] = last.date_to + timedelta(days=1)
+            if vals:
+                rec.write(vals)
+
+    @api.onchange("journal_id")
+    def _onchange_journal_carry_last_statement(self):
+        if self.state != "draft" or self.line_ids:
+            return
+        last = self._avea_previous_reconciliation()
+        if not last:
+            return
+        self.opening_balance = last.closing_balance
+        if last.date_to:
+            self.date_from = last.date_to + timedelta(days=1)
+
+    @api.model
+    def _avea_company_uses_fnb_brought_forward(self):
+        return "pets empire" in (self.env.company.name or "").lower()
+
+    @api.model
+    def _avea_ensure_brought_forward_recons(self, force=False):
+        """Create the May–August FNB recons so they appear in the list."""
+        if not force and not self._avea_company_uses_fnb_brought_forward():
+            return self.browse()
+        journal = self._avea_default_bank_journal()
+        if not journal:
+            return self.browse()
+        created = self.browse()
+        for pack in _AVEA_BROUGHT_FORWARD_BANK_RECONS:
+            existing = self.search(
+                [
+                    ("company_id", "=", self.env.company.id),
+                    ("journal_id", "=", journal.id),
+                    ("date_from", "=", pack["date_from"]),
+                    ("date_to", "=", pack["date_to"]),
+                    ("state", "!=", "cancelled"),
+                ],
+                limit=1,
+            )
+            if existing:
+                continue
+            created |= self.create(
+                {
+                    "journal_id": journal.id,
+                    "date_from": pack["date_from"],
+                    "date_to": pack["date_to"],
+                    "opening_balance": pack["opening_balance"],
+                    "closing_balance": pack["closing_balance"],
+                    "balances_from_file": True,
+                    "brought_forward": True,
+                    "state": "done",
+                }
+            )
+        return created
 
     def _avea_default_bank_journal(self):
         company = self.env.company
-        configured = company._avea_expense_journals().filtered(lambda j: j.type == "bank")
-        return configured[:1] or self.env["account.journal"].search(
+
+        def _not_store_credit(journal):
+            return "store credit" not in (journal.name or "").lower()
+
+        configured = company._avea_expense_journals().filtered(
+            lambda journal: journal.type == "bank" and _not_store_credit(journal)
+        )
+        if configured:
+            return configured[:1]
+        return self.env["account.journal"].search(
+            [
+                ("type", "=", "bank"),
+                ("company_id", "=", company.id),
+                ("name", "not ilike", "Store Credit"),
+            ],
+            limit=1,
+        ) or self.env["account.journal"].search(
             [("type", "=", "bank"), ("company_id", "=", company.id)],
             limit=1,
         )

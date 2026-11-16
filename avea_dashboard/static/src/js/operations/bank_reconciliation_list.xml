@@ -10,9 +10,9 @@
                             <span class="o_avea_workspace_eyebrow">Money</span>
                             <h1 class="o_avea_workspace_title">Bank reconciliations</h1>
                             <p class="o_avea_workspace_section_subtitle">
-                                Upload the FNB statement plus the Yoco and Capitec files for that
-                                month. Avea tells you the next step, and only the lines that still
-                                need you. Work is saved — come back anytime.
+                                Completed statements stay here with their opening and closing
+                                balances. New reconciliation starts from the last one.
+                                Upload the next FNB statement plus the Yoco and Capitec files.
                             </p>
                         </div>
                         <div class="o_avea_bank_recon_list_actions">

@@ -890,3 +890,53 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
         action = reconciliation._avea_action_form()
         self.assertEqual(action["view_id"], view.id)
         self.assertEqual(action["views"], [(view.id, "form")])
+
+    def test_new_recon_starts_from_the_last_completed_balances(self):
+        Recon = self.env["avea.bank.reconciliation"]
+        journal = Recon._avea_default_bank_journal()
+        if not journal:
+            return
+        last = Recon.create(
+            {
+                "journal_id": journal.id,
+                "state": "done",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "opening_balance": 7584.04,
+                "closing_balance": 9873.06,
+                "balances_from_file": True,
+            }
+        )
+        next_id = Recon.action_create_draft()
+        nxt = Recon.browse(next_id)
+        self.assertEqual(nxt.journal_id, journal)
+        self.assertEqual(nxt.state, "draft")
+        self.assertAlmostEqual(nxt.opening_balance, 9873.06, places=2)
+        self.assertEqual(str(nxt.date_from), "2026-09-01")
+        self.assertTrue(nxt.has_previous_statement)
+        self.assertAlmostEqual(nxt.previous_closing_balance, 9873.06, places=2)
+        self.assertEqual(nxt._avea_previous_reconciliation(), last)
+        self.assertEqual(nxt.next_step_kind, "upload")
+        action = Recon.action_new_reconciliation()
+        self.assertEqual(action["res_id"], nxt.id)
+        self.assertEqual(Recon.action_create_draft(), nxt.id)
+
+    def test_brought_forward_fnb_recons_are_idempotent(self):
+        Recon = self.env["avea.bank.reconciliation"]
+        if not Recon._avea_default_bank_journal():
+            return
+        first = Recon._avea_ensure_brought_forward_recons(force=True)
+        self.assertEqual(len(first), 4)
+        self.assertTrue(all(rec.state == "done" and rec.brought_forward for rec in first))
+        august = first.filtered(lambda rec: str(rec.date_to) == "2026-08-31")
+        self.assertAlmostEqual(august.closing_balance, 9873.06, places=2)
+        self.assertFalse(Recon._avea_ensure_brought_forward_recons(force=True))
+        self.assertEqual(len(Recon.search([("brought_forward", "=", True)])), 4)
+
+    def test_recon_views_show_last_statement_and_balances(self):
+        recon_list = self.env.ref("avea_till.view_avea_bank_reconciliation_list").arch_db or ""
+        self.assertIn('name="opening_balance"', recon_list)
+        self.assertIn('name="closing_balance"', recon_list)
+        form = self.env.ref("avea_till.view_avea_bank_reconciliation_form").arch_db or ""
+        self.assertIn("Last completed statement", form)
+        self.assertIn("previous_closing_balance", form)
