@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import ast
+import os
 
 from odoo import Command, fields
 from odoo.exceptions import AccessError, UserError
@@ -260,6 +261,22 @@ class TestAveaAccountManager(TransactionCase):
         self.assertEqual(action["res_id"], cash.id)
         self.assertEqual(action["view_mode"], "form")
         self.assertTrue(action["context"]["avea_asset_workspace"])
+        js_path = os.path.join(
+            os.path.dirname(__file__),
+            "..",
+            "static",
+            "src",
+            "js",
+            "operations",
+            "account_form.js",
+        )
+        with open(js_path, encoding="utf-8") as js_file:
+            form_js = js_file.read()
+        self.assertNotIn(
+            "get display()",
+            form_js,
+            "Odoo 19 FormController.setup assigns this.display; a getter crashes the form.",
+        )
 
     def test_account_activity_view_uses_the_scrollable_list(self):
         view = self.env.ref("avea_till.view_avea_account_activity_list")

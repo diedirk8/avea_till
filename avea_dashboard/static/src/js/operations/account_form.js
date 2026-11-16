@@ -21,13 +21,6 @@ export class AveaAccountFormController extends FormController {
         return `${base} o_avea_workspace o_avea_workspace--account`.trim();
     }
 
-    get display() {
-        return {
-            ...super.display,
-            controlPanel: false,
-        };
-    }
-
     async _enterAccountEditMode() {
         const root = this.model?.root;
         if (!root || root.isInEdition) {
