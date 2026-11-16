@@ -635,6 +635,40 @@ R2 199.00
         self.assertAlmostEqual(parsed["payouts"][1]["gross_amount"], 2199.00)
         self.assertAlmostEqual(sum(row["gross_amount"] for row in parsed["payouts"]), 4598.00)
 
+    def test_parse_capitec_legacy_detail_of_deposits(self):
+        content = """
+Capitec Bank Limited
+Merchant Statement
+PETS EMPIRE
+Statement Period
+02 Sep - 01 Oct 2024
+DETAIL OF DEPOSITS
+Batch Transmission Date
+2024-09-02
+2024-09-03
+Reference Number
+CAPITEC 0209PosSettle 240902
+CAPITEC 0309PosSettle 240903
+Total Deposit Amount
+355.49
+5 584.27
+5 939.76
+A registered credit provider. NCR Reg. No.: NCRCP13
+Batch Total
+359.00
+5 673.00
+"""
+        parsed = AveaMerchantPayoutParser._parse_capitec_text(content)
+        self.assertEqual(len(parsed["payouts"]), 2)
+        first = parsed["payouts"][0]
+        self.assertEqual(str(first["payout_date"]), "2024-09-02")
+        self.assertEqual(str(first["trading_date"]), "2024-09-02")
+        self.assertAlmostEqual(first["net_amount"], 355.49)
+        self.assertAlmostEqual(first["gross_amount"], 359.00)
+        self.assertAlmostEqual(first["fee_amount"], 3.51)
+        self.assertAlmostEqual(parsed["payouts"][1]["net_amount"], 5584.27)
+        self.assertAlmostEqual(parsed["payouts"][1]["gross_amount"], 5673.00)
+
     def test_yoco_file_rejected_as_bank_statement(self):
         journal = self._bank_journal()
         if not journal:

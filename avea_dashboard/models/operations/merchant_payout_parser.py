@@ -23,8 +23,10 @@ _CAPITEC_PAYOUT_RE = re.compile(
     re.IGNORECASE,
 )
 _CAPITEC_DATE_RE = re.compile(r"\b(\d{2}/\d{2}/\d{4})\b")
+_CAPITEC_ISO_DATE_RE = re.compile(r"20\d{2}-\d{2}-\d{2}")
 _CAPITEC_REF_RE = re.compile(r"(CAPITEC\s+\d{4}PosSettle\s+(\d{6}))", re.IGNORECASE)
 _CAPITEC_AMOUNT_RE = re.compile(r"R([\d\s]+\.\d{2})")
+_CAPITEC_PLAIN_AMOUNT_RE = re.compile(r"\d[\d ]*\.\d{2}")
 
 
 def _normalize_header(cell: str) -> str:
@@ -204,6 +206,8 @@ class AveaMerchantPayoutParser:
         net_rows = cls._capitec_block(cleaned, r"All settlements")
         gross_rows = cls._capitec_block(cleaned, r"Settlements for card machine")
         if not net_rows:
+            net_rows, gross_rows = cls._capitec_legacy_deposits(cleaned)
+        if not net_rows:
             raise UserError(_("No Capitec payouts were found on this merchant statement."))
         gross_by_key = {cls._capitec_key(row): row for row in gross_rows}
         payouts = []
@@ -255,6 +259,76 @@ class AveaMerchantPayoutParser:
         if rows:
             return rows
         return cls._capitec_column_rows(chunk)
+
+    @classmethod
+    def _capitec_legacy_deposits(cls, text: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Older Capitec PDFs print DETAIL OF DEPOSITS as separate date/ref/amount columns."""
+        if "detail of deposits" not in (text or "").lower():
+            return [], []
+        batch = re.search(
+            r"Batch Transmission Date\s*((?:20\d{2}-\d{2}-\d{2}\s*)+)",
+            text,
+            flags=re.IGNORECASE,
+        )
+        if not batch:
+            return [], []
+        dates = [_parse_date(value) for value in _CAPITEC_ISO_DATE_RE.findall(batch.group(1))]
+        dates = [value for value in dates if value]
+        ref_block = re.search(
+            r"Reference Number\s*((?:CAPITEC\s+\d{4}PosSettle\s+\d{6}\s*)+)",
+            text,
+            flags=re.IGNORECASE,
+        )
+        refs = [
+            (re.sub(r"\s+", " ", found.group(1)).strip(), found.group(2))
+            for found in _CAPITEC_REF_RE.finditer(ref_block.group(1) if ref_block else "")
+        ]
+        net_headers = list(re.finditer(r"Total Deposit Amount", text, flags=re.IGNORECASE))
+        if not net_headers:
+            return [], []
+        rest = text[net_headers[-1].end() :]
+        stop = re.search(r"A registered credit provider|Terminal ID", rest, flags=re.IGNORECASE)
+        nets = [_parse_zar(value) for value in _CAPITEC_PLAIN_AMOUNT_RE.findall(rest[: stop.start()] if stop else rest)]
+        nets = [value for value in nets if value is not None]
+        if len(nets) >= 2 and abs(nets[-1] - round(sum(nets[:-1]), 2)) < 0.05:
+            nets = nets[:-1]
+        gross: list = []
+        gross_headers = list(re.finditer(r"Batch Total", text, flags=re.IGNORECASE))
+        if gross_headers:
+            rest = text[gross_headers[-1].end() :]
+            stop = re.search(r"A registered credit provider|Page \d+", rest, flags=re.IGNORECASE)
+            gross = [
+                _parse_zar(value)
+                for value in _CAPITEC_PLAIN_AMOUNT_RE.findall(rest[: stop.start()] if stop else rest)
+            ]
+            gross = [value for value in gross if value is not None]
+        count = min(len(dates), len(refs), len(nets))
+        if count < 1:
+            return [], []
+        net_rows = []
+        for index in range(count):
+            reference, trading = refs[index]
+            net_rows.append(
+                {
+                    "payout_date": dates[index],
+                    "reference": reference,
+                    "amount": nets[index],
+                    "trading_date": _date_from_yymmdd(trading),
+                }
+            )
+        gross_rows = []
+        if len(gross) == count:
+            for index in range(count):
+                reference, trading = refs[index]
+                gross_rows.append(
+                    {
+                        "payout_date": dates[index],
+                        "reference": reference,
+                        "amount": gross[index],
+                        "trading_date": _date_from_yymmdd(trading),
+                    }
+                )
+        return net_rows, gross_rows
 
     @classmethod
     def _capitec_inline_rows(cls, chunk: str) -> list[dict[str, Any]]:
