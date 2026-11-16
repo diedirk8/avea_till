@@ -11,6 +11,8 @@
                     <field name="currency_id" invisible="1"/>
                     <field name="available_journal_ids" invisible="1"/>
                     <field name="has_supplier_credit" invisible="1"/>
+                    <field name="has_store_credit" invisible="1"/>
+                    <field name="store_credit_available" invisible="1"/>
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">Stock</span>
@@ -34,6 +36,22 @@
                             <div class="o_avea_workspace_info_item" invisible="not has_supplier_credit">
                                 <span class="o_avea_workspace_info_label">Credit available</span>
                                 <field name="supplier_credit_available" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item o_avea_stock_check_row">
+                                <field name="use_store_credit" nolabel="1"/>
+                                <span class="o_avea_workspace_info_label">Pay with store credit</span>
+                            </div>
+                            <div class="o_avea_workspace_info_item" invisible="not has_store_credit">
+                                <span class="o_avea_workspace_info_label">On their customer account</span>
+                                <field name="store_credit_available" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item" invisible="not use_store_credit">
+                                <span class="o_avea_workspace_info_label">Store credit amount</span>
+                                <field name="store_credit_amount" nolabel="1" widget="monetary"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item o_avea_stock_check_row" invisible="not use_store_credit">
+                                <field name="store_credit_already_issued" nolabel="1"/>
+                                <span class="o_avea_workspace_info_label">Credit already issued</span>
                             </div>
                             <div class="o_avea_workspace_info_item">
                                 <span class="o_avea_workspace_info_label">Pay from</span>

@@ -1,6 +1,6 @@
 from datetime import datetime, time
 
-from odoo import _, api, fields, models
+from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.float_utils import float_compare, float_round
 
@@ -293,3 +293,157 @@ class AveaStockMixin(models.AbstractModel):
                 continue
             (bill_lines + credit_lines).sudo().reconcile()
         return company.currency_id.round(amount_before - bill.amount_residual)
+
+    @api.model
+    def _avea_partner_store_credit_balance(self, partner):
+        """Posted Pets Empire store credit still available for the customer to spend."""
+        if not partner:
+            return 0.0
+        partner.invalidate_recordset(["avea_credit_balance"])
+        currency = partner.avea_credit_currency_id or partner.company_id.currency_id
+        if not currency:
+            currency = self.env.company.currency_id
+        return currency.round(partner.avea_credit_balance or 0.0)
+
+    @api.model
+    def _avea_store_credit_trade_reason(self):
+        reason = self.env.ref(
+            "avea_till.credit_reason_animal_trade",
+            raise_if_not_found=False,
+        )
+        if reason:
+            return reason
+        return self.env["avea.credit.reason"].search(
+            [("active", "=", True), ("manual_issue", "=", True)],
+            order="sequence, name, id",
+            limit=1,
+        )
+
+    @api.model
+    def _avea_apply_store_credit_to_vendor_bill(
+        self,
+        bill,
+        partner,
+        company,
+        amount,
+        already_issued=True,
+        pay_date=None,
+        payment_ref=None,
+    ):
+        """Settle a vendor bill with Pets Empire store credit.
+
+        Store credit is a customer liability (they can spend it in the shop). It
+        is not a supplier credit note from a stock return.
+
+        If the credit was already issued, reverse the issuance expense against
+        accounts payable so the stock — not a gift — carries the cost. If it
+        was not issued yet, grant Animal Trade credit and post payable against
+        the store-credit liability.
+        """
+        if not bill or not partner:
+            return 0.0
+        currency = bill.currency_id
+        pay_amount = currency.round(amount or 0.0)
+        if currency.is_zero(pay_amount):
+            return 0.0
+        residual = bill.amount_residual
+        if currency.is_zero(residual):
+            return 0.0
+        if currency.compare_amounts(pay_amount, residual) > 0:
+            pay_amount = residual
+        if currency.compare_amounts(pay_amount, 0.0) <= 0:
+            return 0.0
+
+        company = company or bill.company_id
+        company.sudo()._avea_credit_ensure_accounting_setup()
+        payable = self._avea_supplier_payable_account(partner, company)
+        expense = company.avea_credit_issuance_expense_account_id
+        liability = company._avea_credit_ref("liability_account")
+        journal = company.avea_credit_issuance_journal_id
+        if not expense or not liability or not journal:
+            raise UserError(
+                _("Store Credit issuance accounting is not configured for this company.")
+            )
+
+        balance = self._avea_partner_store_credit_balance(partner)
+        if already_issued:
+            if currency.compare_amounts(pay_amount, balance) > 0:
+                raise UserError(
+                    _(
+                        "Only %(amount)s store credit is on this customer's account. "
+                        "Untick “Credit already issued” to grant more, or enter a "
+                        "smaller amount.",
+                        amount=currency.format(balance),
+                    )
+                )
+        partner._avea_credit_ensure_customer()
+        if partner.supplier_rank < 1:
+            partner.sudo().write({"supplier_rank": 1})
+
+        pay_date = pay_date or fields.Date.context_today(self)
+        reference = payment_ref or bill.ref or bill.name or _("Store credit")
+        line_name = _("Store credit — %s") % reference
+        counterpart = expense if already_issued else liability
+        move = (
+            self.env["account.move"]
+            .sudo()
+            .with_company(company)
+            .create(
+                {
+                    "move_type": "entry",
+                    "journal_id": journal.id,
+                    "date": pay_date,
+                    "ref": line_name,
+                    "company_id": company.id,
+                    "line_ids": [
+                        Command.create(
+                            {
+                                "name": line_name,
+                                "account_id": payable.id,
+                                "partner_id": partner.id,
+                                "debit": pay_amount,
+                                "credit": 0.0,
+                            }
+                        ),
+                        Command.create(
+                            {
+                                "name": line_name,
+                                "account_id": counterpart.id,
+                                "partner_id": partner.id if not already_issued else False,
+                                "debit": 0.0,
+                                "credit": pay_amount,
+                            }
+                        ),
+                    ],
+                }
+            )
+        )
+        move.action_post()
+
+        bill_lines = bill.line_ids.filtered(
+            lambda line: line.account_id == payable and not line.reconciled
+        )
+        settle_lines = move.line_ids.filtered(
+            lambda line: line.account_id == payable and not line.reconciled
+        )
+        to_reconcile = bill_lines | settle_lines
+        if len(to_reconcile) >= 2:
+            to_reconcile.sudo().reconcile()
+
+        if not already_issued:
+            reason = self._avea_store_credit_trade_reason()
+            if not reason:
+                raise UserError(
+                    _("No store credit issue reason is configured for animal trades.")
+                )
+            self.env["avea.credit.ledger.entry"].sudo().create_issued_credit(
+                partner=partner,
+                amount=pay_amount,
+                reason=reason,
+                notes=line_name,
+                account_move=move,
+            )
+            partner.invalidate_recordset(
+                ["avea_credit_balance", "avea_credit_currency_id"]
+            )
+        return pay_amount

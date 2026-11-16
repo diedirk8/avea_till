@@ -53,6 +53,24 @@ class AveaSupplierBillPayWizard(models.TransientModel):
     has_supplier_credit = fields.Boolean(
         compute="_compute_supplier_credit_available",
     )
+    use_store_credit = fields.Boolean(
+        string="Pay with store credit",
+    )
+    store_credit_already_issued = fields.Boolean(
+        string="Credit already issued",
+    )
+    store_credit_amount = fields.Monetary(
+        string="Store credit amount",
+        currency_field="currency_id",
+    )
+    store_credit_available = fields.Monetary(
+        string="Store credit on account",
+        currency_field="currency_id",
+        compute="_compute_store_credit_available",
+    )
+    has_store_credit = fields.Boolean(
+        compute="_compute_store_credit_available",
+    )
 
     @api.depends("bill_id", "bill_id.amount_residual")
     def _compute_amount_due(self):
@@ -82,6 +100,32 @@ class AveaSupplierBillPayWizard(models.TransientModel):
             )
             wizard.supplier_credit_available = available
             wizard.has_supplier_credit = available > 0.0
+
+    @api.depends("partner_id")
+    def _compute_store_credit_available(self):
+        mixin = self.env["avea.stock.mixin"]
+        for wizard in self:
+            available = mixin._avea_partner_store_credit_balance(wizard.partner_id)
+            wizard.store_credit_available = available
+            wizard.has_store_credit = available > 0.0
+
+    @api.onchange("use_store_credit")
+    def _onchange_use_store_credit(self):
+        if not self.use_store_credit:
+            return
+        balance = self.store_credit_available or 0.0
+        due = self.amount_due or 0.0
+        self.store_credit_already_issued = balance > 0.0
+        if self.currency_id.is_zero(self.store_credit_amount or 0.0):
+            self.store_credit_amount = min(due, balance) if balance else due
+        self.amount = max(due - (self.store_credit_amount or 0.0), 0.0)
+
+    @api.onchange("store_credit_amount")
+    def _onchange_store_credit_amount(self):
+        if not self.use_store_credit:
+            return
+        due = self.amount_due or 0.0
+        self.amount = max(due - (self.store_credit_amount or 0.0), 0.0)
 
     @api.model
     def default_get(self, fields_list):
@@ -119,25 +163,47 @@ class AveaSupplierBillPayWizard(models.TransientModel):
                 bill, partner, company
             )
             bill.invalidate_recordset(["amount_residual", "payment_state"])
+        store_credit_applied = 0.0
+        if self.use_store_credit:
+            if bill.currency_id.compare_amounts(self.store_credit_amount or 0.0, 0.0) <= 0:
+                raise UserError(
+                    _("Enter the store credit amount used to pay this supplier.")
+                )
+            store_credit_applied = self.env[
+                "avea.stock.mixin"
+            ]._avea_apply_store_credit_to_vendor_bill(
+                bill,
+                partner,
+                company,
+                self.store_credit_amount,
+                already_issued=self.store_credit_already_issued,
+                pay_date=self.pay_date or fields.Date.context_today(self),
+                payment_ref=bill.ref or bill.name,
+            )
+            bill.invalidate_recordset(["amount_residual", "payment_state"])
         remaining = bill.amount_residual
         if not bill.currency_id.is_zero(remaining):
             pay_amount = bill.currency_id.round(self.amount or 0.0)
             if bill.currency_id.compare_amounts(pay_amount, 0.0) <= 0:
-                raise UserError(_("Enter the amount you paid."))
-            if bill.currency_id.compare_amounts(pay_amount, remaining) > 0:
+                if store_credit_applied or credit_applied:
+                    pay_amount = 0.0
+                else:
+                    raise UserError(_("Enter the amount you paid."))
+            if pay_amount and bill.currency_id.compare_amounts(pay_amount, remaining) > 0:
                 pay_amount = remaining
-            allowed = self.company_id.sudo()._avea_expense_journals()
-            if not self.journal_id or self.journal_id not in allowed:
-                raise UserError(_("Choose a cash or bank account to pay from."))
-            self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
-                bill,
-                self.journal_id,
-                partner,
-                company,
-                self.pay_date or fields.Date.context_today(self),
-                bill.ref or bill.name,
-                amount=pay_amount,
-            )
+            if bill.currency_id.compare_amounts(pay_amount, 0.0) > 0:
+                allowed = self.company_id.sudo()._avea_expense_journals()
+                if not self.journal_id or self.journal_id not in allowed:
+                    raise UserError(_("Choose a cash or bank account to pay from."))
+                self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+                    bill,
+                    self.journal_id,
+                    partner,
+                    company,
+                    self.pay_date or fields.Date.context_today(self),
+                    bill.ref or bill.name,
+                    amount=pay_amount,
+                )
         receive = bill.avea_linked_receive_id
         if receive:
             values = {}
@@ -150,6 +216,10 @@ class AveaSupplierBillPayWizard(models.TransientModel):
                 values["supplier_credit_applied"] = (
                     receive.supplier_credit_applied or 0.0
                 ) + credit_applied
+            if store_credit_applied:
+                values["store_credit_applied"] = (
+                    receive.store_credit_applied or 0.0
+                ) + store_credit_applied
             if values:
                 receive.sudo().write(values)
         partner.invalidate_recordset()

@@ -325,7 +325,7 @@ class AveaStockReceive(models.Model):
     partner_id = fields.Many2one(
         "res.partner",
         string="Supplier",
-        domain="[('supplier_rank', '>', 0)]",
+        domain="['|', ('supplier_rank', '>', 0), ('avea_credit_balance', '>', 0)]",
     )
     add_new_supplier = fields.Boolean(
         string="Add a new supplier",
@@ -438,6 +438,33 @@ class AveaStockReceive(models.Model):
     )
     supplier_credit_applied = fields.Monetary(
         string="Supplier credit applied",
+        currency_field="currency_id",
+        readonly=True,
+        copy=False,
+    )
+    use_store_credit = fields.Boolean(
+        string="Pay with store credit",
+        help="Pay part of this bill with Pets Empire store credit — for example an animal trade.",
+    )
+    store_credit_already_issued = fields.Boolean(
+        string="Credit already issued",
+        help="Tick if you already issued this store credit on the customer's account. "
+        "Leave unticked to grant new store credit as payment.",
+    )
+    store_credit_amount = fields.Monetary(
+        string="Store credit amount",
+        currency_field="currency_id",
+    )
+    store_credit_available = fields.Monetary(
+        string="Store credit on account",
+        currency_field="currency_id",
+        compute="_compute_store_credit_available",
+    )
+    has_store_credit = fields.Boolean(
+        compute="_compute_store_credit_available",
+    )
+    store_credit_applied = fields.Monetary(
+        string="Store credit applied",
         currency_field="currency_id",
         readonly=True,
         copy=False,
@@ -585,6 +612,7 @@ class AveaStockReceive(models.Model):
         "mark_as_paid",
         "paid_from_journal_id",
         "supplier_credit_applied",
+        "store_credit_applied",
         "bill_id",
         "bill_id.amount_residual",
         "bill_id.payment_state",
@@ -603,6 +631,10 @@ class AveaStockReceive(models.Model):
             if receive.supplier_credit_applied:
                 parts.append(
                     _("Credit applied %(amount)s", amount=receive.supplier_credit_applied)
+                )
+            if receive.store_credit_applied:
+                parts.append(
+                    _("Store credit %(amount)s", amount=receive.store_credit_applied)
                 )
             bill = receive.bill_id
             payment_source = receive._avea_payment_source_label()
@@ -875,6 +907,28 @@ class AveaStockReceive(models.Model):
             receive.supplier_credit_available = available
             receive.has_supplier_credit = available > 0.0
 
+    @api.depends("partner_id", "effective_partner_id")
+    def _compute_store_credit_available(self):
+        mixin = self.env["avea.stock.mixin"]
+        for receive in self:
+            partner = receive.effective_partner_id or receive.partner_id
+            available = mixin._avea_partner_store_credit_balance(partner)
+            receive.store_credit_available = available
+            receive.has_store_credit = available > 0.0
+
+    @api.onchange("use_store_credit")
+    def _onchange_use_store_credit(self):
+        if not self.use_store_credit:
+            return
+        partner = self.effective_partner_id or self.partner_id
+        balance = self.env["avea.stock.mixin"]._avea_partner_store_credit_balance(
+            partner
+        )
+        self.store_credit_already_issued = balance > 0.0
+        if self.currency_id.is_zero(self.store_credit_amount or 0.0):
+            total = self.amount_total or 0.0
+            self.store_credit_amount = min(total, balance) if balance else total
+
     def action_return_this_stock(self):
         self.ensure_one()
         picking = self._avea_get_receipt_picking()
@@ -1098,21 +1152,35 @@ class AveaStockReceive(models.Model):
             credit_applied = mixin._avea_apply_supplier_credits_to_bill(
                 bill, partner, self.company_id
             )
-        if self.mark_as_paid:
-            self._avea_pay_vendor_bill(
+        store_credit_applied = 0.0
+        if self.use_store_credit:
+            store_credit_applied = mixin._avea_apply_store_credit_to_vendor_bill(
                 bill,
-                self._avea_payment_journal(),
                 partner,
                 self.company_id,
-                self.invoice_date,
-                self.invoice_number,
+                self.store_credit_amount,
+                already_issued=self.store_credit_already_issued,
+                pay_date=self.invoice_date,
+                payment_ref=self.invoice_number,
             )
+        if self.mark_as_paid:
+            bill.invalidate_recordset(["amount_residual", "payment_state"])
+            if not bill.currency_id.is_zero(bill.amount_residual):
+                self._avea_pay_vendor_bill(
+                    bill,
+                    self._avea_payment_journal(),
+                    partner,
+                    self.company_id,
+                    self.invoice_date,
+                    self.invoice_number,
+                )
         return self._avea_success(
             partner,
             order,
             bill,
             picking=picking,
             credit_applied=credit_applied,
+            store_credit_applied=store_credit_applied,
         )
 
     def _avea_apply_product_cost_updates(self):
@@ -1144,13 +1212,34 @@ class AveaStockReceive(models.Model):
                     _("%(product)s is not a stock product.",
                       product=line.product_id.display_name)
                 )
+        if self.use_store_credit:
+            amount = self.store_credit_amount or 0.0
+            if self.currency_id.compare_amounts(amount, 0.0) <= 0:
+                raise ValidationError(
+                    _("Enter the store credit amount used to pay this supplier.")
+                )
+            if self.store_credit_already_issued:
+                balance = self.env["avea.stock.mixin"]._avea_partner_store_credit_balance(
+                    partner
+                )
+                if self.currency_id.compare_amounts(amount, balance) > 0:
+                    raise ValidationError(
+                        _(
+                            "Only %(amount)s store credit is on this customer's account. "
+                            "Untick “Credit already issued” to grant more.",
+                            amount=self.currency_id.format(balance),
+                        )
+                    )
         if self.mark_as_paid:
             self._avea_payment_journal()
 
     def _avea_ensure_supplier(self):
         self.ensure_one()
         if not self.add_new_supplier:
-            return self.partner_id
+            partner = self.partner_id
+            if partner and partner.supplier_rank < 1:
+                partner.sudo().write({"supplier_rank": 1})
+            return partner
         name = (self.new_supplier_name or "").strip()
         if not name:
             raise ValidationError(_("Enter the new supplier's name."))
@@ -1370,7 +1459,15 @@ class AveaStockReceive(models.Model):
             )
         return journal
 
-    def _avea_success(self, partner, order, bill, picking=False, credit_applied=0.0):
+    def _avea_success(
+        self,
+        partner,
+        order,
+        bill,
+        picking=False,
+        credit_applied=0.0,
+        store_credit_applied=0.0,
+    ):
         self.write(
             {
                 "state": "done",
@@ -1380,6 +1477,7 @@ class AveaStockReceive(models.Model):
                 "purchase_order_id": order.id,
                 "picking_id": picking.id if picking else False,
                 "supplier_credit_applied": credit_applied,
+                "store_credit_applied": store_credit_applied,
                 "mark_as_paid": self.mark_as_paid,
                 "paid_from_journal_id": (
                     self.paid_from_journal_id.id

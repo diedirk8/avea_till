@@ -54,6 +54,7 @@
                 <field name="receipt_display" string="Receipt"/>
                 <field name="amount_total" string="Total" widget="monetary"/>
                 <field name="supplier_credit_applied" string="Credit used" widget="monetary" optional="show"/>
+                <field name="store_credit_applied" string="Store credit" widget="monetary" optional="hide"/>
                 <field name="payment_status" string="Payment"/>
                 <field name="user_id" string="By" optional="hide"/>
                 <button
@@ -129,6 +130,10 @@
                             <div class="o_avea_workspace_info_item" invisible="not supplier_credit_applied">
                                 <span class="o_avea_workspace_info_label">Supplier credit applied</span>
                                 <field name="supplier_credit_applied" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item" invisible="not store_credit_applied">
+                                <span class="o_avea_workspace_info_label">Store credit applied</span>
+                                <field name="store_credit_applied" nolabel="1" widget="monetary" readonly="1"/>
                             </div>
                             <div class="o_avea_workspace_info_item" invisible="not bill_residual">
                                 <span class="o_avea_workspace_info_label">Bill balance</span>
