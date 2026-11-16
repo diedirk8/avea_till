@@ -181,6 +181,7 @@ class TestAveaAccountManager(TransactionCase):
         activity = expense.action_avea_view_activity()
         self.assertEqual(activity["res_model"], "account.move.line")
         self.assertIn(("account_id", "=", expense.id), activity["domain"])
+        self.assertNotIn("search_default_this_year", activity.get("context") or {})
         lines = self.env["account.move.line"].search(activity["domain"])
         rent_line = move.line_ids.filtered(lambda line: line.account_id == expense)
         self.assertIn(rent_line.id, lines.ids)
@@ -230,6 +231,7 @@ class TestAveaAccountManager(TransactionCase):
         arch = view.arch_db or ""
         self.assertIn('js_class="avea_account_activity"', arch)
         self.assertIn("o_avea_account_activity_table", arch)
+        self.assertIn('limit="200"', arch)
 
     def test_nav_accounting_lists_accounts(self):
         nav = self.manager._avea_nav_structure()

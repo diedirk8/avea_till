@@ -19,7 +19,7 @@
                                 Activity on <t t-esc="accountName"/>
                             </h1>
                             <p class="o_avea_workspace_section_subtitle">
-                                Posted income and expense on this account. Amounts this year match the figure on the account.
+                                Every posted line on this account, newest first. Scroll to see older ones.
                             </p>
                             <div class="o_avea_account_list_search">
                                 <label class="o_avea_workspace_info_label" for="avea_account_activity_search">

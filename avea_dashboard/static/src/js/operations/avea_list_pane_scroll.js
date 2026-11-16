@@ -5,36 +5,15 @@ import { onMounted, onPatched, onWillUnmount, useComponent } from "@odoo/owl";
 const ACTION_MANAGER_CLASS = "o_avea_list_pane_action_manager";
 const PANE_HEIGHT = "calc(100vh - var(--avea-topbar-height, 3.25rem))";
 
-const PANE_LOCK = {
-    display: "flex",
-    "flex-direction": "column",
-    flex: "1 1 auto",
-    height: "100%",
-    "max-height": "100%",
-    "min-height": "0",
-    overflow: "hidden",
-    "overflow-x": "hidden",
-    "overflow-y": "hidden",
-};
-
-const HERO_LOCK = {
-    flex: "0 0 auto",
-    "flex-shrink": "0",
-    height: "auto",
-    "max-height": "none",
-    overflow: "visible",
-};
-
-const LIST_LOCK = {
+const UNLOCK = {
     display: "block",
-    flex: "1 1 auto",
+    flex: "none",
     height: "auto",
     "max-height": "none",
     "min-height": "0",
-    overflow: "auto",
-    "overflow-x": "auto",
-    "overflow-y": "auto",
-    "-webkit-overflow-scrolling": "touch",
+    overflow: "visible",
+    "overflow-x": "visible",
+    "overflow-y": "visible",
 };
 
 function _pin(restore, el, styles) {
@@ -45,9 +24,8 @@ function _pin(restore, el, styles) {
 }
 
 /**
- * Keep the hero/search visible and put a working scrollbar on the table.
- * CSS :has() plus overflow-x:clip is not enough on its own (promotion form
- * and stock catalogue already pin the action manager for the same reason).
+ * Scroll the whole activity page. Inner table overflow:auto with height:auto
+ * never grows a thumb, and parent overflow:hidden then clips the rows.
  */
 export function useAveaListPaneScroll() {
     const component = useComponent();
@@ -83,34 +61,36 @@ export function useAveaListPaneScroll() {
         teardown();
 
         _pin(restore, actionManager, {
-            display: "flex",
-            "flex-direction": "column",
+            display: "block",
             height: PANE_HEIGHT,
             "max-height": PANE_HEIGHT,
-            overflow: "hidden",
             "overflow-x": "hidden",
-            "overflow-y": "hidden",
+            "overflow-y": "scroll",
+            "-webkit-overflow-scrolling": "touch",
         });
         actionManager.classList.add(ACTION_MANAGER_CLASS);
 
-        let node = root.parentElement;
+        let node = root;
         while (node && node !== actionManager) {
-            _pin(restore, node, PANE_LOCK);
+            _pin(restore, node, UNLOCK);
             node = node.parentElement;
         }
-        _pin(restore, root, PANE_LOCK);
 
-        root.querySelectorAll(".o_view_controller, .o_content").forEach((el) => {
-            _pin(restore, el, PANE_LOCK);
-        });
         root.querySelectorAll(
-            ".o_avea_account_list_shell, .o_avea_account_list_footer, .o_avea_account_pager"
-        ).forEach((el) => {
-            _pin(restore, el, HERO_LOCK);
-        });
-        root.querySelectorAll(".o_list_renderer, .o_list_renderer .table-responsive").forEach((el) => {
-            _pin(restore, el, LIST_LOCK);
-        });
+            [
+                ".o_view_controller",
+                ".o_content",
+                ".o_form_renderer",
+                ".o_form_sheet_bg",
+                ".o_form_sheet",
+                ".o_avea_workspace_sheet",
+                ".o_avea_account_list_shell",
+                ".o_avea_account_list_footer",
+                ".o_list_view",
+                ".o_list_renderer",
+                ".table-responsive",
+            ].join(", ")
+        ).forEach((el) => _pin(restore, el, UNLOCK));
     }
 
     onMounted(() => {
@@ -118,8 +98,8 @@ export function useAveaListPaneScroll() {
         window.setTimeout(setup, 0);
     });
     onPatched(() => {
-        const renderer = component.el?.querySelector(".o_list_renderer");
-        if (renderer && renderer.style.getPropertyValue("overflow-y") !== "auto") {
+        const actionManager = component.el?.closest(".o_action_manager");
+        if (actionManager && actionManager.style.getPropertyValue("overflow-y") !== "scroll") {
             setup();
         }
     });

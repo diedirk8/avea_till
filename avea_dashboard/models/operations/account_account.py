@@ -391,7 +391,6 @@ class AccountAccount(models.Model):
                 "avea_account_workspace": True,
                 "avea_account_id": self.id,
                 "avea_account_name": self.display_name,
-                "search_default_this_year": 1,
                 "avea_activity_date_from": fields.Date.to_string(date_from),
                 "avea_activity_date_to": fields.Date.to_string(date_to),
             },
