@@ -336,6 +336,7 @@
 }
 
 body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-list),
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-activity),
 body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--account .o_avea_account_hero) {
     height: calc(100vh - var(--avea-topbar-height));
     max-height: calc(100vh - var(--avea-topbar-height));
@@ -347,6 +348,7 @@ body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--a
     .o_content,
     .o_view_controller,
     .o_list_view.o_avea_workspace--account-list,
+    .o_list_view.o_avea_workspace--account-activity,
     .o_form_view.o_avea_workspace--account,
     .o_form_view.o_avea_workspace--account .o_form_sheet_bg,
     .o_form_view.o_avea_workspace--account .o_avea_workspace_sheet {
