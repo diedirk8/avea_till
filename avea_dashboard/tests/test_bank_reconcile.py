@@ -256,6 +256,79 @@ Date Description Amount Balance Accrued Bank Charges
         )
         self.assertEqual(name, "N Mokoena")
 
+    def test_recording_an_expense_teaches_the_next_similar_bank_line(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        account = self.env["account.account"].search(
+            [
+                ("company_ids", "in", self.env.company.id),
+                ("account_type", "in", ("expense", "expense_other")),
+            ],
+            limit=1,
+        )
+        if not account:
+            return
+        partner = self.env["res.partner"].create(
+            {"name": "Google", "supplier_rank": 1}
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress"}
+        )
+        first = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-08-31",
+                "description": "POS Purchase Google Myfitnesspal",
+                "amount": -139.99,
+            }
+        )
+        wizard = self.env["avea.operational.expense.wizard"].create(
+            {
+                "partner_id": partner.id,
+                "expense_account_id": account.id,
+                "description": first.description,
+                "amount": 139.99,
+                "expense_date": "2026-08-31",
+                "paid_from_journal_id": journal.id,
+                "company_id": self.env.company.id,
+                "bank_reconcile_line_id": first.id,
+            }
+        )
+        wizard._avea_remember_bank_booking()
+        later = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-09-30",
+                "description": "POS Purchase Google Myfitnesspal",
+                "amount": -139.99,
+            }
+        )
+        inferred = later._avea_infer_booking()
+        self.assertTrue(inferred["from_memory"])
+        self.assertEqual(inferred["learned_partner_id"], partner.id)
+        self.assertEqual(inferred["suggested_expense_account_id"], account.id)
+        self.assertIn("Same as last time", inferred["booking_suggestion"])
+        self.assertIn("Google", later.work_hint)
+        action = later._avea_open_expense_wizard()
+        self.assertEqual(action["context"]["default_partner_id"], partner.id)
+        self.assertEqual(action["context"]["default_expense_account_id"], account.id)
+
+    def test_expense_wizard_lists_drawings_for_personal_card_spend(self):
+        drawings = self.env["account.account"].search(
+            [
+                ("code", "=", "300070"),
+                ("company_ids", "in", self.env.company.id),
+            ],
+            limit=1,
+        )
+        if not drawings:
+            return
+        wizard = self.env["avea.operational.expense.wizard"].new(
+            {"company_id": self.env.company.id}
+        )
+        self.assertIn(drawings, wizard.available_expense_account_ids)
+
     def test_parse_statement_csv_and_read_lines(self):
         journal = self.env["account.journal"].search(
             [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],

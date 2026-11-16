@@ -8,15 +8,23 @@ Avea follows the same pattern — suggestions on each line, one click to book.
 import re
 from datetime import datetime
 
-from odoo import _, models
+from odoo import _, fields, models
 
-from .withdraw_cash_wizard import SALARY_WAGES_ACCOUNT_CODE
+from .withdraw_cash_wizard import OWNER_DRAWING_ACCOUNT_CODE, SALARY_WAGES_ACCOUNT_CODE
 
 # Outflows at or below this amount with a date-only label are treated as bank fees/charges.
 _BANK_FEE_MAX_AMOUNT = 100.0
 
 _DATE_ONLY_LABEL = re.compile(
     r"^\s*(\d{1,2}\s+\w{3,9}|\d{4}-\d{2}-\d{2}|\d{2}/\d{2}/\d{4})\s*$",
+    re.IGNORECASE,
+)
+_DATE_IN_TEXT = re.compile(
+    r"\b("
+    r"\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*"
+    r"|\d{4}-\d{2}-\d{2}"
+    r"|\d{1,2}/\d{1,2}/\d{2,4}"
+    r")\b",
     re.IGNORECASE,
 )
 
@@ -176,6 +184,8 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
             "import_action": False,
             "suggested_expense_account_id": False,
             "suggested_income_account_id": False,
+            "learned_partner_id": False,
+            "from_memory": False,
             "partner_role": "supplier",
             "matched_rule": None,
         }
@@ -188,6 +198,29 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
         if currency.compare_amounts(amount, 0.0) == 0:
             result["import_action"] = "skip"
             result["booking_suggestion"] = _("No amount — skip")
+            return result
+        learned = cls.recall(
+            env,
+            company=company,
+            description=description,
+            reference=reference,
+        )
+        if learned:
+            result["from_memory"] = True
+            result["import_action"] = learned.import_action
+            result["learned_partner_id"] = learned.partner_id.id
+            result["partner_role"] = (
+                "supplier" if learned.import_action == "expense" else "customer"
+            )
+            result["booking_suggestion"] = _(
+                "Same as last time: %(partner)s · %(account)s. Check, then Record.",
+                partner=learned.partner_id.display_name or _("no payee"),
+                account=learned.account_id.display_name,
+            )
+            if learned.import_action == "income":
+                result["suggested_income_account_id"] = learned.account_id.id
+            else:
+                result["suggested_expense_account_id"] = learned.account_id.id
             return result
 
         matched_rule = None
@@ -354,3 +387,112 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
                 "(e.g. FNB). Search FNB or add them once if missing."
             )
         return False
+
+    @classmethod
+    def booking_key(cls, description, reference=""):
+        """Stable fingerprint so next month's similar FNB line finds last month."""
+        text = f"{description or ''} {reference or ''}".lower()
+        text = _DATE_IN_TEXT.sub(" ", text)
+        text = re.sub(r"\b\d+[.,]\d{2}\b", " ", text)
+        text = re.sub(r"\d{6,}", " ", text)
+        text = re.sub(r"[^a-z0-9* +]+", " ", text)
+        text = re.sub(r"\s+", " ", text).strip()
+        return text[:180]
+
+    @classmethod
+    def remember(
+        cls,
+        env,
+        *,
+        company,
+        description,
+        reference="",
+        partner=None,
+        account=None,
+        import_action="expense",
+    ):
+        key = cls.booking_key(description, reference)
+        if len(key) < 6 or not account or import_action not in ("expense", "income"):
+            return env["avea.bank.reconcile.learned.booking"]
+        Learned = env["avea.bank.reconcile.learned.booking"].sudo()
+        existing = Learned.search(
+            [
+                ("company_id", "=", company.id),
+                ("booking_key", "=", key),
+                ("import_action", "=", import_action),
+            ],
+            limit=1,
+        )
+        vals = {
+            "partner_id": partner.id if partner else False,
+            "account_id": account.id,
+        }
+        if existing:
+            existing.write(vals)
+            return existing
+        return Learned.create(
+            {
+                "company_id": company.id,
+                "booking_key": key,
+                "import_action": import_action,
+                **vals,
+            }
+        )
+
+    @classmethod
+    def recall(cls, env, *, company, description, reference="", import_action=None):
+        key = cls.booking_key(description, reference)
+        if len(key) < 6:
+            return env["avea.bank.reconcile.learned.booking"]
+        domain = [
+            ("company_id", "=", company.id),
+            ("booking_key", "=", key),
+        ]
+        if import_action:
+            domain.append(("import_action", "=", import_action))
+        return env["avea.bank.reconcile.learned.booking"].sudo().search(domain, limit=1)
+
+    @classmethod
+    def expense_account_domain(cls, company):
+        """Shop expenses plus owner's drawings, so personal card spend can be taught."""
+        return [
+            ("active", "=", True),
+            ("company_ids", "in", company.id),
+            "|",
+            "|",
+            (
+                "account_type",
+                "in",
+                ("expense", "expense_other", "expense_direct_cost"),
+            ),
+            ("code", "=", OWNER_DRAWING_ACCOUNT_CODE),
+            ("name", "ilike", "drawing"),
+        ]
+
+
+class AveaBankReconcileLearnedBooking(models.Model):
+    _name = "avea.bank.reconcile.learned.booking"
+    _description = "Remembered bank statement booking"
+    _order = "write_date desc, id desc"
+    _company_key_action_uniq = models.Constraint(
+        "unique(company_id, booking_key, import_action)",
+        "Each bank description remembers one booking.",
+    )
+
+    company_id = fields.Many2one(
+        "res.company",
+        required=True,
+        ondelete="cascade",
+        index=True,
+    )
+    booking_key = fields.Char(required=True, index=True)
+    import_action = fields.Selection(
+        selection=[("expense", "Expense"), ("income", "Income")],
+        required=True,
+    )
+    partner_id = fields.Many2one("res.partner", ondelete="set null")
+    account_id = fields.Many2one(
+        "account.account",
+        required=True,
+        ondelete="cascade",
+    )

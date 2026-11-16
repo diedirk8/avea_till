@@ -1758,7 +1758,9 @@ class AveaBankReconcileLine(models.Model):
             description=self.description,
             reference=self.reference,
         )
-        hint = AveaBankReconcileBookingRules.partner_hint_for_role(role)
+        hint = inferred.get("booking_suggestion") if inferred.get("from_memory") else (
+            AveaBankReconcileBookingRules.partner_hint_for_role(role)
+        )
         ctx = {
             "avea_booking_partner_role": role,
             "default_partner_hint": hint,
@@ -1766,7 +1768,9 @@ class AveaBankReconcileLine(models.Model):
         if role == "employee":
             ctx["avea_expense_payee_person"] = True
             ctx["default_is_company"] = False
-        if partner:
+        if inferred.get("learned_partner_id"):
+            ctx["default_partner_id"] = inferred["learned_partner_id"]
+        elif partner:
             ctx["default_partner_id"] = partner.id
         return ctx
 
@@ -1989,6 +1993,9 @@ class AveaBankReconcileLine(models.Model):
             }
         if self.suggested_income_account_id:
             ctx["default_income_account_id"] = self.suggested_income_account_id.id
+        inferred = self._avea_infer_booking()
+        if inferred.get("learned_partner_id"):
+            ctx["default_partner_id"] = inferred["learned_partner_id"]
         return {
             "type": "ir.actions.act_window",
             "name": title,

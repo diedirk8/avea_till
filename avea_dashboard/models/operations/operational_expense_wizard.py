@@ -1,6 +1,8 @@
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+from .bank_reconcile_booking_rules import AveaBankReconcileBookingRules
+
 
 class AveaOperationalExpenseWizard(models.TransientModel):
     _name = "avea.operational.expense.wizard"
@@ -23,12 +25,12 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         "account.account",
         string="Expense Account",
         required=True,
-        domain=(
-            "[('active', '=', True), "
-            "('account_type', 'in', "
-            "('expense', 'expense_other', 'expense_direct_cost'))]"
-        ),
-        help="What the business spent the money on.",
+        domain="[('id', 'in', available_expense_account_ids)]",
+        help="What the money was spent on. Owner drawings is listed for personal card spend.",
+    )
+    available_expense_account_ids = fields.Many2many(
+        "account.account",
+        compute="_compute_available_expense_account_ids",
     )
     description = fields.Char(
         string="Description",
@@ -91,6 +93,15 @@ class AveaOperationalExpenseWizard(models.TransientModel):
                 company._avea_expense_journals() if company else False
             )
 
+    @api.depends("company_id")
+    def _compute_available_expense_account_ids(self):
+        Account = self.env["account.account"]
+        for wizard in self:
+            company = wizard.company_id or self.env.company
+            wizard.available_expense_account_ids = Account.search(
+                AveaBankReconcileBookingRules.expense_account_domain(company)
+            )
+
     @api.model
     def default_get(self, fields_list):
         values = super().default_get(fields_list)
@@ -142,9 +153,25 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         self._avea_resolve_partner()
         bill = self._avea_create_vendor_bill()
         statement_line = self._avea_pay_bill(bill)
+        self._avea_remember_bank_booking()
         if self.bank_reconcile_line_id:
             return self.bank_reconcile_line_id._avea_after_booked(statement_line)
         return self._avea_success_close()
+
+    def _avea_remember_bank_booking(self):
+        self.ensure_one()
+        line = self.bank_reconcile_line_id
+        if not line:
+            return
+        AveaBankReconcileBookingRules.remember(
+            self.env,
+            company=self.company_id,
+            description=line.description,
+            reference=line.reference,
+            partner=self.partner_id,
+            account=self.expense_account_id,
+            import_action="expense",
+        )
 
     def _avea_resolve_partner(self):
         """Ensure the supplier is flagged as a vendor before posting."""

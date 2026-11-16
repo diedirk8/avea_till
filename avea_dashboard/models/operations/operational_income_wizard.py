@@ -1,6 +1,8 @@
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+from .bank_reconcile_booking_rules import AveaBankReconcileBookingRules
+
 
 class AveaOperationalIncomeWizard(models.TransientModel):
     _name = "avea.operational.income.wizard"
@@ -77,9 +79,25 @@ class AveaOperationalIncomeWizard(models.TransientModel):
         self._avea_resolve_customer()
         invoice = self._avea_create_customer_invoice()
         statement_line = self._avea_register_payment(invoice)
+        self._avea_remember_bank_booking()
         if self.bank_reconcile_line_id:
             return self.bank_reconcile_line_id._avea_after_booked(statement_line)
         return self._avea_success_close()
+
+    def _avea_remember_bank_booking(self):
+        self.ensure_one()
+        line = self.bank_reconcile_line_id
+        if not line:
+            return
+        AveaBankReconcileBookingRules.remember(
+            self.env,
+            company=self.company_id,
+            description=line.description,
+            reference=line.reference,
+            partner=self.partner_id,
+            account=self.income_account_id,
+            import_action="income",
+        )
 
     def _avea_resolve_customer(self):
         partner = self.partner_id
