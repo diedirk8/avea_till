@@ -13,7 +13,12 @@ body.o_avea_product_shell {
         @include o_avea_action_pane_fill;
         background-color: #fff;
         max-width: none;
-        overflow-x: clip;
+        // clip on one axis forces the other axis to clip as well (CSS overflow
+        // spec), so the page cannot grow a scrollbar. hidden + auto can.
+        overflow-x: hidden;
+        overflow-y: auto;
+        height: calc(100vh - var(--avea-topbar-height, 3.25rem));
+        max-height: calc(100vh - var(--avea-topbar-height, 3.25rem));
         padding: 0 !important;
         width: calc(100% - var(--avea-sidebar-width));
     }
@@ -27,7 +32,7 @@ body.o_avea_product_shell {
         @include o_avea_pane_inner_fill;
         background-color: #fff;
         margin: 0 !important;
-        overflow-x: clip;
+        overflow-x: hidden;
         padding: 0 !important;
     }
 
@@ -35,7 +40,7 @@ body.o_avea_product_shell {
     .o_action_manager .o_view_controller {
         @include o_avea_pane_inner_fill;
         background-color: #fff;
-        overflow-x: clip;
+        overflow-x: hidden;
         padding: 0 !important;
     }
 
@@ -47,14 +52,14 @@ body.o_avea_product_shell {
         box-sizing: border-box;
         max-width: 100% !important;
         min-width: 0;
-        overflow-x: clip;
+        overflow-x: hidden;
 
         .o_form_sheet_bg {
             background: transparent !important;
             box-sizing: border-box;
             max-width: 100% !important;
             min-width: 0;
-            overflow-x: clip;
+            overflow-x: hidden;
             padding: 0 !important;
         }
 

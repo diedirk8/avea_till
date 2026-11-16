@@ -401,7 +401,7 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--bank-recon-fo
 // stock history, …). overflow-x: clip on the product shell turns overflow-y
 // into clip as well, so the page cannot scroll. Catalogue lists keep their
 // own inner table scroller via :has(.o_avea_catalogue_flush) above.
-body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace):not(:has(.o_avea_catalogue_flush)):not(:has(.o_avea_workspace--account-activity)):not(:has(.o_avea_workspace--account-list)) {
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace):not(:has(.o_avea_catalogue_flush)) {
     display: block !important;
     height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
     max-height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
@@ -440,8 +440,9 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace):not(:has(.o_a
     }
 }
 
-// Account activity + account lists: the PAGE scrolls. Inner overflow:hidden
-// was clipping the table and showing an empty gutter next to 1–9 / 9.
+// Page scroll for every Avea screen except catalogue lists. The webclient
+// adds .o_avea_page_scroll because :has() alone was not enough on live.
+body.o_avea_product_shell .o_action_manager.o_avea_page_scroll,
 body.o_avea_product_shell .o_action_manager.o_avea_list_pane_action_manager,
 body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-list),
 body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-activity) {

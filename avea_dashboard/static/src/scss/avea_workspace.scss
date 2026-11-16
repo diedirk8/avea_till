@@ -39,13 +39,13 @@
 
     background-color: var(--o-webclient-background-color, #f8f9fa);
     min-width: 0;
-    overflow-x: clip;
+    overflow-x: hidden;
 
     .o_form_sheet_bg {
         background: transparent;
         max-width: 100%;
         min-width: 0;
-        overflow-x: clip;
+        overflow-x: hidden;
     }
 
     .o_avea_workspace_sheet {
@@ -56,7 +56,7 @@
         background: transparent;
         border: none;
         box-shadow: none;
-        overflow-x: clip;
+        overflow-x: hidden;
     }
 
     // -------------------------------------------------------------------------
