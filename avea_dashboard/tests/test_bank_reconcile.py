@@ -12,6 +12,9 @@ from odoo.addons.avea_till.models.operations.bank_reconcile_booking_rules import
 from odoo.addons.avea_till.models.operations.bank_statement_parser import (
     AveaBankStatementParser,
 )
+from odoo.addons.avea_till.models.operations.merchant_payout_parser import (
+    AveaMerchantPayoutParser,
+)
 
 
 @tagged("post_install", "-at_install", "avea_till")
@@ -559,3 +562,178 @@ Date Description Amount Balance Accrued Bank Charges
         self.assertEqual(line.match_state, "matched")
         self.assertEqual(line.statement_line_id.journal_id, journal)
         self.assertAlmostEqual(line.statement_line_id.amount, -55.0, places=2)
+
+    def test_parse_yoco_csv_skips_sep_and_includes_capital(self):
+        content = """sep=,
+Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,Pocket Savings,State
+2026/08/01 00:01:04,3062.51,99.50,13.00,602.29,0,paid
+2026/09/01 00:01:02,3965.99,81.97,10.70,771.04,0,paid
+"""
+        raw = content.encode()
+        self.assertEqual(AveaMerchantPayoutParser.detect("Yoco-payouts.csv", raw), "yoco")
+        parsed = AveaMerchantPayoutParser.parse("Yoco-payouts.csv", raw)
+        self.assertEqual(parsed["provider"], "yoco")
+        self.assertEqual(len(parsed["payouts"]), 2)
+        first = next(row for row in parsed["payouts"] if str(row["payout_date"]) == "2026-08-01")
+        self.assertEqual(str(first["payout_date"]), "2026-08-01")
+        self.assertAlmostEqual(first["net_amount"], 3062.51)
+        self.assertAlmostEqual(first["fee_amount"], 112.50)
+        self.assertAlmostEqual(first["capital_amount"], 602.29)
+        self.assertAlmostEqual(first["gross_amount"], 3777.30)
+
+    def test_parse_capitec_merchant_statement_text(self):
+        content = """
+Capitec Bank Limited
+Merchant Statement
+PETS EMPIRE
+Statement period 2 Jul 2026 - 1 Aug 2026
+All settlements
+Payout Date Reference Total
+02/07/2026 CAPITEC 0207PosSettle 260701 R2 375.55
+03/07/2026 CAPITEC 0307PosSettle 260702 R2 165.23
+Settlements for card machine transactions: NP531080 Total: R4 598.00
+02/07/2026 CAPITEC 0207PosSettle 260701 R2 399.00
+03/07/2026 CAPITEC 0307PosSettle 260702 R2 199.00
+"""
+        parsed = AveaMerchantPayoutParser._parse_capitec_text(content)
+        self.assertEqual(parsed["provider"], "capitec")
+        self.assertEqual(len(parsed["payouts"]), 2)
+        first = parsed["payouts"][0]
+        self.assertEqual(str(first["payout_date"]), "2026-07-02")
+        self.assertEqual(str(first["trading_date"]), "2026-07-01")
+        self.assertAlmostEqual(first["net_amount"], 2375.55)
+        self.assertAlmostEqual(first["gross_amount"], 2399.00)
+        self.assertAlmostEqual(first["fee_amount"], 23.45)
+        self.assertAlmostEqual(first["capital_amount"], 0.0)
+
+    def test_parse_capitec_columnar_merchant_pdf_text(self):
+        content = """
+Merchant Statement
+Capitec Bank Limited
+All settlements
+Payout Date
+Reference
+02/07/2026
+CAPITEC 0207PosSettle 260701
+03/07/2026
+CAPITEC 0307PosSettle 260702
+Total
+R2 375.55
+R2 165.23
+Settlements for card machine transactions: NP531080 Total: R4 598.00
+02/07/2026
+CAPITEC 0207PosSettle 260701
+03/07/2026
+CAPITEC 0307PosSettle 260702
+R2 399.00
+R2 199.00
+"""
+        parsed = AveaMerchantPayoutParser._parse_capitec_text(content)
+        self.assertEqual(len(parsed["payouts"]), 2)
+        self.assertAlmostEqual(parsed["payouts"][0]["net_amount"], 2375.55)
+        self.assertAlmostEqual(parsed["payouts"][0]["gross_amount"], 2399.00)
+        self.assertAlmostEqual(parsed["payouts"][1]["gross_amount"], 2199.00)
+        self.assertAlmostEqual(sum(row["gross_amount"] for row in parsed["payouts"]), 4598.00)
+
+    def test_yoco_file_rejected_as_bank_statement(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        content = """sep=,
+Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
+2026/08/01 00:01:04,3062.51,99.50,13.00,602.29,paid
+"""
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "draft",
+                "statement_file": base64.b64encode(content.encode()),
+                "statement_filename": "Yoco-payouts.csv",
+            }
+        )
+        with self.assertRaises(UserError):
+            reconciliation.action_parse_statement()
+
+    def test_yoco_payout_matches_fnb_line_and_splits_capital(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        card = self.env["pos.payment.method"].search([("name", "ilike", "card")], limit=1)
+        if not card or not card.outstanding_account_id:
+            return
+        fee_account = self.env["account.account"].search(
+            [
+                ("company_ids", "in", self.env.company.id),
+                ("account_type", "=", "expense"),
+            ],
+            limit=1,
+        )
+        loan_account = self.env["account.account"].search(
+            [
+                ("company_ids", "in", self.env.company.id),
+                ("account_type", "=", "liability_current"),
+            ],
+            limit=1,
+        )
+        if not fee_account or not loan_account:
+            return
+        yoco = """sep=,
+Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
+2026/08/01 00:01:04,3062.51,99.50,13.00,602.29,paid
+"""
+        fnb = """Date,Description,Amount
+2026-08-01,Yoco card settlement (sales 1 Aug 2026),3062.51
+"""
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "draft",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "statement_file": base64.b64encode(fnb.encode()),
+                "statement_filename": "statement.csv",
+                "merchant_file_ids": [
+                    Command.create(
+                        {
+                            "datas": base64.b64encode(yoco.encode()),
+                            "filename": "Yoco-payouts.csv",
+                        }
+                    )
+                ],
+            }
+        )
+        reconciliation.action_parse_statement()
+        line = reconciliation.line_ids[:1]
+        self.assertTrue(line.is_card_settlement)
+        self.assertTrue(line.merchant_payout_id)
+        self.assertAlmostEqual(line.merchant_payout_id.gross_amount, 3777.30)
+        self.assertEqual(reconciliation.ready_card_batch_count, 1)
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "settlement",
+                "settlement_gross": line.merchant_payout_id.gross_amount,
+                "settlement_capital": line.merchant_payout_id.capital_amount,
+                "fee_account_id": fee_account.id,
+                "capital_account_id": loan_account.id,
+            }
+        )
+        self.assertAlmostEqual(wizard.settlement_fee, 112.50)
+        wizard.action_apply()
+        move_lines = line.statement_line_id.move_id.line_ids
+        self.assertAlmostEqual(
+            sum(move_lines.filtered(lambda aml: aml.account_id == fee_account).mapped("debit")),
+            112.50,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            sum(move_lines.filtered(lambda aml: aml.account_id == loan_account).mapped("debit")),
+            602.29,
+            places=2,
+        )
+        outstanding = card.outstanding_account_id
+        self.assertAlmostEqual(
+            sum(move_lines.filtered(lambda aml: aml.account_id == outstanding).mapped("credit")),
+            3777.30,
+            places=2,
+        )

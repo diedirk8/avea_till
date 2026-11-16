@@ -33,15 +33,17 @@
                 </p>
                 <group invisible="mode != 'settlement'">
                     <field name="settlement_gross"/>
+                    <field name="settlement_capital"/>
                     <field name="settlement_fee" readonly="1" widget="monetary"/>
                     <field name="fee_account_id" options="{'no_create': True}"/>
+                    <field name="capital_account_id" options="{'no_create': True}"/>
                     <field name="settlement_hint" readonly="1" nolabel="1"/>
                 </group>
                 <p class="text-muted" invisible="mode != 'settlement'">
-                    Capitec and Yoco pay the batch into the bank after they have taken their fee,
-                    so the statement amount is smaller than the till. Enter the card sales for
-                    this batch. Avea puts the fee on the fee account and clears that much from
-                    card receipts waiting to be banked.
+                    Capitec and Yoco pay into the bank after fees (and Yoco capital) are taken
+                    off, so the statement amount is smaller than the till. If you attached the
+                    machine file, Avea fills the sales, fee, and capital from it. The fee goes
+                    to Bank Charges. Yoco capital goes to the loan account, not to fees.
                 </p>
                 <group invisible="mode != 'split'">
                     <field name="split_total" readonly="1" widget="monetary"/>

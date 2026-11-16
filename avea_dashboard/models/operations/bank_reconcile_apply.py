@@ -71,10 +71,15 @@ class AveaBankReconcileApply(models.TransientModel):
     settlement_gross = fields.Monetary(
         string="Card sales before the fee",
         currency_field="currency_id",
-        help="The till total for this Capitec or Yoco batch, before their fee.",
+        help="The machine total for this Capitec or Yoco batch, before their fee and any capital repayment.",
+    )
+    settlement_capital = fields.Monetary(
+        string="Yoco capital repaid",
+        currency_field="currency_id",
+        help="Taken off the Yoco payout. This is a loan repayment, not a card fee and not a sale.",
     )
     settlement_fee = fields.Monetary(
-        string="Card fee",
+        string="Card fee incl. VAT",
         compute="_compute_settlement_fee",
         currency_field="currency_id",
     )
@@ -85,6 +90,14 @@ class AveaBankReconcileApply(models.TransientModel):
         domain=(
             "[('company_ids', 'in', company_id), "
             "('account_type', 'in', ('expense', 'expense_other', 'expense_direct_cost'))]"
+        ),
+    )
+    capital_account_id = fields.Many2one(
+        "account.account",
+        string="Capital / loan account",
+        domain=(
+            "[('company_ids', 'in', company_id), "
+            "('account_type', 'in', ('liability_current', 'liability_non_current'))]"
         ),
     )
 
@@ -141,12 +154,22 @@ class AveaBankReconcileApply(models.TransientModel):
         description = (line.description or "").lower()
         if "card settlement" in description and "mode" in (fields_list or ["mode"]):
             values["mode"] = "settlement"
-        gross, _hint = self._avea_suggest_settlement_gross(line)
-        if gross and "settlement_gross" in (fields_list or ["settlement_gross"]):
-            values["settlement_gross"] = gross
+        payout = line.merchant_payout_id
+        if payout:
+            if "settlement_gross" in (fields_list or ["settlement_gross"]):
+                values["settlement_gross"] = payout.gross_amount
+            if "settlement_capital" in (fields_list or ["settlement_capital"]):
+                values["settlement_capital"] = payout.capital_amount
+        else:
+            gross, _hint = self._avea_suggest_settlement_gross(line)
+            if gross and "settlement_gross" in (fields_list or ["settlement_gross"]):
+                values["settlement_gross"] = gross
         fee_account = self._avea_fee_account(line.company_id)
         if fee_account and "fee_account_id" in (fields_list or ["fee_account_id"]):
             values["fee_account_id"] = fee_account.id
+        capital_account = self._avea_capital_account(line.company_id)
+        if capital_account and "capital_account_id" in (fields_list or ["capital_account_id"]):
+            values["capital_account_id"] = capital_account.id
         if "move_ids" not in (fields_list or ["move_ids"]):
             return values
         currency = line.currency_id or self.env.company.currency_id
@@ -165,14 +188,50 @@ class AveaBankReconcileApply(models.TransientModel):
             values["move_ids"] = [Command.set(exact.ids)]
         return values
 
-    @api.depends("settlement_gross", "amount", "currency_id", "reconcile_line_id.description")
+    @api.depends(
+        "settlement_gross",
+        "settlement_capital",
+        "amount",
+        "currency_id",
+        "reconcile_line_id.description",
+        "reconcile_line_id.merchant_payout_id",
+    )
     def _compute_settlement_fee(self):
         for wizard in self:
             currency = wizard.currency_id or wizard.env.company.currency_id
             net = wizard.amount or 0.0
             gross = wizard.settlement_gross or 0.0
-            fee = currency.round(gross - net) if currency.compare_amounts(gross, 0.0) > 0 else 0.0
+            capital = wizard.settlement_capital or 0.0
+            fee = (
+                currency.round(gross - net - capital)
+                if currency.compare_amounts(gross, 0.0) > 0
+                else 0.0
+            )
             wizard.settlement_fee = fee
+            payout = wizard.reconcile_line_id.merchant_payout_id
+            if payout:
+                parts = [
+                    _(
+                        "The machine file shows card sales of %(gross)s. "
+                        "The bank received %(net)s.",
+                        gross=currency.format(payout.gross_amount),
+                        net=currency.format(net),
+                    )
+                ]
+                if currency.compare_amounts(payout.fee_amount, 0.0) > 0:
+                    parts.append(
+                        _("Fee incl. VAT is %(fee)s.", fee=currency.format(payout.fee_amount))
+                    )
+                if currency.compare_amounts(payout.capital_amount, 0.0) > 0:
+                    parts.append(
+                        _(
+                            "Yoco also took %(capital)s as a capital repayment — "
+                            "that is a loan, not a fee and not a sale.",
+                            capital=currency.format(payout.capital_amount),
+                        )
+                    )
+                wizard.settlement_hint = " ".join(parts)
+                continue
             _gross, hint = wizard._avea_suggest_settlement_gross(wizard.reconcile_line_id)
             if currency.compare_amounts(fee, 0.0) > 0 and currency.compare_amounts(gross, 0.0) > 0:
                 rate = fee / gross * 100.0
@@ -291,9 +350,47 @@ class AveaBankReconcileApply(models.TransientModel):
         return cards
 
     @api.model
+    def _avea_fee_account(self, company):
+        return self.env["account.account"].sudo().search(
+            [
+                ("company_ids", "in", company.id),
+                ("account_type", "in", ("expense", "expense_other", "expense_direct_cost")),
+                "|",
+                "|",
+                ("name", "ilike", "bank charge"),
+                ("name", "ilike", "service fee"),
+                ("name", "ilike", "card fee"),
+            ],
+            limit=1,
+        )
+
+    @api.model
+    def _avea_capital_account(self, company):
+        Account = self.env["account.account"].sudo()
+        named = Account.search(
+            [
+                ("company_ids", "in", company.id),
+                ("account_type", "in", ("liability_current", "liability_non_current")),
+                ("name", "ilike", "loan"),
+            ],
+            limit=1,
+        )
+        if named:
+            return named
+        return Account.search(
+            [
+                ("company_ids", "in", company.id),
+                ("code", "=", "200080"),
+            ],
+            limit=1,
+        )
+
+    @api.model
     def _avea_suggest_settlement_gross(self, line):
         if not line or "card settlement" not in (line.description or "").lower():
             return 0.0, False
+        if line.merchant_payout_id:
+            return line.merchant_payout_id.gross_amount, False
         description = line.description or ""
         lowered = description.lower()
         provider = "capitec" if "capitec" in lowered else "yoco" if "yoco" in lowered else ""
@@ -345,20 +442,6 @@ class AveaBankReconcileApply(models.TransientModel):
                 )
         return 0.0, hint
 
-    def _avea_fee_account(self, company):
-        return self.env["account.account"].sudo().search(
-            [
-                ("company_ids", "in", company.id),
-                ("account_type", "in", ("expense", "expense_other", "expense_direct_cost")),
-                "|",
-                "|",
-                ("name", "ilike", "bank charge"),
-                ("name", "ilike", "service fee"),
-                ("name", "ilike", "card fee"),
-            ],
-            limit=1,
-        )
-
     def _avea_apply_settlement(self):
         self.ensure_one()
         line = self.reconcile_line_id
@@ -367,13 +450,26 @@ class AveaBankReconcileApply(models.TransientModel):
         if currency.compare_amounts(net, 0.0) <= 0:
             raise UserError(_("A card settlement on the statement is money in."))
         gross = self.settlement_gross
-        if currency.compare_amounts(gross, net) < 0:
+        capital = self.settlement_capital or 0.0
+        if currency.compare_amounts(capital, 0.0) < 0:
+            raise UserError(_("Yoco capital repaid cannot be negative."))
+        if currency.compare_amounts(gross, net + capital) < 0:
             raise UserError(
-                _("Card sales before the fee must be at least the amount the bank received.")
+                _(
+                    "Card sales must cover the amount the bank received plus any "
+                    "Yoco capital repayment."
+                )
             )
-        fee = currency.round(gross - net)
+        fee = currency.round(gross - net - capital)
         if currency.compare_amounts(fee, 0.0) > 0 and not self.fee_account_id:
             raise UserError(_("Choose the expense account for the card fee."))
+        if currency.compare_amounts(capital, 0.0) > 0 and not self.capital_account_id:
+            raise UserError(
+                _(
+                    "Yoco took a capital repayment off this payout. Choose the loan "
+                    "account so it is not booked as a card fee."
+                )
+            )
         provider = "capitec" if "capitec" in (line.description or "").lower() else "yoco" if "yoco" in (line.description or "").lower() else ""
         methods = self._avea_card_methods(provider)
         outstanding = methods.mapped("outstanding_account_id")[:1]
@@ -420,6 +516,19 @@ class AveaBankReconcileApply(models.TransientModel):
                         "debit": fee,
                         "credit": 0.0,
                         "amount_currency": fee,
+                        "currency_id": currency.id,
+                    }
+                )
+            )
+        if currency.compare_amounts(capital, 0.0) > 0:
+            commands.append(
+                Command.create(
+                    {
+                        "name": _("Yoco capital repayment"),
+                        "account_id": self.capital_account_id.id,
+                        "debit": capital,
+                        "credit": 0.0,
+                        "amount_currency": capital,
                         "currency_id": currency.id,
                     }
                 )

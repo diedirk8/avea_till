@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 import base64
 import re
+from datetime import datetime, timedelta
 
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError
 
 from .bank_reconcile_booking_rules import AveaBankReconcileBookingRules
 from .bank_statement_parser import AveaBankStatementParser
+from .merchant_payout_parser import AveaMerchantPayoutParser
 
 # Exact amount is 50. Exact date adds 25 (auto). A shared description adds 20
 # and is enough to auto-match. A nearby date alone stays a suggestion.
@@ -77,6 +79,52 @@ class AveaBankReconciliation(models.Model):
         "reconciliation_id",
         string="On your books, not on statement",
     )
+    merchant_file_ids = fields.One2many(
+        "avea.bank.reconcile.merchant.file",
+        "reconciliation_id",
+        string="Card machine files",
+    )
+    merchant_payout_ids = fields.One2many(
+        "avea.bank.reconcile.merchant.payout",
+        "reconciliation_id",
+        string="Card machine payouts",
+    )
+    till_card_sales = fields.Monetary(
+        string="Till card sales",
+        currency_field="currency_id",
+        compute="_compute_card_machine_summary",
+    )
+    merchant_card_sales = fields.Monetary(
+        string="Card sales on the machines",
+        currency_field="currency_id",
+        compute="_compute_card_machine_summary",
+    )
+    merchant_card_fees = fields.Monetary(
+        string="Card fees",
+        currency_field="currency_id",
+        compute="_compute_card_machine_summary",
+    )
+    merchant_card_capital = fields.Monetary(
+        string="Yoco capital repaid",
+        currency_field="currency_id",
+        compute="_compute_card_machine_summary",
+    )
+    card_banked = fields.Monetary(
+        string="Card money in the bank",
+        currency_field="currency_id",
+        compute="_compute_card_machine_summary",
+    )
+    card_sales_gap = fields.Monetary(
+        string="Till vs machines",
+        currency_field="currency_id",
+        compute="_compute_card_machine_summary",
+        help="Till card sales minus the card-machine totals on the attached files. "
+        "A large gap usually means a Yoco or Capitec file is for the wrong month.",
+    )
+    ready_card_batch_count = fields.Integer(compute="_compute_card_machine_summary")
+    unmatched_card_batch_count = fields.Integer(compute="_compute_card_machine_summary")
+    merchant_warning = fields.Char(compute="_compute_card_machine_summary")
+    has_merchant_payouts = fields.Boolean(compute="_compute_card_machine_summary")
     matched_count = fields.Integer(compute="_compute_counts")
     possible_match_count = fields.Integer(compute="_compute_counts")
     unmatched_bank_count = fields.Integer(compute="_compute_counts")
@@ -529,7 +577,18 @@ class AveaBankReconciliation(models.Model):
         raw = base64.b64decode(self.statement_file)
         if not raw:
             raise UserError(_("The uploaded file is empty."))
-        parsed = AveaBankStatementParser.parse(self.statement_filename or "statement.csv", raw)
+        filename = self.statement_filename or "statement.csv"
+        kind = AveaMerchantPayoutParser.detect(filename, raw)
+        if kind in ("yoco", "capitec"):
+            raise UserError(
+                _(
+                    "This is a %(kind)s card-machine file, not the FNB bank statement. "
+                    "Attach the Gold Business Account PDF as the statement, and put "
+                    "Yoco CSVs and Capitec merchant statements under Card machine files.",
+                    kind="Yoco" if kind == "yoco" else "Capitec",
+                )
+            )
+        parsed = AveaBankStatementParser.parse(filename, raw)
         opening = parsed.get("opening_balance")
         closing = parsed.get("closing_balance")
         balances_from_file = opening is not None and closing is not None
@@ -570,6 +629,7 @@ class AveaBankReconciliation(models.Model):
             }
         )
         self._avea_match_lines()
+        self._avea_load_merchant_files()
         self._avea_apply_booking_suggestions()
         self._avea_find_orphan_book_lines()
         return self._avea_action_form()
@@ -577,9 +637,240 @@ class AveaBankReconciliation(models.Model):
     def action_refresh_matches(self):
         self.ensure_one()
         self._avea_match_lines()
+        self._avea_load_merchant_files()
         self._avea_apply_booking_suggestions()
         self._avea_find_orphan_book_lines()
         return self._avea_action_form()
+
+    def _avea_load_merchant_files(self):
+        self.ensure_one()
+        self.merchant_payout_ids.unlink()
+        for attachment in self.merchant_file_ids:
+            if not attachment.datas:
+                continue
+            raw = base64.b64decode(attachment.datas)
+            if not raw:
+                continue
+            parsed = AveaMerchantPayoutParser.parse(
+                attachment.filename or "merchant.csv",
+                raw,
+            )
+            overlapping = 0
+            date_from = self.date_from
+            date_to = self.date_to
+            rows = []
+            for payout in parsed["payouts"]:
+                on_statement = bool(
+                    date_from
+                    and date_to
+                    and date_from <= payout["payout_date"] <= date_to
+                )
+                if on_statement:
+                    overlapping += 1
+                rows.append(
+                    {
+                        "reconciliation_id": self.id,
+                        "file_id": attachment.id,
+                        "provider": payout["provider"],
+                        "payout_date": payout["payout_date"],
+                        "trading_date": payout.get("trading_date") or False,
+                        "net_amount": payout["net_amount"],
+                        "gross_amount": payout["gross_amount"],
+                        "fee_amount": payout["fee_amount"],
+                        "capital_amount": payout["capital_amount"],
+                        "reference": payout.get("reference") or "",
+                        "on_this_statement": on_statement,
+                    }
+                )
+            warning = False
+            if parsed["payouts"] and not overlapping:
+                warning = _(
+                    "This %(provider)s file is %(date_from)s to %(date_to)s, "
+                    "which has no payouts on this bank statement. "
+                    "Upload the file for the same month as the FNB statement.",
+                    provider=parsed["provider"].title(),
+                    date_from=parsed["date_from"],
+                    date_to=parsed["date_to"],
+                )
+            attachment.write(
+                {
+                    "provider": parsed["provider"],
+                    "date_from": parsed.get("date_from"),
+                    "date_to": parsed.get("date_to"),
+                    "period_warning": warning,
+                }
+            )
+            if rows:
+                self.env["avea.bank.reconcile.merchant.payout"].create(rows)
+        self._avea_match_merchant_payouts()
+
+    def _avea_match_merchant_payouts(self):
+        self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
+        open_payouts = self.merchant_payout_ids.filtered("on_this_statement")
+        used = set()
+        for line in self.line_ids:
+            if line.match_state in ("matched", "imported"):
+                continue
+            if not line.is_card_settlement:
+                if line.merchant_payout_id:
+                    line.merchant_payout_id = False
+                continue
+            provider = line._avea_card_provider()
+            candidates = open_payouts.filtered(
+                lambda payout, provider=provider: payout.provider == provider
+                and payout.id not in used
+                and currency.compare_amounts(payout.net_amount, line.amount) == 0
+            )
+            chosen = self.env["avea.bank.reconcile.merchant.payout"]
+            if len(candidates) == 1:
+                chosen = candidates
+            elif len(candidates) > 1:
+                dated = candidates.filtered(
+                    lambda payout: payout.payout_date == line.bank_date
+                    or payout.trading_date == line.bank_date
+                )
+                if len(dated) == 1:
+                    chosen = dated
+            if chosen:
+                used.add(chosen.id)
+                line.merchant_payout_id = chosen.id
+            elif line.merchant_payout_id:
+                line.merchant_payout_id = False
+
+    def action_settle_card_batches(self):
+        self.ensure_one()
+        if self.state != "in_progress":
+            raise UserError(_("Upload and review the statement first."))
+        lines = self.line_ids.filtered(
+            lambda line: line.is_card_settlement
+            and line.merchant_payout_id
+            and line.match_state not in ("matched", "imported")
+        )
+        if not lines:
+            raise UserError(
+                _(
+                    "No card batches are ready. Attach the Yoco payouts CSV and the "
+                    "Capitec merchant statement for this month, then Refresh matches."
+                )
+            )
+        Apply = self.env["avea.bank.reconcile.apply"]
+        fee_account = Apply._avea_fee_account(self.company_id)
+        capital_account = Apply._avea_capital_account(self.company_id)
+        settled = 0
+        for line in lines:
+            payout = line.merchant_payout_id
+            values = {
+                "reconcile_line_id": line.id,
+                "mode": "settlement",
+                "settlement_gross": payout.gross_amount,
+                "settlement_capital": payout.capital_amount,
+            }
+            if fee_account:
+                values["fee_account_id"] = fee_account.id
+            if capital_account and payout.capital_amount:
+                values["capital_account_id"] = capital_account.id
+            Apply.create(values).action_apply()
+            settled += 1
+        self._avea_find_orphan_book_lines()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("Card batches settled"),
+                "message": _(
+                    "%(count)s card deposits booked from the machine files. "
+                    "Sales, fees, and Yoco capital are split automatically.",
+                    count=settled,
+                ),
+                "type": "success",
+                "next": self._avea_action_form(),
+            },
+        }
+
+    @api.depends(
+        "journal_id",
+        "company_id",
+        "date_from",
+        "date_to",
+        "line_ids.amount",
+        "line_ids.is_card_settlement",
+        "line_ids.match_state",
+        "line_ids.merchant_payout_id",
+        "merchant_payout_ids.net_amount",
+        "merchant_payout_ids.gross_amount",
+        "merchant_payout_ids.fee_amount",
+        "merchant_payout_ids.capital_amount",
+        "merchant_payout_ids.on_this_statement",
+        "merchant_file_ids.period_warning",
+        "state",
+    )
+    def _compute_card_machine_summary(self):
+        for reconciliation in self:
+            payouts = reconciliation.merchant_payout_ids.filtered("on_this_statement")
+            card_lines = reconciliation.line_ids.filtered("is_card_settlement")
+            ready = card_lines.filtered(
+                lambda line: line.merchant_payout_id
+                and line.match_state not in ("matched", "imported")
+            )
+            unmatched = card_lines.filtered(
+                lambda line: line.match_state not in ("matched", "imported")
+                and not line.merchant_payout_id
+            )
+            till = reconciliation._avea_till_card_sales()
+            merchant_sales = sum(payouts.mapped("gross_amount"))
+            reconciliation.till_card_sales = till
+            reconciliation.merchant_card_sales = merchant_sales
+            reconciliation.merchant_card_fees = sum(payouts.mapped("fee_amount"))
+            reconciliation.merchant_card_capital = sum(payouts.mapped("capital_amount"))
+            reconciliation.card_banked = sum(card_lines.mapped("amount"))
+            reconciliation.card_sales_gap = till - merchant_sales
+            reconciliation.ready_card_batch_count = len(ready)
+            reconciliation.unmatched_card_batch_count = len(unmatched)
+            reconciliation.has_merchant_payouts = bool(reconciliation.merchant_payout_ids)
+            warnings = [file.period_warning for file in reconciliation.merchant_file_ids if file.period_warning]
+            if unmatched and not reconciliation.merchant_file_ids:
+                warnings.append(
+                    _(
+                        "Attach the Yoco payouts CSV and the Capitec merchant statement "
+                        "for this month. They tell Avea the card sales, fees, and Yoco "
+                        "capital behind each deposit."
+                    )
+                )
+            elif unmatched:
+                warnings.append(
+                    _(
+                        "%(count)s card deposits on the bank have no matching machine "
+                        "payout. That is usually a missing file or the wrong month.",
+                        count=len(unmatched),
+                    )
+                )
+            reconciliation.merchant_warning = " ".join(warnings) if warnings else False
+
+    def _avea_till_card_sales(self):
+        self.ensure_one()
+        if not self.date_from or not self.date_to:
+            return 0.0
+        methods = self.env["pos.payment.method"].sudo().search([])
+        cards = methods.filtered(
+            lambda method: "card" in (method.name or "").lower()
+            or (
+                hasattr(method, "_avea_tender_kind")
+                and method._avea_tender_kind() == "card"
+            )
+        )
+        if not cards:
+            return 0.0
+        start = datetime.combine(self.date_from, datetime.min.time())
+        end = datetime.combine(self.date_to, datetime.min.time()) + timedelta(days=1)
+        payments = self.env["pos.payment"].sudo().search(
+            [
+                ("payment_method_id", "in", cards.ids),
+                ("payment_date", ">=", start),
+                ("payment_date", "<", end),
+            ]
+        )
+        return sum(payments.mapped("amount"))
 
     def _avea_apply_booking_suggestions(self):
         self.ensure_one()
@@ -799,6 +1090,11 @@ class AveaBankReconcileLine(models.Model):
         compute="_compute_money_columns",
     )
     is_card_settlement = fields.Boolean(compute="_compute_is_card_settlement")
+    merchant_payout_id = fields.Many2one(
+        "avea.bank.reconcile.merchant.payout",
+        string="Card machine payout",
+        ondelete="set null",
+    )
     balance_after = fields.Monetary(string="Bank balance", currency_field="currency_id")
     currency_id = fields.Many2one(related="reconciliation_id.currency_id")
     match_state = fields.Selection(
@@ -913,6 +1209,15 @@ class AveaBankReconcileLine(models.Model):
         for line in self:
             blob = " ".join(filter(None, [line.description or "", line.reference or ""])).lower()
             line.is_card_settlement = "card settlement" in blob
+
+    def _avea_card_provider(self):
+        self.ensure_one()
+        blob = " ".join(filter(None, [self.description or "", self.reference or ""])).lower()
+        if "capitec" in blob:
+            return "capitec"
+        if "yoco" in blob:
+            return "yoco"
+        return ""
 
     @api.depends(
         "description",
@@ -1283,6 +1588,61 @@ class AveaBankReconcileLine(models.Model):
                 "match_state": "imported",
             }
         )
+
+
+class AveaBankReconcileMerchantFile(models.Model):
+    _name = "avea.bank.reconcile.merchant.file"
+    _description = "Card machine file on a bank reconciliation"
+
+    reconciliation_id = fields.Many2one(
+        "avea.bank.reconciliation",
+        required=True,
+        ondelete="cascade",
+    )
+    datas = fields.Binary(string="File", required=True, attachment=True)
+    filename = fields.Char(string="Filename")
+    provider = fields.Selection(
+        selection=[("yoco", "Yoco"), ("capitec", "Capitec")],
+        string="Machine",
+        readonly=True,
+    )
+    date_from = fields.Date(readonly=True)
+    date_to = fields.Date(readonly=True)
+    period_warning = fields.Char(readonly=True)
+
+
+class AveaBankReconcileMerchantPayout(models.Model):
+    _name = "avea.bank.reconcile.merchant.payout"
+    _description = "Card machine payout"
+    _order = "payout_date, id"
+
+    reconciliation_id = fields.Many2one(
+        "avea.bank.reconciliation",
+        required=True,
+        ondelete="cascade",
+    )
+    file_id = fields.Many2one(
+        "avea.bank.reconcile.merchant.file",
+        ondelete="cascade",
+    )
+    provider = fields.Selection(
+        selection=[("yoco", "Yoco"), ("capitec", "Capitec")],
+        required=True,
+    )
+    payout_date = fields.Date(required=True)
+    trading_date = fields.Date()
+    net_amount = fields.Monetary(currency_field="currency_id", required=True)
+    gross_amount = fields.Monetary(currency_field="currency_id")
+    fee_amount = fields.Monetary(string="Fee incl. VAT", currency_field="currency_id")
+    capital_amount = fields.Monetary(string="Capital repaid", currency_field="currency_id")
+    reference = fields.Char()
+    on_this_statement = fields.Boolean()
+    currency_id = fields.Many2one(related="reconciliation_id.currency_id")
+    line_ids = fields.One2many(
+        "avea.bank.reconcile.line",
+        "merchant_payout_id",
+        string="Bank line",
+    )
 
 
 class AveaBankReconcileBookLine(models.Model):

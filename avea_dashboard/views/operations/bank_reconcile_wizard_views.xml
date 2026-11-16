@@ -151,6 +151,8 @@
             <form string="Bank reconciliation" class="o_avea_wizard o_avea_bank_reconcile_wizard">
                 <field name="company_id" invisible="1"/>
                 <field name="currency_id" invisible="1"/>
+                <field name="ready_card_batch_count" invisible="1"/>
+                <field name="possible_match_count" invisible="1"/>
                 <header>
                     <button
                         name="action_parse_statement"
@@ -171,6 +173,13 @@
                         string="Accept possible matches"
                         type="object"
                         invisible="state != 'in_progress' or possible_match_count == 0"
+                    />
+                    <button
+                        name="action_settle_card_batches"
+                        string="Settle card batches"
+                        type="object"
+                        class="oe_highlight"
+                        invisible="state != 'in_progress' or ready_card_batch_count == 0"
                     />
                     <button
                         name="action_apply_reconciliation"
@@ -195,9 +204,11 @@
                     <field name="state" widget="statusbar" statusbar_visible="draft,in_progress,done"/>
                 </header>
                 <div class="alert alert-info" role="status" invisible="state != 'draft'">
-                    Choose your bank account, attach your FNB statement below, then use
-                    <strong>Load &amp; match</strong> in the header (orange button). Your work is
-                    saved automatically — reopen anytime from <strong>Money → Bank reconciliations</strong>.
+                    Attach the FNB bank statement, then the Yoco payouts CSV and Capitec
+                    merchant statement for the same month. Use <strong>Load &amp; match</strong>
+                    in the header. Avea matches each card deposit to the machine file so you
+                    do not type batch totals. Your work is saved automatically — reopen from
+                    <strong>Money → Bank reconciliations</strong>.
                 </div>
                 <group invisible="state != 'draft'">
                     <group>
@@ -206,9 +217,17 @@
                         <field
                             name="statement_file"
                             filename="statement_filename"
-                            string="Statement file (PDF, CSV, or OFX)"
+                            string="FNB statement (PDF, CSV, or OFX)"
                         />
                         <field name="statement_filename" invisible="1"/>
+                    </group>
+                    <group string="Card machine files">
+                        <field name="merchant_file_ids" nolabel="1" colspan="2">
+                            <list editable="bottom">
+                                <field name="datas" filename="filename" string="Yoco CSV or Capitec PDF"/>
+                                <field name="filename"/>
+                            </list>
+                        </field>
                     </group>
                 </group>
                 <group invisible="state == 'draft'">
@@ -228,6 +247,9 @@
                 </group>
                 <div class="alert alert-warning" role="status" invisible="state == 'draft' or not balance_warning">
                     <field name="balance_warning" nolabel="1" readonly="1"/>
+                </div>
+                <div class="alert alert-warning" role="status" invisible="state == 'draft' or not merchant_warning">
+                    <field name="merchant_warning" nolabel="1" readonly="1"/>
                 </div>
                 <group invisible="state == 'draft'" string="Does it balance?">
                     <group>
@@ -251,6 +273,27 @@
                         />
                     </group>
                 </group>
+                <group invisible="state == 'draft'" string="Do the card machines balance?">
+                    <group>
+                        <field name="till_card_sales" readonly="1" widget="monetary"/>
+                        <field name="merchant_card_sales" readonly="1" widget="monetary"/>
+                        <field name="card_sales_gap" readonly="1" widget="monetary"/>
+                    </group>
+                    <group>
+                        <field name="card_banked" readonly="1" widget="monetary"/>
+                        <field name="merchant_card_fees" readonly="1" widget="monetary"/>
+                        <field name="merchant_card_capital" readonly="1" widget="monetary"/>
+                        <field name="unmatched_card_batch_count" invisible="1"/>
+                        <field name="has_merchant_payouts" invisible="1"/>
+                    </group>
+                </group>
+                <p
+                    class="text-muted"
+                    invisible="state == 'draft' or ready_card_batch_count == 0"
+                >
+                    <strong>Settle card batches</strong> books every matched Yoco and Capitec
+                    deposit in one step: till sales, machine fees, and Yoco capital repayment.
+                </p>
                 <group invisible="state != 'in_progress'">
                     <div class="o_row">
                         <span class="me-3">
@@ -281,13 +324,47 @@
                             <strong>Received</strong> came in.
                             <strong>Record</strong> creates the expense or income in Avea.
                             <strong>Match</strong> links the line to an invoice, a bill, or a transfer.
-                            <strong>Settle</strong> is for a Capitec or Yoco batch, where the fee is already taken off.
+                            <strong>Settle</strong> is for one Capitec or Yoco deposit.
+                            Prefer <strong>Settle card batches</strong> in the header when the
+                            machine files are attached — that books all of them at once.
                         </p>
                         <field
                             name="line_ids"
                             nolabel="1"
                             context="{'avea_bank_reconcile_labels': True}"
                         />
+                    </page>
+                    <page string="Card machines" name="merchant_payouts">
+                        <p class="text-muted">
+                            Each row is one Yoco or Capitec payout. The amount the bank received
+                            is after fees. Yoco also takes a capital repayment off some payouts —
+                            that is a loan, not shop sales. A file for the wrong month will not
+                            match this statement. After you add a file, click
+                            <strong>Refresh matches</strong>.
+                        </p>
+                        <field name="merchant_file_ids" nolabel="1" invisible="state == 'done'">
+                            <list editable="bottom">
+                                <field name="filename" column_invisible="True"/>
+                                <field name="datas" filename="filename" string="File"/>
+                                <field name="filename" string="Filename"/>
+                                <field name="provider"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="period_warning"/>
+                            </list>
+                        </field>
+                        <field name="merchant_payout_ids" nolabel="1">
+                            <list create="false" delete="false" edit="false">
+                                <field name="payout_date"/>
+                                <field name="provider"/>
+                                <field name="gross_amount" widget="monetary"/>
+                                <field name="fee_amount" widget="monetary"/>
+                                <field name="capital_amount" widget="monetary"/>
+                                <field name="net_amount" widget="monetary" string="Bank received"/>
+                                <field name="on_this_statement"/>
+                                <field name="currency_id" column_invisible="True"/>
+                            </list>
+                        </field>
                     </page>
                     <page string="Missing from bank" name="book_lines">
                         <p class="text-muted">
@@ -316,8 +393,8 @@
             </p>
             <p>
                 Click <strong>New reconciliation</strong> above the list (or use
-                <strong>Money → New bank reconciliation</strong>), then upload your FNB
-                statement PDF.
+                <strong>Money → New bank reconciliation</strong>), then upload the FNB
+                statement plus the Yoco and Capitec files for that month.
             </p>
         </field>
     </record>
