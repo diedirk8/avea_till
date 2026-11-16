@@ -789,3 +789,87 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
             3777.30,
             places=2,
         )
+
+    def test_statement_dates_are_editable_and_refresh_card_period(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "line_filter": "needs_work",
+            }
+        )
+        payout = self.env["avea.bank.reconcile.merchant.payout"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "provider": "yoco",
+                "payout_date": "2026-08-15",
+                "net_amount": 100.0,
+                "gross_amount": 110.0,
+                "fee_amount": 10.0,
+                "capital_amount": 0.0,
+                "on_this_statement": True,
+            }
+        )
+        reconciliation.write({"date_from": "2026-09-01", "date_to": "2026-09-30"})
+        self.assertFalse(payout.on_this_statement)
+        reconciliation.write({"date_from": "2026-08-01", "date_to": "2026-08-31"})
+        self.assertTrue(payout.on_this_statement)
+
+    def test_work_filter_hides_matched_lines_and_ranks_unmatched_first(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+            }
+        )
+        unmatched = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-08-10",
+                "description": "Unmatched rent",
+                "amount": -50.0,
+                "match_state": "unmatched",
+                "sequence": 20,
+            }
+        )
+        matched = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-08-01",
+                "description": "Already done",
+                "amount": -10.0,
+                "match_state": "matched",
+                "sequence": 10,
+            }
+        )
+        self.assertEqual(reconciliation.work_remaining_count, 1)
+        self.assertEqual(reconciliation.line_filter, "needs_work")
+        self.assertEqual(reconciliation.display_line_ids, unmatched)
+        self.assertIn("Record", unmatched.work_hint)
+        reconciliation.line_filter = "all"
+        self.assertEqual(reconciliation.display_line_ids, unmatched | matched)
+        self.assertLess(unmatched.match_work_rank, matched.match_work_rank)
+        self.assertEqual(reconciliation.next_step_kind, "work_lines")
+
+    def test_draft_guidance_asks_for_the_statement_file(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "draft"}
+        )
+        self.assertEqual(reconciliation.next_step_kind, "upload")
+        self.assertFalse(reconciliation.can_complete)
+        reconciliation.statement_filename = "fnb.pdf"
+        reconciliation.statement_file = base64.b64encode(b"placeholder")
+        self.assertEqual(reconciliation.next_step_kind, "load")

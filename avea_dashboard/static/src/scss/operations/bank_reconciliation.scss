@@ -1,3 +1,39 @@
+.o_form_view.o_avea_workspace--bank-recon-form,
+.o_avea_workspace--bank-recon-form {
+    --avea-brand: #0f766e;
+    --avea-brand-hover: #115e59;
+    --avea-brand-soft: rgba(15, 118, 110, 0.12);
+    --avea-brand-border: rgba(15, 118, 110, 0.35);
+    --bs-link-color: var(--avea-brand);
+    --bs-link-hover-color: var(--avea-brand-hover);
+
+    .o_control_panel {
+        display: none !important;
+    }
+
+    .o_form_statusbar,
+    header {
+        display: none !important;
+    }
+
+    .o_form_sheet_bg {
+        background: var(--o-webclient-background-color, #f4f5f7);
+    }
+
+    .o_avea_workspace_sheet {
+        height: auto;
+        margin: 0;
+        max-width: none;
+        overflow: visible;
+        padding-top: 1.15rem;
+        padding-bottom: 3rem;
+    }
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand) !important;
+    }
+}
+
 .o_avea_bank_reconcile_wizard {
     .o_form_sheet {
         max-width: none;
@@ -6,6 +42,107 @@
     .o_avea_bank_recon_hint {
         margin-bottom: 0.75rem;
         max-width: 62rem;
+    }
+
+    .o_avea_bank_recon_next {
+        align-items: flex-start;
+        background: #f0fdfa;
+        border: 1px solid var(--avea-brand-border, rgba(15, 118, 110, 0.35));
+        border-radius: 0.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.25rem;
+        justify-content: space-between;
+        margin: 0 0 1.25rem;
+        padding: 1rem 1.15rem;
+    }
+
+    .o_avea_bank_recon_next_copy {
+        display: flex;
+        flex: 1 1 22rem;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 0;
+
+        strong,
+        strong .o_field_widget {
+            color: #115e59;
+            font-size: 1rem;
+        }
+
+        .o_field_widget {
+            color: var(--o-gray-700, #495057);
+            font-size: 0.95rem;
+            margin-bottom: 0;
+            white-space: normal;
+        }
+    }
+
+    .o_avea_bank_recon_next_actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+
+        .btn-primary {
+            font-weight: 600;
+            min-height: 2.5rem;
+            padding-left: 1.1rem;
+            padding-right: 1.1rem;
+        }
+    }
+
+    .o_avea_bank_recon_stat--ok {
+        background-color: #ecfdf5 !important;
+        border-color: #a7f3d0 !important;
+
+        .o_avea_workspace_hero_stat_label {
+            color: #047857 !important;
+        }
+
+        .o_avea_workspace_hero_stat_value,
+        .o_field_widget {
+            color: #047857 !important;
+        }
+    }
+
+    .o_avea_bank_recon_stat--warn {
+        background-color: #fff7ed !important;
+        border-color: #fed7aa !important;
+
+        .o_avea_workspace_hero_stat_label {
+            color: #c2410c !important;
+        }
+
+        .o_avea_workspace_hero_stat_value,
+        .o_field_widget {
+            color: #9a3412 !important;
+        }
+    }
+
+    .o_avea_bank_recon_setup {
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_bank_recon_filters {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem 1rem;
+        margin: 0 0 0.85rem;
+
+        .o_avea_workspace_info_label {
+            margin-bottom: 0;
+        }
+
+        .o_field_widget {
+            margin-bottom: 0;
+        }
+    }
+
+    .o_avea_bank_recon_filter_count {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.85rem;
     }
 
     .o_avea_bank_reconcile_lines {
@@ -24,6 +161,8 @@
 
                 th[data-name="description"],
                 td[name="description"],
+                th[data-name="work_hint"],
+                td[name="work_hint"],
                 th[data-name="booking_suggestion"],
                 td[name="booking_suggestion"] {
                     min-width: 14rem;

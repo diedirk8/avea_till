@@ -53,17 +53,22 @@ class AveaBankReconciliation(models.Model):
     statement_filename = fields.Char(string="Filename")
     source_format = fields.Char(string="Detected format", readonly=True)
     account_number = fields.Char(string="Bank account number", readonly=True)
-    date_from = fields.Date(string="From", readonly=True)
-    date_to = fields.Date(string="To", readonly=True)
+    date_from = fields.Date(
+        string="From",
+        help="Taken from the statement. Change this only for a part-month, "
+        "for example the week you went live on Avea.",
+    )
+    date_to = fields.Date(
+        string="To",
+        help="Taken from the statement. Change this only for a part-month.",
+    )
     opening_balance = fields.Monetary(
         string="Opening balance (bank)",
         currency_field="currency_id",
-        readonly=True,
     )
     closing_balance = fields.Monetary(
         string="Closing balance (bank)",
         currency_field="currency_id",
-        readonly=True,
     )
     currency_id = fields.Many2one(
         "res.currency",
@@ -130,6 +135,46 @@ class AveaBankReconciliation(models.Model):
     unmatched_bank_count = fields.Integer(compute="_compute_counts")
     orphan_book_count = fields.Integer(compute="_compute_counts")
     import_count = fields.Integer(compute="_compute_counts")
+    work_remaining_count = fields.Integer(compute="_compute_counts")
+    matched_display = fields.Char(compute="_compute_counts")
+    line_filter = fields.Selection(
+        selection=[
+            ("needs_work", "Still to do"),
+            ("possible", "Possible matches"),
+            ("cards", "Card deposits"),
+            ("matched", "Done"),
+            ("all", "All lines"),
+        ],
+        string="Show",
+        default="needs_work",
+    )
+    display_line_ids = fields.Many2many(
+        "avea.bank.reconcile.line",
+        compute="_compute_display_line_ids",
+        string="Bank transactions",
+    )
+    display_line_count = fields.Integer(compute="_compute_display_line_ids")
+    has_display_lines = fields.Boolean(compute="_compute_display_line_ids")
+    empty_filter_message = fields.Char(compute="_compute_display_line_ids")
+    period_range_display = fields.Char(compute="_compute_guidance")
+    next_step_kind = fields.Selection(
+        selection=[
+            ("upload", "Upload"),
+            ("load", "Load"),
+            ("settle_cards", "Settle cards"),
+            ("accept_matches", "Accept matches"),
+            ("work_lines", "Work remaining lines"),
+            ("complete", "Complete"),
+            ("done", "Done"),
+            ("cancelled", "Cancelled"),
+        ],
+        compute="_compute_guidance",
+    )
+    next_step_title = fields.Char(compute="_compute_guidance")
+    next_step_message = fields.Char(compute="_compute_guidance")
+    can_complete = fields.Boolean(compute="_compute_guidance")
+    is_balanced = fields.Boolean(compute="_compute_guidance")
+    difference_headline = fields.Char(compute="_compute_guidance")
     balances_from_file = fields.Boolean(
         string="Balances read from the statement",
         readonly=True,
@@ -215,6 +260,227 @@ class AveaBankReconciliation(models.Model):
                 )
             )
             reconciliation.orphan_book_count = len(reconciliation.book_line_ids)
+            reconciliation.work_remaining_count = (
+                reconciliation.import_count - reconciliation.matched_count
+            )
+            if reconciliation.import_count:
+                reconciliation.matched_display = _(
+                    "%(matched)s of %(total)s",
+                    matched=reconciliation.matched_count,
+                    total=reconciliation.import_count,
+                )
+            else:
+                reconciliation.matched_display = False
+
+    @api.depends(
+        "state",
+        "line_ids",
+        "line_ids.match_state",
+        "line_ids.is_card_settlement",
+        "line_filter",
+        "import_count",
+    )
+    def _compute_display_line_ids(self):
+        for reconciliation in self:
+            lines = reconciliation._avea_filtered_lines()
+            reconciliation.display_line_ids = lines
+            reconciliation.display_line_count = len(lines)
+            reconciliation.has_display_lines = bool(lines)
+            reconciliation.empty_filter_message = (
+                reconciliation._avea_empty_filter_message()
+            )
+
+    def _avea_filtered_lines(self):
+        self.ensure_one()
+        lines = self.line_ids
+        filt = self.line_filter or "needs_work"
+        if self.state == "done" or filt == "all":
+            return lines
+        if filt == "needs_work":
+            return lines.filtered(lambda line: line.match_state != "matched")
+        if filt == "possible":
+            return lines.filtered(lambda line: line.match_state == "possible")
+        if filt == "cards":
+            return lines.filtered("is_card_settlement")
+        if filt == "matched":
+            return lines.filtered(lambda line: line.match_state == "matched")
+        return lines
+
+    def _avea_empty_filter_message(self):
+        self.ensure_one()
+        if self.line_ids and not self._avea_filtered_lines():
+            filt = self.line_filter or "needs_work"
+            if filt == "needs_work":
+                return _(
+                    "Nothing left on this statement. Switch to All lines if you "
+                    "want to review what was matched."
+                )
+            if filt == "possible":
+                return _("No possible matches right now.")
+            if filt == "cards":
+                return _("No Capitec or Yoco deposits on this statement.")
+            if filt == "matched":
+                return _("Nothing has been matched yet.")
+        return False
+
+    @api.depends(
+        "state",
+        "statement_file",
+        "date_from",
+        "date_to",
+        "matched_count",
+        "possible_match_count",
+        "unmatched_bank_count",
+        "work_remaining_count",
+        "ready_card_batch_count",
+        "statement_difference",
+        "currency_id",
+        "import_count",
+        "line_ids.match_state",
+        "line_ids.statement_line_id",
+        "line_ids.amount",
+        "opening_balance",
+        "closing_balance",
+        "balances_from_file",
+        "journal_id",
+        "account_number",
+    )
+    def _compute_guidance(self):
+        for reconciliation in self:
+            currency = reconciliation.currency_id or self.env.company.currency_id
+            reconciliation.period_range_display = (
+                reconciliation._avea_period_range_label()
+            )
+            reconciliation.is_balanced = currency.is_zero(
+                reconciliation.statement_difference or 0.0
+            )
+            if reconciliation.is_balanced and reconciliation.state != "draft":
+                reconciliation.difference_headline = _("Balanced")
+            elif reconciliation.state == "draft":
+                reconciliation.difference_headline = False
+            else:
+                reconciliation.difference_headline = currency.format(
+                    reconciliation.statement_difference or 0.0
+                )
+            kind, title, message, can_complete = reconciliation._avea_next_step()
+            reconciliation.next_step_kind = kind
+            reconciliation.next_step_title = title
+            reconciliation.next_step_message = message
+            reconciliation.can_complete = can_complete
+
+    def _avea_period_range_label(self):
+        self.ensure_one()
+        if not self.date_from or not self.date_to:
+            return False
+        return self.env["avea.reporting.workspace.mixin"]._reporting_format_day_range(
+            self.date_from, self.date_to
+        )
+
+    def _avea_next_step(self):
+        self.ensure_one()
+        if self.state == "cancelled":
+            return (
+                "cancelled",
+                _("Cancelled"),
+                _("This reconciliation was cancelled. Start a new one from the list."),
+                False,
+            )
+        if self.state == "done":
+            return (
+                "done",
+                _("This statement is complete"),
+                _("The bank and Avea agree for this period. You can still open it to review."),
+                False,
+            )
+        if self.state == "draft":
+            if not self.statement_file:
+                return (
+                    "upload",
+                    _("Upload the bank statement"),
+                    _(
+                        "Attach the FNB Gold Business Account PDF. Then add the Yoco "
+                        "payouts CSV and Capitec merchant statement for the same month."
+                    ),
+                    False,
+                )
+            return (
+                "load",
+                _("Load the statement"),
+                _(
+                    "Click Load & match. Avea reads the dates from the file and ticks "
+                    "off anything it already knows."
+                ),
+                False,
+            )
+        if self.ready_card_batch_count:
+            return (
+                "settle_cards",
+                _("Settle card deposits"),
+                _(
+                    "%(count)s Capitec or Yoco deposits match the machine files. "
+                    "Settle them in one step — sales, fees, and Yoco capital are split "
+                    "for you.",
+                    count=self.ready_card_batch_count,
+                ),
+                False,
+            )
+        if self.possible_match_count:
+            return (
+                "accept_matches",
+                _("Check possible matches"),
+                _(
+                    "Avea found %(count)s likely matches. Accept them if they are the "
+                    "same payment, or Record / Match the rest.",
+                    count=self.possible_match_count,
+                ),
+                False,
+            )
+        if self.unmatched_bank_count:
+            return (
+                "work_lines",
+                _("Finish the remaining lines"),
+                _(
+                    "%(count)s bank lines still need you. Record an expense or income, "
+                    "or Match an invoice, a bill, or a transfer.",
+                    count=self.unmatched_bank_count,
+                ),
+                False,
+            )
+        blockers = self._avea_completion_blockers()
+        if blockers:
+            return ("work_lines", _("Not ready to complete yet"), blockers[0], False)
+        return (
+            "complete",
+            _("Ready to complete"),
+            _("The statement and Avea agree. Complete the reconciliation to lock it."),
+            True,
+        )
+
+    def write(self, vals):
+        res = super().write(vals)
+        if self.env.context.get("avea_skip_period_refresh"):
+            return res
+        if {"date_from", "date_to"} & set(vals):
+            for reconciliation in self.filtered(
+                lambda rec: rec.state == "in_progress" and rec.merchant_payout_ids
+            ):
+                reconciliation.with_context(
+                    avea_skip_period_refresh=True
+                )._avea_refresh_merchant_period()
+        return res
+
+    def _avea_refresh_merchant_period(self):
+        """Re-flag machine payouts after the statement dates are changed."""
+        self.ensure_one()
+        date_from = self.date_from
+        date_to = self.date_to
+        for payout in self.merchant_payout_ids:
+            on_statement = bool(
+                date_from and date_to and date_from <= payout.payout_date <= date_to
+            )
+            if payout.on_this_statement != on_statement:
+                payout.on_this_statement = on_statement
+        self._avea_match_merchant_payouts()
 
     @api.depends(
         "journal_id",
@@ -553,6 +819,9 @@ class AveaBankReconciliation(models.Model):
         )
 
     def _avea_action_form(self, title=None):
+        self.ensure_one()
+        if not self.line_filter:
+            self.line_filter = "needs_work"
         form_view_id = self.env.ref(
             "avea_till.view_avea_bank_reconciliation_form"
         ).id
@@ -1065,7 +1334,7 @@ class AveaBankReconcileWizard(models.TransientModel):
 class AveaBankReconcileLine(models.Model):
     _name = "avea.bank.reconcile.line"
     _description = "Bank reconciliation import line"
-    _order = "sequence, id"
+    _order = "match_work_rank, bank_date, sequence, id"
 
     reconciliation_id = fields.Many2one(
         "avea.bank.reconciliation",
@@ -1107,6 +1376,15 @@ class AveaBankReconcileLine(models.Model):
         ],
         default="unmatched",
         required=True,
+    )
+    match_work_rank = fields.Integer(
+        compute="_compute_match_work_rank",
+        store=True,
+        index=True,
+    )
+    work_hint = fields.Char(
+        string="What to do",
+        compute="_compute_work_hint",
     )
     import_action = fields.Selection(
         selection=[
@@ -1161,6 +1439,46 @@ class AveaBankReconcileLine(models.Model):
         compute="_compute_booking_suggestion",
     )
     company_id = fields.Many2one(related="reconciliation_id.company_id")
+
+    @api.depends("match_state")
+    def _compute_match_work_rank(self):
+        rank = {
+            "unmatched": 0,
+            "possible": 1,
+            "imported": 2,
+            "skipped": 3,
+            "matched": 4,
+        }
+        for line in self:
+            line.match_work_rank = rank.get(line.match_state, 0)
+
+    @api.depends(
+        "match_state",
+        "is_card_settlement",
+        "booking_suggestion",
+        "book_match_summary",
+        "merchant_payout_id",
+    )
+    def _compute_work_hint(self):
+        for line in self:
+            if line.match_state == "matched":
+                line.work_hint = line.book_match_summary or _("Matched")
+            elif line.match_state == "possible":
+                line.work_hint = line.book_match_summary or _(
+                    "Possible match — Accept if this is the same payment"
+                )
+            elif line.is_card_settlement and line.merchant_payout_id:
+                line.work_hint = _("Card deposit — Settle from the machine file")
+            elif line.is_card_settlement:
+                line.work_hint = _(
+                    "Card deposit — attach the Yoco or Capitec file, then Settle"
+                )
+            elif line.booking_suggestion:
+                line.work_hint = line.booking_suggestion
+            else:
+                line.work_hint = _(
+                    "Record the expense or income, or Match an existing entry"
+                )
 
     @api.depends(
         "statement_line_id",
