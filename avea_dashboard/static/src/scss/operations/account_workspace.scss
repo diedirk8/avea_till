@@ -72,9 +72,21 @@
         max-width: 42rem;
     }
 
-    .o_avea_account_name_title input {
-        font-size: inherit;
-        font-weight: inherit;
+    .o_avea_account_name_title {
+        flex: 1 1 16rem;
+        min-width: 12rem;
+
+        input,
+        .o_input {
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            border-radius: 0.45rem;
+            font-size: inherit;
+            font-weight: inherit;
+            min-height: 2.35rem;
+            padding: 0.2rem 0.6rem;
+            width: 100%;
+        }
     }
 
     .o_avea_workspace_title {

@@ -208,7 +208,7 @@ class TestAveaAccountManager(TransactionCase):
         self.assertTrue(Account.has_access("write"))
         self.assertFalse(self._workspace(self.cashier).has_access("create"))
 
-    def test_manager_renames_expense_but_not_cash(self):
+    def test_manager_renames_expense_and_cash_but_not_cash_kind(self):
         Account = self._workspace(self.manager)
         expense = Account.create({"name": "Avea Test Water", "account_type": "expense"})
         expense.write({"name": "Avea Test Water & sewer"})
@@ -220,11 +220,46 @@ class TestAveaAccountManager(TransactionCase):
             ],
             limit=1,
         )
-        self.assertTrue(cash, "Need a cash account to prove it stays locked")
+        self.assertTrue(cash, "Need a cash account to rename")
+        cash_manager = cash.with_user(self.manager).with_context(
+            avea_account_workspace=True,
+            avea_asset_workspace=True,
+        )
+        original_type = cash.account_type
+        cash_manager.write({"name": "Shop till cash"})
+        self.assertEqual(cash.name, "Shop till cash")
+        cash_manager.write({"active": False})
+        self.assertFalse(cash.active)
+        cash_manager.write({"active": True})
         with self.assertRaises(AccessError):
-            cash.with_user(self.manager).with_context(
-                avea_account_workspace=True
-            ).write({"name": "Do not rename cash"})
+            cash_manager.write({"account_type": "expense"})
+        self.assertEqual(cash.account_type, original_type)
+
+    def test_account_form_lets_managers_edit_existing_accounts(self):
+        form = self.env.ref("avea_till.view_avea_account_form").arch_db or ""
+        self.assertIn('special="save"', form)
+        self.assertNotIn('readonly="avea_is_asset_account"', form)
+        self.assertNotIn("invisible=\"avea_is_asset_account\"", form)
+        self.assertIn("action_avea_open_account", self.env.ref("avea_till.view_avea_account_list").arch_db)
+        asset_list = self.env.ref("avea_till.view_avea_asset_account_list").arch_db or ""
+        self.assertNotIn('edit="0"', asset_list)
+        self.assertIn("action_avea_open_account", asset_list)
+        cash = self.Account.search(
+            [
+                ("company_ids", "in", self.company.id),
+                ("account_type", "=", "asset_cash"),
+            ],
+            limit=1,
+        )
+        self.assertTrue(cash)
+        action = cash.with_user(self.manager).with_context(
+            avea_account_workspace=True,
+            avea_asset_workspace=True,
+        ).action_avea_open_account()
+        self.assertEqual(action["res_model"], "account.account")
+        self.assertEqual(action["res_id"], cash.id)
+        self.assertEqual(action["view_mode"], "form")
+        self.assertTrue(action["context"]["avea_asset_workspace"])
 
     def test_account_activity_view_uses_the_scrollable_list(self):
         view = self.env.ref("avea_till.view_avea_account_activity_list")

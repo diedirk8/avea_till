@@ -26,6 +26,13 @@
                 />
                 <field name="avea_entry_count" string="Entries this year" optional="show"/>
                 <field name="active" string="In use" widget="boolean_toggle"/>
+                <button
+                    name="action_avea_open_account"
+                    type="object"
+                    string="Edit"
+                    class="btn btn-link"
+                    title="Rename or change this account"
+                />
                 <field name="avea_currency_id" column_invisible="True"/>
                 <field name="account_type" column_invisible="True"/>
             </list>
@@ -87,7 +94,6 @@
                                         nolabel="1"
                                         placeholder="e.g. Electricity"
                                         class="o_avea_account_name_title"
-                                        readonly="avea_is_asset_account"
                                     />
                                 </h1>
                                 <p class="o_avea_workspace_section_subtitle" invisible="not avea_is_pnl_account">
@@ -138,12 +144,9 @@
                                     class="btn btn-secondary"
                                 />
                             </div>
-                            <div class="o_avea_account_hero_actions_save" invisible="avea_is_asset_account">
+                            <div class="o_avea_account_hero_actions_save">
                                 <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
                                 <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
-                            </div>
-                            <div class="o_avea_account_hero_actions_save" invisible="not avea_is_asset_account">
-                                <button string="Back" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
                             </div>
                         </div>
                     </div>
@@ -152,11 +155,16 @@
                         <div class="o_avea_account_panel">
                             <h2 class="o_avea_workspace_section_title">Account</h2>
                             <p class="o_avea_account_panel_hint">
+                                Rename this account, change the kind, or turn it off if you no longer use it.
                                 Use Expense for costs you pick on Add Expense.
                                 Use Income for money in that is not a till sale.
                                 Wages, drawings, and director payments stay on Withdraw.
                             </p>
                             <div class="o_avea_account_fields">
+                                <div class="o_avea_workspace_info_item o_avea_account_field--wide">
+                                    <span class="o_avea_workspace_info_label">Name</span>
+                                    <field name="name" nolabel="1" placeholder="e.g. Electricity"/>
+                                </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Code</span>
                                     <field name="code" nolabel="1" placeholder="e.g. 610080"/>
@@ -181,10 +189,15 @@
                         <div class="o_avea_account_panel">
                             <h2 class="o_avea_workspace_section_title">Asset account</h2>
                             <p class="o_avea_account_panel_hint">
-                                Kind and code come from your chart of accounts. To change balances, record money
-                                under Money or ask your accountant to post adjustments.
+                                You can rename this account or turn it off. Kind and code stay as they are.
+                                To change balances, record money under Money or ask your accountant to post
+                                adjustments.
                             </p>
                             <div class="o_avea_account_fields">
+                                <div class="o_avea_workspace_info_item o_avea_account_field--wide">
+                                    <span class="o_avea_workspace_info_label">Name</span>
+                                    <field name="name" nolabel="1" placeholder="e.g. Shop till"/>
+                                </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Code</span>
                                     <field name="code" nolabel="1" readonly="1"/>
@@ -195,7 +208,7 @@
                                 </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">In use</span>
-                                    <field name="active" nolabel="1" widget="boolean_toggle" readonly="1"/>
+                                    <field name="active" nolabel="1" widget="boolean_toggle"/>
                                 </div>
                             </div>
                         </div>
@@ -297,7 +310,6 @@
                 js_class="avea_account_list"
                 create="0"
                 delete="0"
-                edit="0"
                 duplicate="0"
                 default_order="account_type, name"
             >
@@ -310,7 +322,14 @@
                     widget="monetary"
                     options="{'currency_field': 'avea_currency_id'}"
                 />
-                <field name="active" string="In use" widget="boolean_toggle" readonly="1"/>
+                <field name="active" string="In use" widget="boolean_toggle"/>
+                <button
+                    name="action_avea_open_account"
+                    type="object"
+                    string="Edit"
+                    class="btn btn-link"
+                    title="Rename this account"
+                />
                 <field name="avea_currency_id" column_invisible="True"/>
                 <field name="account_type" column_invisible="True"/>
             </list>

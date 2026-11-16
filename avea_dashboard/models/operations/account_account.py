@@ -42,6 +42,9 @@ AVEA_ASSET_KIND_SELECTION = [
 
 _AVEA_KIND_ALL = dict(AVEA_KIND_SELECTION + AVEA_ASSET_KIND_SELECTION)
 
+# Avea managers may rename or archive assets; kind and code stay locked.
+AVEA_ASSET_MANAGER_WRITE_KEYS = frozenset({"name", "active"})
+
 _AVEA_CODE_START = {
     "expense": "610080",
     "expense_other": "620080",
@@ -210,7 +213,7 @@ class AccountAccount(models.Model):
 
     @api.model
     def _avea_is_non_advisor_manager(self):
-        """Avea manager without Accounting/Advisor — P&L accounts only."""
+        """Avea manager without Accounting/Advisor."""
         if self.env.su:
             return False
         user = self.env.user
@@ -334,6 +337,8 @@ class AccountAccount(models.Model):
         restricted = self._avea_is_non_advisor_manager()
         workspace = bool(self.env.context.get("avea_account_workspace"))
         if workspace or restricted:
+            if "name" in vals and isinstance(vals.get("name"), str):
+                vals = dict(vals, name=vals["name"].strip())
             if "avea_kind" in vals and vals.get("avea_kind"):
                 vals = dict(vals, account_type=vals["avea_kind"])
             vals.pop("avea_kind", None)
@@ -346,7 +351,22 @@ class AccountAccount(models.Model):
             if user_keys and not self.env.su:
                 self._avea_require_manager()
             if restricted and user_keys:
-                self._avea_assert_pnl_records()
+                assets = self.filtered(
+                    lambda account: account.account_type in AVEA_ASSET_TYPES
+                )
+                others = self - assets
+                if others:
+                    others._avea_assert_pnl_records()
+                if assets:
+                    unsafe = user_keys - AVEA_ASSET_MANAGER_WRITE_KEYS
+                    if unsafe:
+                        raise AccessError(
+                            _(
+                                "On cash, bank, and other asset accounts you can "
+                                "change the name and whether it is in use. Kind "
+                                "and code stay as they are."
+                            )
+                        )
             if "account_type" in vals:
                 self._avea_validate_write(vals)
             if restricted and user_keys and not self.env.su:
@@ -389,6 +409,7 @@ class AccountAccount(models.Model):
             ],
             "context": {
                 "avea_account_workspace": True,
+                "avea_asset_workspace": self.account_type in AVEA_ASSET_TYPES,
                 "avea_account_id": self.id,
                 "avea_account_name": self.display_name,
                 "avea_activity_date_from": fields.Date.to_string(date_from),
@@ -426,5 +447,26 @@ class AccountAccount(models.Model):
                 action["views"] = [(view.id, "form")]
                 ctx = dict(action.get("context") or {})
                 ctx["avea_account_workspace"] = True
+                if self.account_type in AVEA_ASSET_TYPES:
+                    ctx["avea_asset_workspace"] = True
                 action["context"] = ctx
+        return action
+
+    def action_avea_open_account(self):
+        """Open this account on the Avea form so a manager can rename it."""
+        self.ensure_one()
+        action = self.get_formview_action()
+        view = self.env.ref("avea_till.view_avea_account_form", raise_if_not_found=False)
+        ctx = dict(self.env.context)
+        ctx.update(action.get("context") or {})
+        ctx["avea_account_workspace"] = True
+        if self.account_type in AVEA_ASSET_TYPES:
+            ctx["avea_asset_workspace"] = True
+        action["type"] = "ir.actions.act_window"
+        action["res_model"] = "account.account"
+        action["res_id"] = self.id
+        action["view_mode"] = "form"
+        action["views"] = [(view.id, "form")] if view else [(False, "form")]
+        action["target"] = "current"
+        action["context"] = ctx
         return action

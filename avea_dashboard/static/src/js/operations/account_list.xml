@@ -11,13 +11,14 @@
                             <h1 class="o_avea_workspace_title" t-esc="this.listTitle"/>
                             <p class="o_avea_workspace_section_subtitle" t-if="!this.isAssetList">
                                 Income and expense accounts for Add Expense and other income.
+                                Edit an existing account to rename it, change the kind, or turn it off.
                                 Add a new one when the list does not have the right option.
                                 Asset, bank, and cash accounts are under Asset accounts.
                             </p>
                             <p class="o_avea_workspace_section_subtitle" t-if="this.isAssetList">
                                 Assets on the books — cash, bank, debtors, stock-related, and fixed assets.
-                                These are read-only here. Open an account to see activity. Add income and expense
-                                accounts under Income &amp; expense accounts.
+                                Edit an account to rename it or turn it off. Kind and code stay as they are.
+                                Add income and expense accounts under Income &amp; expense accounts.
                             </p>
                             <div class="o_avea_account_list_search">
                                 <label class="o_avea_workspace_info_label" for="avea_account_list_search">

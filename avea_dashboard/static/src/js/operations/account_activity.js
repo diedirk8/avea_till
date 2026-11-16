@@ -73,14 +73,17 @@ export class AveaAccountActivityController extends ListController {
             return;
         }
         const accountId = this.props.context?.avea_account_id;
+        const listAction = this.props.context?.avea_asset_workspace
+            ? "avea_till.action_avea_asset_account_manager"
+            : "avea_till.action_avea_account_manager";
         if (accountId) {
-            await this.actionService.doAction("avea_till.action_avea_account_manager", {
+            await this.actionService.doAction(listAction, {
                 viewType: "form",
                 resId: Number(accountId),
             });
             return;
         }
-        await this.actionService.doAction("avea_till.action_avea_account_manager");
+        await this.actionService.doAction(listAction);
     }
 
     async openRecord() {
