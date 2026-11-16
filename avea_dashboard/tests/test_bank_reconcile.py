@@ -917,6 +917,8 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
         self.assertAlmostEqual(nxt.previous_closing_balance, 9873.06, places=2)
         self.assertEqual(nxt._avea_previous_reconciliation(), last)
         self.assertEqual(nxt.next_step_kind, "upload")
+        self.assertIn("Continue from the last statement", nxt.next_step_title)
+        self.assertTrue(nxt.next_step_message)
         action = Recon.action_new_reconciliation()
         self.assertEqual(action["res_id"], nxt.id)
         self.assertEqual(Recon.action_create_draft(), nxt.id)

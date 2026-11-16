@@ -416,6 +416,7 @@ class AveaBankReconciliation(models.Model):
 
     def _avea_next_step(self):
         self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
         if self.state == "cancelled":
             return (
                 "cancelled",
