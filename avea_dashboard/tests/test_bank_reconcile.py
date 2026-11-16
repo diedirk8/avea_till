@@ -1006,6 +1006,44 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
         self.assertNotIn("already covers this period", warning)
         self.assertNotIn("opening balance does not match", warning)
 
+    def test_fnb_opening_may_already_equal_the_previous_close(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "done",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "opening_balance": 7584.04,
+                "closing_balance": 9873.06,
+                "balances_from_file": True,
+            }
+        )
+        nxt = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-31",
+                "date_to": "2026-09-30",
+                "opening_balance": 9873.06,
+                "closing_balance": 9725.07,
+                "balances_from_file": True,
+            }
+        )
+        self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": nxt.id,
+                "bank_date": "2026-08-31",
+                "description": "FNB service fee",
+                "amount": -147.99,
+            }
+        )
+        warning = nxt.balance_warning or ""
+        self.assertNotIn("opening balance does not match", warning)
+        self.assertFalse(nxt._avea_overlap_warning())
+
     def test_interior_period_overlap_still_warns(self):
         journal = self._bank_journal()
         if not journal:

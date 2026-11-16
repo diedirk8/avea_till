@@ -589,13 +589,7 @@ class AveaBankReconciliation(models.Model):
                         count=earlier_count,
                     )
                 )
-            if (
-                prior
-                and not currency.is_zero(
-                    reconciliation._avea_implied_previous_closing()
-                    - (prior.closing_balance or 0.0)
-                )
-            ):
+            if prior and not reconciliation._avea_opening_continues_from(prior):
                 warnings.append(
                     _(
                         "The opening balance does not match the previous statement "
@@ -671,23 +665,22 @@ class AveaBankReconciliation(models.Model):
             domain.append(("date_to", "<=", self.date_from))
         return self.search(domain, order="date_to desc, id desc", limit=1)
 
-    def _avea_implied_previous_closing(self):
-        """Opening on this file, plus any lines on the shared FNB start day."""
+    def _avea_opening_continues_from(self, prior):
+        """FNB may print the previous close as opening, then still list that last day."""
         self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
         opening = self.opening_balance or 0.0
-        prior = self._avea_previous_reconciliation()
-        if (
-            prior
-            and prior.date_to
-            and self.date_from
-            and prior.date_to == self.date_from
-        ):
-            opening += sum(
-                self.line_ids.filtered(
-                    lambda line: line.bank_date == self.date_from
-                ).mapped("amount")
-            )
-        return opening
+        previous_close = prior.closing_balance or 0.0
+        if currency.is_zero(opening - previous_close):
+            return True
+        if not (prior.date_to and self.date_from and prior.date_to == self.date_from):
+            return False
+        shared = sum(
+            self.line_ids.filtered(
+                lambda line: line.bank_date == self.date_from
+            ).mapped("amount")
+        )
+        return currency.is_zero(opening + shared - previous_close)
 
     def _avea_has_prior_reconciliation(self):
         self.ensure_one()
