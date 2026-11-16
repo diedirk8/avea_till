@@ -925,8 +925,18 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
         Recon = self.env["avea.bank.reconciliation"]
         if not Recon._avea_default_bank_journal():
             return
+        journal = Recon._avea_default_bank_journal()
+        blocker = Recon.create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-07-01",
+                "date_to": "2026-07-31",
+            }
+        )
         first = Recon._avea_ensure_brought_forward_recons(force=True)
         self.assertEqual(len(first), 4)
+        self.assertEqual(blocker.state, "cancelled")
         self.assertTrue(all(rec.state == "done" and rec.brought_forward for rec in first))
         august = first.filtered(lambda rec: str(rec.date_to) == "2026-08-31")
         self.assertAlmostEqual(august.closing_balance, 9873.06, places=2)

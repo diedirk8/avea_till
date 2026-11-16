@@ -935,8 +935,12 @@ class AveaBankReconciliation(models.Model):
                 ],
                 limit=1,
             )
-            if existing:
+            if existing and existing.state == "done":
                 continue
+            if existing and existing.line_ids:
+                continue
+            if existing:
+                existing.state = "cancelled"
             created |= self.create(
                 {
                     "journal_id": journal.id,
