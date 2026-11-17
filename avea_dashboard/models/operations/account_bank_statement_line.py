@@ -213,23 +213,24 @@ class AccountBankStatementLine(models.Model):
         self.ensure_one()
         if not self.env.user._avea_can_delete_supplier_payment():
             raise AccessError(_("Only an administrator can delete a payment."))
-        if self.avea_cleared:
+        payment = self.sudo()
+        if payment.avea_cleared:
             raise UserError(
                 _(
                     "This payment is already matched on a bank statement. "
                     "Unmatch it in bank recon first, then delete it."
                 )
             )
-        if not self.avea_is_supplier_payment:
+        if not payment.avea_is_supplier_payment:
             raise UserError(_("This is not a supplier payment."))
-        bills = self._avea_paid_vendor_bills()
-        partner = self.partner_id
-        self._avea_detach_from_bank_recon()
-        self.sudo().line_ids.remove_move_reconcile()
-        move = self.move_id
+        bills = payment._avea_paid_vendor_bills()
+        partner = payment.partner_id
+        payment._avea_detach_from_bank_recon()
+        payment.line_ids.remove_move_reconcile()
+        move = payment.move_id
         if move.state == "posted":
-            move.sudo().button_draft()
-        self.sudo().with_context(force_delete=True).unlink()
+            move.button_draft()
+        payment.with_context(force_delete=True).unlink()
         for bill in bills:
             bill.invalidate_recordset(["amount_residual", "payment_state"])
             receive = bill.avea_linked_receive_id

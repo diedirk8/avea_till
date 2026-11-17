@@ -1018,9 +1018,11 @@ class AveaStockReceive(models.Model):
         self.ensure_one()
         if not self.env.user._avea_can_delete_supplier_payment():
             raise AccessError(_("Only an administrator can delete a payment."))
-        mixin = self.env["avea.stock.mixin"]
+        mixin = self.env["avea.stock.mixin"].sudo()
         lines = mixin._avea_statement_lines_for_bill(self.bill_id)
-        deletable = lines.filtered(lambda line: line.avea_can_delete_payment)
+        deletable = lines.filtered(
+            lambda line: line.avea_is_supplier_payment and not line.avea_cleared
+        )
         if not deletable:
             raise UserError(
                 _("There is no cash or bank payment on this receipt to delete.")

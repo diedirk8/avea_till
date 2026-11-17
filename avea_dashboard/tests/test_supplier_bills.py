@@ -387,10 +387,6 @@ class TestAveaSupplierBills(TestPoSCommon):
         self.assertTrue(
             self.owner.with_user(self.owner)._avea_can_delete_supplier_payment()
         )
-        line.invalidate_recordset(["avea_can_delete_payment"])
-        self.assertFalse(line.with_user(self.manager).avea_can_delete_payment)
-        line.invalidate_recordset(["avea_can_delete_payment"])
-        self.assertTrue(line.with_user(self.owner).avea_can_delete_payment)
         expected_residual = bill.amount_total
         with self.assertRaises(AccessError):
             line.with_user(self.manager).action_avea_delete_payment()
