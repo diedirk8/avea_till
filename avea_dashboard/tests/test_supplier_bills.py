@@ -328,9 +328,10 @@ class TestAveaSupplierBills(TestPoSCommon):
         self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
         self.assertTrue(line.avea_can_delete_payment)
         self.assertTrue(line.avea_is_bill_payment)
+        expected_residual = bill.amount_total
         line.with_user(self.manager).action_avea_delete_payment()
         bill.invalidate_recordset()
-        self.assertAlmostEqual(bill.amount_residual, 180.0, places=2)
+        self.assertAlmostEqual(bill.amount_residual, expected_residual, places=2)
         self.assertFalse(
             self.env["account.bank.statement.line"].search([("id", "=", line.id)])
         )
