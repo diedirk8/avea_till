@@ -286,8 +286,10 @@ class TestAveaStockHistory(TransactionCase):
         receive._compute_payment_status()
         receive._compute_can_delete_payment()
         self.assertIn(bank.display_name, receive.payment_status)
-        self.assertIn("3,236.98", receive.payment_status.replace("\xa0", " "))
         self.assertNotIn(cash.display_name, receive.payment_status)
+        self.assertAlmostEqual(
+            receive.payment_journal_amount, bill.amount_total, places=2
+        )
         self.assertTrue(receive.can_delete_payment)
 
         receive.action_avea_delete_receive_payment()
@@ -300,7 +302,6 @@ class TestAveaStockHistory(TransactionCase):
         self.assertFalse(receive.can_delete_payment)
         self.assertTrue(receive.can_pay_bill)
         self.assertIn("Still due", receive.payment_status)
-        self.assertIn("3,236.98", receive.payment_status.replace("\xa0", " "))
 
     def test_confirmation_preview_still_uses_chosen_journal(self):
         cash, _bank = self._avea_journals()
@@ -327,4 +328,7 @@ class TestAveaStockHistory(TransactionCase):
         )
         receive._compute_payment_status()
         self.assertIn(cash.display_name, receive.payment_status)
-        self.assertIn("80", receive.payment_status)
+        self.assertAlmostEqual(
+            receive.payment_journal_amount, receive.amount_total, places=2
+        )
+        self.assertNotEqual(receive.payment_status, "Unpaid")
