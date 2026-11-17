@@ -1592,6 +1592,7 @@ class AveaBankReconcileLine(models.Model):
         string="Already in Avea",
         domain="[('journal_id', '=', journal_id), ('avea_cleared', '=', False)]",
         context={"avea_bank_reconcile_labels": True},
+        ondelete="set null",
     )
     book_match_summary = fields.Char(
         string="Linked entry",
@@ -2188,7 +2189,11 @@ class AveaBankReconcileBookLine(models.Model):
         required=True,
         ondelete="cascade",
     )
-    statement_line_id = fields.Many2one("account.bank.statement.line", required=True)
+    statement_line_id = fields.Many2one(
+        "account.bank.statement.line",
+        required=True,
+        ondelete="cascade",
+    )
     book_date = fields.Date()
     label = fields.Char()
     amount = fields.Monetary(currency_field="currency_id")

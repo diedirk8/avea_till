@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from collections.abc import Collection
 
-from odoo import _, api, fields, models
+from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.misc import formatLang
 
@@ -180,6 +180,32 @@ class AccountBankStatementLine(models.Model):
             lambda move: move.move_type in ("in_invoice", "in_refund")
         )
 
+    def _avea_detach_from_bank_recon(self):
+        """Drop in-progress bank-recon links so this book payment can be deleted."""
+        self.ensure_one()
+        self.env["avea.bank.reconcile.book.line"].sudo().search(
+            [("statement_line_id", "=", self.id)]
+        ).unlink()
+        ReconLine = self.env["avea.bank.reconcile.line"].sudo()
+        pointed = ReconLine.search([("statement_line_id", "=", self.id)])
+        if pointed:
+            pointed.write(
+                {
+                    "statement_line_id": False,
+                    "match_locked": False,
+                    "match_confidence": 0.0,
+                    "match_hint": False,
+                    "match_state": "unmatched",
+                }
+            )
+        candidates = ReconLine.search(
+            [("candidate_statement_line_ids", "in", [self.id])]
+        )
+        for rec in candidates:
+            rec.write(
+                {"candidate_statement_line_ids": [Command.unlink(self.id)]}
+            )
+
     def _avea_unlink_supplier_payment(self):
         """Unreconcile and delete this book payment. Leaves the linked bills unpaid."""
         self.ensure_one()
@@ -194,6 +220,7 @@ class AccountBankStatementLine(models.Model):
             raise UserError(_("This is not a supplier payment."))
         bills = self._avea_paid_vendor_bills()
         partner = self.partner_id
+        self._avea_detach_from_bank_recon()
         self.sudo().line_ids.remove_move_reconcile()
         move = self.move_id
         if move.state == "posted":

@@ -336,6 +336,56 @@ class TestAveaSupplierBills(TestPoSCommon):
             self.env["account.bank.statement.line"].search([("id", "=", line.id)])
         )
 
+    def test_delete_payment_drops_in_progress_bank_recon_links(self):
+        today = fields.Date.context_today(self.env.user)
+        bill = self._create_vendor_move(
+            "in_invoice", 180.0, "RECON-1", today, due=today + timedelta(days=7)
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        line = self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            bill, journal, self.partner, self.env.company, today, "Pay RECON-1"
+        )
+        recon = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": today,
+                "date_to": today,
+            }
+        )
+        book = self.env["avea.bank.reconcile.book.line"].create(
+            {
+                "reconciliation_id": recon.id,
+                "statement_line_id": line.id,
+                "book_date": today,
+                "label": "Pay RECON-1",
+                "amount": line.amount,
+            }
+        )
+        recon_line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": recon.id,
+                "bank_date": today,
+                "description": "The Feeder Co",
+                "amount": line.amount,
+                "statement_line_id": line.id,
+                "match_state": "possible",
+                "candidate_statement_line_ids": [Command.set([line.id])],
+            }
+        )
+        line.with_user(self.manager).action_avea_delete_payment()
+        self.assertFalse(book.exists())
+        self.assertTrue(recon_line.exists())
+        self.assertFalse(recon_line.statement_line_id)
+        self.assertEqual(recon_line.match_state, "unmatched")
+        self.assertFalse(
+            self.env["account.bank.statement.line"].search([("id", "=", line.id)])
+        )
+        bill.invalidate_recordset()
+        self.assertAlmostEqual(bill.amount_residual, bill.amount_total, places=2)
+
     def test_cannot_delete_payment_matched_on_statement(self):
         today = fields.Date.context_today(self.env.user)
         bill = self._create_vendor_move(
