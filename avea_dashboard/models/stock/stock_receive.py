@@ -1,5 +1,5 @@
 from odoo import Command, _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.float_utils import float_compare, float_is_zero
 
 from .stock_mixin import AVEA_RECEIVE_ORIGIN, AVEA_SUPPLIER_COST_PRECISION
@@ -1016,6 +1016,8 @@ class AveaStockReceive(models.Model):
 
     def action_avea_delete_receive_payment(self):
         self.ensure_one()
+        if not self.env.user._avea_can_delete_supplier_payment():
+            raise AccessError(_("Only an administrator can delete a payment."))
         mixin = self.env["avea.stock.mixin"]
         lines = mixin._avea_statement_lines_for_bill(self.bill_id)
         deletable = lines.filtered(lambda line: line.avea_can_delete_payment)

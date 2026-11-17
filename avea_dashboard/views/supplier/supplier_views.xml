@@ -310,6 +310,7 @@
                                         class="btn-link"
                                         invisible="not can_delete_payment"
                                         confirm="Delete this cash or bank payment? The bill will show as unpaid again."
+                                        groups="avea_till.group_avea_owner,base.group_system"
                                     />
                                 </list>
                             </field>

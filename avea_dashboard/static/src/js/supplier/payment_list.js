@@ -78,7 +78,7 @@ export class AveaSupplierPaymentListController extends ListController {
 
     get listSubtitle() {
         return _t(
-            "Open a payment and click Delete payment if you ticked the wrong bills. Bill payments are cash or bank lines applied to supplier bills."
+            "Bill payments are cash or bank lines applied to supplier bills. Only an administrator can delete a mistaken payment."
         );
     }
 

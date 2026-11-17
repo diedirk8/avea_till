@@ -2,7 +2,7 @@
 from collections.abc import Collection
 
 from odoo import Command, _, api, fields, models
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.tools.misc import formatLang
 
 
@@ -77,7 +77,9 @@ class AccountBankStatementLine(models.Model):
                 _("Matched") if line.avea_cleared else _("Not on a statement yet")
             )
             line.avea_can_delete_payment = bool(
-                line.avea_is_supplier_payment and not line.avea_cleared
+                line.avea_is_supplier_payment
+                and not line.avea_cleared
+                and self.env.user._avea_can_delete_supplier_payment()
             )
 
     def _search_avea_is_supplier_payment(self, operator, value):
@@ -209,6 +211,8 @@ class AccountBankStatementLine(models.Model):
     def _avea_unlink_supplier_payment(self):
         """Unreconcile and delete this book payment. Leaves the linked bills unpaid."""
         self.ensure_one()
+        if not self.env.user._avea_can_delete_supplier_payment():
+            raise AccessError(_("Only an administrator can delete a payment."))
         if self.avea_cleared:
             raise UserError(
                 _(

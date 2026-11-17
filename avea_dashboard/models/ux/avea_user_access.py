@@ -164,6 +164,14 @@ class ResUsersAveaAccess(models.Model):
         )
 
     @api.model
+    def _avea_can_delete_supplier_payment(self):
+        """Undo a book payment: Owner or Odoo Settings administrator only."""
+        user = self.env.user
+        return user.has_group("avea_till.group_avea_owner") or user.has_group(
+            "base.group_system"
+        )
+
+    @api.model
     def _avea_users_action_context(self, extra=None):
         ctx = {
             "avea_users_workspace": True,

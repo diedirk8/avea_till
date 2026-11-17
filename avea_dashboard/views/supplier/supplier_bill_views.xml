@@ -166,6 +166,7 @@
                     class="btn btn-link"
                     confirm="This removes the payment from the books and puts any paid bills back to unpaid. Continue?"
                     invisible="not avea_can_delete_payment"
+                    groups="avea_till.group_avea_owner,base.group_system"
                 />
                 <field name="avea_bank_match_label" string="Bank match"/>
                 <field name="avea_cleared" column_invisible="True"/>
@@ -190,7 +191,7 @@
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">Suppliers</span>
                             <h1 class="o_avea_workspace_title">Payment</h1>
-                            <p class="o_avea_workspace_section_subtitle" invisible="avea_cleared">
+                            <p class="o_avea_workspace_section_subtitle" invisible="avea_cleared or not avea_can_delete_payment">
                                 Use Delete payment if this was a mistake.
                                 Bill payments go back to unpaid on the supplier bills they covered.
                             </p>
@@ -207,6 +208,7 @@
                                 class="btn btn-primary"
                                 confirm="This removes the payment from the books and puts any paid bills back to unpaid. Continue?"
                                 invisible="not avea_can_delete_payment"
+                                groups="avea_till.group_avea_owner,base.group_system"
                             />
                             <button
                                 string="Open supplier"

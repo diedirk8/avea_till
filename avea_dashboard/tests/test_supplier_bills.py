@@ -2,7 +2,7 @@
 from datetime import timedelta
 
 from odoo import Command, fields
-from odoo.exceptions import UserError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests import tagged
 from odoo.tools import OrderedSet
 from odoo.addons.point_of_sale.tests.common import TestPoSCommon
@@ -22,6 +22,18 @@ class TestAveaSupplierBills(TestPoSCommon):
                 "company_ids": [Command.set([cls.env.company.id])],
                 "group_ids": [
                     Command.set([cls.env.ref("avea_till.group_avea_manager").id])
+                ],
+            }
+        )
+        cls.owner = cls.env["res.users"].create(
+            {
+                "name": "Avea Bills Owner",
+                "login": "avea_bills_owner@dev.local",
+                "email": "avea_bills_owner@dev.local",
+                "company_id": cls.env.company.id,
+                "company_ids": [Command.set([cls.env.company.id])],
+                "group_ids": [
+                    Command.set([cls.env.ref("avea_till.group_avea_owner").id])
                 ],
             }
         )
@@ -370,8 +382,12 @@ class TestAveaSupplierBills(TestPoSCommon):
         self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
         self.assertTrue(line.avea_can_delete_payment)
         self.assertTrue(line.avea_is_bill_payment)
+        self.assertFalse(line.with_user(self.manager).avea_can_delete_payment)
+        self.assertTrue(line.with_user(self.owner).avea_can_delete_payment)
         expected_residual = bill.amount_total
-        line.with_user(self.manager).action_avea_delete_payment()
+        with self.assertRaises(AccessError):
+            line.with_user(self.manager).action_avea_delete_payment()
+        line.with_user(self.owner).action_avea_delete_payment()
         bill.invalidate_recordset()
         self.assertAlmostEqual(bill.amount_residual, expected_residual, places=2)
         self.assertFalse(
@@ -417,7 +433,7 @@ class TestAveaSupplierBills(TestPoSCommon):
                 "candidate_statement_line_ids": [Command.set([line.id])],
             }
         )
-        line.with_user(self.manager).action_avea_delete_payment()
+        line.with_user(self.owner).action_avea_delete_payment()
         self.assertFalse(book.exists())
         self.assertTrue(recon_line.exists())
         self.assertFalse(recon_line.statement_line_id)
