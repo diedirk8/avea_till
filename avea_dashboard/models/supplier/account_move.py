@@ -37,12 +37,12 @@ class AccountMoveSupplierBill(models.Model):
             ("paid", "Paid"),
             ("credit", "Credit"),
         ],
-        string="Status",
+        string="Bill status",
         compute="_compute_avea_bill_status",
         search="_search_avea_bill_status",
     )
     avea_amount_paid = fields.Monetary(
-        string="Paid",
+        string="Amount paid",
         currency_field="currency_id",
         compute="_compute_avea_bill_status",
     )
@@ -139,6 +139,10 @@ class AccountMoveSupplierBill(models.Model):
     def _compute_avea_bill_status(self):
         today = fields.Date.context_today(self)
         for move in self:
+            if move._name != "account.move":
+                move.avea_amount_paid = 0.0
+                move.avea_bill_status = False
+                continue
             paid = move.amount_total - move.amount_residual
             move.avea_amount_paid = move.currency_id.round(paid) if move.currency_id else paid
             if move.move_type == "in_refund":
@@ -221,6 +225,8 @@ class AccountMoveSupplierBill(models.Model):
 
     def _avea_use_supplier_bill_form(self):
         self.ensure_one()
+        if self._name != "account.move":
+            return False
         if self.env.context.get("avea_supplier_workspace"):
             return self.move_type in ("in_invoice", "in_refund")
         user = self.env.user
