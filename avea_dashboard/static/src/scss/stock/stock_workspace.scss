@@ -1,3 +1,62 @@
+// Odoo 19 monetary: currency glyph is an overlay — one border on the wrapper only.
+@mixin avea-stock-monetary-field($input-min-height: 2.2rem) {
+    .o_field_monetary {
+        display: block;
+        max-width: 100%;
+        min-width: 0;
+        width: 100%;
+
+        > .text-nowrap,
+        > .d-inline-flex {
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            border-radius: var(--avea-stock-input-radius, 0.45rem);
+            box-sizing: border-box;
+            max-width: 100%;
+            min-height: $input-min-height;
+            min-width: 0;
+            padding: 0 0.7rem;
+            position: relative;
+            width: 100%;
+
+            &:focus-within {
+                border-color: var(--avea-info, #01666b);
+                box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
+            }
+        }
+
+        span.o_input.position-absolute {
+            align-items: center;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            display: flex !important;
+            inset: 0 0.7rem;
+            min-height: 0 !important;
+            padding: 0 !important;
+            pointer-events: none;
+            position: absolute;
+            width: auto;
+            z-index: 0;
+        }
+
+        input.o_input {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            flex: 1 1 0% !important;
+            max-width: 100%;
+            min-height: 0 !important;
+            min-width: 0 !important;
+            padding: 0 !important;
+            position: relative;
+            width: 100% !important;
+            z-index: 1;
+        }
+    }
+}
+
 .o_avea_workspace--stock {
     --avea-stock-card-radius: 0.7rem;
     --avea-stock-card-shadow: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04);
@@ -289,11 +348,9 @@
         min-width: 0;
         padding: 0.95rem 1.05rem 1.05rem;
 
-        // Target input elements only — Odoo 19 monetary fields use span.o_input as a
-        // position-absolute overlay; styling that span hides the typed amount.
-        .o_field_widget input:not([type="checkbox"]),
-        .o_field_widget textarea,
-        .o_field_monetary input.o_input {
+        // Monetary: border on the inner wrapper only (see avea-stock-monetary-field).
+        .o_field_widget:not(.o_field_monetary) input:not([type="checkbox"]),
+        .o_field_widget textarea {
             background: #fff;
             border: 1px solid var(--o-gray-300, #dee2e6);
             border-radius: var(--avea-stock-input-radius);
@@ -304,12 +361,14 @@
             padding: 0.3rem 0.65rem;
         }
 
-        .o_field_widget input:not([type="checkbox"]):focus,
-        .o_field_monetary input.o_input:focus {
+        .o_field_widget:not(.o_field_monetary) input:not([type="checkbox"]):focus,
+        .o_field_widget textarea:focus {
             border-color: var(--avea-info, #01666b);
             box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
             outline: none;
         }
+
+        @include avea-stock-monetary-field(2.2rem);
     }
 
     .o_avea_stock_side_grid {
@@ -2311,62 +2370,7 @@
         }
     }
 
-    // Odoo 19 monetary: currency symbol is an absolute overlay — border belongs on the wrapper.
-    .o_field_monetary {
-        display: block;
-        max-width: 100%;
-        min-width: 0;
-        width: 100%;
-
-        > .text-nowrap,
-        > .d-inline-flex {
-            align-items: center;
-            background: #fff;
-            border: 1px solid var(--o-gray-300, #dee2e6);
-            border-radius: var(--avea-stock-input-radius);
-            box-sizing: border-box;
-            max-width: 100%;
-            min-height: $input-min-height;
-            min-width: 0;
-            padding: 0 0.7rem;
-            position: relative;
-            width: 100%;
-
-            &:focus-within {
-                border-color: var(--avea-info, #01666b);
-                box-shadow: 0 0 0 3px var(--avea-info-soft, rgba(1, 102, 107, 0.12));
-            }
-        }
-
-        span.o_input.position-absolute {
-            align-items: center;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            display: flex !important;
-            inset: 0 0.7rem;
-            min-height: 0 !important;
-            padding: 0 !important;
-            pointer-events: none;
-            position: absolute;
-            width: auto;
-            z-index: 0;
-        }
-
-        input.o_input {
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            flex: 1 1 0% !important;
-            max-width: 100%;
-            min-height: 0 !important;
-            min-width: 0 !important;
-            padding: 0 !important;
-            position: relative;
-            width: 100% !important;
-            z-index: 1;
-        }
-    }
+    @include avea-stock-monetary-field($input-min-height);
 
     .o_field_float.o_readonly_modifier,
     .o_field_integer.o_readonly_modifier {
