@@ -2,6 +2,7 @@
 from datetime import timedelta
 
 from odoo import Command, fields
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.addons.point_of_sale.tests.common import TestPoSCommon
 
@@ -270,3 +271,55 @@ class TestAveaSupplierBills(TestPoSCommon):
         partial.invalidate_recordset()
         self.assertTrue(full.currency_id.is_zero(full.amount_residual))
         self.assertAlmostEqual(partial.amount_residual, 300.0, places=2)
+
+    def test_open_payments_button_works_on_a_record(self):
+        today = fields.Date.context_today(self.env.user)
+        bill = self._create_vendor_move(
+            "in_invoice", 90.0, "BACK-1", today, due=today + timedelta(days=7)
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        line = self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            bill, journal, self.partner, self.env.company, today, "Pay BACK-1"
+        )
+        action = line.action_avea_open_payments()
+        self.assertEqual(action["res_model"], "account.bank.statement.line")
+
+    def test_delete_payment_reopens_bills(self):
+        today = fields.Date.context_today(self.env.user)
+        bill = self._create_vendor_move(
+            "in_invoice", 180.0, "UNDO-1", today, due=today + timedelta(days=7)
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        line = self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            bill, journal, self.partner, self.env.company, today, "Pay UNDO-1"
+        )
+        bill.invalidate_recordset()
+        self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
+        self.assertTrue(line.avea_can_delete_payment)
+        line.with_user(self.manager).action_avea_delete_payment()
+        bill.invalidate_recordset()
+        self.assertAlmostEqual(bill.amount_residual, 180.0, places=2)
+        self.assertFalse(
+            self.env["account.bank.statement.line"].search([("id", "=", line.id)])
+        )
+
+    def test_cannot_delete_payment_matched_on_statement(self):
+        today = fields.Date.context_today(self.env.user)
+        bill = self._create_vendor_move(
+            "in_invoice", 75.0, "MATCHED-1", today, due=today + timedelta(days=7)
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        line = self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            bill, journal, self.partner, self.env.company, today, "Pay MATCHED-1"
+        )
+        line.avea_cleared = True
+        line.invalidate_recordset()
+        self.assertFalse(line.avea_can_delete_payment)
+        with self.assertRaises(UserError):
+            line.action_avea_delete_payment()

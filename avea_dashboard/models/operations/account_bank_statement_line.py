@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools.misc import formatLang
 
 
@@ -34,6 +35,9 @@ class AccountBankStatementLine(models.Model):
         string="Bank match",
         compute="_compute_avea_is_supplier_payment",
     )
+    avea_can_delete_payment = fields.Boolean(
+        compute="_compute_avea_is_supplier_payment",
+    )
 
     @api.depends("amount", "partner_id", "journal_id", "journal_id.type", "avea_cleared")
     def _compute_avea_is_supplier_payment(self):
@@ -46,6 +50,9 @@ class AccountBankStatementLine(models.Model):
             line.avea_paid_amount = abs(line.amount or 0.0)
             line.avea_bank_match_label = (
                 _("Matched") if line.avea_cleared else _("Not on a statement yet")
+            )
+            line.avea_can_delete_payment = bool(
+                line.avea_is_supplier_payment and not line.avea_cleared
             )
 
     def _search_avea_is_supplier_payment(self, operator, value):
@@ -74,17 +81,61 @@ class AccountBankStatementLine(models.Model):
             action["context"] = ctx
         return action
 
-    @api.model
     def action_avea_new_payment(self):
         return self.env["ir.actions.act_window"]._for_xml_id(
             "avea_till.action_avea_pay_bills_wizard"
         )
 
-    @api.model
     def action_avea_open_payments(self):
         return self.env["ir.actions.act_window"]._for_xml_id(
             "avea_till.action_avea_supplier_payments"
         )
+
+    def _avea_paid_vendor_bills(self):
+        self.ensure_one()
+        amls = self.move_id.line_ids
+        counterparts = (
+            amls.matched_debit_ids.debit_move_id
+            | amls.matched_debit_ids.credit_move_id
+            | amls.matched_credit_ids.debit_move_id
+            | amls.matched_credit_ids.credit_move_id
+        ) - amls
+        return counterparts.move_id.filtered(
+            lambda move: move.move_type in ("in_invoice", "in_refund")
+        )
+
+    def action_avea_delete_payment(self):
+        self.ensure_one()
+        if self.avea_cleared:
+            raise UserError(
+                _(
+                    "This payment is already matched on a bank statement. "
+                    "Unmatch it in bank recon first, then delete it."
+                )
+            )
+        if not self.avea_is_supplier_payment:
+            raise UserError(_("This is not a supplier payment."))
+        bills = self._avea_paid_vendor_bills()
+        partner = self.partner_id
+        env = self.env
+        self.sudo().line_ids.remove_move_reconcile()
+        move = self.move_id
+        if move.state == "posted":
+            move.sudo().button_draft()
+        self.sudo().with_context(force_delete=True).unlink()
+        for bill in bills:
+            bill.invalidate_recordset(["amount_residual", "payment_state"])
+            receive = bill.avea_linked_receive_id
+            if (
+                receive
+                and receive.mark_as_paid
+                and bill.currency_id
+                and not bill.currency_id.is_zero(bill.amount_residual)
+            ):
+                receive.sudo().write({"mark_as_paid": False})
+        if partner:
+            partner.invalidate_recordset()
+        return env["account.bank.statement.line"].action_avea_open_payments()
 
     def action_avea_open_payment_supplier(self):
         self.ensure_one()

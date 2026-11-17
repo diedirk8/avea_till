@@ -218,7 +218,6 @@ class AccountMoveSupplierBill(models.Model):
             combined = ["|"] + combined + extra
         return combined
 
-    @api.model
     def action_avea_pay_bills(self):
         action = self.env["ir.actions.act_window"]._for_xml_id(
             "avea_till.action_avea_pay_bills_wizard"
@@ -237,7 +236,6 @@ class AccountMoveSupplierBill(models.Model):
         action["context"] = ctx
         return action
 
-    @api.model
     def action_avea_open_bills(self):
         return self.env["ir.actions.act_window"]._for_xml_id(
             "avea_till.action_avea_bills"

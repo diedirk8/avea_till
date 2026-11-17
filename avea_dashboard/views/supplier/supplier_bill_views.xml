@@ -152,7 +152,16 @@
                 <field name="journal_id" string="Paid from"/>
                 <field name="avea_paid_amount" string="Amount" widget="monetary"/>
                 <field name="avea_bank_match_label" string="Bank match"/>
+                <button
+                    name="action_avea_delete_payment"
+                    type="object"
+                    string="Delete"
+                    class="btn-link"
+                    confirm="This removes the payment from the books and puts the bills back to unpaid. Continue?"
+                    invisible="not avea_can_delete_payment"
+                />
                 <field name="avea_cleared" column_invisible="True"/>
+                <field name="avea_can_delete_payment" column_invisible="True"/>
             </list>
         </field>
     </record>
@@ -166,16 +175,29 @@
                 <sheet class="o_avea_workspace_sheet">
                     <field name="currency_id" invisible="1"/>
                     <field name="avea_cleared" invisible="1"/>
+                    <field name="avea_can_delete_payment" invisible="1"/>
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
                             <span class="o_avea_workspace_eyebrow">Suppliers</span>
                             <h1 class="o_avea_workspace_title">Payment</h1>
-                            <p class="o_avea_workspace_section_subtitle">
+                            <p class="o_avea_workspace_section_subtitle" invisible="avea_cleared">
                                 Cash or bank payment already on the books.
-                                Bank recon matches the statement line to this payment.
+                                Delete it if you ticked the wrong bills or amount.
+                            </p>
+                            <p class="o_avea_workspace_section_subtitle" invisible="not avea_cleared">
+                                This payment is matched on a bank statement.
+                                Unmatch it in bank recon before you can delete it.
                             </p>
                         </div>
                         <div class="o_avea_customer_hero_actions">
+                            <button
+                                string="Delete payment"
+                                name="action_avea_delete_payment"
+                                type="object"
+                                class="btn btn-secondary"
+                                confirm="This removes the payment from the books and puts the bills back to unpaid. Continue?"
+                                invisible="not avea_can_delete_payment"
+                            />
                             <button
                                 string="Open supplier"
                                 name="action_avea_open_payment_supplier"
