@@ -380,9 +380,16 @@ class TestAveaSupplierBills(TestPoSCommon):
         )
         bill.invalidate_recordset()
         self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
-        self.assertTrue(line.avea_can_delete_payment)
         self.assertTrue(line.avea_is_bill_payment)
+        self.assertFalse(
+            self.manager.with_user(self.manager)._avea_can_delete_supplier_payment()
+        )
+        self.assertTrue(
+            self.owner.with_user(self.owner)._avea_can_delete_supplier_payment()
+        )
+        line.invalidate_recordset(["avea_can_delete_payment"])
         self.assertFalse(line.with_user(self.manager).avea_can_delete_payment)
+        line.invalidate_recordset(["avea_can_delete_payment"])
         self.assertTrue(line.with_user(self.owner).avea_can_delete_payment)
         expected_residual = bill.amount_total
         with self.assertRaises(AccessError):
