@@ -344,15 +344,11 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--bank-recon-fo
     > .o_action,
     .o_action,
     .o_content,
-    .o_view_controller,
-    .o_form_view,
-    .o_form_renderer,
-    .o_form_sheet_bg,
-    .o_form_sheet,
-    .o_avea_workspace,
-    .o_avea_workspace_sheet {
+    .o_view_controller {
         @include o_avea_page_scroll_child_unlock;
     }
+
+    @include o_avea_page_scroll_form_chain;
 }
 
 // Bank recon: the statement x2many sits in a notebook. Product-shell
@@ -407,16 +403,15 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace):not(:has(.o_a
     > .o_action,
     .o_action,
     .o_content,
-    .o_view_controller,
-    .o_form_view,
-    .o_list_view,
-    .o_form_renderer,
-    .o_form_sheet_bg,
-    .o_form_sheet,
-    .o_avea_workspace,
-    .o_avea_workspace_sheet {
+    .o_view_controller {
         @include o_avea_page_scroll_child_unlock;
     }
+
+    .o_list_view {
+        @include o_avea_page_scroll_child_unlock;
+    }
+
+    @include o_avea_page_scroll_form_chain;
 
     .o_list_renderer {
         height: auto !important;
@@ -456,15 +451,11 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-activ
     .o_action,
     .o_content,
     .o_view_controller,
-    .o_list_view,
-    .o_form_view,
-    .o_form_renderer,
-    .o_form_sheet_bg,
-    .o_form_sheet,
-    .o_avea_workspace,
-    .o_avea_workspace_sheet {
+    .o_list_view {
         @include o_avea_page_scroll_child_unlock;
     }
+
+    @include o_avea_page_scroll_form_chain;
 
     .o_list_renderer {
         display: block !important;

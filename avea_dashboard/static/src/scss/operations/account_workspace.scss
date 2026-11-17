@@ -356,12 +356,14 @@ body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--a
 
     .o_action,
     .o_content,
-    .o_view_controller,
-    .o_form_view.o_avea_workspace--account,
-    .o_form_view.o_avea_workspace--account .o_form_sheet_bg,
-    .o_form_view.o_avea_workspace--account .o_avea_workspace_sheet {
-        display: block !important;
-        flex: none !important;
+    .o_view_controller {
+        @include o_avea_page_scroll_child_unlock;
+    }
+
+    .o_form_view.o_avea_workspace--account {
+        display: flex !important;
+        flex: 0 0 auto !important;
+        flex-flow: column nowrap !important;
         height: auto !important;
         max-height: none !important;
         max-width: 100% !important;
@@ -369,6 +371,14 @@ body.o_avea_product_shell .o_action_manager:has(.o_form_view.o_avea_workspace--a
         min-width: 0 !important;
         overflow: visible !important;
         width: 100% !important;
+    }
+
+    .o_form_view.o_avea_workspace--account .o_form_view_container,
+    .o_form_view.o_avea_workspace--account .o_content,
+    .o_form_view.o_avea_workspace--account .o_form_renderer,
+    .o_form_view.o_avea_workspace--account .o_form_sheet_bg,
+    .o_form_view.o_avea_workspace--account .o_avea_workspace_sheet {
+        @include o_avea_page_scroll_child_unlock;
     }
 }
 
