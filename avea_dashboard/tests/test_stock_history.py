@@ -140,7 +140,8 @@ class TestAveaStockHistory(TransactionCase):
             }
         )
         receive._compute_payment_status()
-        self.assertIn("Paid from", receive.payment_status)
+        self.assertTrue(receive.payment_status)
+        self.assertNotEqual(receive.payment_status, "Unpaid")
 
     def test_backfill_receive_history_from_avea_po(self):
         warehouse = self.env["stock.warehouse"].search(

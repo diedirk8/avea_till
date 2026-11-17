@@ -531,6 +531,14 @@ class AveaStockReceive(models.Model):
         string="Payment status",
         compute="_compute_payment_status",
     )
+    payment_journal_amount = fields.Monetary(
+        string="Paid from cash or bank",
+        currency_field="currency_id",
+        compute="_compute_payment_status",
+    )
+    payment_journal_label = fields.Char(
+        compute="_compute_payment_status",
+    )
     show_confirmation = fields.Boolean(
         compute="_compute_show_confirmation",
     )
@@ -608,15 +616,6 @@ class AveaStockReceive(models.Model):
             receive.product_count = len(lines)
             receive.quantity_total = sum(lines.mapped("quantity"))
 
-    @api.depends(
-        "mark_as_paid",
-        "paid_from_journal_id",
-        "supplier_credit_applied",
-        "store_credit_applied",
-        "bill_id",
-        "bill_id.amount_residual",
-        "bill_id.payment_state",
-    )
     def _avea_payment_source_label(self):
         self.ensure_one()
         if self.paid_from_journal_id:
@@ -625,37 +624,65 @@ class AveaStockReceive(models.Model):
         journal = mixin._avea_journal_from_bill_payment(self.bill_id)
         return journal.display_name if journal else False
 
+    @api.depends(
+        "amount_total",
+        "mark_as_paid",
+        "paid_from_journal_id",
+        "supplier_credit_applied",
+        "store_credit_applied",
+        "bill_id",
+        "bill_id.amount_residual",
+        "bill_id.payment_state",
+        "currency_id",
+    )
     def _compute_payment_status(self):
         for receive in self:
+            currency = receive.currency_id or receive.env.company.currency_id
+            supplier = receive.supplier_credit_applied or 0.0
+            store = receive.store_credit_applied or 0.0
+            total = receive.amount_total or 0.0
+            residual = receive.bill_id.amount_residual if receive.bill_id else 0.0
+            source = receive._avea_payment_source_label()
+            journal_amount = currency.round(total - supplier - store - residual)
+            if currency.compare_amounts(journal_amount, 0.0) < 0:
+                journal_amount = 0.0
+            if (
+                currency.is_zero(journal_amount)
+                and receive.mark_as_paid
+                and not receive.bill_id
+            ):
+                journal_amount = currency.round(total - supplier - store)
+            receive.payment_journal_amount = journal_amount
+            receive.payment_journal_label = source or _("Cash or bank")
+
             parts = []
-            if receive.supplier_credit_applied:
+            if not currency.is_zero(supplier):
                 parts.append(
-                    _("Credit applied %(amount)s", amount=receive.supplier_credit_applied)
+                    _("Supplier credit %(amount)s", amount=currency.format(supplier))
                 )
-            if receive.store_credit_applied:
+            if not currency.is_zero(store):
                 parts.append(
-                    _("Store credit %(amount)s", amount=receive.store_credit_applied)
+                    _("Store credit %(amount)s", amount=currency.format(store))
                 )
-            bill = receive.bill_id
-            payment_source = receive._avea_payment_source_label()
-            if bill and not bill.currency_id.is_zero(bill.amount_residual):
-                parts.append(_("Balance due %(amount)s", amount=bill.amount_residual))
-            elif bill and bill.payment_state in ("paid", "in_payment"):
-                if payment_source:
-                    parts.append(_("Paid from %s") % payment_source)
-                elif receive.supplier_credit_applied and not receive.mark_as_paid:
-                    parts.append(_("Paid with supplier credit"))
-                else:
-                    parts.append(_("Paid"))
-            elif receive.mark_as_paid:
-                if payment_source:
-                    parts.append(_("Paid from %s") % payment_source)
-                else:
-                    parts.append(_("Paid"))
+            if not currency.is_zero(journal_amount):
+                parts.append(
+                    _(
+                        "%(journal)s %(amount)s",
+                        journal=receive.payment_journal_label,
+                        amount=currency.format(journal_amount),
+                    )
+                )
+            if receive.bill_id and not currency.is_zero(residual):
+                parts.append(_("Still due %(amount)s", amount=currency.format(residual)))
             if not parts:
-                receive.payment_status = _("Unpaid")
-            else:
-                receive.payment_status = " · ".join(parts)
+                if receive.bill_id and receive.bill_id.payment_state in (
+                    "paid",
+                    "in_payment",
+                ):
+                    parts.append(_("Paid"))
+                else:
+                    parts.append(_("Unpaid"))
+            receive.payment_status = " · ".join(parts)
 
     @api.depends("amount_total", "invoice_total", "currency_id")
     def _compute_totals_mismatch(self):

@@ -431,25 +431,32 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="o_avea_stock_panel o_avea_stock_card--compact o_avea_stock_status o_avea_stock_status--paid" invisible="not mark_as_paid">
-                            <div class="o_avea_workspace_info_item">
-                                <span class="o_avea_workspace_info_label">Payment</span>
-                                <div class="o_avea_stock_status_value">
-                                    <span>Paid from</span>
-                                    <field name="paid_from_journal_id" nolabel="1" readonly="1" options="{'no_open': True}"/>
+                        <div class="o_avea_stock_panel o_avea_stock_card--compact">
+                            <span class="o_avea_workspace_info_label">Payment</span>
+                            <div class="o_avea_tax_summary_card o_avea_stock_confirmation_totals">
+                                <div class="o_avea_tax_summary_row" invisible="not store_credit_applied">
+                                    <span class="o_avea_tax_summary_label">Store credit</span>
+                                    <field name="store_credit_applied" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
                                 </div>
-                            </div>
-                        </div>
-                        <div class="o_avea_stock_panel o_avea_stock_card--compact o_avea_stock_status o_avea_stock_status--unpaid" invisible="mark_as_paid or supplier_credit_applied or store_credit_applied">
-                            <div class="o_avea_workspace_info_item">
-                                <span class="o_avea_workspace_info_label">Payment</span>
-                                <span class="o_avea_stock_status_value">Unpaid</span>
-                            </div>
-                        </div>
-                        <div class="o_avea_stock_panel o_avea_stock_card--compact" invisible="not supplier_credit_applied and not payment_status">
-                            <div class="o_avea_workspace_info_item">
-                                <span class="o_avea_workspace_info_label">Payment summary</span>
-                                <field name="payment_status" nolabel="1" readonly="1"/>
+                                <div class="o_avea_tax_summary_row" invisible="not supplier_credit_applied">
+                                    <span class="o_avea_tax_summary_label">Supplier credit</span>
+                                    <field name="supplier_credit_applied" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
+                                </div>
+                                <div class="o_avea_tax_summary_row" invisible="not payment_journal_amount">
+                                    <field name="payment_journal_label" nolabel="1" class="o_avea_tax_summary_label"/>
+                                    <field name="payment_journal_amount" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
+                                </div>
+                                <div class="o_avea_tax_summary_row" invisible="not bill_residual">
+                                    <span class="o_avea_tax_summary_label">Still due</span>
+                                    <field name="bill_residual" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
+                                </div>
+                                <div
+                                    class="o_avea_tax_summary_row o_avea_tax_summary_row--total"
+                                    invisible="store_credit_applied or supplier_credit_applied or payment_journal_amount or bill_residual"
+                                >
+                                    <span class="o_avea_tax_summary_label">Unpaid</span>
+                                    <span class="o_avea_tax_summary_value">—</span>
+                                </div>
                             </div>
                         </div>
 

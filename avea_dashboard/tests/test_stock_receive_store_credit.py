@@ -248,9 +248,12 @@ class TestAveaStockReceiveStoreCredit(TransactionCase):
         self.assertTrue(bill)
         self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
         self.assertAlmostEqual(receive.store_credit_applied, 595.0, places=2)
+        self.assertAlmostEqual(receive.payment_journal_amount, 305.0, places=2)
         self.partner.invalidate_recordset(["avea_credit_balance"])
         self.assertAlmostEqual(self.partner.avea_credit_balance, 595.0, places=2)
         self.assertIn("Store credit", receive.payment_status)
+        self.assertIn("595", receive.payment_status)
+        self.assertIn("305", receive.payment_status)
 
     def test_customer_with_store_credit_is_selectable_as_supplier(self):
         customer = self.env["res.partner"].create(
