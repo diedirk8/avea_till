@@ -299,7 +299,11 @@ class TestAveaSupplierBills(TestPoSCommon):
         self.assertTrue(first.currency_id.is_zero(first.amount_residual))
         self.assertTrue(second.currency_id.is_zero(second.amount_residual))
         payment = self.env["account.bank.statement.line"].browse(result["res_id"])
-        self.assertAlmostEqual(payment.avea_paid_amount, 810.0, places=2)
+        self.assertAlmostEqual(
+            payment.avea_paid_amount,
+            first.amount_total + second.amount_total,
+            places=2,
+        )
         self.assertEqual(payment.partner_id, self.partner)
         self.assertTrue(payment.avea_is_supplier_payment)
 
