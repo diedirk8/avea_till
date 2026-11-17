@@ -194,8 +194,16 @@ class TestAveaSupplierBills(TestPoSCommon):
             "Pay PAY-1",
         )
         self.assertTrue(line.avea_is_supplier_payment)
+        self.assertTrue(line.avea_is_bill_payment)
+        self.assertEqual(line.avea_payment_kind, "bill")
         self.assertAlmostEqual(line.avea_paid_amount, 305.0, places=2)
         self.assertEqual(line.avea_bank_match_label, "Not on a statement yet")
+        self.assertIn(
+            line,
+            self.env["account.bank.statement.line"].search(
+                [("avea_is_bill_payment", "=", True)]
+            ),
+        )
         found = self.env["account.bank.statement.line"].search(
             [("avea_is_supplier_payment", "=", True), ("id", "=", line.id)]
         )
@@ -319,6 +327,7 @@ class TestAveaSupplierBills(TestPoSCommon):
         bill.invalidate_recordset()
         self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
         self.assertTrue(line.avea_can_delete_payment)
+        self.assertTrue(line.avea_is_bill_payment)
         line.with_user(self.manager).action_avea_delete_payment()
         bill.invalidate_recordset()
         self.assertAlmostEqual(bill.amount_residual, 180.0, places=2)
@@ -342,3 +351,36 @@ class TestAveaSupplierBills(TestPoSCommon):
         self.assertFalse(line.avea_can_delete_payment)
         with self.assertRaises(UserError):
             line.action_avea_delete_payment()
+
+    def test_cash_movement_is_not_a_bill_payment(self):
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        payable = self.env["avea.stock.mixin"]._avea_supplier_payable_account(
+            self.partner, self.env.company
+        )
+        line = (
+            self.env["account.bank.statement.line"]
+            .sudo()
+            .with_context(no_retrieve_partner=True)
+            .create(
+                {
+                    "journal_id": journal.id,
+                    "amount": -8000.0,
+                    "date": fields.Date.context_today(self.env.user),
+                    "payment_ref": "BANK - XAL",
+                    "partner_id": self.partner.id,
+                    "counterpart_account_id": payable.id,
+                }
+            )
+        )
+        line.invalidate_recordset()
+        self.assertTrue(line.avea_is_supplier_payment)
+        self.assertFalse(line.avea_is_bill_payment)
+        self.assertEqual(line.avea_payment_kind, "other")
+        self.assertNotIn(
+            line,
+            self.env["account.bank.statement.line"].search(
+                [("avea_is_bill_payment", "=", True)]
+            ),
+        )

@@ -14,6 +14,7 @@ const BODY_PAGE_CLASS = "o_avea_customer_list_page";
 
 const STATUS_OPTIONS = [
     { value: "all", label: "All" },
+    { value: "bills", label: "Bill payments" },
     { value: "unmatched", label: "Not on a statement yet" },
     { value: "matched", label: "Matched to bank" },
 ];
@@ -39,7 +40,7 @@ export class AveaSupplierPaymentListController extends ListController {
         this.actionService = useService("action");
         this.filterState = useState({
             searchText: "",
-            status: "all",
+            status: "bills",
             sortBy: "newest",
         });
         this._applyFiltersDebounced = debounce(() => this.applyFilters(), 300);
@@ -77,7 +78,7 @@ export class AveaSupplierPaymentListController extends ListController {
 
     get listSubtitle() {
         return _t(
-            "Cash and bank payments already on the books. Record a payment to tick the bills it covers."
+            "Open a payment and click Delete payment if you ticked the wrong bills. Bill payments are cash or bank lines applied to supplier bills."
         );
     }
 
@@ -119,7 +120,9 @@ export class AveaSupplierPaymentListController extends ListController {
                 ["journal_id", "ilike", query]
             );
         }
-        if (this.filterState.status === "unmatched") {
+        if (this.filterState.status === "bills") {
+            domain.push(["avea_is_bill_payment", "=", true]);
+        } else if (this.filterState.status === "unmatched") {
             domain.push(["avea_cleared", "=", false]);
         } else if (this.filterState.status === "matched") {
             domain.push(["avea_cleared", "=", true]);

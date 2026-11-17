@@ -6,6 +6,26 @@
     --avea-brand-border: rgba(196, 92, 38, 0.35);
 }
 
+.o_list_view.o_avea_bills_list .o_list_table {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+.o_list_view.o_avea_bills_list {
+    th.o_list_button,
+    td.o_list_button {
+        min-width: 5.5rem;
+        width: 5.5rem;
+        white-space: nowrap;
+    }
+
+    td.o_list_button .btn-link {
+        font-weight: 600;
+        padding-inline: 0.25rem;
+        white-space: nowrap;
+    }
+}
+
 .o_form_view.o_avea_workspace--supplier {
     .o_avea_supplier_open_hint {
         margin: 0 0 0.65rem;

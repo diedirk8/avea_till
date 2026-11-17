@@ -28,6 +28,19 @@ class AccountBankStatementLine(models.Model):
         compute="_compute_avea_is_supplier_payment",
         search="_search_avea_is_supplier_payment",
     )
+    avea_is_bill_payment = fields.Boolean(
+        string="Bill payment",
+        compute="_compute_avea_is_supplier_payment",
+        search="_search_avea_is_bill_payment",
+    )
+    avea_payment_kind = fields.Selection(
+        selection=[
+            ("bill", "Bill payment"),
+            ("other", "Other"),
+        ],
+        string="Type",
+        compute="_compute_avea_is_supplier_payment",
+    )
     avea_paid_amount = fields.Monetary(
         string="Paid",
         currency_field="currency_id",
@@ -41,7 +54,15 @@ class AccountBankStatementLine(models.Model):
         compute="_compute_avea_is_supplier_payment",
     )
 
-    @api.depends("amount", "partner_id", "journal_id", "journal_id.type", "avea_cleared")
+    @api.depends(
+        "amount",
+        "partner_id",
+        "journal_id",
+        "journal_id.type",
+        "avea_cleared",
+        "move_id.line_ids.matched_debit_ids",
+        "move_id.line_ids.matched_credit_ids",
+    )
     def _compute_avea_is_supplier_payment(self):
         for line in self:
             money_out = (line.amount or 0.0) < 0.0
@@ -49,6 +70,8 @@ class AccountBankStatementLine(models.Model):
             line.avea_is_supplier_payment = bool(
                 line.partner_id and money_out and cash_or_bank
             )
+            line.avea_is_bill_payment = bool(line._avea_paid_vendor_bills())
+            line.avea_payment_kind = "bill" if line.avea_is_bill_payment else "other"
             line.avea_paid_amount = abs(line.amount or 0.0)
             line.avea_bank_match_label = (
                 _("Matched") if line.avea_cleared else _("Not on a statement yet")
@@ -80,6 +103,44 @@ class AccountBankStatementLine(models.Model):
         if positive:
             return domain
         return ["!", "&", "&"] + domain
+
+    def _search_avea_is_bill_payment(self, operator, value):
+        if operator in ("in", "not in"):
+            values = (
+                list(value)
+                if isinstance(value, Collection) and not isinstance(value, (str, bytes))
+                else [value]
+            )
+            truthy = any(values)
+            positive = (operator == "in" and truthy) or (
+                operator == "not in" and not truthy
+            )
+        elif operator in ("=", "!="):
+            positive = (operator == "=" and value) or (operator == "!=" and not value)
+        else:
+            return NotImplemented
+        ids = self._avea_bill_payment_ids()
+        if positive:
+            return [("id", "in", ids)]
+        return [("id", "not in", ids)]
+
+    @api.model
+    def _avea_bill_payment_ids(self):
+        bill_amls = self.env["account.move.line"].sudo().search(
+            [
+                ("move_id.move_type", "in", ("in_invoice", "in_refund")),
+                ("parent_state", "=", "posted"),
+            ]
+        )
+        counterparts = (
+            bill_amls.mapped("matched_debit_ids.debit_move_id")
+            | bill_amls.mapped("matched_debit_ids.credit_move_id")
+            | bill_amls.mapped("matched_credit_ids.debit_move_id")
+            | bill_amls.mapped("matched_credit_ids.credit_move_id")
+        ) - bill_amls
+        from_aml = counterparts.mapped("statement_line_id")
+        from_move = self.sudo().search([("move_id", "in", counterparts.move_id.ids)])
+        return list(set(from_aml.ids) | set(from_move.ids))
 
     def get_formview_id(self, access_uid=None):
         if self.env.context.get("avea_supplier_workspace"):
