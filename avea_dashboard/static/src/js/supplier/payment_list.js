@@ -7,6 +7,7 @@ import { registry } from "@web/core/registry";
 import { debounce } from "@web/core/utils/timing";
 import { useState, onMounted, onWillUnmount } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
+import { useService } from "@web/core/utils/hooks";
 
 const ACTION_MANAGER_SCROLL_CLASS = "o_avea_customer_list_action_manager";
 const BODY_PAGE_CLASS = "o_avea_customer_list_page";
@@ -35,6 +36,7 @@ export class AveaSupplierPaymentListController extends ListController {
 
     setup() {
         super.setup();
+        this.actionService = useService("action");
         this.filterState = useState({
             searchText: "",
             status: "all",
@@ -75,8 +77,12 @@ export class AveaSupplierPaymentListController extends ListController {
 
     get listSubtitle() {
         return _t(
-            "Cash and bank payments already on the books. Open a payment to see whether it has been matched on a bank statement."
+            "Cash and bank payments already on the books. Record a payment to tick the bills it covers."
         );
+    }
+
+    async onClickNewPayment() {
+        await this.actionService.doAction("avea_till.action_avea_pay_bills_wizard");
     }
 
     _getActionDomain() {

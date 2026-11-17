@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_supplier_pay_bills_wizard_form" model="ir.ui.view">
+        <field name="name">avea.supplier.pay.bills.wizard.form</field>
+        <field name="model">avea.supplier.pay.bills.wizard</field>
+        <field name="arch" type="xml">
+            <form string="New payment" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--supplier o_avea_pay_bills_wizard">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="available_journal_ids" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Suppliers</span>
+                            <h1 class="o_avea_workspace_title">New payment</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Choose the supplier and date, then tick the bills this cash or EFT should cover.
+                                You can pay a bill in full or in part. One payment can cover several bills.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="o_avea_stock_product_panel">
+                        <h2 class="o_avea_workspace_section_title">Payment</h2>
+                        <div class="o_avea_stock_product_fields">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Supplier</span>
+                                <field
+                                    name="partner_id"
+                                    nolabel="1"
+                                    options="{'no_create': True, 'no_open': True}"
+                                    placeholder="Choose supplier"
+                                    context="{'res_partner_search_mode': 'supplier', 'default_supplier_rank': 1}"
+                                />
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Paid on</span>
+                                <field name="pay_date" nolabel="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Pay from</span>
+                                <field
+                                    name="journal_id"
+                                    nolabel="1"
+                                    options="{'no_create': True, 'no_open': True}"
+                                    placeholder="Cash or bank"
+                                />
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Reference</span>
+                                <field name="payment_ref" nolabel="1" placeholder="Optional — their EFT reference"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="o_avea_stock_product_panel">
+                        <h2 class="o_avea_workspace_section_title">Bills to pay</h2>
+                        <p class="text-muted o_avea_supplier_open_hint" invisible="line_ids">
+                            Choose a supplier to see their open bills.
+                        </p>
+                        <field name="line_ids" nolabel="1" invisible="not line_ids">
+                            <list
+                                create="false"
+                                delete="false"
+                                editable="bottom"
+                                class="o_avea_pay_bills_lines"
+                            >
+                                <field name="currency_id" column_invisible="True"/>
+                                <field name="bill_id" column_invisible="True"/>
+                                <field name="pay" string="Pay"/>
+                                <field name="bill_date" string="Date" readonly="1"/>
+                                <field name="bill_due" string="Due" optional="show" readonly="1"/>
+                                <field name="bill_label" string="What this is" readonly="1"/>
+                                <field name="bill_ref" string="Their invoice" readonly="1"/>
+                                <field name="amount_due" string="Still open" widget="monetary" readonly="1"/>
+                                <field name="amount" string="Pay now" widget="monetary"/>
+                            </list>
+                        </field>
+                    </div>
+                    <div class="o_avea_stock_product_panel" invisible="not line_ids">
+                        <div class="o_avea_stock_product_fields">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Bills selected</span>
+                                <field name="selected_count" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Payment total</span>
+                                <field name="amount_total" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                        </div>
+                    </div>
+                    <footer class="o_avea_stock_footer">
+                        <button string="Cancel" special="cancel" class="btn-secondary"/>
+                        <button name="action_pay" type="object" string="Record payment" class="btn-primary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_pay_bills_wizard" model="ir.actions.act_window">
+        <field name="name">New payment</field>
+        <field name="res_model">avea.supplier.pay.bills.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_avea_supplier_pay_bills_wizard_form"/>
+        <field name="target">new</field>
+        <field name="context">{'avea_supplier_workspace': True}</field>
+    </record>
+
+</odoo>

@@ -217,6 +217,24 @@ class ResPartnerSupplierCentre(models.Model):
             "target": "current",
         }
 
+    def action_avea_pay_bills(self):
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_pay_bills_wizard"
+        )
+        ctx = action.get("context") or {}
+        if isinstance(ctx, str):
+            ctx = safe_eval(ctx, {"uid": self.env.uid})
+        ctx = dict(ctx)
+        ctx.update(
+            {
+                "avea_supplier_workspace": True,
+                "default_partner_id": self.id,
+            }
+        )
+        action["context"] = ctx
+        return action
+
     def action_avea_open_supplier_bills(self):
         self.ensure_one()
         action = self.env["ir.actions.act_window"]._for_xml_id(

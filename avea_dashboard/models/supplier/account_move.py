@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools.safe_eval import safe_eval
 
 
 class AccountMoveSupplierBill(models.Model):
@@ -216,6 +217,25 @@ class AccountMoveSupplierBill(models.Model):
         for extra in domains[1:]:
             combined = ["|"] + combined + extra
         return combined
+
+    @api.model
+    def action_avea_pay_bills(self):
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_pay_bills_wizard"
+        )
+        ctx = action.get("context") or {}
+        if isinstance(ctx, str):
+            ctx = safe_eval(ctx, {"uid": self.env.uid})
+        ctx = dict(ctx)
+        ctx["avea_supplier_workspace"] = True
+        moves = self.filtered(lambda move: move.move_type == "in_invoice")
+        if len(moves) == 1:
+            ctx["default_partner_id"] = moves.partner_id.id
+            ctx["default_bill_id"] = moves.id
+        elif len(moves.mapped("partner_id")) == 1:
+            ctx["default_partner_id"] = moves.partner_id.id
+        action["context"] = ctx
+        return action
 
     @api.model
     def action_avea_open_bills(self):

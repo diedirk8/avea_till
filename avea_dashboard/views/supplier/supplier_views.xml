@@ -107,10 +107,17 @@
                         </div>
                         <div class="o_avea_customer_hero_actions">
                             <button
+                                string="Pay bills"
+                                name="action_avea_pay_bills"
+                                type="object"
+                                class="btn btn-primary"
+                                invisible="not id"
+                            />
+                            <button
                                 string="Receive stock"
                                 name="action_avea_receive_stock"
                                 type="object"
-                                class="btn btn-primary"
+                                class="btn btn-secondary"
                                 invisible="not id"
                             />
                             <button

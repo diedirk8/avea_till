@@ -197,3 +197,76 @@ class TestAveaSupplierBills(TestPoSCommon):
         partner_payments = self.partner.action_avea_open_supplier_payments()
         self.assertEqual(partner_payments["res_model"], "account.bank.statement.line")
         self.assertIn(("partner_id", "=", self.partner.id), partner_payments["domain"])
+
+    def test_pay_bills_wizard_one_payment_covers_two_bills(self):
+        today = fields.Date.context_today(self.env.user)
+        first = self._create_vendor_move(
+            "in_invoice", 400.0, "BIO-1", today, due=today + timedelta(days=7)
+        )
+        second = self._create_vendor_move(
+            "in_invoice", 410.0, "BIO-2", today, due=today + timedelta(days=14)
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        action = self.partner.action_avea_pay_bills()
+        self.assertEqual(action["res_model"], "avea.supplier.pay.bills.wizard")
+        wizard = (
+            self.env["avea.supplier.pay.bills.wizard"]
+            .with_context(**action["context"])
+            .create(
+                {
+                    "partner_id": self.partner.id,
+                    "pay_date": today,
+                    "journal_id": journal.id,
+                    "payment_ref": "Biofarm EFT",
+                }
+            )
+        )
+        self.assertGreaterEqual(len(wizard.line_ids), 2)
+        for line in wizard.line_ids.filtered(lambda rec: rec.bill_id in (first, second)):
+            line.pay = True
+            line.amount = line.bill_id.amount_residual
+        result = wizard.action_pay()
+        first.invalidate_recordset()
+        second.invalidate_recordset()
+        self.assertTrue(first.currency_id.is_zero(first.amount_residual))
+        self.assertTrue(second.currency_id.is_zero(second.amount_residual))
+        payment = self.env["account.bank.statement.line"].browse(result["res_id"])
+        self.assertAlmostEqual(payment.avea_paid_amount, 810.0, places=2)
+        self.assertEqual(payment.partner_id, self.partner)
+        self.assertTrue(payment.avea_is_supplier_payment)
+
+    def test_pay_bills_wizard_partial_amount_on_one_bill(self):
+        today = fields.Date.context_today(self.env.user)
+        full = self._create_vendor_move(
+            "in_invoice", 250.0, "PART-FULL", today, due=today + timedelta(days=7)
+        )
+        partial = self._create_vendor_move(
+            "in_invoice", 400.0, "PART-OPEN", today, due=today + timedelta(days=7)
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        wizard = self.env["avea.supplier.pay.bills.wizard"].create(
+            {
+                "partner_id": self.partner.id,
+                "pay_date": today,
+                "journal_id": journal.id,
+            }
+        )
+        for line in wizard.line_ids:
+            if line.bill_id == full:
+                line.pay = True
+                line.amount = 250.0
+            elif line.bill_id == partial:
+                line.pay = True
+                line.amount = 100.0
+            else:
+                line.pay = False
+                line.amount = 0.0
+        wizard.action_pay()
+        full.invalidate_recordset()
+        partial.invalidate_recordset()
+        self.assertTrue(full.currency_id.is_zero(full.amount_residual))
+        self.assertAlmostEqual(partial.amount_residual, 300.0, places=2)

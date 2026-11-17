@@ -248,7 +248,7 @@
                 No supplier payments yet
             </p>
             <p>
-                Payments appear here when you mark a bill paid from cash or bank.
+                Record a payment from cash or bank, then tick the bills it covers.
             </p>
         </field>
     </record>

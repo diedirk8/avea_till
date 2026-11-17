@@ -75,6 +75,12 @@ class AccountBankStatementLine(models.Model):
         return action
 
     @api.model
+    def action_avea_new_payment(self):
+        return self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_pay_bills_wizard"
+        )
+
+    @api.model
     def action_avea_open_payments(self):
         return self.env["ir.actions.act_window"]._for_xml_id(
             "avea_till.action_avea_supplier_payments"

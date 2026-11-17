@@ -7,6 +7,7 @@ import { registry } from "@web/core/registry";
 import { debounce } from "@web/core/utils/timing";
 import { useState, onMounted, onWillUnmount } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
+import { useService } from "@web/core/utils/hooks";
 
 const ACTION_MANAGER_SCROLL_CLASS = "o_avea_customer_list_action_manager";
 const BODY_PAGE_CLASS = "o_avea_customer_list_page";
@@ -41,6 +42,7 @@ export class AveaBillListController extends ListController {
 
     setup() {
         super.setup();
+        this.actionService = useService("action");
         this.filterState = useState({
             searchText: "",
             status: "all",
@@ -81,8 +83,12 @@ export class AveaBillListController extends ListController {
 
     get listSubtitle() {
         return _t(
-            "Recent supplier bills, paid and unpaid. Search by supplier, their invoice, or what the bill is for."
+            "Recent supplier bills, paid and unpaid. Record a payment to tick the bills it covers."
         );
+    }
+
+    async onClickNewPayment() {
+        await this.actionService.doAction("avea_till.action_avea_pay_bills_wizard");
     }
 
     _getActionDomain() {

@@ -11,6 +11,11 @@
                             <h1 class="o_avea_workspace_title" t-esc="listTitle"/>
                             <p class="o_avea_workspace_subtitle" t-esc="listSubtitle"/>
                         </div>
+                        <div class="o_avea_customer_list_actions">
+                            <button type="button" class="btn btn-primary" t-on-click="() => this.onClickNewPayment()">
+                                New payment
+                            </button>
+                        </div>
                     </div>
 
                     <div class="o_avea_customer_list_filters">

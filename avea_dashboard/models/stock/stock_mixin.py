@@ -197,6 +197,124 @@ class AveaStockMixin(models.AbstractModel):
             to_reconcile.sudo().reconcile()
         return statement_line
 
+    def _avea_pay_vendor_bills(
+        self, allocations, journal, partner, company, pay_date, payment_ref
+    ):
+        """Pay several vendor bills with one cash/bank statement line.
+
+        ``allocations`` is a list of ``(bill, amount)`` pairs. Partial amounts
+        are allowed. The statement line total is the sum, so one EFT can cover
+        several bills for bank matching.
+        """
+        if not allocations:
+            return self.env["account.bank.statement.line"]
+        currency = allocations[0][0].currency_id
+        payable = self._avea_supplier_payable_account(partner, company)
+        cleaned = []
+        for bill, amount in allocations:
+            pay_amount = currency.round(amount or 0.0)
+            if currency.is_zero(pay_amount):
+                continue
+            residual = bill.amount_residual
+            if currency.compare_amounts(pay_amount, residual) > 0:
+                raise UserError(
+                    _("You cannot pay more than the amount still open on %s.")
+                    % (bill.ref or bill.name or _("this bill"))
+                )
+            cleaned.append((bill, pay_amount))
+        if not cleaned:
+            return self.env["account.bank.statement.line"]
+        total = currency.round(sum(amount for _bill, amount in cleaned))
+        refs = [bill.ref or bill.name for bill, _amount in cleaned if bill.ref or bill.name]
+        statement_line = (
+            self.env["account.bank.statement.line"]
+            .sudo()
+            .with_context(no_retrieve_partner=True)
+            .create(
+                {
+                    "journal_id": journal.id,
+                    "amount": -total,
+                    "date": pay_date,
+                    "payment_ref": (payment_ref or ", ".join(refs) or _("Supplier payment"))[:255],
+                    "partner_id": partner.id,
+                    "counterpart_account_id": payable.id,
+                }
+            )
+        )
+        for bill, pay_amount in cleaned:
+            self._avea_apply_statement_line_to_bill(
+                statement_line, bill, payable, currency, pay_amount
+            )
+        return statement_line
+
+    def _avea_apply_statement_line_to_bill(
+        self, statement_line, bill, payable, currency, amount
+    ):
+        amount = currency.round(amount or 0.0)
+        if currency.is_zero(amount):
+            return
+        bill_lines = bill.line_ids.filtered(
+            lambda line: line.account_id == payable and not line.reconciled
+        )
+        leftover = amount
+        for bill_line in bill_lines:
+            if currency.is_zero(leftover):
+                break
+            payment_line = statement_line.move_id.line_ids.filtered(
+                lambda line: line.account_id == payable and not line.reconciled
+            )[:1]
+            if not payment_line:
+                raise UserError(_("Could not apply this payment to %s.") % (bill.ref or bill.name))
+            bill_left = abs(bill_line.amount_residual_currency or bill_line.amount_residual)
+            pay_left = abs(payment_line.amount_residual_currency or payment_line.amount_residual)
+            apply = min(leftover, bill_left, pay_left)
+            apply = currency.round(apply)
+            if currency.is_zero(apply):
+                continue
+            self._avea_reconcile_aml_amount(payment_line, bill_line, apply, currency)
+            leftover = currency.round(leftover - apply)
+
+    def _avea_reconcile_aml_amount(self, payment_line, bill_line, amount, currency):
+        """Reconcile ``amount`` of a payment AML onto a bill payable AML."""
+        bill_left = abs(bill_line.amount_residual_currency or bill_line.amount_residual)
+        pay_left = abs(payment_line.amount_residual_currency or payment_line.amount_residual)
+        apply = currency.round(min(amount, bill_left, pay_left))
+        if currency.is_zero(apply):
+            return
+        amls = payment_line | bill_line
+        if (
+            currency.compare_amounts(apply, bill_left) >= 0
+            or currency.compare_amounts(apply, pay_left) >= 0
+        ):
+            amls.sudo().reconcile()
+            return
+        bill_sign = 1 if bill_line.amount_residual >= 0 else -1
+        bill_curr_sign = 1 if bill_line.amount_residual_currency >= 0 else -1
+        values_list = [
+            {
+                "aml": payment_line,
+                "amount_residual": payment_line.amount_residual,
+                "amount_residual_currency": payment_line.amount_residual_currency,
+                "parent_state": payment_line.parent_state,
+            },
+            {
+                "aml": bill_line,
+                "amount_residual": apply * bill_sign,
+                "amount_residual_currency": apply * bill_curr_sign,
+                "parent_state": bill_line.parent_state,
+            },
+        ]
+        pre = amls._reconcile_pre_hook()
+        results, _fully = amls._prepare_reconciliation_amls(values_list)
+        partials_vals = [
+            result["partial_values"]
+            for result in results
+            if result.get("partial_values")
+        ]
+        if partials_vals:
+            self.env["account.partial.reconcile"].sudo().create(partials_vals)
+        amls._reconcile_post_hook(pre)
+
     @api.model
     def _avea_journal_from_bill_payment(self, bill):
         """Resolve cash/bank journal from how the vendor bill was reconciled."""

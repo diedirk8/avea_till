@@ -23,4 +23,8 @@
     .o_avea_supplier_payment_panel .btn-primary {
         margin-top: 0.25rem;
     }
+
+    &.o_avea_pay_bills_wizard .o_list_renderer {
+        max-height: 24rem;
+    }
 }
