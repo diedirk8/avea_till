@@ -106,12 +106,6 @@ class AveaOperationalExpenseWizard(models.TransientModel):
     def default_get(self, fields_list):
         values = super().default_get(fields_list)
         ctx = self.env.context
-        if "paid_from_journal_id" in fields_list and not values.get(
-            "paid_from_journal_id"
-        ):
-            journal = self._avea_default_paid_from_journal(self.env.company)
-            if journal:
-                values["paid_from_journal_id"] = journal.id
         role = ctx.get("avea_booking_partner_role")
         if role and "booking_partner_role" in fields_list:
             values["booking_partner_role"] = role
@@ -131,9 +125,7 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         journal = self.paid_from_journal_id
         allowed = self._avea_paid_from_journals(self.company_id)
         if journal and journal not in allowed:
-            self.paid_from_journal_id = self._avea_default_paid_from_journal(
-                self.company_id
-            )
+            self.paid_from_journal_id = False
 
     @api.model
     def action_open_wizard(self):

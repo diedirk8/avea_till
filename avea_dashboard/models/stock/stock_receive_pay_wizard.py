@@ -25,7 +25,6 @@ class AveaStockReceivePayWizard(models.TransientModel):
     journal_id = fields.Many2one(
         "account.journal",
         string="Pay from",
-        required=True,
         domain="[('id', 'in', available_journal_ids)]",
     )
     available_journal_ids = fields.Many2many(

@@ -81,12 +81,6 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
         company = self.env["res.company"].browse(
             values.get("company_id") or self.env.company.id
         )
-        journals = company.sudo()._avea_expense_journals() if company else self.env["account.journal"]
-        default_journal = journals.filtered(
-            lambda journal: journal.type == "cash"
-        )[:1] or journals[:1]
-        if default_journal:
-            values.setdefault("journal_id", default_journal.id)
         if partner and "line_ids" in fields_list:
             values["line_ids"] = self._avea_line_commands(
                 partner,

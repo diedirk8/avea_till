@@ -29,6 +29,7 @@
                         <field
                             name="received_in_journal_id"
                             options="{'no_create': True, 'no_open': True}"
+                            placeholder="Choose cash or bank"
                         />
                         <field name="currency_id" invisible="1"/>
                     </group>

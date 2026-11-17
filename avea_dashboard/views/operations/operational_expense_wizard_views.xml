@@ -43,6 +43,7 @@
                         <field
                             name="paid_from_journal_id"
                             options="{'no_create': True, 'no_open': True}"
+                            placeholder="Choose cash or bank"
                         />
                         <field name="currency_id" invisible="1"/>
                         <field name="company_id" groups="base.group_multi_company"/>

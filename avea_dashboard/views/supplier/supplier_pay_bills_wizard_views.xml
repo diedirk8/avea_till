@@ -43,7 +43,8 @@
                                     name="journal_id"
                                     nolabel="1"
                                     options="{'no_create': True, 'no_open': True}"
-                                    placeholder="Cash or bank"
+                                    required="1"
+                                    placeholder="Choose cash or bank"
                                 />
                             </div>
                             <div class="o_avea_workspace_info_item">

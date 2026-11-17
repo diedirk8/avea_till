@@ -79,12 +79,7 @@ class AveaWithdrawCashWizard(models.TransientModel):
 
     @api.model
     def default_get(self, fields_list):
-        values = super().default_get(fields_list)
-        if "cash_journal_id" in fields_list and not values.get("cash_journal_id"):
-            journal = self._avea_default_cash_journal(self.env.company)
-            if journal:
-                values["cash_journal_id"] = journal.id
-        return values
+        return super().default_get(fields_list)
 
     @api.constrains("amount")
     def _check_amount_positive(self):
@@ -103,7 +98,7 @@ class AveaWithdrawCashWizard(models.TransientModel):
         journal = self.cash_journal_id
         allowed = self._avea_cash_journals(self.company_id)
         if journal and journal not in allowed:
-            self.cash_journal_id = self._avea_default_cash_journal(self.company_id)
+            self.cash_journal_id = False
 
     @api.onchange("withdrawal_purpose")
     def _onchange_withdrawal_purpose(self):

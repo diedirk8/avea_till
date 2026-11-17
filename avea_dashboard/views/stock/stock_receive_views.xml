@@ -337,6 +337,7 @@
                                             nolabel="1"
                                             options="{'no_create': True, 'no_open': True}"
                                             required="mark_as_paid"
+                                            placeholder="Choose cash or bank"
                                         />
                                     </div>
                                 </div>

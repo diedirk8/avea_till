@@ -18,6 +18,7 @@
                         <field
                             name="cash_journal_id"
                             options="{'no_create': True, 'no_open': True}"
+                            placeholder="Choose cash or bank"
                         />
                         <field name="withdrawal_purpose" widget="radio"/>
                         <field

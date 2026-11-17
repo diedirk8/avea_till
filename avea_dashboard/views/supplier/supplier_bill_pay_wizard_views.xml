@@ -71,7 +71,7 @@
                                     name="journal_id"
                                     nolabel="1"
                                     options="{'no_create': True, 'no_open': True}"
-                                    placeholder="Cash or bank"
+                                    placeholder="Choose cash or bank"
                                 />
                             </div>
                         </div>

@@ -136,16 +136,6 @@ class AveaSupplierBillPayWizard(models.TransientModel):
         if bill:
             values.setdefault("amount", bill.amount_residual)
             values.setdefault("pay_date", fields.Date.context_today(self))
-            journals = (
-                bill.company_id.sudo()._avea_expense_journals()
-                if bill.company_id
-                else self.env["account.journal"]
-            )
-            default_journal = journals.filtered(
-                lambda journal: journal.type == "cash"
-            )[:1] or journals[:1]
-            if default_journal:
-                values.setdefault("journal_id", default_journal.id)
         return values
 
     def action_pay(self):

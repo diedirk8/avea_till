@@ -323,14 +323,6 @@ class AccountMoveSupplierBill(models.Model):
         self.ensure_one()
         if not self.avea_can_pay_bill:
             raise UserError(_("This bill is already paid or is not a supplier bill."))
-        journals = (
-            self.company_id.sudo()._avea_expense_journals()
-            if self.company_id
-            else self.env["account.journal"]
-        )
-        default_journal = journals.filtered(
-            lambda journal: journal.type == "cash"
-        )[:1] or journals[:1]
         wizard = (
             self.env["avea.supplier.bill.pay.wizard"]
             .sudo()
@@ -339,7 +331,6 @@ class AccountMoveSupplierBill(models.Model):
                     "bill_id": self.id,
                     "amount": self.amount_residual,
                     "pay_date": fields.Date.context_today(self),
-                    "journal_id": default_journal.id if default_journal else False,
                 }
             )
         )

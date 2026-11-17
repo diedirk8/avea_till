@@ -226,6 +226,44 @@ class TestAveaSupplierBills(TestPoSCommon):
         self.assertEqual(partner_payments["res_model"], "account.bank.statement.line")
         self.assertIn(("partner_id", "=", self.partner.id), partner_payments["domain"])
 
+    def test_payment_journals_start_blank(self):
+        receive_defaults = self.env["avea.stock.receive"].default_get(
+            ["paid_from_journal_id"]
+        )
+        self.assertFalse(receive_defaults.get("paid_from_journal_id"))
+        pay_defaults = self.env["avea.supplier.pay.bills.wizard"].default_get(
+            ["journal_id", "company_id", "pay_date"]
+        )
+        self.assertFalse(pay_defaults.get("journal_id"))
+        expense_defaults = self.env["avea.operational.expense.wizard"].default_get(
+            ["paid_from_journal_id"]
+        )
+        self.assertFalse(expense_defaults.get("paid_from_journal_id"))
+        withdraw_defaults = self.env["avea.withdraw.cash.wizard"].default_get(
+            ["cash_journal_id"]
+        )
+        self.assertFalse(withdraw_defaults.get("cash_journal_id"))
+        income_defaults = self.env["avea.operational.income.wizard"].default_get(
+            ["received_in_journal_id"]
+        )
+        self.assertFalse(income_defaults.get("received_in_journal_id"))
+        transfer_defaults = self.env["avea.money.transfer.wizard"].default_get(
+            ["from_journal_id", "to_journal_id"]
+        )
+        self.assertFalse(transfer_defaults.get("from_journal_id"))
+        self.assertFalse(transfer_defaults.get("to_journal_id"))
+
+    def test_pay_supplier_bill_wizard_starts_without_journal(self):
+        today = fields.Date.context_today(self.env.user)
+        bill = self._create_vendor_move(
+            "in_invoice", 90.0, "BLANK-1", today, due=today + timedelta(days=7)
+        )
+        action = bill.action_avea_pay_supplier_bill()
+        wizard = self.env["avea.supplier.bill.pay.wizard"].browse(action["res_id"])
+        self.assertFalse(wizard.journal_id)
+        with self.assertRaises(UserError):
+            wizard.action_pay()
+
     def test_pay_bills_wizard_one_payment_covers_two_bills(self):
         today = fields.Date.context_today(self.env.user)
         first = self._create_vendor_move(

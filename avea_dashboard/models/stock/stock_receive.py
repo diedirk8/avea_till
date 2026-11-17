@@ -738,12 +738,6 @@ class AveaStockReceive(models.Model):
         values = super().default_get(fields_list)
         if "user_id" in fields_list and not values.get("user_id"):
             values["user_id"] = self.env.user.id
-        if "paid_from_journal_id" in fields_list and not values.get(
-            "paid_from_journal_id"
-        ):
-            journal = self._avea_default_paid_from_journal(self.env.company)
-            if journal:
-                values["paid_from_journal_id"] = journal.id
         return values
 
     @api.model
@@ -805,7 +799,7 @@ class AveaStockReceive(models.Model):
     def _onchange_company_id_paid_from(self):
         allowed = self.available_journal_ids
         if self.paid_from_journal_id and self.paid_from_journal_id not in allowed:
-            self.paid_from_journal_id = self._avea_default_paid_from_journal(self.company_id)
+            self.paid_from_journal_id = False
 
     @api.onchange("add_new_supplier")
     def _onchange_add_new_supplier(self):
@@ -1038,16 +1032,12 @@ class AveaStockReceive(models.Model):
         self.ensure_one()
         if not self.can_pay_bill:
             raise UserError(_("This bill is already paid or has no balance due."))
-        journal = self.paid_from_journal_id or self._avea_default_paid_from_journal(
-            self.company_id
-        )
         wizard = (
             self.env["avea.stock.receive.pay.wizard"]
             .sudo()
             .create(
                 {
                     "receive_id": self.id,
-                    "journal_id": journal.id if journal else False,
                 }
             )
         )
