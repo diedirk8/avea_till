@@ -9,6 +9,7 @@ class AccountMoveSupplierBill(models.Model):
     avea_supplier_bill_label = fields.Char(
         string="What this is",
         compute="_compute_avea_supplier_bill_info",
+        search="_search_avea_supplier_bill_label",
     )
     avea_supplier_bill_source = fields.Selection(
         selection=[
@@ -19,6 +20,7 @@ class AccountMoveSupplierBill(models.Model):
         ],
         string="Bill type",
         compute="_compute_avea_supplier_bill_info",
+        search="_search_avea_supplier_bill_source",
     )
     avea_linked_receive_id = fields.Many2one(
         "avea.stock.receive",
@@ -27,6 +29,22 @@ class AccountMoveSupplierBill(models.Model):
     )
     avea_can_pay_bill = fields.Boolean(
         compute="_compute_avea_supplier_bill_info",
+    )
+    avea_bill_status = fields.Selection(
+        selection=[
+            ("open", "Open"),
+            ("overdue", "Overdue"),
+            ("paid", "Paid"),
+            ("credit", "Credit"),
+        ],
+        string="Status",
+        compute="_compute_avea_bill_status",
+        search="_search_avea_bill_status",
+    )
+    avea_amount_paid = fields.Monetary(
+        string="Paid",
+        currency_field="currency_id",
+        compute="_compute_avea_bill_status",
     )
 
     @api.depends(
@@ -77,6 +95,129 @@ class AccountMoveSupplierBill(models.Model):
             move.avea_supplier_bill_label = (
                 move.ref or move.invoice_origin or move.name or _("Supplier bill")
             )
+
+    def _search_avea_supplier_bill_label(self, operator, value):
+        return [
+            "|",
+            "|",
+            ("ref", operator, value),
+            ("name", operator, value),
+            ("invoice_origin", operator, value),
+        ]
+
+    def _search_avea_supplier_bill_source(self, operator, value):
+        if operator != "=":
+            return [("id", "=", False)]
+        if value == "credit":
+            return [("move_type", "=", "in_refund")]
+        stock_bills = (
+            self.env["avea.stock.receive"]
+            .sudo()
+            .search([("bill_id", "!=", False)])
+            .mapped("bill_id")
+        )
+        if value == "stock":
+            return [("id", "in", stock_bills.ids)]
+        if value == "expense":
+            return [("invoice_origin", "ilike", "operational expense")]
+        if value == "bill":
+            return [
+                ("move_type", "=", "in_invoice"),
+                ("id", "not in", stock_bills.ids),
+                ("invoice_origin", "not ilike", "operational expense"),
+            ]
+        return [("id", "=", False)]
+
+    @api.depends(
+        "move_type",
+        "invoice_date",
+        "invoice_date_due",
+        "amount_residual",
+        "amount_total",
+        "currency_id",
+    )
+    def _compute_avea_bill_status(self):
+        today = fields.Date.context_today(self)
+        for move in self:
+            paid = move.amount_total - move.amount_residual
+            move.avea_amount_paid = move.currency_id.round(paid) if move.currency_id else paid
+            if move.move_type == "in_refund":
+                move.avea_bill_status = "credit"
+                continue
+            if not move.currency_id or move.currency_id.is_zero(move.amount_residual):
+                move.avea_bill_status = "paid"
+                continue
+            due = move.invoice_date_due or move.invoice_date
+            if due and due < today:
+                move.avea_bill_status = "overdue"
+            else:
+                move.avea_bill_status = "open"
+
+    def _search_avea_bill_status(self, operator, value):
+        if operator not in ("=", "in", "!="):
+            return []
+        values = value if isinstance(value, (list, tuple)) else [value]
+        if operator == "!=":
+            values = [
+                status
+                for status, _label in self._fields["avea_bill_status"].selection
+                if status not in values
+            ]
+        today = fields.Date.context_today(self)
+        domains = []
+        for status in values:
+            if status == "credit":
+                domains.append(
+                    [("move_type", "=", "in_refund"), ("state", "=", "posted")]
+                )
+            elif status == "paid":
+                domains.append(
+                    [
+                        ("move_type", "=", "in_invoice"),
+                        ("state", "=", "posted"),
+                        ("amount_residual", "=", 0),
+                    ]
+                )
+            elif status == "overdue":
+                domains.append(
+                    [
+                        ("move_type", "=", "in_invoice"),
+                        ("state", "=", "posted"),
+                        ("amount_residual", "!=", 0),
+                        "|",
+                        ("invoice_date_due", "<", today),
+                        "&",
+                        ("invoice_date_due", "=", False),
+                        ("invoice_date", "<", today),
+                    ]
+                )
+            elif status == "open":
+                domains.append(
+                    [
+                        ("move_type", "=", "in_invoice"),
+                        ("state", "=", "posted"),
+                        ("amount_residual", "!=", 0),
+                        "|",
+                        ("invoice_date_due", ">=", today),
+                        "&",
+                        ("invoice_date_due", "=", False),
+                        "|",
+                        ("invoice_date", "=", False),
+                        ("invoice_date", ">=", today),
+                    ]
+                )
+        if not domains:
+            return [("id", "=", False)]
+        combined = domains[0]
+        for extra in domains[1:]:
+            combined = ["|"] + combined + extra
+        return combined
+
+    @api.model
+    def action_avea_open_bills(self):
+        return self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_bills"
+        )
 
     def _avea_use_supplier_bill_form(self):
         self.ensure_one()

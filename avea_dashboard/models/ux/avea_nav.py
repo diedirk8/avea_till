@@ -190,6 +190,14 @@ class AveaNavMixin(models.AbstractModel):
                         "label": "Suppliers",
                         "menu_xmlid": "avea_till.menu_avea_supplier_centre",
                     },
+                    {
+                        "label": "Bills",
+                        "menu_xmlid": "avea_till.menu_avea_bills",
+                    },
+                    {
+                        "label": "Payments",
+                        "menu_xmlid": "avea_till.menu_avea_supplier_payments",
+                    },
                 ],
             },
             {

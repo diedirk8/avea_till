@@ -41,3 +41,4 @@ from . import test_avea_nav
 from . import test_avea_user_access
 from . import test_customer_centre
 from . import test_supplier_centre
+from . import test_supplier_bills

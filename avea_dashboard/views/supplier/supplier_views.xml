@@ -102,7 +102,7 @@
                                 <field name="name" nolabel="1" placeholder="Supplier name" class="o_avea_customer_name_title"/>
                             </h1>
                             <p class="o_avea_workspace_section_subtitle">
-                                Outstanding bills, contact, products, and receipts.
+                                Outstanding bills, payments, contact, products, and receipts.
                             </p>
                         </div>
                         <div class="o_avea_customer_hero_actions">
@@ -123,6 +123,20 @@
                             <button
                                 string="Products"
                                 name="action_avea_open_supplier_products"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Bills"
+                                name="action_avea_open_supplier_bills"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Payments"
+                                name="action_avea_open_supplier_payments"
                                 type="object"
                                 class="btn btn-secondary"
                                 invisible="not id"
@@ -149,9 +163,15 @@
                                 <button
                                     name="action_avea_open_what_we_owe"
                                     type="object"
-                                    string="View all"
+                                    string="View outstanding"
                                     class="btn btn-link btn-sm"
                                     invisible="not avea_open_vendor_move_ids"
+                                />
+                                <button
+                                    name="action_avea_open_supplier_bills"
+                                    type="object"
+                                    string="All bills"
+                                    class="btn btn-link btn-sm"
                                 />
                             </div>
                             <p class="text-muted o_avea_supplier_open_hint" invisible="not avea_open_vendor_move_ids">
@@ -410,6 +430,12 @@
                                 invisible="not avea_linked_receive_id"
                             />
                             <button
+                                string="Back to bills"
+                                name="action_avea_open_bills"
+                                type="object"
+                                class="btn btn-secondary"
+                            />
+                            <button
                                 string="Back to supplier"
                                 name="action_avea_open_supplier"
                                 type="object"
@@ -444,6 +470,23 @@
                                     <div class="o_avea_workspace_info_item">
                                         <span class="o_avea_workspace_info_label">Date</span>
                                         <field name="invoice_date" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Due</span>
+                                        <field name="invoice_date_due" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Status</span>
+                                        <field
+                                            name="avea_bill_status"
+                                            nolabel="1"
+                                            readonly="1"
+                                            widget="badge"
+                                            decoration-warning="avea_bill_status == 'overdue'"
+                                            decoration-success="avea_bill_status == 'paid'"
+                                            decoration-info="avea_bill_status == 'open'"
+                                            decoration-muted="avea_bill_status == 'credit'"
+                                        />
                                     </div>
                                     <div class="o_avea_workspace_info_item">
                                         <span class="o_avea_workspace_info_label">Type</span>
@@ -482,6 +525,10 @@
                                     <div class="o_avea_stock_product_summary_row">
                                         <span class="o_avea_stock_product_summary_label">Total</span>
                                         <field name="amount_total" nolabel="1" widget="monetary" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Paid</span>
+                                        <field name="avea_amount_paid" nolabel="1" widget="monetary" readonly="1"/>
                                     </div>
                                     <div class="o_avea_stock_product_summary_row">
                                         <span class="o_avea_stock_product_summary_label">Still open</span>

@@ -217,6 +217,31 @@ class ResPartnerSupplierCentre(models.Model):
             "target": "current",
         }
 
+    def action_avea_open_supplier_bills(self):
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_bills"
+        )
+        action["name"] = _("Bills — %s", self.display_name)
+        action["domain"] = [
+            ("partner_id", "=", self.id),
+            ("move_type", "in", ("in_invoice", "in_refund")),
+            ("state", "=", "posted"),
+        ]
+        return action
+
+    def action_avea_open_supplier_payments(self):
+        self.ensure_one()
+        action = self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_supplier_payments"
+        )
+        action["name"] = _("Payments — %s", self.display_name)
+        action["domain"] = [
+            ("partner_id", "=", self.id),
+            ("avea_is_supplier_payment", "=", True),
+        ]
+        return action
+
     def action_avea_open_supplier_receipts(self):
         self.ensure_one()
         action = self.env["avea.stock.receive"].action_open_receive_history()

@@ -19,6 +19,7 @@ access_account_account_avea_manager,account.account.avea.manager,account.model_a
 access_account_move_avea_manager,account.move.avea.manager,account.model_account_move,avea_till.group_avea_manager,1,0,0,0
 access_avea_supplier_bill_pay_wizard,access.avea.supplier.bill.pay.wizard,model_avea_supplier_bill_pay_wizard,,1,1,1,1
 access_account_move_line_avea_manager,account.move.line.avea.manager,account.model_account_move_line,avea_till.group_avea_manager,1,0,0,0
+access_account_bank_statement_line_avea_manager,account.bank.statement.line.avea.manager,account.model_account_bank_statement_line,avea_till.group_avea_manager,1,0,0,0
 access_avea_accounting_reports_home,access.avea.accounting.reports.home,model_avea_accounting_reports_home,,1,1,1,1
 access_avea_accounting_profit_loss,access.avea.accounting.profit.loss,model_avea_accounting_profit_loss,,1,1,1,1
 access_avea_accounting_profit_loss_line,access.avea.accounting.profit.loss.line,model_avea_accounting_profit_loss_line,,1,1,1,1

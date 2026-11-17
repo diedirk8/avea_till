@@ -37,6 +37,8 @@ MANAGER_EXTRA_MENUS = {
     "avea_till.menu_avea_customer_credit",
     "avea_till.menu_avea_suppliers_hub",
     "avea_till.menu_avea_supplier_centre",
+    "avea_till.menu_avea_bills",
+    "avea_till.menu_avea_supplier_payments",
     "avea_till.menu_avea_settings",
     "avea_till.menu_avea_sales_ledger",
 }
