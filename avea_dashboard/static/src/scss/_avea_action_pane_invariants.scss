@@ -22,3 +22,20 @@
     min-width: 0;
     width: 100%;
 }
+
+// When .o_action_manager is the vertical scroller, flex children must keep full
+// pane width. display:block without width:100% shrinks to min-content (one
+// character per line with overflow-wrap:anywhere on titles).
+@mixin o_avea_page_scroll_child_unlock {
+    display: block !important;
+    flex: none !important;
+    height: auto !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    width: 100% !important;
+}

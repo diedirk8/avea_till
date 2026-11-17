@@ -111,14 +111,7 @@ body.o_avea_product_shell {
         .o_form_sheet_bg,
         .o_form_sheet,
         .o_avea_workspace_sheet {
-            display: block !important;
-            flex: none !important;
-            height: auto !important;
-            max-height: none !important;
-            min-height: 0 !important;
-            overflow: visible !important;
-            overflow-x: visible !important;
-            overflow-y: visible !important;
+            @include o_avea_page_scroll_child_unlock;
         }
     }
 
