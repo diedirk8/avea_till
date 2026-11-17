@@ -4,6 +4,7 @@ from datetime import timedelta
 from odoo import Command, fields
 from odoo.exceptions import UserError
 from odoo.tests import tagged
+from odoo.tools import OrderedSet
 from odoo.addons.point_of_sale.tests.common import TestPoSCommon
 
 
@@ -133,6 +134,24 @@ class TestAveaSupplierBills(TestPoSCommon):
         self.assertIn(overdue_bill, Move.search([("avea_bill_status", "=", "overdue")]))
         self.assertIn(paid_bill, Move.search([("avea_bill_status", "=", "paid")]))
         self.assertIn(credit, Move.search([("avea_bill_status", "=", "credit")]))
+        self.assertNotIn(open_bill, Move.search([("avea_bill_status", "=", "paid")]))
+        self.assertIn(
+            paid_bill,
+            Move.search([("avea_bill_status", "in", OrderedSet(["paid"]))]),
+        )
+        self.assertIn(
+            overdue_bill,
+            Move.search([("avea_bill_status", "in", ["overdue"])]),
+        )
+        action_domain = [
+            ("move_type", "in", ("in_invoice", "in_refund")),
+            ("state", "=", "posted"),
+        ]
+        paid = Move.search(action_domain + [("avea_bill_status", "=", "paid")])
+        self.assertIn(paid_bill, paid)
+        self.assertNotIn(open_bill, paid)
+        self.assertNotIn(overdue_bill, paid)
+        self.assertNotIn(credit, paid)
 
     def test_bills_and_payments_actions_are_wired(self):
         bills = self.env.ref("avea_till.action_avea_bills")

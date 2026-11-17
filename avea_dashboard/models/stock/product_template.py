@@ -356,9 +356,19 @@ class ProductTemplate(models.Model):
                 product.avea_stock_status = "in_stock"
 
     def _search_avea_stock_status(self, operator, value):
+        if operator in ("in", "not in"):
+            operator = "=" if operator == "in" else "!="
         if operator not in ("=", "!="):
-            raise UserError(_("Unsupported stock status search."))
-        statuses = value if isinstance(value, (list, tuple)) else [value]
+            return NotImplemented
+        if isinstance(value, str) or value is False or value is True or value is None:
+            statuses = [value]
+        elif isinstance(value, (list, tuple, set, frozenset)):
+            statuses = list(value)
+        else:
+            try:
+                statuses = list(value)
+            except TypeError:
+                statuses = [value]
 
         def domain_for(status):
             if status == "not_tracked":

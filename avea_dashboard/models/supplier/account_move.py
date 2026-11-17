@@ -1,7 +1,19 @@
 # -*- coding: utf-8 -*-
+from collections.abc import Collection
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.fields import Domain
 from odoo.tools.safe_eval import safe_eval
+
+
+def _avea_search_values(value):
+    """Unwrap Odoo 19 domain values (`in` + OrderedSet) into a plain list."""
+    if isinstance(value, str) or value is False or value is True or value is None:
+        return [value]
+    if isinstance(value, Collection):
+        return list(value)
+    return [value]
 
 
 class AccountMoveSupplierBill(models.Model):
@@ -107,27 +119,40 @@ class AccountMoveSupplierBill(models.Model):
         ]
 
     def _search_avea_supplier_bill_source(self, operator, value):
-        if operator != "=":
-            return [("id", "=", False)]
-        if value == "credit":
-            return [("move_type", "=", "in_refund")]
+        if operator not in ("=", "in", "!=", "not in"):
+            return NotImplemented
+        values = _avea_search_values(value)
         stock_bills = (
             self.env["avea.stock.receive"]
             .sudo()
             .search([("bill_id", "!=", False)])
             .mapped("bill_id")
         )
-        if value == "stock":
-            return [("id", "in", stock_bills.ids)]
-        if value == "expense":
-            return [("invoice_origin", "ilike", "operational expense")]
-        if value == "bill":
-            return [
-                ("move_type", "=", "in_invoice"),
-                ("id", "not in", stock_bills.ids),
-                ("invoice_origin", "not ilike", "operational expense"),
-            ]
-        return [("id", "=", False)]
+        parts = []
+        for item in values:
+            if item == "credit":
+                parts.append(Domain([("move_type", "=", "in_refund")]))
+            elif item == "stock":
+                parts.append(Domain([("id", "in", stock_bills.ids)]))
+            elif item == "expense":
+                parts.append(Domain([("invoice_origin", "ilike", "operational expense")]))
+            elif item == "bill":
+                parts.append(
+                    Domain(
+                        [
+                            ("move_type", "=", "in_invoice"),
+                            ("id", "not in", stock_bills.ids),
+                            ("invoice_origin", "not ilike", "operational expense"),
+                        ]
+                    )
+                )
+        if not parts:
+            result = Domain(False)
+        else:
+            result = Domain.OR(parts)
+        if operator in ("!=", "not in"):
+            return ~result
+        return result
 
     @api.depends(
         "move_type",
@@ -159,64 +184,64 @@ class AccountMoveSupplierBill(models.Model):
                 move.avea_bill_status = "open"
 
     def _search_avea_bill_status(self, operator, value):
-        if operator not in ("=", "in", "!="):
-            return []
-        values = value if isinstance(value, (list, tuple)) else [value]
-        if operator == "!=":
-            values = [
-                status
-                for status, _label in self._fields["avea_bill_status"].selection
-                if status not in values
-            ]
+        if operator not in ("=", "in", "!=", "not in"):
+            return NotImplemented
+        values = _avea_search_values(value)
         today = fields.Date.context_today(self)
         domains = []
         for status in values:
             if status == "credit":
                 domains.append(
-                    [("move_type", "=", "in_refund"), ("state", "=", "posted")]
+                    Domain(
+                        [("move_type", "=", "in_refund"), ("state", "=", "posted")]
+                    )
                 )
             elif status == "paid":
                 domains.append(
-                    [
-                        ("move_type", "=", "in_invoice"),
-                        ("state", "=", "posted"),
-                        ("amount_residual", "=", 0),
-                    ]
+                    Domain(
+                        [
+                            ("move_type", "=", "in_invoice"),
+                            ("state", "=", "posted"),
+                            ("amount_residual", "=", 0),
+                        ]
+                    )
                 )
             elif status == "overdue":
                 domains.append(
-                    [
-                        ("move_type", "=", "in_invoice"),
-                        ("state", "=", "posted"),
-                        ("amount_residual", "!=", 0),
-                        "|",
-                        ("invoice_date_due", "<", today),
-                        "&",
-                        ("invoice_date_due", "=", False),
-                        ("invoice_date", "<", today),
-                    ]
+                    Domain(
+                        [
+                            ("move_type", "=", "in_invoice"),
+                            ("state", "=", "posted"),
+                            ("amount_residual", "!=", 0),
+                            "|",
+                            ("invoice_date_due", "<", today),
+                            "&",
+                            ("invoice_date_due", "=", False),
+                            ("invoice_date", "<", today),
+                        ]
+                    )
                 )
             elif status == "open":
                 domains.append(
-                    [
-                        ("move_type", "=", "in_invoice"),
-                        ("state", "=", "posted"),
-                        ("amount_residual", "!=", 0),
-                        "|",
-                        ("invoice_date_due", ">=", today),
-                        "&",
-                        ("invoice_date_due", "=", False),
-                        "|",
-                        ("invoice_date", "=", False),
-                        ("invoice_date", ">=", today),
-                    ]
+                    Domain(
+                        [
+                            ("move_type", "=", "in_invoice"),
+                            ("state", "=", "posted"),
+                            ("amount_residual", "!=", 0),
+                            "|",
+                            ("invoice_date_due", ">=", today),
+                            "&",
+                            ("invoice_date_due", "=", False),
+                            "|",
+                            ("invoice_date", "=", False),
+                            ("invoice_date", ">=", today),
+                        ]
+                    )
                 )
-        if not domains:
-            return [("id", "=", False)]
-        combined = domains[0]
-        for extra in domains[1:]:
-            combined = ["|"] + combined + extra
-        return combined
+        result = Domain.OR(domains) if domains else Domain(False)
+        if operator in ("!=", "not in"):
+            return ~result
+        return result
 
     def action_avea_pay_bills(self):
         action = self.env["ir.actions.act_window"]._for_xml_id(

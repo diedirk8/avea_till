@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from collections.abc import Collection
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.misc import formatLang
@@ -56,7 +58,20 @@ class AccountBankStatementLine(models.Model):
             )
 
     def _search_avea_is_supplier_payment(self, operator, value):
-        positive = (operator == "=" and value) or (operator == "!=" and not value)
+        if operator in ("in", "not in"):
+            values = (
+                list(value)
+                if isinstance(value, Collection) and not isinstance(value, (str, bytes))
+                else [value]
+            )
+            truthy = any(values)
+            positive = (operator == "in" and truthy) or (
+                operator == "not in" and not truthy
+            )
+        elif operator in ("=", "!="):
+            positive = (operator == "=" and value) or (operator == "!=" and not value)
+        else:
+            return NotImplemented
         domain = [
             ("partner_id", "!=", False),
             ("journal_id.type", "in", ("bank", "cash")),
