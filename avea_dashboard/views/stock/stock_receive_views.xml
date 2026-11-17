@@ -341,8 +341,8 @@
                                     </div>
                                 </div>
                                 <ol class="o_avea_stock_payment_steps">
-                                    <li>Tick <strong>Store credit</strong> when you paid with Pets Empire animal-trade credit.</li>
-                                    <li>Tick <strong>Already issued</strong> if that credit is already on their customer account.</li>
+                                    <li>Tick <strong>Store credit</strong> and enter the amount you paid with Pets Empire animal-trade credit.</li>
+                                    <li>Tick <strong>Already issued</strong> if you already granted it — even if some was spent on a sale.</li>
                                     <li>Tick <strong>Mark as paid</strong> and choose cash or bank for any balance.</li>
                                 </ol>
                             </div>

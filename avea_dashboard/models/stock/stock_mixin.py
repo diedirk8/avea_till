@@ -336,9 +336,11 @@ class AveaStockMixin(models.AbstractModel):
         is not a supplier credit note from a stock return.
 
         If the credit was already issued, reverse the issuance expense against
-        accounts payable so the stock — not a gift — carries the cost. If it
-        was not issued yet, grant Animal Trade credit and post payable against
-        the store-credit liability.
+        accounts payable so the stock — not a gift — carries the cost. Remaining
+        wallet balance can be lower if they already spent some in the shop; this
+        path does not consume or grant wallet credit. If it was not issued yet,
+        grant Animal Trade credit and post payable against the store-credit
+        liability.
         """
         if not bill or not partner:
             return 0.0
@@ -365,17 +367,6 @@ class AveaStockMixin(models.AbstractModel):
                 _("Store Credit issuance accounting is not configured for this company.")
             )
 
-        balance = self._avea_partner_store_credit_balance(partner)
-        if already_issued:
-            if currency.compare_amounts(pay_amount, balance) > 0:
-                raise UserError(
-                    _(
-                        "Only %(amount)s store credit is on this customer's account. "
-                        "Untick “Credit already issued” to grant more, or enter a "
-                        "smaller amount.",
-                        amount=currency.format(balance),
-                    )
-                )
         partner._avea_credit_ensure_customer()
         if partner.supplier_rank < 1:
             partner.sudo().write({"supplier_rank": 1})

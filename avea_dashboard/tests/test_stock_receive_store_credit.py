@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from odoo import Command
-from odoo.exceptions import UserError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -167,17 +166,27 @@ class TestAveaStockReceiveStoreCredit(TransactionCase):
         self.assertEqual(entry.reason_id, self.reason)
         self.assertTrue(entry.account_move_id)
 
-    def test_already_issued_cannot_exceed_balance(self):
-        self._issue_credit(100.0)
+    def test_already_issued_can_exceed_remaining_after_sale(self):
+        """Wallet can be lower if they spent some credit; still settle the bill."""
+        self._issue_credit(595.0)
+        self.Ledger.create_pos_redemption(self.partner, 290.0)
+        self.partner.invalidate_recordset(["avea_credit_balance"])
+        self.assertAlmostEqual(self.partner.avea_credit_balance, 305.0, places=2)
         bill = self._create_bill(900.0)
-        with self.assertRaises(UserError):
-            self.mixin._avea_apply_store_credit_to_vendor_bill(
-                bill,
-                self.partner,
-                self.company,
-                595.0,
-                already_issued=True,
-            )
+        applied = self.mixin._avea_apply_store_credit_to_vendor_bill(
+            bill,
+            self.partner,
+            self.company,
+            595.0,
+            already_issued=True,
+            pay_date="2026-11-12",
+            payment_ref="77",
+        )
+        bill.invalidate_recordset(["amount_residual"])
+        self.partner.invalidate_recordset(["avea_credit_balance"])
+        self.assertAlmostEqual(applied, 595.0, places=2)
+        self.assertAlmostEqual(bill.amount_residual, 305.0, places=2)
+        self.assertAlmostEqual(self.partner.avea_credit_balance, 305.0, places=2)
 
     def test_supplier_bill_pay_wizard_splits_store_credit_and_eft(self):
         journal = self._pay_journal()

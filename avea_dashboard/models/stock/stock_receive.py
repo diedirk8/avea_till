@@ -448,8 +448,8 @@ class AveaStockReceive(models.Model):
     )
     store_credit_already_issued = fields.Boolean(
         string="Credit already issued",
-        help="Tick if you already issued this store credit on the customer's account. "
-        "Leave unticked to grant new store credit as payment.",
+        help="Tick if you already granted this store credit, even if some was "
+        "spent on a sale. Leave unticked to grant new store credit as payment.",
     )
     store_credit_amount = fields.Monetary(
         string="Store credit amount",
@@ -1218,18 +1218,6 @@ class AveaStockReceive(models.Model):
                 raise ValidationError(
                     _("Enter the store credit amount used to pay this supplier.")
                 )
-            if self.store_credit_already_issued:
-                balance = self.env["avea.stock.mixin"]._avea_partner_store_credit_balance(
-                    partner
-                )
-                if self.currency_id.compare_amounts(amount, balance) > 0:
-                    raise ValidationError(
-                        _(
-                            "Only %(amount)s store credit is on this customer's account. "
-                            "Untick “Credit already issued” to grant more.",
-                            amount=self.currency_id.format(balance),
-                        )
-                    )
         if self.mark_as_paid:
             self._avea_payment_journal()
 
