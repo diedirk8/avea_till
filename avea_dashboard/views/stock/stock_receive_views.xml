@@ -299,47 +299,52 @@
                                 Payment
                             </h2>
                             <div class="o_avea_stock_payment">
-                                <div class="o_avea_workspace_info_item o_avea_stock_check_row" invisible="not has_supplier_credit">
-                                    <field name="use_supplier_credit" nolabel="1"/>
-                                    <span class="o_avea_workspace_info_label">Apply supplier credit</span>
+                                <div class="o_avea_stock_payment_toggles">
+                                    <div class="o_avea_stock_toggle o_avea_stock_check_row" invisible="not has_supplier_credit">
+                                        <field name="use_supplier_credit" nolabel="1"/>
+                                        <span class="o_avea_workspace_info_label">Supplier credit</span>
+                                    </div>
+                                    <div class="o_avea_stock_toggle o_avea_stock_check_row">
+                                        <field name="use_store_credit" nolabel="1"/>
+                                        <span class="o_avea_workspace_info_label">Store credit</span>
+                                    </div>
+                                    <div class="o_avea_stock_toggle o_avea_stock_check_row" invisible="not use_store_credit">
+                                        <field name="store_credit_already_issued" nolabel="1"/>
+                                        <span class="o_avea_workspace_info_label">Already issued</span>
+                                    </div>
+                                    <div class="o_avea_stock_toggle o_avea_stock_check_row">
+                                        <field name="mark_as_paid" nolabel="1"/>
+                                        <span class="o_avea_workspace_info_label">Mark as paid</span>
+                                    </div>
                                 </div>
-                                <div class="o_avea_workspace_info_item" invisible="not has_supplier_credit">
-                                    <span class="o_avea_workspace_info_label">Credit available</span>
-                                    <field name="supplier_credit_available" nolabel="1" widget="monetary" readonly="1"/>
+                                <div class="o_avea_stock_payment_fields">
+                                    <div class="o_avea_workspace_info_item" invisible="not has_supplier_credit">
+                                        <span class="o_avea_workspace_info_label">Supplier credit available</span>
+                                        <field name="supplier_credit_available" nolabel="1" widget="monetary" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not has_store_credit">
+                                        <span class="o_avea_workspace_info_label">On customer account</span>
+                                        <field name="store_credit_available" nolabel="1" widget="monetary" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not use_store_credit">
+                                        <span class="o_avea_workspace_info_label">Store credit amount</span>
+                                        <field name="store_credit_amount" nolabel="1" widget="monetary"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not mark_as_paid">
+                                        <span class="o_avea_workspace_info_label">Paid from</span>
+                                        <field
+                                            name="paid_from_journal_id"
+                                            nolabel="1"
+                                            options="{'no_create': True, 'no_open': True}"
+                                            required="mark_as_paid"
+                                        />
+                                    </div>
                                 </div>
-                                <div class="o_avea_workspace_info_item o_avea_stock_check_row">
-                                    <field name="use_store_credit" nolabel="1"/>
-                                    <span class="o_avea_workspace_info_label">Pay with store credit</span>
-                                </div>
-                                <div class="o_avea_workspace_info_item" invisible="not has_store_credit">
-                                    <span class="o_avea_workspace_info_label">On their customer account</span>
-                                    <field name="store_credit_available" nolabel="1" widget="monetary" readonly="1"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item" invisible="not use_store_credit">
-                                    <span class="o_avea_workspace_info_label">Store credit amount</span>
-                                    <field name="store_credit_amount" nolabel="1" widget="monetary"/>
-                                </div>
-                                <div class="o_avea_workspace_info_item o_avea_stock_check_row" invisible="not use_store_credit">
-                                    <field name="store_credit_already_issued" nolabel="1"/>
-                                    <span class="o_avea_workspace_info_label">Credit already issued</span>
-                                </div>
-                                <div class="o_avea_workspace_info_item o_avea_stock_check_row">
-                                    <field name="mark_as_paid" nolabel="1"/>
-                                    <span class="o_avea_workspace_info_label">Mark as Paid</span>
-                                </div>
-                                <div class="o_avea_workspace_info_item" invisible="not mark_as_paid">
-                                    <span class="o_avea_workspace_info_label">Paid From</span>
-                                    <field
-                                        name="paid_from_journal_id"
-                                        nolabel="1"
-                                        options="{'no_create': True, 'no_open': True}"
-                                        required="mark_as_paid"
-                                    />
-                                </div>
-                                <div class="o_avea_stock_payment_hint">
-                                    <i class="fa fa-info-circle" title="Payment information" aria-hidden="true"/>
-                                    <span>Use store credit when you paid the supplier with Pets Empire credit (animal trade). If you already issued it on their customer account, keep “Credit already issued” ticked. Mark the remainder as paid from cash or bank.</span>
-                                </div>
+                                <ol class="o_avea_stock_payment_steps">
+                                    <li>Tick <strong>Store credit</strong> when you paid with Pets Empire animal-trade credit.</li>
+                                    <li>Tick <strong>Already issued</strong> if that credit is already on their customer account.</li>
+                                    <li>Tick <strong>Mark as paid</strong> and choose cash or bank for any balance.</li>
+                                </ol>
                             </div>
                         </div>
                         </div>
