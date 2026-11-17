@@ -316,8 +316,30 @@ class AveaStockMixin(models.AbstractModel):
         amls._reconcile_post_hook(pre)
 
     @api.model
+    def _avea_statement_lines_for_bill(self, bill):
+        """Cash/bank statement lines that paid this vendor bill."""
+        Statement = self.env["account.bank.statement.line"]
+        if not bill:
+            return Statement
+        amls = bill.line_ids
+        counterparts = (
+            amls.matched_debit_ids.debit_move_id
+            | amls.matched_debit_ids.credit_move_id
+            | amls.matched_credit_ids.debit_move_id
+            | amls.matched_credit_ids.credit_move_id
+        ) - amls
+        from_aml = counterparts.mapped("statement_line_id")
+        from_move = Statement.sudo().search(
+            [("move_id", "in", counterparts.move_id.ids)]
+        )
+        return from_aml | from_move
+
+    @api.model
     def _avea_journal_from_bill_payment(self, bill):
         """Resolve cash/bank journal from how the vendor bill was reconciled."""
+        lines = self._avea_statement_lines_for_bill(bill)
+        if lines[:1].journal_id:
+            return lines[:1].journal_id
         if not bill:
             return self.env["account.journal"]
         partner = bill.partner_id
@@ -342,9 +364,6 @@ class AveaStockMixin(models.AbstractModel):
                 for aml in candidates:
                     if not aml or aml.id == bill_line.id:
                         continue
-                    statement_line = aml.statement_line_id
-                    if statement_line and statement_line.journal_id:
-                        return statement_line.journal_id
                     payment = aml.payment_id
                     if payment and payment.journal_id:
                         return payment.journal_id

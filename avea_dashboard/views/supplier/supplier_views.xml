@@ -295,14 +295,22 @@
                                 nolabel="1"
                                 readonly="1"
                                 domain="[('state', '=', 'done')]"
-                                options="{'no_open': True}"
                             >
                                 <list create="false" edit="false" delete="false" default_order="received_date desc">
                                     <field name="currency_id" column_invisible="True"/>
+                                    <field name="can_delete_payment" column_invisible="True"/>
                                     <field name="received_date" string="Received"/>
                                     <field name="invoice_number" string="Invoice"/>
                                     <field name="amount_total" string="Total" widget="monetary"/>
                                     <field name="payment_status" string="Payment"/>
+                                    <button
+                                        name="action_avea_delete_receive_payment"
+                                        type="object"
+                                        string="Delete"
+                                        class="btn-link"
+                                        invisible="not can_delete_payment"
+                                        confirm="Delete this cash or bank payment? The bill will show as unpaid again."
+                                    />
                                 </list>
                             </field>
                         </div>

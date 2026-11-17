@@ -492,6 +492,9 @@ class AveaStockReceive(models.Model):
     can_pay_bill = fields.Boolean(
         compute="_compute_can_pay_bill",
     )
+    can_delete_payment = fields.Boolean(
+        compute="_compute_can_delete_payment",
+    )
     bill_residual = fields.Monetary(
         related="bill_id.amount_residual",
         currency_field="currency_id",
@@ -618,14 +621,17 @@ class AveaStockReceive(models.Model):
 
     def _avea_payment_source_label(self):
         self.ensure_one()
-        if self.paid_from_journal_id:
-            return self.paid_from_journal_id.display_name
         mixin = self.env["avea.stock.mixin"]
         journal = mixin._avea_journal_from_bill_payment(self.bill_id)
-        return journal.display_name if journal else False
+        if journal:
+            return journal.display_name
+        if self.paid_from_journal_id:
+            return self.paid_from_journal_id.display_name
+        return False
 
     @api.depends(
         "amount_total",
+        "state",
         "mark_as_paid",
         "paid_from_journal_id",
         "supplier_credit_applied",
@@ -633,27 +639,24 @@ class AveaStockReceive(models.Model):
         "bill_id",
         "bill_id.amount_residual",
         "bill_id.payment_state",
+        "bill_id.line_ids.matched_debit_ids",
+        "bill_id.line_ids.matched_credit_ids",
         "currency_id",
     )
     def _compute_payment_status(self):
+        mixin = self.env["avea.stock.mixin"]
+        Statement = self.env["account.bank.statement.line"]
         for receive in self:
             currency = receive.currency_id or receive.env.company.currency_id
             supplier = receive.supplier_credit_applied or 0.0
             store = receive.store_credit_applied or 0.0
             total = receive.amount_total or 0.0
             residual = receive.bill_id.amount_residual if receive.bill_id else 0.0
-            source = receive._avea_payment_source_label()
-            journal_amount = currency.round(total - supplier - store - residual)
-            if currency.compare_amounts(journal_amount, 0.0) < 0:
-                journal_amount = 0.0
-            if (
-                currency.is_zero(journal_amount)
-                and receive.mark_as_paid
-                and not receive.bill_id
-            ):
-                journal_amount = currency.round(total - supplier - store)
-            receive.payment_journal_amount = journal_amount
-            receive.payment_journal_label = source or _("Cash or bank")
+            payments = (
+                mixin._avea_statement_lines_for_bill(receive.bill_id)
+                if receive.bill_id
+                else Statement
+            )
 
             parts = []
             if not currency.is_zero(supplier):
@@ -664,14 +667,48 @@ class AveaStockReceive(models.Model):
                 parts.append(
                     _("Store credit %(amount)s", amount=currency.format(store))
                 )
-            if not currency.is_zero(journal_amount):
-                parts.append(
-                    _(
-                        "%(journal)s %(amount)s",
-                        journal=receive.payment_journal_label,
-                        amount=currency.format(journal_amount),
-                    )
+
+            journal_amount = 0.0
+            source = False
+            if payments:
+                journal_amount = currency.round(
+                    sum(abs(line.amount or 0.0) for line in payments)
                 )
+                source = payments[:1].journal_id.display_name
+                for journal in payments.mapped("journal_id"):
+                    amount = currency.round(
+                        sum(
+                            abs(line.amount or 0.0)
+                            for line in payments
+                            if line.journal_id == journal
+                        )
+                    )
+                    if currency.is_zero(amount):
+                        continue
+                    parts.append(
+                        _(
+                            "%(journal)s %(amount)s",
+                            journal=journal.display_name,
+                            amount=currency.format(amount),
+                        )
+                    )
+            elif receive.state != "done" and receive.mark_as_paid:
+                source = receive._avea_payment_source_label()
+                journal_amount = currency.round(total - supplier - store)
+                if currency.compare_amounts(journal_amount, 0.0) < 0:
+                    journal_amount = 0.0
+                if not currency.is_zero(journal_amount):
+                    parts.append(
+                        _(
+                            "%(journal)s %(amount)s",
+                            journal=source or _("Cash or bank"),
+                            amount=currency.format(journal_amount),
+                        )
+                    )
+
+            receive.payment_journal_amount = journal_amount
+            receive.payment_journal_label = source or _("Cash or bank")
+
             if receive.bill_id and not currency.is_zero(residual):
                 parts.append(_("Still due %(amount)s", amount=currency.format(residual)))
             if not parts:
@@ -905,6 +942,21 @@ class AveaStockReceive(models.Model):
                 and not bill.currency_id.is_zero(bill.amount_residual)
             )
 
+    @api.depends(
+        "state",
+        "bill_id",
+        "bill_id.line_ids.matched_debit_ids",
+        "bill_id.line_ids.matched_credit_ids",
+    )
+    def _compute_can_delete_payment(self):
+        mixin = self.env["avea.stock.mixin"]
+        for receive in self:
+            lines = mixin._avea_statement_lines_for_bill(receive.bill_id)
+            receive.can_delete_payment = bool(
+                receive.state == "done"
+                and lines.filtered(lambda line: line.avea_can_delete_payment)
+            )
+
     @api.depends("state", "picking_id", "purchase_order_id", "bill_id", "invoice_number")
     def _compute_can_return_stock(self):
         Return = self.env["avea.stock.return"]
@@ -967,6 +1019,20 @@ class AveaStockReceive(models.Model):
 
     def action_back_to_receive_history(self):
         return self.action_open_receive_history()
+
+    def action_avea_delete_receive_payment(self):
+        self.ensure_one()
+        mixin = self.env["avea.stock.mixin"]
+        lines = mixin._avea_statement_lines_for_bill(self.bill_id)
+        deletable = lines.filtered(lambda line: line.avea_can_delete_payment)
+        if not deletable:
+            raise UserError(
+                _("There is no cash or bank payment on this receipt to delete.")
+            )
+        for line in deletable:
+            line._avea_unlink_supplier_payment()
+        self.invalidate_recordset()
+        return True
 
     def action_open_pay_bill_wizard(self):
         self.ensure_one()

@@ -180,7 +180,8 @@ class AccountBankStatementLine(models.Model):
             lambda move: move.move_type in ("in_invoice", "in_refund")
         )
 
-    def action_avea_delete_payment(self):
+    def _avea_unlink_supplier_payment(self):
+        """Unreconcile and delete this book payment. Leaves the linked bills unpaid."""
         self.ensure_one()
         if self.avea_cleared:
             raise UserError(
@@ -193,7 +194,6 @@ class AccountBankStatementLine(models.Model):
             raise UserError(_("This is not a supplier payment."))
         bills = self._avea_paid_vendor_bills()
         partner = self.partner_id
-        env = self.env
         self.sudo().line_ids.remove_move_reconcile()
         move = self.move_id
         if move.state == "posted":
@@ -211,7 +211,11 @@ class AccountBankStatementLine(models.Model):
                 receive.sudo().write({"mark_as_paid": False})
         if partner:
             partner.invalidate_recordset()
-        return env["account.bank.statement.line"].action_avea_open_payments()
+
+    def action_avea_delete_payment(self):
+        self.ensure_one()
+        self._avea_unlink_supplier_payment()
+        return self.env["account.bank.statement.line"].action_avea_open_payments()
 
     def action_avea_open_payment_supplier(self):
         self.ensure_one()

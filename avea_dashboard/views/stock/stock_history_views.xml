@@ -48,6 +48,7 @@
                 <field name="currency_id" column_invisible="True"/>
                 <field name="can_return_stock" column_invisible="True"/>
                 <field name="can_pay_bill" column_invisible="True"/>
+                <field name="can_delete_payment" column_invisible="True"/>
                 <field name="received_date" string="Received"/>
                 <field name="partner_id" string="Supplier"/>
                 <field name="invoice_number" string="Invoice"/>
@@ -63,6 +64,14 @@
                     string="Pay bill"
                     class="btn-secondary"
                     invisible="not can_pay_bill"
+                />
+                <button
+                    name="action_avea_delete_receive_payment"
+                    type="object"
+                    string="Delete payment"
+                    class="btn-link"
+                    invisible="not can_delete_payment"
+                    confirm="Delete this cash or bank payment? The bill will show as unpaid again."
                 />
                 <button
                     name="action_return_this_stock"
@@ -92,6 +101,7 @@
                     <field name="currency_id" invisible="1"/>
                     <field name="can_return_stock" invisible="1"/>
                     <field name="can_pay_bill" invisible="1"/>
+                    <field name="can_delete_payment" invisible="1"/>
                     <field name="bill_id" invisible="1"/>
 
                     <div class="o_avea_workspace_hero">
@@ -187,6 +197,14 @@
                             string="Pay bill"
                             class="btn-primary"
                             invisible="not can_pay_bill"
+                        />
+                        <button
+                            name="action_avea_delete_receive_payment"
+                            type="object"
+                            string="Delete payment"
+                            class="btn-primary"
+                            invisible="not can_delete_payment"
+                            confirm="Delete this cash or bank payment? The bill will show as unpaid again."
                         />
                         <button
                             name="action_return_this_stock"

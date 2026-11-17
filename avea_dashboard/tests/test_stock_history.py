@@ -177,3 +177,154 @@ class TestAveaStockHistory(TransactionCase):
         )
         self.assertEqual(len(history), 1)
         self.assertEqual(history.invoice_number, "BACKFILL-INV")
+
+    def _avea_journals(self):
+        journals = self.env.company._avea_expense_journals()
+        cash = journals.filtered(lambda rec: rec.type == "cash")[:1]
+        bank = journals.filtered(lambda rec: rec.type == "bank")[:1]
+        if not cash or not bank:
+            extra = self.env["account.journal"].search(
+                [
+                    ("type", "in", ("cash", "bank")),
+                    ("company_id", "=", self.env.company.id),
+                ]
+            )
+            cash = cash or extra.filtered(lambda rec: rec.type == "cash")[:1]
+            bank = bank or extra.filtered(lambda rec: rec.type == "bank")[:1]
+        for journal in cash | bank:
+            if journal not in self.env.company.avea_expense_journal_ids:
+                self.env.company.write(
+                    {"avea_expense_journal_ids": [Command.link(journal.id)]}
+                )
+        return cash, bank
+
+    def test_done_receive_without_bill_is_unpaid_even_if_journal_was_chosen(self):
+        cash, _bank = self._avea_journals()
+        if not cash:
+            self.skipTest("No cash journal is configured")
+        picking = self._create_done_incoming_picking()
+        receive = self.env["avea.stock.receive"].create(
+            {
+                "state": "done",
+                "partner_id": self.partner.id,
+                "invoice_number": "290",
+                "invoice_date": "2026-09-09",
+                "received_date": "2026-09-09",
+                "picking_id": picking.id,
+                "mark_as_paid": False,
+                "paid_from_journal_id": cash.id,
+                "line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1.0,
+                            "price_unit": 80.0,
+                        }
+                    )
+                ],
+            }
+        )
+        receive._compute_payment_status()
+        receive._compute_can_delete_payment()
+        self.assertEqual(receive.payment_status, "Unpaid")
+        self.assertFalse(receive.can_delete_payment)
+
+    def test_receive_shows_bank_payment_not_petty_cash_choice(self):
+        cash, bank = self._avea_journals()
+        if not cash or not bank:
+            self.skipTest("Need both a cash and a bank journal")
+        picking = self._create_done_incoming_picking()
+        bill = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": self.partner.id,
+                "invoice_date": "2026-09-15",
+                "ref": "305",
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 3236.98,
+                        }
+                    )
+                ],
+            }
+        )
+        bill.action_post()
+        self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            bill,
+            bank,
+            self.partner,
+            self.env.company,
+            "2026-09-15",
+            "305",
+        )
+        bill.invalidate_recordset()
+        receive = self.env["avea.stock.receive"].create(
+            {
+                "state": "done",
+                "partner_id": self.partner.id,
+                "invoice_number": "305",
+                "invoice_date": "2026-09-15",
+                "received_date": "2026-09-16",
+                "bill_id": bill.id,
+                "picking_id": picking.id,
+                "mark_as_paid": False,
+                "paid_from_journal_id": cash.id,
+                "line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1.0,
+                            "price_unit": 3056.99,
+                        }
+                    )
+                ],
+            }
+        )
+        receive._compute_payment_status()
+        receive._compute_can_delete_payment()
+        self.assertIn(bank.display_name, receive.payment_status)
+        self.assertIn("3,236.98", receive.payment_status.replace("\xa0", " "))
+        self.assertNotIn(cash.display_name, receive.payment_status)
+        self.assertTrue(receive.can_delete_payment)
+
+        receive.action_avea_delete_receive_payment()
+        bill.invalidate_recordset()
+        receive.invalidate_recordset()
+        receive._compute_payment_status()
+        receive._compute_can_delete_payment()
+        receive._compute_can_pay_bill()
+        self.assertFalse(bill.currency_id.is_zero(bill.amount_residual))
+        self.assertFalse(receive.can_delete_payment)
+        self.assertTrue(receive.can_pay_bill)
+        self.assertIn("Still due", receive.payment_status)
+        self.assertIn("3,236.98", receive.payment_status.replace("\xa0", " "))
+
+    def test_confirmation_preview_still_uses_chosen_journal(self):
+        cash, _bank = self._avea_journals()
+        if not cash:
+            self.skipTest("No cash journal is configured")
+        receive = self.env["avea.stock.receive"].create(
+            {
+                "partner_id": self.partner.id,
+                "invoice_number": "PREVIEW-1",
+                "invoice_date": "2026-09-16",
+                "received_date": "2026-09-16",
+                "mark_as_paid": True,
+                "paid_from_journal_id": cash.id,
+                "line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1.0,
+                            "price_unit": 80.0,
+                        }
+                    )
+                ],
+            }
+        )
+        receive._compute_payment_status()
+        self.assertIn(cash.display_name, receive.payment_status)
+        self.assertIn("80", receive.payment_status)
