@@ -1076,6 +1076,26 @@ class AveaStockReceive(models.Model):
         action["context"] = context
         return action
 
+    def action_open_product_import(self):
+        """Upload an ordered-products spreadsheet into this receive draft."""
+        self.ensure_one()
+        if self.state != "draft" or self.show_confirmation:
+            raise UserError(_("Import products on a Receive Stock draft."))
+        wizard = self.env["avea.stock.receive.import"].create(
+            {"receive_id": self.id}
+        )
+        view = self.env.ref("avea_till.view_avea_stock_receive_import_form")
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Import ordered products"),
+            "res_model": "avea.stock.receive.import",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "views": [(view.id, "form")],
+            "view_id": view.id,
+            "target": "new",
+        }
+
     def action_done(self):
         self._avea_archive_completed()
         return self.env["avea.stock.receive"].action_open_receive()

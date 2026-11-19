@@ -5,6 +5,7 @@ from . import supplier_invoice_import
 from . import stock_receive_charge
 from . import stock_receive_pricing_wizard
 from . import stock_receive_pay_wizard
+from . import stock_receive_import
 from . import stock_return
 from . import stock_return_history
 from . import stock_internal_use

@@ -32,6 +32,7 @@ class AveaStockReceiveUnmatched(models.Model):
     description = fields.Char(string="On the invoice", required=True)
     quantity = fields.Float(string="Quantity", digits="Product Unit", default=1.0)
     price_unit = fields.Float(string="EX-Tax cost", digits="Avea Supplier Cost")
+    discount = fields.Float(string="Discount (%)", digits="Discount", default=0.0)
     supplier_code = fields.Char(string="Supplier code")
     product_id = fields.Many2one(
         "product.product",
@@ -55,9 +56,28 @@ class AveaStockReceiveUnmatched(models.Model):
                 "product_id": self.product_id.id,
                 "quantity": self.quantity or 1.0,
                 "price_unit": self.price_unit or 0.0,
+                "discount": self.discount or 0.0,
             }
         )
         self.unlink()
+
+    def action_create_product(self):
+        """Open New Stock Item with this line's name, SKU, and cost, then add it."""
+        self.ensure_one()
+        receive = self.receive_id
+        if not receive or receive.state != "draft" or receive.show_confirmation:
+            raise UserError(_("Start a new Receive Stock draft before adding a product."))
+        action = self.env["product.template"].with_context(
+            avea_return_receive_id=receive.id,
+            avea_return_unmatched_id=self.id,
+            avea_quick_product_add=True,
+            default_name=self.description,
+            default_default_code=self.supplier_code or False,
+            default_avea_supplier_code=self.supplier_code or False,
+            default_avea_supplier_id=receive.partner_id.id if receive.partner_id else False,
+            default_avea_cost_ex_tax=self.price_unit or 0.0,
+        ).action_avea_new_stock_item()
+        return action
 
 
 class AveaStockReceiveInvoiceImport(models.Model):
@@ -111,18 +131,6 @@ class AveaStockReceiveInvoiceImport(models.Model):
             )
         return parsed
 
-    @api.onchange("invoice_document", "invoice_document_filename")
-    def _onchange_invoice_document(self):
-        """Read the file as soon as it is chosen. The button remains for a second read."""
-        if not self.invoice_document or self.line_ids or self.unmatched_line_ids:
-            return
-        try:
-            parsed = self._avea_parsed_invoice()
-        except UserError as error:
-            return {"warning": {"title": _("Invoice"), "message": str(error)}}
-        for field_name, value in self._avea_invoice_values(parsed).items():
-            self[field_name] = value
-
     def action_add_matched_invoice_lines(self):
         self.ensure_one()
         chosen = self.unmatched_line_ids.filtered("product_id")
@@ -170,6 +178,7 @@ class AveaStockReceiveInvoiceImport(models.Model):
                             "product_id": product.id,
                             "quantity": row["quantity"],
                             "price_unit": cost,
+                            "discount": row.get("discount") or 0.0,
                         }
                     )
                 )
@@ -181,6 +190,7 @@ class AveaStockReceiveInvoiceImport(models.Model):
                             "description": row["description"][:240],
                             "quantity": row["quantity"],
                             "price_unit": cost,
+                            "discount": row.get("discount") or 0.0,
                             "supplier_code": supplier_code or False,
                             "product_id": suggestion.id if suggestion else False,
                         }
@@ -204,6 +214,64 @@ class AveaStockReceiveInvoiceImport(models.Model):
         if partner and not self.partner_id and not self.add_new_supplier:
             values["partner_id"] = partner.id
         return values
+
+    def _avea_apply_product_rows(self, rows, *, source="spreadsheet"):
+        """Add matched receive lines and unmatched rows from a spreadsheet import."""
+        self.ensure_one()
+        partner = self.partner_id
+        matched_commands = []
+        unmatched_commands = []
+        for row in rows:
+            description = (row.get("description") or "").strip()
+            codes = [code for code in (row.get("codes") or []) if code]
+            stored_code = row.get("supplier_code") or (codes[0] if codes else False)
+            product, suggestion, matched_code = self._avea_match_invoice_product(
+                description, codes, partner
+            )
+            supplier_code = stored_code or matched_code
+            values = {
+                "quantity": row.get("quantity") or 1.0,
+                "price_unit": row.get("unit_price") or 0.0,
+                "discount": row.get("discount") or 0.0,
+            }
+            if product:
+                matched_commands.append(
+                    Command.create(
+                        {
+                            "product_id": product.id,
+                            **values,
+                        }
+                    )
+                )
+                self._avea_remember_supplier_code(product, supplier_code, partner)
+            else:
+                unmatched_commands.append(
+                    Command.create(
+                        {
+                            "description": (description or supplier_code or _("Unknown"))[:240],
+                            "supplier_code": supplier_code or False,
+                            "product_id": suggestion.id if suggestion else False,
+                            **values,
+                        }
+                    )
+                )
+        summary = _(
+            "Imported from spreadsheet. Matched %(matched)s. Not found %(unmatched)s. "
+            "A closest product is only a suggestion until you press Add. "
+            "Use Create to add a new stock item.",
+            matched=len(matched_commands),
+            unmatched=len(unmatched_commands),
+        )
+        if source != "spreadsheet":
+            summary = False
+        write_vals = {
+            "line_ids": matched_commands,
+            "unmatched_line_ids": unmatched_commands,
+        }
+        if summary:
+            write_vals["invoice_read_summary"] = summary
+        self.with_context(avea_skip_pricing_wizard=True).write(write_vals)
+        return len(matched_commands), len(unmatched_commands)
 
     def _avea_invoice_read_summary(
         self, parsed, matched_count, unmatched_count, printed_total, supplier_note
@@ -294,6 +362,18 @@ class AveaStockReceiveInvoiceImport(models.Model):
         by_code = self._avea_product_for_codes(codes, partner)
         if by_code:
             return by_code, Product, stored_code
+        name = (description or "").strip()
+        if name:
+            exact = self.env["product.product"].search(
+                [
+                    ("is_storable", "=", True),
+                    ("purchase_ok", "=", True),
+                    ("name", "=ilike", name),
+                ],
+                limit=2,
+            )
+            if len(exact) == 1:
+                return exact, Product, stored_code
         ranked = self._avea_rank_invoice_names(description)
         if not ranked:
             return Product, Product, stored_code
@@ -310,8 +390,17 @@ class AveaStockReceiveInvoiceImport(models.Model):
         Product = self.env["product.product"]
         base = [("is_storable", "=", True), ("purchase_ok", "=", True)]
         for code in codes or []:
+            if not code:
+                continue
             found = Product.search(
-                base + ["|", ("default_code", "=", code), ("barcode", "=", code)],
+                base
+                + [
+                    "|",
+                    "|",
+                    ("default_code", "=ilike", code),
+                    ("barcode", "=ilike", code),
+                    ("product_tmpl_id.avea_supplier_code", "=ilike", code),
+                ],
                 limit=2,
             )
             if len(found) == 1:

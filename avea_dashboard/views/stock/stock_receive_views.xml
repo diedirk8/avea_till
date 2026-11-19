@@ -91,7 +91,7 @@
                                     <field name="received_date" nolabel="1"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span o_avea_stock_upload">
-                                    <span class="o_avea_workspace_info_label">Invoice document (optional)</span>
+                                    <span class="o_avea_workspace_info_label">Invoice copy (optional)</span>
                                     <div class="o_avea_stock_upload_drop">
                                         <i class="fa fa-cloud-upload" title="Upload invoice" aria-hidden="true"/>
                                         <field
@@ -105,12 +105,12 @@
                                         name="action_read_supplier_invoice"
                                         type="object"
                                         string="Read invoice"
-                                        class="btn btn-secondary"
+                                        class="btn btn-link o_avea_stock_read_invoice_btn"
                                         invisible="show_confirmation"
                                     />
                                 </div>
                                 <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="not invoice_read_summary">
-                                    <span class="o_avea_workspace_info_label">What was read</span>
+                                    <span class="o_avea_workspace_info_label">Notes</span>
                                     <field name="invoice_read_summary" nolabel="1" readonly="1"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" groups="base.group_multi_company">
@@ -123,21 +123,28 @@
                         <div class="o_avea_stock_panel" invisible="not unmatched_line_ids">
                             <h2 class="o_avea_workspace_section_title">
                                 <i class="fa fa-search" title="Not found" aria-hidden="true"/>
-                                Not found on this invoice
+                                Not found
                             </h2>
                             <p class="o_avea_workspace_section_subtitle">
-                                These lines were not filled in. Closest product is a suggestion. Press Add to use it, change it, or create the item with + New Stock Item.
+                                These lines were not filled in. Closest product is a suggestion — change it if needed, then press Add. Or press Create to add a new stock item.
                             </p>
                             <field name="unmatched_line_ids" nolabel="1">
                                 <list editable="bottom" create="false">
                                     <field name="description"/>
                                     <field name="quantity"/>
                                     <field name="price_unit"/>
+                                    <field name="discount" string="Discount %"/>
                                     <field name="product_id"/>
                                     <button
                                         name="action_add_to_receive"
                                         type="object"
                                         string="Add"
+                                        class="btn-link"
+                                    />
+                                    <button
+                                        name="action_create_product"
+                                        type="object"
+                                        string="Create"
                                         class="btn-link"
                                     />
                                 </list>
@@ -156,12 +163,21 @@
                                     <i class="fa fa-cube" title="Products received" aria-hidden="true"/>
                                     Products received
                                 </h2>
-                                <button
-                                    name="action_new_stock_item"
-                                    type="object"
-                                    string="+ New Stock Item"
-                                    class="btn btn-secondary o_avea_stock_new_product_btn"
-                                />
+                                <div class="o_avea_stock_products_actions">
+                                    <button
+                                        name="action_open_product_import"
+                                        type="object"
+                                        string="Import spreadsheet"
+                                        class="btn btn-secondary"
+                                        invisible="show_confirmation"
+                                    />
+                                    <button
+                                        name="action_new_stock_item"
+                                        type="object"
+                                        string="+ New Stock Item"
+                                        class="btn btn-secondary o_avea_stock_new_product_btn"
+                                    />
+                                </div>
                             </div>
                             <div class="o_avea_stock_list_surface">
                                 <div class="o_avea_stock_empty">

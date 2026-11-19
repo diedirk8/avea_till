@@ -749,9 +749,14 @@ class ProductTemplate(models.Model):
         # Preserve return-to-receive (or other) context from the caller.
         for key in (
             "avea_return_receive_id",
+            "avea_return_unmatched_id",
             "avea_quick_product_add",
             "default_name",
             "default_categ_id",
+            "default_default_code",
+            "default_avea_supplier_code",
+            "default_avea_supplier_id",
+            "default_avea_cost_ex_tax",
         ):
             if self.env.context.get(key):
                 context[key] = self.env.context[key]
@@ -783,11 +788,22 @@ class ProductTemplate(models.Model):
         variant = self.product_variant_id
         if not variant:
             raise UserError(_("This product could not be added to Receive Stock yet."))
+        unmatched = self.env["avea.stock.receive.unmatched"].browse(
+            self.env.context.get("avea_return_unmatched_id") or 0
+        ).exists()
+        quantity = unmatched.quantity if unmatched else 1.0
+        price_unit = (
+            unmatched.price_unit if unmatched else (self._avea_get_cost_ex_tax() or 0.0)
+        )
+        discount = unmatched.discount if unmatched else 0.0
         existing = receive.line_ids.filtered(lambda line: line.product_id == variant)[:1]
         if existing:
-            # Keep the line; refresh cost from the product if empty.
-            if not existing.price_unit:
-                existing.price_unit = self._avea_get_cost_ex_tax() or 0.0
+            existing.quantity = (existing.quantity or 0.0) + (quantity or 1.0)
+            if unmatched:
+                existing.price_unit = price_unit
+                existing.discount = discount
+            elif not existing.price_unit:
+                existing.price_unit = price_unit
         else:
             receive.write(
                 {
@@ -795,13 +811,18 @@ class ProductTemplate(models.Model):
                         Command.create(
                             {
                                 "product_id": variant.id,
-                                "quantity": 1.0,
-                                "price_unit": self._avea_get_cost_ex_tax() or 0.0,
+                                "quantity": quantity or 1.0,
+                                "price_unit": price_unit or 0.0,
+                                "discount": discount or 0.0,
                             }
                         )
                     ]
                 }
             )
+        if unmatched:
+            if unmatched.supplier_code:
+                receive._avea_remember_supplier_code(variant, unmatched.supplier_code)
+            unmatched.unlink()
         return receive._avea_receive_action(receive)
 
     def action_avea_back_to_receive(self):
