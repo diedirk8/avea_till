@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
-from odoo.tools.float_utils import float_compare
+from odoo.tools.float_utils import float_compare, float_round
 
 from .stock_mixin import AVEA_PRODUCT_COST_PRECISION, AVEA_SUPPLIER_COST_PRECISION
+
+AVEA_PRICING_WIZARD_COST_DIGITS = 3
 
 
 class AveaStockReceivePricingWizard(models.TransientModel):
@@ -34,6 +36,10 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         related="line_id.currency_id",
         readonly=True,
     )
+    currency_symbol = fields.Char(
+        related="currency_id.symbol",
+        readonly=True,
+    )
     receive_cost = fields.Float(
         string="Receive cost EX Tax",
         digits=AVEA_SUPPLIER_COST_PRECISION,
@@ -43,7 +49,7 @@ class AveaStockReceivePricingWizard(models.TransientModel):
     # Current product pricing (readonly snapshot)
     current_cost = fields.Float(
         string="Current cost",
-        digits=AVEA_PRODUCT_COST_PRECISION,
+        digits=(16, AVEA_PRICING_WIZARD_COST_DIGITS),
         readonly=True,
     )
     current_retail = fields.Float(
@@ -55,7 +61,10 @@ class AveaStockReceivePricingWizard(models.TransientModel):
     current_margin = fields.Float(string="Current margin %", digits=(16, 2), readonly=True)
 
     # Editable "new" pricing (recalculates with product sales tax)
-    new_cost = fields.Float(string="Cost EX Tax", digits=AVEA_PRODUCT_COST_PRECISION)
+    new_cost = fields.Float(
+        string="Cost EX Tax",
+        digits=(16, AVEA_PRICING_WIZARD_COST_DIGITS),
+    )
     new_retail = fields.Float(
         string="Retail Price INC Tax",
         digits=AVEA_PRODUCT_COST_PRECISION,
@@ -71,14 +80,18 @@ class AveaStockReceivePricingWizard(models.TransientModel):
     def _avea_mixin(self):
         return self.env["avea.stock.mixin"]
 
+    @api.model
+    def _avea_round_wizard_cost(self, amount):
+        return float_round(amount or 0.0, precision_digits=AVEA_PRICING_WIZARD_COST_DIGITS)
+
     def _avea_resolve_new_cost(self):
         """Keep the full supplier cost unless the user intentionally edited cost."""
         self.ensure_one()
         mixin = self._avea_mixin()
         receive_cost = mixin._avea_round_supplier_cost(self.receive_cost)
-        edited_cost = mixin._avea_round_product_cost(self.new_cost)
-        receive_as_product = mixin._avea_round_product_cost(receive_cost)
-        if mixin._avea_compare_product_cost(edited_cost, receive_as_product) == 0:
+        edited_cost = self._avea_round_wizard_cost(self.new_cost)
+        receive_as_display = self._avea_round_wizard_cost(receive_cost)
+        if float_compare(edited_cost, receive_as_display, precision_digits=AVEA_PRICING_WIZARD_COST_DIGITS) == 0:
             return receive_cost
         return edited_cost
 
@@ -94,8 +107,7 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         mixin = self.env["avea.stock.mixin"]
         cost, retail_inc, _ex, markup, margin = template._avea_pricing_tuple()
         receive_cost = mixin._avea_round_supplier_cost(line.price_unit or 0.0)
-        display_cost = mixin._avea_round_product_cost(receive_cost)
-        catalog_cost = receive_cost
+        display_cost = self._avea_round_wizard_cost(receive_cost)
         _ex2, new_markup, new_margin = template._avea_pricing_from_cost_retail(
             display_cost, retail_inc
         )
@@ -103,7 +115,7 @@ class AveaStockReceivePricingWizard(models.TransientModel):
             {
                 "line_id": line.id,
                 "receive_cost": receive_cost,
-                "current_cost": cost,
+                "current_cost": self._avea_round_wizard_cost(cost),
                 "current_retail": retail_inc,
                 "current_markup": markup,
                 "current_margin": margin,
@@ -141,7 +153,7 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         self.ensure_one()
         template = self.product_tmpl_id
         mixin = self._avea_mixin()
-        cost = mixin._avea_round_product_cost(self.new_cost or 0.0)
+        cost = self._avea_round_wizard_cost(self.new_cost or 0.0)
         retail_ex = cost * (1.0 + (markup_percent or 0.0) / 100.0)
         return mixin._avea_round_product_cost(
             template._avea_retail_inc_vat_from_ex(retail_ex)
@@ -152,7 +164,7 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         template = self.product_tmpl_id
         margin = margin_percent or 0.0
         mixin = self._avea_mixin()
-        cost = mixin._avea_round_product_cost(self.new_cost or 0.0)
+        cost = self._avea_round_wizard_cost(self.new_cost or 0.0)
         retail_ex = cost / (1.0 - margin / 100.0) if margin < 100.0 else 0.0
         return mixin._avea_round_product_cost(
             template._avea_retail_inc_vat_from_ex(retail_ex)

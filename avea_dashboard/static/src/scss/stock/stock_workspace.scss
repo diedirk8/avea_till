@@ -2876,12 +2876,34 @@
         text-align: right;
     }
 
-    .o_avea_stock_pricing_row .o_field_monetary {
+    .o_avea_stock_pricing_row .o_field_monetary,
+    .o_avea_stock_pricing_cost {
         align-items: center;
         display: flex;
+        gap: 0.28rem;
         justify-content: flex-end;
         min-height: 0;
         width: 100%;
+    }
+
+    .o_avea_stock_pricing_currency,
+    .o_avea_stock_pricing_currency .o_field_widget {
+        color: var(--o-gray-600, #6c757d);
+        flex: 0 0 auto;
+        font-size: 0.78rem;
+        font-weight: 600;
+        line-height: 1;
+        margin: 0;
+        max-width: none;
+        pointer-events: none;
+        width: auto;
+    }
+
+    .o_avea_stock_pricing_cost .o_field_float,
+    .o_avea_stock_pricing_cost .o_field_widget:not(.o_field_char) {
+        flex: 1 1 auto;
+        max-width: none;
+        min-width: 0;
     }
 
     .o_avea_stock_pricing_row input.o_input {
