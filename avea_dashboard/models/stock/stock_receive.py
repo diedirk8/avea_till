@@ -553,7 +553,7 @@ class AveaStockReceive(models.Model):
                 receive.state == "done" and bool(receive.bill_id)
             )
 
-    @api.depends("state", "partner_id", "invoice_number")
+    @api.depends("state", "partner_id", "invoice_number", "new_supplier_name")
     def _compute_display_name(self):
         for receive in self:
             if receive.state == "done":
@@ -565,8 +565,23 @@ class AveaStockReceive(models.Model):
                     )
                 else:
                     receive.display_name = _("Stock Received")
+            elif receive.partner_id:
+                receive.display_name = _(
+                    "Draft — %(supplier)s",
+                    supplier=receive.partner_id.display_name,
+                )
+            elif receive.new_supplier_name:
+                receive.display_name = _(
+                    "Draft — %(supplier)s",
+                    supplier=receive.new_supplier_name,
+                )
+            elif receive.invoice_number:
+                receive.display_name = _(
+                    "Draft — %(invoice)s",
+                    invoice=receive.invoice_number,
+                )
             else:
-                receive.display_name = _("Receive Stock")
+                receive.display_name = _("Draft")
 
     @api.depends("partner_id", "add_new_supplier")
     def _compute_effective_partner_id(self):
@@ -810,6 +825,9 @@ class AveaStockReceive(models.Model):
         view_id = self.env.ref(
             view_xmlid or "avea_till.view_avea_stock_receive_form"
         ).id
+        context = dict(self.env.context)
+        context["clear_breadcrumbs"] = True
+        context["avea_receive_workspace"] = True
         return {
             "type": "ir.actions.act_window",
             "name": name or _("Receive Stock"),
@@ -819,17 +837,50 @@ class AveaStockReceive(models.Model):
             "view_id": view_id,
             "res_id": record.id,
             "target": "main",
-            "context": {"clear_breadcrumbs": True},
+            "context": context,
         }
 
     @api.model
     def action_open_receive(self):
-        receive = self._avea_find_draft_receive()
-        if not receive:
-            receive = self._avea_create_draft_receive()
-        else:
-            receive._avea_repair_false_done()
+        """Open the Receive Stock list: drafts and recent receipts."""
+        list_id = self.env.ref("avea_till.view_avea_stock_receive_list").id
+        form_id = self.env.ref("avea_till.view_avea_stock_receive_form").id
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Receive Stock"),
+            "res_model": self._name,
+            "view_mode": "list,form",
+            "views": [(list_id, "list"), (form_id, "form")],
+            "search_view_id": self.env.ref("avea_till.view_avea_stock_receive_search").id,
+            "target": "main",
+            "context": {
+                "clear_breadcrumbs": True,
+                "create": False,
+                "avea_receive_workspace": True,
+            },
+        }
+
+    @api.model
+    def action_new_receive(self):
+        """Start a fresh draft without replacing other in-progress receives."""
+        receive = self._avea_create_draft_receive()
         return receive._avea_receive_action(receive)
+
+    def action_open_record(self):
+        """Open a draft to continue, or a completed receive from history."""
+        self.ensure_one()
+        self._avea_repair_false_done()
+        if self.state == "done":
+            return self._avea_receive_action(
+                self,
+                name=_("Stock received"),
+                view_xmlid="avea_till.view_avea_stock_receive_history_form",
+            )
+        return self._avea_receive_action(self)
+
+    def action_back_to_receive_list(self):
+        """Keep this receive as a draft and return to the list."""
+        return self.action_open_receive()
 
     @api.model
     def action_open_receive_history(self):
@@ -1012,6 +1063,8 @@ class AveaStockReceive(models.Model):
         return self.env["avea.stock.return"].action_open_return_for_picking(picking)
 
     def action_back_to_receive_history(self):
+        if self.env.context.get("avea_receive_workspace"):
+            return self.action_open_receive()
         return self.action_open_receive_history()
 
     def action_avea_delete_receive_payment(self):
@@ -1121,6 +1174,7 @@ class AveaStockReceive(models.Model):
         return False
 
     def action_cancel_receive(self):
+        """Throw away this draft and return to the Receive Stock list."""
         self.ensure_one()
         self._avea_repair_false_done()
         if self.state == "draft":

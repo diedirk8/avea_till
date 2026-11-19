@@ -374,10 +374,17 @@
 
                     <div class="o_avea_stock_footer o_avea_stock_footer--bar">
                         <button
+                            name="action_back_to_receive_list"
+                            type="object"
+                            string="Back to list"
+                            class="btn-secondary"
+                        />
+                        <button
                             name="action_cancel_receive"
                             type="object"
-                            string="Cancel"
-                            class="btn-secondary"
+                            string="Discard"
+                            class="btn-link"
+                            confirm="Discard this draft receive? Products entered here will not be received."
                         />
                         <button
                             name="action_receive_stock"
@@ -513,6 +520,57 @@
                     </div>
                 </sheet>
             </form>
+        </field>
+    </record>
+
+    <record id="view_avea_stock_receive_search" model="ir.ui.view">
+        <field name="name">avea.stock.receive.search</field>
+        <field name="model">avea.stock.receive</field>
+        <field name="arch" type="xml">
+            <search string="Receive Stock">
+                <field name="partner_id" string="Supplier"/>
+                <field name="invoice_number" string="Invoice"/>
+                <separator/>
+                <filter name="avea_receive_drafts" string="Drafts" domain="[('state', '=', 'draft')]"/>
+                <filter name="avea_receive_done" string="Received" domain="[('state', '=', 'done')]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_stock_receive_list" model="ir.ui.view">
+        <field name="name">avea.stock.receive.list</field>
+        <field name="model">avea.stock.receive</field>
+        <field name="priority">1</field>
+        <field name="arch" type="xml">
+            <list
+                string="Receive Stock"
+                create="false"
+                delete="false"
+                duplicate="false"
+                default_order="state desc, write_date desc, id desc"
+                class="o_avea_customer_list o_avea_stock_receive_list"
+                js_class="avea_stock_receive_list"
+                decoration-info="state == 'draft'"
+            >
+                <button
+                    name="action_open_record"
+                    type="object"
+                    string="Open"
+                    icon="fa-external-link"
+                    title="Open"
+                    class="btn-link"
+                />
+                <field name="currency_id" column_invisible="True"/>
+                <field name="state" string="Status"/>
+                <field name="received_date" string="Date"/>
+                <field name="partner_id" string="Supplier"/>
+                <field name="invoice_number" string="Invoice"/>
+                <field name="product_count" string="Products"/>
+                <field name="amount_total" string="Total" widget="monetary"/>
+                <field name="payment_status" string="Payment" optional="show"/>
+                <field name="user_id" string="By" optional="hide"/>
+                <field name="write_date" string="Updated" optional="hide"/>
+            </list>
         </field>
     </record>
 
