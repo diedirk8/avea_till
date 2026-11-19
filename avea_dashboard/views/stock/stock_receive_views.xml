@@ -101,13 +101,6 @@
                                         />
                                     </div>
                                     <field name="invoice_document_filename" invisible="1"/>
-                                    <button
-                                        name="action_read_supplier_invoice"
-                                        type="object"
-                                        string="Read invoice"
-                                        class="btn btn-link o_avea_stock_read_invoice_btn"
-                                        invisible="show_confirmation"
-                                    />
                                 </div>
                                 <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="not invoice_read_summary">
                                     <span class="o_avea_workspace_info_label">Notes</span>
