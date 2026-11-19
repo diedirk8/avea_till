@@ -129,7 +129,7 @@
                                 These lines were not filled in. A 70% or closer product is suggested — change it if needed, then press Add. Or press Create to add a new stock item.
                             </p>
                             <field name="unmatched_line_ids" nolabel="1">
-                                <list editable="bottom" create="false">
+                                <list editable="bottom" create="false" limit="1000">
                                     <field name="description"/>
                                     <field name="sku" optional="show"/>
                                     <field name="supplier_code"/>
@@ -193,7 +193,7 @@
                                     </p>
                                 </div>
                                 <field name="line_ids" nolabel="1">
-                                    <list editable="bottom" class="o_avea_stock_receive_list">
+                                    <list editable="bottom" class="o_avea_stock_receive_list" limit="1000">
                                         <field name="company_id" column_invisible="True"/>
                                         <field name="currency_id" column_invisible="True"/>
                                         <field name="partner_id" column_invisible="True"/>

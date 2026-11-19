@@ -5,6 +5,12 @@ from odoo.tests.common import TransactionCase
 
 @tagged("post_install", "-at_install", "avea_till")
 class TestStockReceiveList(TransactionCase):
+    def test_receive_form_shows_all_product_lines_without_paging(self):
+        arch = self.env.ref("avea_till.view_avea_stock_receive_form").arch_db or ""
+        self.assertIn('class="o_avea_stock_receive_list" limit="1000"', arch)
+        unmatched = self.env.ref("avea_till.view_avea_stock_receive_form").arch_db or ""
+        self.assertIn('create="false" limit="1000"', unmatched)
+
     def test_receive_stock_opens_a_list_not_a_singleton_draft(self):
         Receive = self.env["avea.stock.receive"]
         before = Receive.search_count([])

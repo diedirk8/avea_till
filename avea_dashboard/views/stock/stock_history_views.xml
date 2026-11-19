@@ -157,7 +157,7 @@
                         <h2 class="o_avea_workspace_section_title">Products received</h2>
                         <div class="o_avea_stock_list_surface">
                             <field name="line_ids" nolabel="1" readonly="1">
-                                <list create="false" delete="false" edit="false" class="o_avea_stock_receive_list">
+                                <list create="false" delete="false" edit="false" class="o_avea_stock_receive_list" limit="1000">
                                     <field name="currency_id" column_invisible="True"/>
                                     <field name="product_id"/>
                                     <field name="quantity"/>
