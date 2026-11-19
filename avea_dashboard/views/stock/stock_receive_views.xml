@@ -361,11 +361,19 @@
                                             placeholder="Choose cash or bank"
                                         />
                                     </div>
+                                    <div class="o_avea_workspace_info_item" invisible="not mark_as_paid and not use_store_credit">
+                                        <span class="o_avea_workspace_info_label">Payment date</span>
+                                        <field
+                                            name="payment_date"
+                                            nolabel="1"
+                                            required="mark_as_paid or use_store_credit"
+                                        />
+                                    </div>
                                 </div>
                                 <ol class="o_avea_stock_payment_steps">
                                     <li>Tick <strong>Store credit</strong> and enter the amount you paid with Pets Empire animal-trade credit.</li>
                                     <li>Tick <strong>Already issued</strong> if you already granted it — even if some was spent on a sale.</li>
-                                    <li>Tick <strong>Mark as paid</strong> and choose cash or bank for any balance.</li>
+                                    <li>Tick <strong>Mark as paid</strong>, choose cash or bank for any balance, and set the payment date.</li>
                                 </ol>
                             </div>
                         </div>
@@ -474,6 +482,10 @@
                                 <div class="o_avea_tax_summary_row" invisible="not payment_journal_amount">
                                     <field name="payment_journal_label" nolabel="1" class="o_avea_tax_summary_label"/>
                                     <field name="payment_journal_amount" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
+                                </div>
+                                <div class="o_avea_tax_summary_row" invisible="not mark_as_paid and not store_credit_applied">
+                                    <span class="o_avea_tax_summary_label">Payment date</span>
+                                    <field name="payment_date" nolabel="1" readonly="1" class="o_avea_tax_summary_value"/>
                                 </div>
                                 <div class="o_avea_tax_summary_row" invisible="not bill_residual">
                                     <span class="o_avea_tax_summary_label">Still due</span>

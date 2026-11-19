@@ -104,6 +104,7 @@
                     <field name="can_pay_bill" invisible="1"/>
                     <field name="can_delete_payment" invisible="1"/>
                     <field name="bill_id" invisible="1"/>
+                    <field name="mark_as_paid" invisible="1"/>
 
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
@@ -137,6 +138,10 @@
                             <div class="o_avea_workspace_info_item">
                                 <span class="o_avea_workspace_info_label">Payment</span>
                                 <field name="payment_status" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item" invisible="not mark_as_paid and not store_credit_applied">
+                                <span class="o_avea_workspace_info_label">Payment date</span>
+                                <field name="payment_date" nolabel="1" readonly="1"/>
                             </div>
                             <div class="o_avea_workspace_info_item" invisible="not supplier_credit_applied">
                                 <span class="o_avea_workspace_info_label">Supplier credit applied</span>

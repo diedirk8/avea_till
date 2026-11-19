@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -255,6 +255,39 @@ class TestAveaStockReceiveStoreCredit(TransactionCase):
         self.assertIn("Store credit", receive.payment_status)
         self.assertIn("595", receive.payment_status)
         self.assertIn(journal.display_name, receive.payment_status)
+
+    def test_receive_stock_uses_payment_date_not_invoice_date(self):
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        receive = self.env["avea.stock.receive"].create(
+            {
+                "partner_id": self.partner.id,
+                "invoice_number": "PAY-DATE-1",
+                "invoice_date": "2026-11-12",
+                "received_date": "2026-11-12",
+                "payment_date": "2026-11-18",
+                "company_id": self.company.id,
+                "currency_id": self.currency.id,
+                "mark_as_paid": True,
+                "paid_from_journal_id": journal.id,
+                "line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1.0,
+                            "price_unit": 80.0,
+                            "avea_pricing_choice": "keep",
+                        }
+                    )
+                ],
+            }
+        )
+        receive.action_receive_stock()
+        payments = self.mixin._avea_statement_lines_for_bill(receive.bill_id)
+        self.assertTrue(payments)
+        self.assertEqual(payments[:1].date, fields.Date.to_date("2026-11-18"))
+        self.assertEqual(receive.payment_date, fields.Date.to_date("2026-11-18"))
 
     def test_customer_with_store_credit_is_selectable_as_supplier(self):
         customer = self.env["res.partner"].create(

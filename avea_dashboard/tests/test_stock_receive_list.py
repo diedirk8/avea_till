@@ -8,6 +8,7 @@ class TestStockReceiveList(TransactionCase):
     def test_receive_form_shows_all_product_lines_without_paging(self):
         arch = self.env.ref("avea_till.view_avea_stock_receive_form").arch_db or ""
         self.assertIn('class="o_avea_stock_receive_list" limit="1000"', arch)
+        self.assertIn('name="payment_date"', arch)
         unmatched = self.env.ref("avea_till.view_avea_stock_receive_form").arch_db or ""
         self.assertIn('create="false" limit="1000"', unmatched)
 

@@ -457,6 +457,11 @@ class AveaStockReceive(models.Model):
     mark_as_paid = fields.Boolean(
         string="Mark as Paid",
     )
+    payment_date = fields.Date(
+        string="Payment date",
+        default=fields.Date.context_today,
+        help="Date the cash, bank, or store-credit payment is recorded.",
+    )
     use_supplier_credit = fields.Boolean(
         string="Apply supplier credit",
         help="Use open vendor credit notes from returns against this bill before paying cash or bank.",
@@ -1355,7 +1360,7 @@ class AveaStockReceive(models.Model):
                 self.company_id,
                 self.store_credit_amount,
                 already_issued=self.store_credit_already_issued,
-                pay_date=self.invoice_date,
+                pay_date=self._avea_payment_date(),
                 payment_ref=self.invoice_number,
             )
         if self.mark_as_paid:
@@ -1366,7 +1371,7 @@ class AveaStockReceive(models.Model):
                     self._avea_payment_journal(),
                     partner,
                     self.company_id,
-                    self.invoice_date,
+                    self._avea_payment_date(),
                     self.invoice_number,
                 )
         return self._avea_success(
@@ -1413,6 +1418,9 @@ class AveaStockReceive(models.Model):
                 raise ValidationError(
                     _("Enter the store credit amount used to pay this supplier.")
                 )
+        if self.mark_as_paid or self.use_store_credit:
+            if not self.payment_date:
+                raise ValidationError(_("Enter the payment date."))
         if self.mark_as_paid:
             self._avea_payment_journal()
 
@@ -1621,6 +1629,15 @@ class AveaStockReceive(models.Model):
             }
         )
 
+    def _avea_payment_date(self):
+        self.ensure_one()
+        return self.payment_date or self.invoice_date or fields.Date.context_today(self)
+
+    @api.onchange("mark_as_paid", "use_store_credit", "invoice_date")
+    def _onchange_payment_date_default(self):
+        if (self.mark_as_paid or self.use_store_credit) and not self.payment_date:
+            self.payment_date = self.invoice_date or fields.Date.context_today(self)
+
     def _avea_payment_journal(self):
         self.ensure_one()
         journal = self.paid_from_journal_id
@@ -1662,6 +1679,9 @@ class AveaStockReceive(models.Model):
                 "supplier_credit_applied": credit_applied,
                 "store_credit_applied": store_credit_applied,
                 "mark_as_paid": self.mark_as_paid,
+                "payment_date": self._avea_payment_date()
+                if self.mark_as_paid or self.use_store_credit
+                else self.payment_date,
                 "paid_from_journal_id": (
                     self.paid_from_journal_id.id
                     if self.mark_as_paid and self.paid_from_journal_id

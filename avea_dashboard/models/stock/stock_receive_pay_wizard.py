@@ -27,6 +27,11 @@ class AveaStockReceivePayWizard(models.TransientModel):
         string="Pay from",
         domain="[('id', 'in', available_journal_ids)]",
     )
+    pay_date = fields.Date(
+        string="Payment date",
+        required=True,
+        default=fields.Date.context_today,
+    )
     available_journal_ids = fields.Many2many(
         "account.journal",
         compute="_compute_available_journal_ids",
@@ -133,7 +138,7 @@ class AveaStockReceivePayWizard(models.TransientModel):
                 company,
                 self.store_credit_amount,
                 already_issued=self.store_credit_already_issued,
-                pay_date=fields.Date.context_today(self),
+                pay_date=self.pay_date or fields.Date.context_today(self),
                 payment_ref=receive.invoice_number or bill.ref or bill.name,
             )
         bill.invalidate_recordset(["amount_residual", "payment_state"])
@@ -146,7 +151,7 @@ class AveaStockReceivePayWizard(models.TransientModel):
                 self.journal_id,
                 partner,
                 company,
-                fields.Date.context_today(self),
+                self.pay_date or fields.Date.context_today(self),
                 receive.invoice_number or bill.ref or bill.name,
             )
         elif not paid_from_journal:
@@ -162,5 +167,7 @@ class AveaStockReceivePayWizard(models.TransientModel):
             values["mark_as_paid"] = True
         if paid_from_journal:
             values["paid_from_journal_id"] = paid_from_journal.id
+        if self.pay_date:
+            values["payment_date"] = self.pay_date
         receive.write(values)
         return {"type": "ir.actions.act_window_close"}
