@@ -396,17 +396,17 @@ class AveaStockReceiveInvoiceImport(models.Model):
                 base
                 + [
                     "|",
-                    "|",
                     ("default_code", "=ilike", code),
                     ("barcode", "=ilike", code),
-                    ("product_tmpl_id.avea_supplier_code", "=ilike", code),
                 ],
                 limit=2,
             )
             if len(found) == 1:
                 return found
+            # avea_supplier_code is computed from seller product_code and is
+            # not stored, so match the vendor code on product.supplierinfo.
             sellers = self.env["product.supplierinfo"].search(
-                [("product_code", "=", code)]
+                [("product_code", "=ilike", code)]
                 + ([("partner_id", "=", partner.id)] if partner else []),
                 limit=2,
             )
