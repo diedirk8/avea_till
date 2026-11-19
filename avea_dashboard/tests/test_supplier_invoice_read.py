@@ -247,13 +247,13 @@ class TestSupplierInvoiceRead(TransactionCase):
         )
         receive = self.env["avea.stock.receive"].create({})
         product, suggestion, code, percent = receive._avea_match_invoice_product(
-            "Zzqx Mini Adult 2kg (10403310)",
-            ["PFD-RC-CA-0000000220", "10403310"],
+            "Zzqx Mini Adult 2kg (ZZQX10403310)",
+            ["ZZQX-PFD-RC-CA-0000000220", "ZZQX10403310"],
             None,
         )
         self.assertEqual(product, adult)
         self.assertFalse(suggestion)
-        self.assertEqual(code, "PFD-RC-CA-0000000220")
+        self.assertEqual(code, "ZZQX-PFD-RC-CA-0000000220")
         self.assertGreaterEqual(percent, 97)
         product, suggestion, _code, percent = receive._avea_match_invoice_product(
             "Zzqx Puppy Wet Pouch 12 x 85 g",
