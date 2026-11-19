@@ -164,13 +164,25 @@
     .o_avea_stock_panel--supplier .o_avea_stock_supplier_grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
 
-        .o_avea_stock_side_grid_span:not(.o_avea_stock_check_row):not(.o_avea_stock_upload) {
+        .o_avea_stock_side_grid_span:not(.o_avea_stock_upload) {
             grid-column: span 2;
         }
 
-        .o_avea_stock_check_row,
         .o_avea_stock_upload {
             grid-column: 1 / -1;
+        }
+
+        .o_avea_stock_field_heading {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem 0.75rem;
+            justify-content: space-between;
+            min-height: 1.15rem;
+        }
+
+        .o_avea_stock_field_heading .o_avea_stock_check_row .o_avea_workspace_info_label {
+            font-weight: 500;
         }
     }
 
@@ -380,8 +392,9 @@
         grid-column: 1 / -1;
     }
 
-    .o_avea_stock_check_row {
+    &.o_avea_workspace .o_avea_stock_check_row {
         align-items: center;
+        display: flex;
         flex-direction: row;
         gap: 0.4rem;
         justify-content: flex-start;
@@ -1150,7 +1163,7 @@
         .o_avea_stock_panel--supplier .o_avea_stock_supplier_grid {
             grid-template-columns: minmax(0, 1fr);
 
-            .o_avea_stock_side_grid_span:not(.o_avea_stock_check_row):not(.o_avea_stock_upload) {
+            .o_avea_stock_side_grid_span:not(.o_avea_stock_upload) {
                 grid-column: 1 / -1;
             }
         }

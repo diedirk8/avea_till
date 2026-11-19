@@ -43,25 +43,27 @@
                                 Supplier invoice
                             </h2>
                             <div class="o_avea_workspace_info_grid o_avea_stock_side_grid o_avea_stock_supplier_grid">
-                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span o_avea_stock_check_row">
-                                    <field name="add_new_supplier" nolabel="1"/>
-                                    <span class="o_avea_workspace_info_label">Add a new supplier</span>
-                                </div>
-                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="add_new_supplier">
-                                    <span class="o_avea_workspace_info_label">Supplier</span>
+                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span o_avea_stock_supplier_pick">
+                                    <div class="o_avea_stock_field_heading">
+                                        <span class="o_avea_workspace_info_label" invisible="add_new_supplier">Supplier</span>
+                                        <span class="o_avea_workspace_info_label" invisible="not add_new_supplier">Supplier name</span>
+                                        <div class="o_avea_stock_toggle o_avea_stock_check_row">
+                                            <field name="add_new_supplier" nolabel="1"/>
+                                            <span class="o_avea_workspace_info_label">Add a new supplier</span>
+                                        </div>
+                                    </div>
                                     <field
                                         name="partner_id"
                                         nolabel="1"
                                         options="{'no_create': True, 'no_open': True}"
                                         context="{'res_partner_search_mode': 'supplier'}"
+                                        invisible="add_new_supplier"
                                     />
-                                </div>
-                                <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="not add_new_supplier">
-                                    <span class="o_avea_workspace_info_label">Supplier name</span>
                                     <field
                                         name="new_supplier_name"
                                         nolabel="1"
                                         placeholder="Supplier name"
+                                        invisible="not add_new_supplier"
                                     />
                                 </div>
                                 <div class="o_avea_workspace_info_item o_avea_stock_side_grid_span" invisible="not add_new_supplier">
