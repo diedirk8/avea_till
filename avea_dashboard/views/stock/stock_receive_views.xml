@@ -126,14 +126,17 @@
                                 Not found
                             </h2>
                             <p class="o_avea_workspace_section_subtitle">
-                                These lines were not filled in. Closest product is a suggestion — change it if needed, then press Add. Or press Create to add a new stock item.
+                                These lines were not filled in. A 70% or closer product is suggested — change it if needed, then press Add. Or press Create to add a new stock item.
                             </p>
                             <field name="unmatched_line_ids" nolabel="1">
                                 <list editable="bottom" create="false">
                                     <field name="description"/>
+                                    <field name="sku" optional="show"/>
+                                    <field name="supplier_code"/>
                                     <field name="quantity"/>
                                     <field name="price_unit"/>
                                     <field name="discount" string="Discount %"/>
+                                    <field name="match_percent" readonly="1"/>
                                     <field name="product_id"/>
                                     <button
                                         name="action_add_to_receive"

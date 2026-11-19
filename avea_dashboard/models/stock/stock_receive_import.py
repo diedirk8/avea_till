@@ -14,12 +14,18 @@ _HEADER_ALIASES = {
     "product": {"product", "name", "description", "item", "product name"},
     "sku": {
         "sku",
-        "supplier code",
-        "code",
         "barcode",
         "internal reference",
         "default code",
+        "product sku",
+        "code",
+    },
+    "supplier_code": {
+        "supplier code",
         "supplier sku",
+        "vendor code",
+        "vendor sku",
+        "supplier's code",
     },
     "qty": {"qty", "quantity", "qty ordered", "ordered"},
     "cost": {
@@ -39,6 +45,7 @@ _HEADER_ALIASES = {
 _TEMPLATE_HEADERS = (
     "Product",
     "SKU",
+    "Supplier Code",
     "Qty",
     "Excl Tax Cost",
     "Discount %",
@@ -83,22 +90,24 @@ class AveaStockReceiveImport(models.TransientModel):
             sheet.set_column(col, col, 22 if col == 0 else 16)
         sheet.write(1, 0, "Royal Canin Mini Adult 2kg", example_fmt)
         sheet.write(1, 1, "RC-MINI-2KG", example_fmt)
-        sheet.write(1, 2, 6, example_fmt)
-        sheet.write(1, 3, 185.0, money_fmt)
-        sheet.write(1, 4, 5, example_fmt)
+        sheet.write(1, 2, "10403310", example_fmt)
+        sheet.write(1, 3, 6, example_fmt)
+        sheet.write(1, 4, 185.0, money_fmt)
+        sheet.write(1, 5, 5, example_fmt)
         sheet.freeze_panes(1, 0)
         notes.write(0, 0, "How to fill this spreadsheet")
         notes.write(
             1,
             0,
-            "SKU can be the product SKU, barcode, or this supplier's code.",
+            "SKU is your product SKU or barcode. Supplier Code is this supplier's code.",
         )
         notes.write(2, 0, "Costs must be excluding tax.")
         notes.write(
             3,
             0,
-            "If a product is not in Avea, Receive Stock suggests the closest match. "
-            "Map it to an existing product or press Create to add a new one.",
+            "If a product is not an exact SKU, barcode, or supplier-code match, "
+            "Receive Stock suggests any product that is 70% similar or closer. "
+            "Confirm it with Add, or press Create to add a new stock item.",
         )
         notes.write(4, 0, "Delete the example row before importing your own lines.")
         notes.set_column(0, 0, 90)
@@ -137,7 +146,7 @@ class AveaStockReceiveImport(models.TransientModel):
             raise UserError(
                 _(
                     "No product rows were found. Use the template headers: "
-                    "Product, SKU, Qty, Excl Tax Cost, Discount %."
+                    "Product, SKU, Supplier Code, Qty, Excl Tax Cost, Discount %."
                 )
             )
         receive._avea_apply_product_rows(rows)
@@ -212,7 +221,7 @@ def _map_headers(row):
         for key, aliases in _HEADER_ALIASES.items():
             if header in aliases and key not in columns:
                 columns[key] = index
-    if "product" in columns or "sku" in columns:
+    if "product" in columns or "sku" in columns or "supplier_code" in columns:
         return columns
     return {}
 
@@ -242,7 +251,8 @@ def _cell_float(value, default=0.0):
 def _row_from_cells(row, columns, mixin):
     product = _cell_text(_cell_at(row, columns.get("product")))
     sku = _cell_text(_cell_at(row, columns.get("sku")))
-    if not product and not sku:
+    supplier_code = _cell_text(_cell_at(row, columns.get("supplier_code")))
+    if not product and not sku and not supplier_code:
         return False
     qty = _cell_float(_cell_at(row, columns.get("qty")), 1.0)
     if not qty:
@@ -255,10 +265,12 @@ def _row_from_cells(row, columns, mixin):
         discount = 0.0
     if discount > 100:
         discount = 100.0
+    codes = [value for value in (sku, supplier_code) if value]
     return {
-        "description": product or sku,
-        "codes": [sku] if sku else [],
-        "supplier_code": sku or False,
+        "description": product or sku or supplier_code,
+        "codes": codes,
+        "sku": sku or False,
+        "supplier_code": supplier_code or False,
         "quantity": qty,
         "unit_price": cost,
         "discount": discount,

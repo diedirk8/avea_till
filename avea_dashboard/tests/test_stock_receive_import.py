@@ -76,18 +76,64 @@ class TestStockReceiveImport(TransactionCase):
 
     def test_import_unknown_row_gets_closest_match(self):
         raw = _xlsx_bytes(
-            ["Product", "SKU", "Qty", "Excl Tax Cost", "Discount %"],
-            [["Zzqx Import Kibble 8kg extra", "", 2, 40.0, 0]],
+            ["Product", "SKU", "Supplier Code", "Qty", "Excl Tax Cost", "Discount %"],
+            [["Zzqx Import Kibble extra", "", "", 2, 40.0, 0]],
         )
         self._wizard(raw).action_import()
         self.assertFalse(self.receive.line_ids)
         unmatched = self.receive.unmatched_line_ids
         self.assertEqual(len(unmatched), 1)
         self.assertEqual(unmatched.product_id, self.product)
+        self.assertGreaterEqual(unmatched.match_percent, 70)
         unmatched.action_add_to_receive()
         self.assertEqual(self.receive.line_ids.product_id, self.product)
         self.assertEqual(self.receive.line_ids.quantity, 2.0)
         self.assertFalse(self.receive.unmatched_line_ids)
+
+    def test_import_keeps_supplier_code_on_unmatched(self):
+        raw = _xlsx_bytes(
+            ["Product", "SKU", "Supplier Code", "Qty", "Excl Tax Cost", "Discount %"],
+            [["Brand New Treat 200g", "BNT-200", "SUP-9988", 4, 22.5, 10]],
+        )
+        self._wizard(raw).action_import()
+        unmatched = self.receive.unmatched_line_ids
+        self.assertEqual(len(unmatched), 1)
+        self.assertEqual(unmatched.sku, "BNT-200")
+        self.assertEqual(unmatched.supplier_code, "SUP-9988")
+        action = unmatched.action_create_product()
+        context = action["context"]
+        self.assertEqual(context["default_default_code"], "BNT-200")
+        self.assertEqual(context["default_avea_supplier_code"], "SUP-9988")
+
+    def test_import_matches_supplier_code(self):
+        partner = self.env["res.partner"].create(
+            {"name": "Zzqx Import Supplier", "supplier_rank": 1}
+        )
+        template = self.product.product_tmpl_id
+        template.avea_supplier_id = partner
+        template.avea_supplier_code = "10403310"
+        self.receive.partner_id = partner
+        raw = _xlsx_bytes(
+            ["Product", "SKU", "Supplier Code", "Qty", "Excl Tax Cost", "Discount %"],
+            [["Something else", "", "10403310", 3, 90.0, 0]],
+        )
+        self._wizard(raw).action_import()
+        line = self.receive.line_ids
+        self.assertEqual(line.product_id, self.product)
+        self.assertEqual(line.quantity, 3.0)
+        self.assertFalse(self.receive.unmatched_line_ids)
+
+    def test_close_name_is_only_suggested(self):
+        raw = _xlsx_bytes(
+            ["Product", "SKU", "Supplier Code", "Qty", "Excl Tax Cost", "Discount %"],
+            [["Zzqx Import Kibble 8kg", "", "", 1, 40.0, 0]],
+        )
+        self._wizard(raw).action_import()
+        self.assertFalse(self.receive.line_ids)
+        unmatched = self.receive.unmatched_line_ids
+        self.assertEqual(unmatched.product_id, self.product)
+        self.assertGreaterEqual(unmatched.match_percent, 70)
+        self.assertLess(unmatched.match_percent, 97)
 
     def test_create_product_from_unmatched(self):
         unmatched = self.env["avea.stock.receive.unmatched"].create(
@@ -146,3 +192,16 @@ class TestStockReceiveImport(TransactionCase):
         action = wizard.action_download_template()
         self.assertEqual(action["type"], "ir.actions.act_url")
         self.assertIn("download=true", action["url"])
+        attachment_id = int(action["url"].split("/")[3].split("?")[0])
+        attachment = self.env["ir.attachment"].browse(attachment_id)
+        raw = base64.b64decode(attachment.datas)
+        from openpyxl import load_workbook
+        workbook = load_workbook(io.BytesIO(raw), read_only=True)
+        try:
+            headers = [cell.value for cell in next(workbook.active.iter_rows(max_row=1))]
+        finally:
+            workbook.close()
+        self.assertEqual(
+            headers,
+            ["Product", "SKU", "Supplier Code", "Qty", "Excl Tax Cost", "Discount %"],
+        )

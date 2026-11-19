@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import re
+from difflib import SequenceMatcher
 
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError
@@ -33,7 +34,12 @@ class AveaStockReceiveUnmatched(models.Model):
     quantity = fields.Float(string="Quantity", digits="Product Unit", default=1.0)
     price_unit = fields.Float(string="EX-Tax cost", digits="Avea Supplier Cost")
     discount = fields.Float(string="Discount (%)", digits="Discount", default=0.0)
+    sku = fields.Char(string="SKU")
     supplier_code = fields.Char(string="Supplier code")
+    match_percent = fields.Integer(
+        string="Match %",
+        help="How close the suggested product is. 70% or more is shown for you to confirm.",
+    )
     product_id = fields.Many2one(
         "product.product",
         string="Closest product",
@@ -72,7 +78,7 @@ class AveaStockReceiveUnmatched(models.Model):
             avea_return_unmatched_id=self.id,
             avea_quick_product_add=True,
             default_name=self.description,
-            default_default_code=self.supplier_code or False,
+            default_default_code=self.sku or self.supplier_code or False,
             default_avea_supplier_code=self.supplier_code or False,
             default_avea_supplier_id=receive.partner_id.id if receive.partner_id else False,
             default_avea_cost_ex_tax=self.price_unit or 0.0,
@@ -168,7 +174,7 @@ class AveaStockReceiveInvoiceImport(models.Model):
             if inclusive and rate:
                 cost = cost / (1.0 + rate)
             cost = mixin._avea_round_supplier_cost(cost)
-            product, suggestion, supplier_code = self._avea_match_invoice_product(
+            product, suggestion, supplier_code, percent = self._avea_match_invoice_product(
                 row["description"], row["codes"], partner
             )
             if product:
@@ -192,6 +198,7 @@ class AveaStockReceiveInvoiceImport(models.Model):
                             "price_unit": cost,
                             "discount": row.get("discount") or 0.0,
                             "supplier_code": supplier_code or False,
+                            "match_percent": percent,
                             "product_id": suggestion.id if suggestion else False,
                         }
                     )
@@ -225,7 +232,7 @@ class AveaStockReceiveInvoiceImport(models.Model):
             description = (row.get("description") or "").strip()
             codes = [code for code in (row.get("codes") or []) if code]
             stored_code = row.get("supplier_code") or (codes[0] if codes else False)
-            product, suggestion, matched_code = self._avea_match_invoice_product(
+            product, suggestion, matched_code, percent = self._avea_match_invoice_product(
                 description, codes, partner
             )
             supplier_code = stored_code or matched_code
@@ -249,7 +256,9 @@ class AveaStockReceiveInvoiceImport(models.Model):
                     Command.create(
                         {
                             "description": (description or supplier_code or _("Unknown"))[:240],
+                            "sku": row.get("sku") or False,
                             "supplier_code": supplier_code or False,
+                            "match_percent": percent,
                             "product_id": suggestion.id if suggestion else False,
                             **values,
                         }
@@ -257,7 +266,7 @@ class AveaStockReceiveInvoiceImport(models.Model):
                 )
         summary = _(
             "Imported from spreadsheet. Matched %(matched)s. Not found %(unmatched)s. "
-            "A closest product is only a suggestion until you press Add. "
+            "A 70% or closer product is suggested until you press Add. "
             "Use Create to add a new stock item.",
             matched=len(matched_commands),
             unmatched=len(unmatched_commands),
@@ -314,7 +323,7 @@ class AveaStockReceiveInvoiceImport(models.Model):
         lines.append(
             _(
                 "Nothing is received until you press Receive Stock. "
-                "A closest product is only a suggestion until you press Add."
+                "A 70% or closer product is suggested until you press Add."
             )
         )
         return "\n".join(lines)
@@ -352,16 +361,18 @@ class AveaStockReceiveInvoiceImport(models.Model):
         template.avea_supplier_code = code
 
     def _avea_match_invoice_product(self, description, codes, partner=None):
-        """Return the product to fill in, a suggestion, and the supplier code to store.
+        """Return the product to fill in, a 70%+ suggestion, the code, and match %.
 
-        A line is filled in only when one product is clearly ahead and the size agrees.
-        A close product that fails that test is returned as a suggestion.
+        Exact SKU, barcode, supplier code, or the same name is filled in.
+        Anything else at 70% similar or more is only suggested so you can decide.
         """
         Product = self.env["product.product"].browse()
-        stored_code = _supplier_code_to_store(codes)
+        stored_code = _supplier_code_to_store(codes) or (
+            next((code for code in (codes or []) if code), False)
+        )
         by_code = self._avea_product_for_codes(codes, partner)
         if by_code:
-            return by_code, Product, stored_code
+            return by_code, Product, stored_code, 100
         name = (description or "").strip()
         if name:
             exact = self.env["product.product"].search(
@@ -373,18 +384,18 @@ class AveaStockReceiveInvoiceImport(models.Model):
                 limit=2,
             )
             if len(exact) == 1:
-                return exact, Product, stored_code
-        ranked = self._avea_rank_invoice_names(description)
+                return exact, Product, stored_code, 100
+        ranked = self._avea_rank_similar_products(description, codes, partner)
         if not ranked:
-            return Product, Product, stored_code
-        best_score, best = ranked[0]
-        second_score = ranked[1][0] if len(ranked) > 1 else 0
+            return Product, Product, stored_code, 0
+        best_ratio, best = ranked[0]
+        percent = int(round(best_ratio * 100))
         size_ok = _size_agrees(description, best._avea_plain_name() or best.name)
-        clearly_ahead = best_score >= 2 and best_score > second_score and size_ok
-        if clearly_ahead:
-            return best, Product, stored_code
-        suggestion = best if best_score >= 2 else Product
-        return Product, suggestion, stored_code
+        if best_ratio >= _AUTO_NAME_THRESHOLD and size_ok:
+            return best, Product, stored_code, percent
+        if best_ratio >= _MATCH_THRESHOLD:
+            return Product, best, stored_code, percent
+        return Product, Product, stored_code, percent
 
     def _avea_product_for_codes(self, codes, partner):
         Product = self.env["product.product"]
@@ -416,23 +427,47 @@ class AveaStockReceiveInvoiceImport(models.Model):
                     return product
         return Product.browse()
 
-    def _avea_rank_invoice_names(self, description):
-        words = _name_words(description)
-        if not words:
-            return []
+    def _avea_rank_similar_products(self, description, codes, partner=None):
+        """Score catalogue products by name/SKU/supplier-code similarity (0-1)."""
         Product = self.env["product.product"]
         base = [("is_storable", "=", True), ("purchase_ok", "=", True)]
         candidates = Product.browse()
-        for word in words:
-            if len(word) < 4:
+        for word in _name_words(description):
+            if len(word) < 3:
                 continue
-            candidates |= Product.search(base + [("name", "ilike", word)], limit=25)
+            candidates |= Product.search(base + [("name", "ilike", word)], limit=40)
+        for code in codes or []:
+            if not code or len(str(code).strip()) < 3:
+                continue
+            needle = str(code).strip()
+            candidates |= Product.search(
+                base
+                + [
+                    "|",
+                    "|",
+                    ("default_code", "ilike", needle),
+                    ("barcode", "ilike", needle),
+                    ("name", "ilike", needle),
+                ],
+                limit=20,
+            )
+            seller_domain = [("product_code", "ilike", needle)]
+            if partner:
+                seller_domain.append(("partner_id", "=", partner.id))
+            for seller in self.env["product.supplierinfo"].search(seller_domain, limit=20):
+                product = seller.product_id or seller.product_tmpl_id.product_variant_id
+                if product and product.is_storable and product.purchase_ok:
+                    candidates |= product
+        if candidates:
+            candidates.mapped("name")
+            candidates.mapped("default_code")
+            candidates.mapped("barcode")
+            candidates.mapped("product_tmpl_id.seller_ids.product_code")
         scored = []
         for product in candidates:
-            haystack = (product._avea_plain_name() or product.name or "").lower()
-            score = sum(1 for word in words if word in haystack)
-            if score:
-                scored.append((score, product))
+            ratio = _product_similarity(description, codes, product)
+            if ratio >= _MATCH_THRESHOLD:
+                scored.append((ratio, product))
         scored.sort(key=lambda item: (item[0], -len(item[1].name or "")), reverse=True)
         return scored
 
@@ -451,6 +486,8 @@ class AveaStockReceiveInvoiceImport(models.Model):
         return self.env["res.partner"].browse()
 
 
+_MATCH_THRESHOLD = 0.70
+_AUTO_NAME_THRESHOLD = 0.97
 _LONG_CODE_RE = re.compile(r"^[A-Z]{2,}(?:-[A-Z0-9]+){2,}$")
 _SIZE_RE = re.compile(
     r"(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)\s*(kg|g|ml|l)\b"
@@ -494,3 +531,57 @@ def _size_agrees(invoice_text, product_name):
     if not left or not right:
         return True
     return left == right
+
+
+def _normalize_for_match(value):
+    text = str(value or "").lower()
+    text = re.sub(r"\([^)]*\)", " ", text)
+    text = re.sub(r"[^a-z0-9]+", " ", text)
+    text = re.sub(r"\b(\d+(?:\.\d+)?)\s+(kg|g|ml|l)\b", r"\1\2", text)
+    return " ".join(text.split())
+
+
+def _text_similarity(left, right):
+    first = _normalize_for_match(left)
+    second = _normalize_for_match(right)
+    if not first or not second:
+        return 0.0
+    sequence = SequenceMatcher(None, first, second).ratio()
+    left_words = _name_words(first)
+    right_words = set(_name_words(second))
+    coverage = (
+        sum(1 for word in left_words if word in right_words) / len(left_words)
+        if left_words
+        else 0.0
+    )
+    return max(sequence, coverage)
+
+
+def _code_similarity(left, right):
+    first = str(left or "").strip().lower()
+    second = str(right or "").strip().lower()
+    if not first or not second:
+        return 0.0
+    if first == second:
+        return 1.0
+    sequence = SequenceMatcher(None, first, second).ratio()
+    shorter, longer = (first, second) if len(first) <= len(second) else (second, first)
+    contained = 0.0
+    if len(shorter) >= 4 and shorter in longer:
+        contained = len(shorter) / len(longer)
+    return max(sequence, contained)
+
+
+def _product_similarity(description, codes, product):
+    name = product._avea_plain_name() or product.name or ""
+    ratios = [_text_similarity(description, name), _text_similarity(description, product.name)]
+    seller_codes = product.product_tmpl_id.seller_ids.mapped("product_code")
+    for code in codes or []:
+        ratios.append(_code_similarity(code, product.default_code))
+        ratios.append(_code_similarity(code, product.barcode))
+        for seller_code in seller_codes:
+            ratios.append(_code_similarity(code, seller_code))
+    ratio = max(ratios) if ratios else 0.0
+    if description and not _size_agrees(description, name):
+        ratio = min(ratio, 0.96)
+    return ratio

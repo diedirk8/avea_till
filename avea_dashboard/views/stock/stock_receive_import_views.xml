@@ -9,7 +9,8 @@
                 <field name="receive_id" invisible="1"/>
                 <div class="o_avea_workspace_section_subtitle">
                     Download the template, fill one row per product, then upload it here.
-                    SKU can be the product SKU, barcode, or this supplier's code. Costs are excluding tax.
+                    SKU is your product SKU or barcode. Supplier Code is this supplier's code.
+                    A 70% or closer product is suggested for you to confirm. Costs are excluding tax.
                 </div>
                 <div class="o_avea_workspace_info_item o_avea_stock_import_download">
                     <button
