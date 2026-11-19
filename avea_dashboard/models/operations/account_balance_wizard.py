@@ -87,56 +87,6 @@ class AveaAccountBalanceWizard(models.TransientModel):
         account.invalidate_recordset(["current_balance"])
         return account.sudo().current_balance
 
-
-class AveaAccountBalanceLine(models.TransientModel):
-    _name = "avea.account.balance.line"
-    _description = "Account Balance Line"
-    _order = "sequence, id"
-
-    wizard_id = fields.Many2one(
-        "avea.account.balance.wizard",
-        required=True,
-        ondelete="cascade",
-    )
-    journal_id = fields.Many2one(
-        "account.journal",
-        string="Account",
-        required=True,
-    )
-    account_name = fields.Char(
-        string="Account",
-        required=True,
-    )
-    sequence = fields.Integer(
-        default=10,
-    )
-    balance = fields.Monetary(
-        string="Balance",
-        currency_field="currency_id",
-    )
-    currency_id = fields.Many2one(
-        "res.currency",
-        string="Currency",
-        required=True,
-    )
-
-    def action_open_transactions(self):
-        self.ensure_one()
-        return self._avea_money_transactions_action(
-            self.journal_id, self.account_name, check_visibility=True
-        )
-
-    def action_open_transfer(self):
-        """Transfer money out of this account, then show the destination."""
-        self.ensure_one()
-        if not self.journal_id:
-            raise UserError(_("This account is no longer available."))
-        return (
-            self.env["avea.money.transfer.wizard"]
-            .with_context(default_from_journal_id=self.journal_id.id)
-            .action_open_wizard()
-        )
-
     @api.model
     def _avea_money_transactions_action(
         self, journal, account_name=None, check_visibility=False
@@ -215,6 +165,56 @@ class AveaAccountBalanceLine(models.TransientModel):
             },
             "target": "current",
         }
+
+
+class AveaAccountBalanceLine(models.TransientModel):
+    _name = "avea.account.balance.line"
+    _description = "Account Balance Line"
+    _order = "sequence, id"
+
+    wizard_id = fields.Many2one(
+        "avea.account.balance.wizard",
+        required=True,
+        ondelete="cascade",
+    )
+    journal_id = fields.Many2one(
+        "account.journal",
+        string="Account",
+        required=True,
+    )
+    account_name = fields.Char(
+        string="Account",
+        required=True,
+    )
+    sequence = fields.Integer(
+        default=10,
+    )
+    balance = fields.Monetary(
+        string="Balance",
+        currency_field="currency_id",
+    )
+    currency_id = fields.Many2one(
+        "res.currency",
+        string="Currency",
+        required=True,
+    )
+
+    def action_open_transactions(self):
+        self.ensure_one()
+        return self.env["avea.account.balance.wizard"]._avea_money_transactions_action(
+            self.journal_id, self.account_name, check_visibility=True
+        )
+
+    def action_open_transfer(self):
+        """Transfer money out of this account, then show the destination."""
+        self.ensure_one()
+        if not self.journal_id:
+            raise UserError(_("This account is no longer available."))
+        return (
+            self.env["avea.money.transfer.wizard"]
+            .with_context(default_from_journal_id=self.journal_id.id)
+            .action_open_wizard()
+        )
 
     def get_formview_action(self, access_uid=None):
         self.ensure_one()
