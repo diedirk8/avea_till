@@ -390,8 +390,11 @@ class AveaStockReceiveInvoiceImport(models.Model):
             return Product, Product, stored_code, 0
         best_ratio, best = ranked[0]
         percent = int(round(best_ratio * 100))
-        size_ok = _size_agrees(description, best._avea_plain_name() or best.name)
-        if best_ratio >= _AUTO_NAME_THRESHOLD and size_ok:
+        best_name = best._avea_plain_name() or best.name
+        same_model = _size_agrees(description, best_name) and _specs_agree(
+            description, best_name
+        )
+        if best_ratio >= _AUTO_NAME_THRESHOLD and same_model:
             return best, Product, stored_code, percent
         if best_ratio >= _MATCH_THRESHOLD:
             return Product, best, stored_code, percent
@@ -414,6 +417,13 @@ class AveaStockReceiveInvoiceImport(models.Model):
             )
             if len(found) == 1:
                 return found
+            if len(str(code).strip()) >= 5:
+                contained = Product.search(
+                    base + [("default_code", "ilike", code)],
+                    limit=2,
+                )
+                if len(contained) == 1:
+                    return contained
             # avea_supplier_code is computed from seller product_code and is
             # not stored, so match the vendor code on product.supplierinfo.
             sellers = self.env["product.supplierinfo"].search(
@@ -503,7 +513,7 @@ def re_words(description):
 def _name_words(description):
     words = []
     for word in re_words(description):
-        if word in _STOP_WORDS or len(word) < 3 or word.isdigit():
+        if word in _STOP_WORDS or len(word) < 3:
             continue
         words.append(word)
     return words
@@ -531,6 +541,25 @@ def _size_agrees(invoice_text, product_name):
     if not left or not right:
         return True
     return left == right
+
+
+def _spec_tokens(text):
+    """Model / wattage / size numbers that distinguish otherwise similar names."""
+    normalized = _normalize_for_match(text)
+    collapsed = re.sub(r"\b([a-z]{1,3})\s+(\d+[a-z]*)\b", r"\1\2", normalized)
+    tokens = set()
+    for source in (normalized, collapsed):
+        for word in source.split():
+            if re.search(r"\d", word) and len(word) >= 2:
+                tokens.add(word)
+    return tokens
+
+
+def _specs_agree(left, right):
+    first, second = _spec_tokens(left), _spec_tokens(right)
+    if not first or not second:
+        return True
+    return bool(first & second)
 
 
 def _normalize_for_match(value):
@@ -584,4 +613,6 @@ def _product_similarity(description, codes, product):
     ratio = max(ratios) if ratios else 0.0
     if description and not _size_agrees(description, name):
         ratio = min(ratio, 0.96)
+    if description and not _specs_agree(description, name):
+        ratio = min(ratio, 0.89)
     return ratio

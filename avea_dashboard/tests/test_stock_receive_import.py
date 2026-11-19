@@ -123,6 +123,47 @@ class TestStockReceiveImport(TransactionCase):
         self.assertEqual(line.quantity, 3.0)
         self.assertFalse(self.receive.unmatched_line_ids)
 
+    def test_different_filter_models_are_not_the_same_product(self):
+        f800 = self.env["product.product"].create(
+            {
+                "name": "Zzqx Internal Filter F-800",
+                "default_code": "ZZQX-IF0860",
+                "type": "consu",
+                "is_storable": True,
+                "purchase_ok": True,
+                "sale_ok": True,
+            }
+        )
+        raw = _xlsx_bytes(
+            ["Product", "SKU", "Supplier Code", "Qty", "Excl Tax Cost", "Discount %"],
+            [
+                ["A/ ZZQX INTERNAL FILTER - FC-603", "", "ZZQX-IF0603", 3, 106.35, 0],
+                ["A/ ZZQX INTERNAL FILTER F-1200", "", "ZZQX-IF0861", 3, 185.15, 0],
+                ["A/ ZZQX INTERNAL FILTER F-800", "", "ZZQX-IF0860", 3, 126.30, 0],
+            ],
+        )
+        self._wizard(raw).action_import()
+        matched = self.receive.line_ids
+        self.assertEqual(matched.product_id, f800)
+        self.assertEqual(matched.quantity, 3.0)
+        self.assertAlmostEqual(matched.price_unit, 126.30, places=2)
+        unmatched = self.receive.unmatched_line_ids
+        self.assertEqual(
+            set(unmatched.mapped("supplier_code")), {"ZZQX-IF0603", "ZZQX-IF0861"}
+        )
+        self.assertAlmostEqual(
+            unmatched.filtered(lambda line: line.supplier_code == "ZZQX-IF0603").price_unit,
+            106.35,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            unmatched.filtered(lambda line: line.supplier_code == "ZZQX-IF0861").price_unit,
+            185.15,
+            places=2,
+        )
+        for line in unmatched:
+            self.assertLess(line.match_percent, 97)
+
     def test_close_name_is_only_suggested(self):
         raw = _xlsx_bytes(
             ["Product", "SKU", "Supplier Code", "Qty", "Excl Tax Cost", "Discount %"],
