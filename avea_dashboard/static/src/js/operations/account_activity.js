@@ -37,6 +37,14 @@ export class AveaAccountActivityController extends ListController {
         return this.props.context?.avea_account_name || "this account";
     }
 
+    get isMoneyAccountActivity() {
+        return Boolean(this.props.context?.avea_money_journal_id);
+    }
+
+    get backLabel() {
+        return this.isMoneyAccountActivity ? "Back to balances" : "Back to account";
+    }
+
     _getActionDomain() {
         return this.props.domain?.length ? [...this.props.domain] : [];
     }
@@ -67,7 +75,24 @@ export class AveaAccountActivityController extends ListController {
         this._applySearchDebounced();
     }
 
+    async onClickTransfer() {
+        const journalId = Number(this.props.context?.avea_money_journal_id || 0);
+        if (!journalId) {
+            return;
+        }
+        await this.actionService.doAction("avea_till.action_avea_money_transfer_wizard", {
+            additionalContext: {
+                default_from_journal_id: journalId,
+                avea_money_journal_id: journalId,
+            },
+        });
+    }
+
     async onClickBack() {
+        if (this.props.context?.avea_from_account_balances) {
+            await this.actionService.doAction("avea_till.action_avea_account_balance_wizard");
+            return;
+        }
         if (this.env.config?.historyBack) {
             await this.env.config.historyBack();
             return;

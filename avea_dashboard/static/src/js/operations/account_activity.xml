@@ -12,7 +12,7 @@
                                 class="btn btn-link o_avea_account_back_btn"
                                 t-on-click="() => this.onClickBack()"
                             >
-                                Back to account
+                                <t t-esc="backLabel"/>
                             </button>
                             <span class="o_avea_workspace_eyebrow">Money</span>
                             <h1 class="o_avea_workspace_title">
@@ -21,6 +21,15 @@
                             <p class="o_avea_workspace_section_subtitle">
                                 Every posted line on this account, newest first. Scroll to see older ones.
                             </p>
+                            <div t-if="isMoneyAccountActivity" class="o_avea_account_activity_actions">
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    t-on-click="() => this.onClickTransfer()"
+                                >
+                                    Transfer
+                                </button>
+                            </div>
                             <div class="o_avea_account_list_search">
                                 <label class="o_avea_workspace_info_label" for="avea_account_activity_search">
                                     Search
