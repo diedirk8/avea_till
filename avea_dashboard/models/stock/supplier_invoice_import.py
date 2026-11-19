@@ -38,7 +38,7 @@ class AveaStockReceiveUnmatched(models.Model):
     supplier_code = fields.Char(string="Supplier code")
     match_percent = fields.Integer(
         string="Match %",
-        help="How close the suggested product is. 70% or more is shown for you to confirm.",
+        help="How close the suggested product is. 70 percent or more is shown for you to confirm.",
     )
     product_id = fields.Many2one(
         "product.product",
@@ -266,7 +266,7 @@ class AveaStockReceiveInvoiceImport(models.Model):
                 )
         summary = _(
             "Imported from spreadsheet. Matched %(matched)s. Not found %(unmatched)s. "
-            "A 70% or closer product is suggested until you press Add. "
+            "A 70%% or closer product is suggested until you press Add. "
             "Use Create to add a new stock item.",
             matched=len(matched_commands),
             unmatched=len(unmatched_commands),
@@ -323,7 +323,7 @@ class AveaStockReceiveInvoiceImport(models.Model):
         lines.append(
             _(
                 "Nothing is received until you press Receive Stock. "
-                "A 70% or closer product is suggested until you press Add."
+                "A 70%% or closer product is suggested until you press Add."
             )
         )
         return "\n".join(lines)
