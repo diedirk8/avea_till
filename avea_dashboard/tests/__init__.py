@@ -44,5 +44,6 @@ from . import test_supplier_centre
 from . import test_supplier_bills
 from . import test_stock_receive_import
 from . import test_stock_receive_list
+from . import test_stock_receive_guards
 from . import test_stock_receive_report
 from . import test_money_transfer

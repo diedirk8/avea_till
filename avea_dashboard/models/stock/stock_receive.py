@@ -1387,12 +1387,40 @@ class AveaStockReceive(models.Model):
         """Pricing updates are applied in the pricing popup; keep for compatibility."""
         return
 
+    def _avea_existing_invoice_receive(self, partner, invoice_number):
+        """Find a completed receive with the same supplier invoice number."""
+        self.ensure_one()
+        number = (invoice_number or "").strip()
+        if not partner or not number:
+            return self.browse()
+        return self.sudo().search(
+            [
+                ("id", "!=", self.id),
+                ("state", "=", "done"),
+                ("company_id", "=", self.company_id.id),
+                ("partner_id", "=", partner.id),
+                ("invoice_number", "=ilike", number),
+            ],
+            limit=1,
+        )
+
     def _avea_check_receive(self, partner):
         self.ensure_one()
+        mixin = self.env["avea.stock.mixin"]
         if not partner:
             raise ValidationError(_("Choose a supplier, or add a new one."))
-        if not self.invoice_number or not self.invoice_number.strip():
+        invoice_number = (self.invoice_number or "").strip()
+        if not invoice_number:
             raise ValidationError(_("Enter the supplier invoice number."))
+        existing = self._avea_existing_invoice_receive(partner, invoice_number)
+        if existing:
+            raise ValidationError(
+                _(
+                    "Invoice %(invoice)s has already been received for %(supplier)s.",
+                    invoice=invoice_number,
+                    supplier=partner.display_name,
+                )
+            )
         lines = self.line_ids.filtered("product_id")
         if not lines:
             raise ValidationError(_("Add at least one product to receive."))
@@ -1407,11 +1435,30 @@ class AveaStockReceive(models.Model):
                     _("Discount for %(product)s must be between 0 and 100%.",
                       product=line.product_id.display_name)
                 )
+            discounted = (line.price_unit or 0.0) * (1.0 - (line.discount or 0.0) / 100.0)
+            if mixin._avea_compare_supplier_cost(line.price_unit, 0.0) <= 0 or (
+                mixin._avea_compare_supplier_cost(discounted, 0.0) <= 0
+            ):
+                raise ValidationError(
+                    _(
+                        "Cost for %(product)s must be greater than zero.",
+                        product=line.product_id.display_name,
+                    )
+                )
             if not line.product_id.is_storable:
                 raise ValidationError(
                     _("%(product)s is not a stock product.",
                       product=line.product_id.display_name)
                 )
+        if self.totals_mismatch:
+            raise ValidationError(
+                _(
+                    "The captured total %(received)s does not match the invoice "
+                    "total %(invoice)s. Fix quantities, costs, or charges before receiving.",
+                    received=self.currency_id.format(self.amount_total or 0.0),
+                    invoice=self.currency_id.format(self.invoice_total or 0.0),
+                )
+            )
         if self.use_store_credit:
             amount = self.store_credit_amount or 0.0
             if self.currency_id.compare_amounts(amount, 0.0) <= 0:

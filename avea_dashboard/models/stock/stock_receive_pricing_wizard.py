@@ -260,6 +260,8 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         if not template:
             raise UserError(_("No product on this line."))
         cost = self._avea_resolve_new_cost()
+        if float_compare(cost, 0.0, precision_digits=AVEA_PRICING_WIZARD_COST_DIGITS) <= 0:
+            raise UserError(_("Cost must be greater than zero."))
         self.line_id._avea_snapshot_catalog_pricing()
         template._avea_apply_catalog_cost(cost)
         self.line_id.with_context(avea_skip_pricing_wizard=True).write(
@@ -281,6 +283,8 @@ class AveaStockReceivePricingWizard(models.TransientModel):
             raise UserError(_("Margin must be less than 100%."))
         mixin = self._avea_mixin()
         cost = self._avea_resolve_new_cost()
+        if float_compare(cost, 0.0, precision_digits=AVEA_PRICING_WIZARD_COST_DIGITS) <= 0:
+            raise UserError(_("Cost must be greater than zero."))
         retail = mixin._avea_round_product_cost(self.new_retail or 0.0)
         self.line_id._avea_snapshot_catalog_pricing()
         template._avea_apply_catalog_cost(cost)

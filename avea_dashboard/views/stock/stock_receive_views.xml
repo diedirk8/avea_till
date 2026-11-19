@@ -300,8 +300,8 @@
                                         <span class="o_avea_workspace_info_label">Difference</span>
                                         <field name="invoice_difference" nolabel="1"/>
                                     </div>
-                                    <div class="alert alert-warning o_avea_stock_mismatch" role="status" invisible="not totals_mismatch">
-                                        The captured total does not match the invoice total. Check quantities, costs, and charges before receiving.
+                                    <div class="alert alert-warning o_avea_stock_mismatch" role="alert" invisible="not totals_mismatch">
+                                        The captured total does not match the invoice total. Fix quantities, costs, or charges — you cannot receive until this matches.
                                     </div>
                                 </div>
                             </div>
