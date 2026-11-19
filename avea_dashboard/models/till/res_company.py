@@ -57,6 +57,11 @@ class ResCompany(models.Model):
         help="Email address(es) that receive Odoo's Sales Details (Z) report "
         "after each POS Cash Up. Separate multiple addresses with commas.",
     )
+    avea_stock_receive_report_email = fields.Char(
+        string="Receive Stock Report Email",
+        help="Email address(es) that receive a report each time stock is received. "
+        "Leave blank to email Avea owners. Separate multiple addresses with commas.",
+    )
     avea_expense_journal_ids = fields.Many2many(
         "account.journal",
         "avea_company_expense_journal_rel",
@@ -122,14 +127,52 @@ class ResCompany(models.Model):
             return False
         return True
 
-    def _avea_register_closure_report_recipients(self):
-        self.ensure_one()
+    def _avea_parse_email_list(self, raw):
         recipients = []
-        for part in re.split(r"[;,]+", (self.avea_register_closure_report_email or "").strip()):
+        for part in re.split(r"[;,]+", (raw or "").strip()):
             email = email_normalize(part.strip())
-            if email:
+            if email and email not in recipients:
                 recipients.append(email)
         return recipients
+
+    def _avea_register_closure_report_recipients(self):
+        self.ensure_one()
+        return self._avea_parse_email_list(self.avea_register_closure_report_email)
+
+    def _avea_owner_user_emails(self):
+        """Login emails of Avea owners who belong to this company."""
+        self.ensure_one()
+        group = self.env.ref("avea_till.group_avea_owner", raise_if_not_found=False)
+        if not group:
+            return []
+        users = (
+            self.env["res.users"]
+            .sudo()
+            .search(
+                [
+                    ("group_ids", "in", group.id),
+                    ("share", "=", False),
+                    ("company_ids", "in", [self.id]),
+                ]
+            )
+        )
+        emails = []
+        for user in users:
+            email = email_normalize((user.email or user.partner_id.email or "").strip())
+            if email and email not in emails:
+                emails.append(email)
+        return emails
+
+    def _avea_stock_receive_report_recipients(self):
+        self.ensure_one()
+        dedicated = self._avea_parse_email_list(self.avea_stock_receive_report_email)
+        if dedicated:
+            return dedicated
+        owners = self._avea_owner_user_emails()
+        if owners:
+            return owners
+        fallback = email_normalize((self.email or "").strip())
+        return [fallback] if fallback else []
 
     @api.constrains("avea_register_closure_report_email")
     def _check_avea_register_closure_report_email(self):
@@ -140,6 +183,17 @@ class ResCompany(models.Model):
             if not company._avea_register_closure_report_recipients():
                 raise ValidationError(
                     _("Enter a valid email address for the register closure report.")
+                )
+
+    @api.constrains("avea_stock_receive_report_email")
+    def _check_avea_stock_receive_report_email(self):
+        for company in self:
+            raw = (company.avea_stock_receive_report_email or "").strip()
+            if not raw:
+                continue
+            if not company._avea_parse_email_list(raw):
+                raise ValidationError(
+                    _("Enter a valid email address for the Receive Stock report.")
                 )
 
     @api.constrains("avea_receipt_sender_email")

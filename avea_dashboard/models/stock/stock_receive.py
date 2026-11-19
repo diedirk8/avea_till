@@ -1,8 +1,12 @@
+import logging
+
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.float_utils import float_compare, float_is_zero
 
 from .stock_mixin import AVEA_RECEIVE_ORIGIN, AVEA_SUPPLIER_COST_PRECISION
+
+_logger = logging.getLogger(__name__)
 
 
 class AveaStockReceiveLine(models.Model):
@@ -87,10 +91,39 @@ class AveaStockReceiveLine(models.Model):
         digits="Product Price",
         copy=False,
     )
+    avea_previous_cost = fields.Float(
+        string="Catalogue cost before receive",
+        digits=AVEA_SUPPLIER_COST_PRECISION,
+        copy=False,
+    )
+    avea_previous_retail = fields.Float(
+        string="Catalogue retail before receive",
+        digits="Product Price",
+        copy=False,
+    )
+    avea_pricing_snapshot = fields.Boolean(
+        string="Pricing snapshot captured",
+        copy=False,
+    )
     avea_open_pricing_wizard = fields.Boolean(
         string="Open pricing wizard",
         store=False,
     )
+
+    def _avea_snapshot_catalog_pricing(self):
+        """Remember catalogue cost/retail before a receive changes them."""
+        for line in self:
+            if line.avea_pricing_snapshot or not line.product_id:
+                continue
+            template = line.product_id.product_tmpl_id
+            cost, retail_inc, _ex, _markup, _margin = template._avea_pricing_tuple()
+            line.with_context(avea_skip_pricing_wizard=True).write(
+                {
+                    "avea_previous_cost": cost,
+                    "avea_previous_retail": retail_inc,
+                    "avea_pricing_snapshot": True,
+                }
+            )
 
     def _avea_product_cost(self):
         self.ensure_one()
@@ -1301,6 +1334,7 @@ class AveaStockReceive(models.Model):
         )
         if pending:
             return pending[0].action_open_pricing_wizard()
+        self.line_ids._avea_snapshot_catalog_pricing()
         order = self._avea_create_purchase_order(partner)
         self._avea_confirm_purchase_order(order)
         picking = self._avea_incoming_picking(order)
@@ -1635,6 +1669,13 @@ class AveaStockReceive(models.Model):
                 ),
             }
         )
+        try:
+            self._avea_send_receive_report()
+        except Exception:
+            _logger.exception(
+                "Failed to email the Receive Stock report for receive %s",
+                self.id,
+            )
         return self._avea_confirmation_action()
 
     def _avea_confirmation_action(self):

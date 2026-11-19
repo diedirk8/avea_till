@@ -232,6 +232,7 @@ class AveaStockReceivePricingWizard(models.TransientModel):
 
     def action_keep_current_pricing(self):
         self.ensure_one()
+        self.line_id._avea_snapshot_catalog_pricing()
         self.line_id.with_context(avea_skip_pricing_wizard=True).write(
             {
                 "avea_pricing_choice": "keep",
@@ -247,6 +248,7 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         if not template:
             raise UserError(_("No product on this line."))
         cost = self._avea_resolve_new_cost()
+        self.line_id._avea_snapshot_catalog_pricing()
         template._avea_apply_catalog_cost(cost)
         self.line_id.with_context(avea_skip_pricing_wizard=True).write(
             {
@@ -268,6 +270,7 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         mixin = self._avea_mixin()
         cost = self._avea_resolve_new_cost()
         retail = mixin._avea_round_product_cost(self.new_retail or 0.0)
+        self.line_id._avea_snapshot_catalog_pricing()
         template._avea_apply_catalog_cost(cost)
         template.write({"list_price": retail})
         self.line_id.with_context(avea_skip_pricing_wizard=True).write(

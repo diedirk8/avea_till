@@ -29,6 +29,11 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
         string="Register Closure Report Email",
     )
+    avea_stock_receive_report_email = fields.Char(
+        related="company_id.avea_stock_receive_report_email",
+        readonly=False,
+        string="Receive Stock Report Email",
+    )
     avea_expense_journal_ids = fields.Many2many(
         related="company_id.avea_expense_journal_ids",
         readonly=False,

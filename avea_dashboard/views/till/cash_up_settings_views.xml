@@ -63,6 +63,17 @@
                                 placeholder="accounts@yourbusiness.com"
                             />
                         </setting>
+                        <setting
+                            id="avea_stock_receive_report_email"
+                            string="Receive Stock Report Email"
+                            company_dependent="1"
+                            help="Email a full receive report (items, barcodes, SKU, supplier code, markup, profit, price changes, and issues) after each Receive Stock. Leave blank to email Avea owners. Separate multiple addresses with commas."
+                        >
+                            <field
+                                name="avea_stock_receive_report_email"
+                                placeholder="owner@yourbusiness.com"
+                            />
+                        </setting>
                     </block>
                 </app>
             </xpath>
