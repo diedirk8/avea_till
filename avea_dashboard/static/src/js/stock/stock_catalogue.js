@@ -322,6 +322,24 @@ export class AveaStockCatalogueController extends ListController {
         return this.openNewStockItem();
     }
 
+    async onClickImport() {
+        const action = await this.orm.call(
+            "product.template",
+            "action_avea_import_products",
+            []
+        );
+        return this.actionService.doAction(action);
+    }
+
+    async onClickExport() {
+        const action = await this.orm.call(
+            "product.template",
+            "action_avea_export_products",
+            []
+        );
+        return this.actionService.doAction(action);
+    }
+
     /**
      * Opening a row uses the Avea Stock Item form, not the standard product form.
      * While a row is being edited inline, finish that edit before navigating away.

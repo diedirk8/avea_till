@@ -49,8 +49,25 @@
                 create="1"
                 delete="0"
                 duplicate="0"
+                import="false"
                 default_order="name asc"
             >
+                <header>
+                    <button
+                        name="action_avea_import_customers"
+                        type="object"
+                        string="Import"
+                        class="btn-secondary"
+                        display="always"
+                    />
+                    <button
+                        name="action_avea_export_customers"
+                        type="object"
+                        string="Export"
+                        class="btn-secondary"
+                        display="always"
+                    />
+                </header>
                 <button
                     name="action_avea_open_customer"
                     type="object"

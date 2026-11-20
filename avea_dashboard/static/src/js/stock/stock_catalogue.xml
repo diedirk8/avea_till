@@ -15,6 +15,20 @@
                         <div class="o_avea_stock_catalogue_actions">
                             <button
                                 type="button"
+                                class="btn btn-secondary"
+                                t-on-click="onClickImport"
+                            >
+                                Import
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-secondary"
+                                t-on-click="onClickExport"
+                            >
+                                Export
+                            </button>
+                            <button
+                                type="button"
                                 class="btn btn-primary"
                                 t-on-click="onClickCreate"
                             >

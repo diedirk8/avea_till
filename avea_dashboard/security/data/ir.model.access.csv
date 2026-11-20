@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_avea_data_hub,access.avea.data.hub,model_avea_data_hub,,1,1,1,1
+access_avea_data_import,access.avea.data.import,model_avea_data_import,,1,1,1,1
+access_avea_data_import_line,access.avea.data.import.line,model_avea_data_import_line,,1,1,1,1

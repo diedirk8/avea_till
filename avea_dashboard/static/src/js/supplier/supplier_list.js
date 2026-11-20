@@ -212,6 +212,16 @@ export class AveaSupplierListController extends ListController {
     async onClickCreateSupplier() {
         await this.createRecord();
     }
+
+    async onClickImportSuppliers() {
+        const action = await this.orm.call("res.partner", "action_avea_import_suppliers", []);
+        await this.actionService.doAction(action);
+    }
+
+    async onClickExportSuppliers() {
+        const action = await this.orm.call("res.partner", "action_avea_export_suppliers", []);
+        await this.actionService.doAction(action);
+    }
 }
 
 registry.category("views").add("avea_supplier_list", {

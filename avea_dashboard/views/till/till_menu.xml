@@ -114,6 +114,15 @@
     />
 
     <menuitem
+        id="menu_avea_settings_data"
+        name="Data"
+        parent="menu_avea_settings"
+        action="action_avea_data"
+        groups="avea_till.group_avea_manager"
+        sequence="25"
+    />
+
+    <menuitem
         id="menu_avea_settings_users"
         name="Avea Users"
         parent="menu_avea_settings"

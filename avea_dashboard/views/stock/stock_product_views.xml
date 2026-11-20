@@ -49,8 +49,23 @@
                 create="1"
                 delete="1"
                 duplicate="1"
+                import="false"
             >
                 <header>
+                    <button
+                        name="action_avea_import_products"
+                        type="object"
+                        string="Import"
+                        class="btn-secondary"
+                        display="always"
+                    />
+                    <button
+                        name="action_avea_export_products"
+                        type="object"
+                        string="Export"
+                        class="btn-secondary"
+                        display="always"
+                    />
                     <button
                         name="action_avea_open_receive_stock"
                         type="object"

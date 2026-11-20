@@ -665,6 +665,15 @@ class ProductTemplate(models.Model):
     def action_avea_open_stock_count(self):
         return self.env["avea.stock.take"].action_open_stock_take()
 
+    @api.model
+    def action_avea_export_products(self):
+        hub = self.env["avea.data.hub"].create({"company_id": self.env.company.id})
+        return hub.action_export_products()
+
+    @api.model
+    def action_avea_import_products(self):
+        return self.env["avea.data.import"]._open_wizard("products")
+
     def action_avea_bulk_archive(self):
         archived = self.filtered("active")
         if not archived:

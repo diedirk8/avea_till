@@ -347,6 +347,15 @@ class ResPartner(models.Model):
             ("state", "in", self.env["pos.session"]._avea_paid_order_states()),
         ]
 
+    @api.model
+    def action_avea_export_customers(self):
+        hub = self.env["avea.data.hub"].create({"company_id": self.env.company.id})
+        return hub.action_export_customers()
+
+    @api.model
+    def action_avea_import_customers(self):
+        return self.env["avea.data.import"]._open_wizard("customers")
+
     def action_avea_open_customer(self):
         self.ensure_one()
         return {

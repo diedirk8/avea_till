@@ -51,6 +51,7 @@ class TestAveaNav(TestPoSCommon):
         self.assertEqual(nav["home"]["label"], "Home")
         self.assertTrue(nav["settings"])
         self.assertEqual(nav["settings"]["label"], "Settings")
+        self.assertIn("Data", [item["label"] for item in nav["settings"]["items"]])
 
     def test_owner_matches_manager_nav(self):
         owner_nav = self.owner._avea_nav_structure()

@@ -155,6 +155,15 @@ class ResPartnerSupplierCentre(models.Model):
             return False
         return bool(self.supplier_rank) and not self.customer_rank
 
+    @api.model
+    def action_avea_export_suppliers(self):
+        hub = self.env["avea.data.hub"].create({"company_id": self.env.company.id})
+        return hub.action_export_suppliers()
+
+    @api.model
+    def action_avea_import_suppliers(self):
+        return self.env["avea.data.import"]._open_wizard("suppliers")
+
     def action_avea_open_supplier(self):
         self.ensure_one()
         return {

@@ -252,6 +252,16 @@ export class AveaCustomerListController extends ListController {
         await this.createRecord();
     }
 
+    async onClickImportCustomers() {
+        const action = await this.orm.call("res.partner", "action_avea_import_customers", []);
+        await this.actionService.doAction(action);
+    }
+
+    async onClickExportCustomers() {
+        const action = await this.orm.call("res.partner", "action_avea_export_customers", []);
+        await this.actionService.doAction(action);
+    }
+
     async onClickPossibleDuplicates() {
         const action = await this.orm.call(
             "res.partner",

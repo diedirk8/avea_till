@@ -330,6 +330,10 @@ class AveaNavMixin(models.AbstractModel):
                 "menu_xmlid": "avea_till.menu_avea_settings_printed",
             },
             {
+                "label": "Data",
+                "menu_xmlid": "avea_till.menu_avea_settings_data",
+            },
+            {
                 "label": "Avea Users",
                 "menu_xmlid": "avea_till.menu_avea_settings_users",
             },
