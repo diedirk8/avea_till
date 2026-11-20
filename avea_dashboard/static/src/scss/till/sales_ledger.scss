@@ -4,6 +4,11 @@
     background-color: var(--o-webclient-background-color, #f8f9fa);
     min-width: 0;
 
+    .o_avea_sales_ledger_order_link a,
+    .o_avea_platform_sales_link {
+        font-weight: 600;
+    }
+
     .o_avea_workspace_sheet,
     .o_avea_sales_ledger_sheet {
         max-width: 1680px;

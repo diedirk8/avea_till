@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="report_avea_accounting_table_document">
+        <t t-call="web.html_container">
+            <t t-foreach="payloads" t-as="payload">
+                <t t-set="avea_report_title" t-value="payload['title']"/>
+                <t t-call="avea_till.avea_report_document">
+                    <t t-call="avea_till.avea_report_metadata">
+                        <div class="col" name="report_company">
+                            <strong>Company</strong>
+                            <div t-out="payload['company'].display_name"/>
+                        </div>
+                        <div class="col text-end" name="report_period" t-if="payload.get('period_label')">
+                            <strong>Period</strong>
+                            <div t-out="payload['period_label']"/>
+                        </div>
+                    </t>
+                    <div class="row mb-3" t-if="payload.get('summaries')">
+                        <div class="col-4" t-foreach="payload['summaries']" t-as="summary">
+                            <div class="o_avea_accounting_pdf_summary">
+                                <strong t-out="summary[0]"/>
+                                <div t-out="summary[1]"/>
+                            </div>
+                        </div>
+                    </div>
+                    <table class="table table-sm o_main_table o_avea_accounting_pdf_table">
+                        <thead>
+                            <tr>
+                                <th t-foreach="payload['headers']" t-as="header" t-out="header"/>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="payload['rows']" t-as="row"
+                                t-attf-class="o_avea_accounting_pdf_row--#{row['row_type']}">
+                                <td t-foreach="row['cells']" t-as="cell" t-out="cell"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_avea_accounting_profit_loss">
+        <t t-call="avea_till.report_avea_accounting_table_document"/>
+    </template>
+
+    <template id="report_avea_accounting_balance_sheet">
+        <t t-call="avea_till.report_avea_accounting_table_document"/>
+    </template>
+
+    <template id="report_avea_accounting_trial_balance">
+        <t t-call="avea_till.report_avea_accounting_table_document"/>
+    </template>
+
+    <template id="report_avea_accounting_general_ledger">
+        <t t-call="avea_till.report_avea_accounting_table_document"/>
+    </template>
+
+    <record id="action_report_avea_accounting_profit_loss" model="ir.actions.report">
+        <field name="name">Profit and loss</field>
+        <field name="model">avea.accounting.profit.loss</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_accounting_profit_loss</field>
+        <field name="report_file">avea_till.report_avea_accounting_profit_loss</field>
+        <field name="print_report_name">'Profit and loss'</field>
+    </record>
+
+    <record id="action_report_avea_accounting_balance_sheet" model="ir.actions.report">
+        <field name="name">Balance sheet</field>
+        <field name="model">avea.accounting.balance.sheet</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_accounting_balance_sheet</field>
+        <field name="report_file">avea_till.report_avea_accounting_balance_sheet</field>
+        <field name="print_report_name">'Balance sheet'</field>
+    </record>
+
+    <record id="action_report_avea_accounting_trial_balance" model="ir.actions.report">
+        <field name="name">Trial balance</field>
+        <field name="model">avea.accounting.trial.balance</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_accounting_trial_balance</field>
+        <field name="report_file">avea_till.report_avea_accounting_trial_balance</field>
+        <field name="print_report_name">'Trial balance'</field>
+    </record>
+
+    <record id="action_report_avea_accounting_general_ledger" model="ir.actions.report">
+        <field name="name">General ledger</field>
+        <field name="model">avea.accounting.general.ledger</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_accounting_general_ledger</field>
+        <field name="report_file">avea_till.report_avea_accounting_general_ledger</field>
+        <field name="print_report_name">'General ledger'</field>
+    </record>
+
+</odoo>

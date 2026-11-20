@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_data_hub_form" model="ir.ui.view">
+        <field name="name">avea.data.hub.form</field>
+        <field name="model">avea.data.hub</field>
+        <field name="arch" type="xml">
+            <form string="Data" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--settings o_avea_data_hub">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Settings</span>
+                            <h1 class="o_avea_workspace_title">Data</h1>
+                            <p class="o_avea_workspace_lead">
+                                Import and export products, customers, suppliers, sales, and opening stock.
+                                Use the templates so columns match.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_settings_sections">
+                        <section class="o_avea_workspace_info_card o_avea_settings_section">
+                            <h2 class="o_avea_settings_section_title">Export</h2>
+                            <p class="o_avea_settings_section_help">
+                                Downloads an Excel file of what is in the shop now.
+                            </p>
+                            <div class="o_avea_data_actions">
+                                <button name="action_export_products" type="object" string="Products" class="btn btn-secondary" icon="fa-download"/>
+                                <button name="action_export_customers" type="object" string="Customers" class="btn btn-secondary" icon="fa-download"/>
+                                <button name="action_export_suppliers" type="object" string="Suppliers" class="btn btn-secondary" icon="fa-download"/>
+                            </div>
+                            <div class="o_avea_settings_group">
+                                <h3 class="o_avea_settings_group_title">Sales and transactions</h3>
+                                <p class="o_avea_settings_group_help">
+                                    Choose the dates, then download till sales or the full money history.
+                                </p>
+                                <div class="o_avea_data_dates">
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">From</span>
+                                        <field name="date_from" nolabel="1"/>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">To</span>
+                                        <field name="date_to" nolabel="1"/>
+                                    </div>
+                                    <button name="action_this_month" type="object" string="This month" class="btn btn-link"/>
+                                </div>
+                                <div class="o_avea_data_actions">
+                                    <button name="action_export_sales" type="object" string="Sales" class="btn btn-secondary" icon="fa-download"/>
+                                    <button name="action_export_transactions" type="object" string="Transactions" class="btn btn-secondary" icon="fa-download"/>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section class="o_avea_workspace_info_card o_avea_settings_section">
+                            <h2 class="o_avea_settings_section_title">Import</h2>
+                            <p class="o_avea_settings_section_help">
+                                Download a template, fill it, then preview before anything is saved.
+                                Opening stock creates a Stock Take for you to check and apply.
+                            </p>
+                            <div class="o_avea_data_actions">
+                                <button name="action_import_products" type="object" string="Products" class="btn btn-primary" icon="fa-upload"/>
+                                <button name="action_import_customers" type="object" string="Customers" class="btn btn-primary" icon="fa-upload"/>
+                                <button name="action_import_suppliers" type="object" string="Suppliers" class="btn btn-primary" icon="fa-upload"/>
+                                <button name="action_import_opening_stock" type="object" string="Opening stock" class="btn btn-primary" icon="fa-upload"/>
+                            </div>
+                        </section>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_data_import_form" model="ir.ui.view">
+        <field name="name">avea.data.import.form</field>
+        <field name="model">avea.data.import</field>
+        <field name="arch" type="xml">
+            <form string="Import" create="false" duplicate="false" delete="false" class="o_avea_workspace o_avea_workspace--settings o_avea_data_import">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="data_type" invisible="1"/>
+                    <field name="state" invisible="1"/>
+                    <field name="type_label" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Data</span>
+                            <h1 class="o_avea_workspace_title">Import <field name="type_label" nolabel="1"/></h1>
+                            <p class="o_avea_workspace_lead">
+                                Download the template, fill one row per record, then preview before applying.
+                            </p>
+                        </div>
+                        <div class="o_avea_settings_hero_actions">
+                            <button name="action_back_to_data" type="object" string="Back to Data" class="btn btn-secondary"/>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_settings_sections">
+                        <section class="o_avea_workspace_info_card o_avea_settings_section">
+                            <div class="o_avea_workspace_info_item o_avea_stock_import_download">
+                                <button
+                                    name="action_download_template"
+                                    type="object"
+                                    string="Download Excel template"
+                                    class="btn btn-link"
+                                    icon="fa-download"
+                                />
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Filled spreadsheet</span>
+                                <field name="spreadsheet" filename="spreadsheet_filename" nolabel="1"/>
+                                <field name="spreadsheet_filename" invisible="1"/>
+                            </div>
+                            <div class="o_avea_data_actions">
+                                <button name="action_preview" type="object" string="Preview" class="btn btn-primary" icon="fa-eye"/>
+                            </div>
+                        </section>
+
+                        <section class="o_avea_workspace_info_card o_avea_settings_section" invisible="state != 'preview'">
+                            <h2 class="o_avea_settings_section_title">Preview</h2>
+                            <p class="o_avea_settings_section_help">
+                                Create <field name="create_count" nolabel="1"/> ·
+                                Update <field name="update_count" nolabel="1"/> ·
+                                Errors <field name="error_count" nolabel="1"/>.
+                                Error rows are skipped.
+                            </p>
+                            <field name="line_ids" nolabel="1">
+                                <list create="false" delete="false" edit="false"
+                                      decoration-danger="action == 'error'"
+                                      decoration-success="action == 'create'"
+                                      decoration-info="action == 'update'">
+                                    <field name="row_number" string="Row"/>
+                                    <field name="action"/>
+                                    <field name="name"/>
+                                    <field name="key" string="Match"/>
+                                    <field name="message"/>
+                                    <field name="payload" column_invisible="True"/>
+                                </list>
+                            </field>
+                            <div class="o_avea_data_actions">
+                                <button name="action_apply" type="object" string="Apply import" class="btn btn-primary" icon="fa-check"/>
+                            </div>
+                        </section>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_data" model="ir.actions.server">
+        <field name="name">Data</field>
+        <field name="model_id" ref="model_avea_data_hub"/>
+        <field name="state">code</field>
+        <field name="code">action = env['avea.data.hub'].action_open_data()</field>
+    </record>
+
+</odoo>

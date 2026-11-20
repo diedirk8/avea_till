@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_bills_search" model="ir.ui.view">
+        <field name="name">avea.bills.search</field>
+        <field name="model">account.move</field>
+        <field name="priority">45</field>
+        <field name="arch" type="xml">
+            <search string="Bills">
+                <field name="partner_id" string="Supplier"/>
+                <field name="ref" string="Their invoice"/>
+                <field name="name" string="Our number"/>
+                <field name="avea_supplier_bill_label" string="What this is"/>
+                <separator/>
+                <filter string="Open" name="avea_bills_open" domain="[('avea_bill_status', '=', 'open')]"/>
+                <filter string="Overdue" name="avea_bills_overdue" domain="[('avea_bill_status', '=', 'overdue')]"/>
+                <filter string="Paid" name="avea_bills_paid" domain="[('avea_bill_status', '=', 'paid')]"/>
+                <filter string="Credit notes" name="avea_bills_credit" domain="[('avea_bill_status', '=', 'credit')]"/>
+                <separator/>
+                <filter string="Stock receipts" name="avea_bills_stock" domain="[('avea_supplier_bill_source', '=', 'stock')]"/>
+                <filter string="Expenses" name="avea_bills_expense" domain="[('avea_supplier_bill_source', '=', 'expense')]"/>
+                <group>
+                    <filter string="Supplier" name="group_supplier" context="{'group_by': 'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_bills_list" model="ir.ui.view">
+        <field name="name">avea.bills.list</field>
+        <field name="model">account.move</field>
+        <field name="priority">45</field>
+        <field name="arch" type="xml">
+            <list
+                string="Bills"
+                create="false"
+                delete="false"
+                edit="false"
+                default_order="invoice_date desc, id desc"
+                js_class="avea_bill_list"
+                class="o_avea_catalogue_flush o_avea_customer_list o_avea_workspace o_avea_workspace--customer o_avea_workspace--customer-list o_avea_workspace--supplier o_avea_bills_list"
+                decoration-danger="avea_bill_status == 'overdue'"
+                decoration-success="avea_bill_status == 'paid'"
+                decoration-muted="avea_bill_status == 'credit'"
+            >
+                <field name="currency_id" column_invisible="True"/>
+                <field name="invoice_date" string="Date"/>
+                <field name="invoice_date_due" string="Due" optional="hide"/>
+                <field name="partner_id" string="Supplier"/>
+                <field name="avea_supplier_bill_source" string="Type"/>
+                <field name="avea_supplier_bill_label" string="What this is"/>
+                <field name="ref" string="Their invoice"/>
+                <field name="amount_total" string="Total" widget="monetary"/>
+                <field name="avea_amount_paid" string="Paid" widget="monetary" optional="show"/>
+                <field name="amount_residual" string="Still open" widget="monetary"/>
+                <field
+                    name="avea_bill_status"
+                    string="Status"
+                    widget="badge"
+                    decoration-warning="avea_bill_status == 'overdue'"
+                    decoration-success="avea_bill_status == 'paid'"
+                    decoration-info="avea_bill_status == 'open'"
+                    decoration-muted="avea_bill_status == 'credit'"
+                />
+                <button
+                    name="action_avea_pay_supplier_bill"
+                    type="object"
+                    string="Pay"
+                    class="btn-link"
+                    invisible="not avea_can_pay_bill"
+                />
+                <button
+                    name="action_avea_open_linked_receive"
+                    type="object"
+                    string="Receipt"
+                    class="btn-link"
+                    invisible="not avea_linked_receive_id"
+                />
+                <field name="avea_linked_receive_id" column_invisible="True"/>
+                <field name="avea_can_pay_bill" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_avea_bills" model="ir.actions.act_window">
+        <field name="name">Bills</field>
+        <field name="res_model">account.move</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_bills_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_bills_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_supplier_bill_form')}),
+        ]"/>
+        <field name="target">main</field>
+        <field name="domain">[('move_type', 'in', ('in_invoice', 'in_refund')), ('state', '=', 'posted')]</field>
+        <field name="context">{
+            'avea_supplier_workspace': True,
+            'clear_breadcrumbs': True,
+            'no_breadcrumbs': True,
+            'create': False,
+            'delete': False,
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No bills yet
+            </p>
+            <p>
+                Bills appear here when you receive stock or record a supplier expense.
+            </p>
+        </field>
+    </record>
+
+    <record id="view_avea_supplier_payments_search" model="ir.ui.view">
+        <field name="name">avea.supplier.payments.search</field>
+        <field name="model">account.bank.statement.line</field>
+        <field name="priority">45</field>
+        <field name="arch" type="xml">
+            <search string="Payments">
+                <field name="partner_id" string="Supplier"/>
+                <field name="payment_ref" string="Reference"/>
+                <field name="journal_id" string="Paid from"/>
+                <separator/>
+                <filter string="Bill payments" name="avea_payments_bills" domain="[('avea_is_bill_payment', '=', True)]"/>
+                <filter string="Not on a statement yet" name="avea_payments_unmatched" domain="[('avea_cleared', '=', False)]"/>
+                <filter string="Matched to bank" name="avea_payments_matched" domain="[('avea_cleared', '=', True)]"/>
+                <group>
+                    <filter string="Supplier" name="group_supplier" context="{'group_by': 'partner_id'}"/>
+                    <filter string="Paid from" name="group_journal" context="{'group_by': 'journal_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_supplier_payments_list" model="ir.ui.view">
+        <field name="name">avea.supplier.payments.list</field>
+        <field name="model">account.bank.statement.line</field>
+        <field name="priority">45</field>
+        <field name="arch" type="xml">
+            <list
+                string="Payments"
+                create="false"
+                delete="false"
+                edit="false"
+                default_order="date desc, id desc"
+                js_class="avea_supplier_payment_list"
+                class="o_avea_catalogue_flush o_avea_customer_list o_avea_workspace o_avea_workspace--customer o_avea_workspace--customer-list o_avea_workspace--supplier o_avea_bills_list"
+                decoration-muted="avea_cleared"
+            >
+                <field name="currency_id" column_invisible="True"/>
+                <field name="date" string="Date"/>
+                <field name="partner_id" string="Supplier"/>
+                <field
+                    name="avea_payment_kind"
+                    string="Type"
+                    widget="badge"
+                    decoration-info="avea_payment_kind == 'bill'"
+                    decoration-muted="avea_payment_kind == 'other'"
+                />
+                <field name="payment_ref" string="Reference"/>
+                <field name="journal_id" string="Paid from"/>
+                <field name="avea_paid_amount" string="Amount" widget="monetary"/>
+                <button
+                    name="action_avea_delete_payment"
+                    type="object"
+                    string="Delete"
+                    class="btn btn-link"
+                    confirm="This removes the payment from the books and puts any paid bills back to unpaid. Continue?"
+                    invisible="not avea_can_delete_payment"
+                    groups="avea_till.group_avea_owner,base.group_system"
+                />
+                <field name="avea_bank_match_label" string="Bank match"/>
+                <field name="avea_cleared" column_invisible="True"/>
+                <field name="avea_is_bill_payment" column_invisible="True"/>
+                <field name="avea_can_delete_payment" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_supplier_payment_form" model="ir.ui.view">
+        <field name="name">avea.supplier.payment.form</field>
+        <field name="model">account.bank.statement.line</field>
+        <field name="priority">45</field>
+        <field name="arch" type="xml">
+            <form string="Supplier payment" create="false" delete="false" edit="false" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--supplier">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="avea_cleared" invisible="1"/>
+                    <field name="avea_can_delete_payment" invisible="1"/>
+                    <field name="avea_is_bill_payment" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Suppliers</span>
+                            <h1 class="o_avea_workspace_title">Payment</h1>
+                            <p class="o_avea_workspace_section_subtitle" invisible="avea_cleared or not avea_can_delete_payment">
+                                Use Delete payment if this was a mistake.
+                                Bill payments go back to unpaid on the supplier bills they covered.
+                            </p>
+                            <p class="o_avea_workspace_section_subtitle" invisible="not avea_cleared">
+                                This payment is matched on a bank statement.
+                                Unmatch it in bank recon before you can delete it.
+                            </p>
+                        </div>
+                        <div class="o_avea_customer_hero_actions">
+                            <button
+                                string="Delete payment"
+                                name="action_avea_delete_payment"
+                                type="object"
+                                class="btn btn-primary"
+                                confirm="This removes the payment from the books and puts any paid bills back to unpaid. Continue?"
+                                invisible="not avea_can_delete_payment"
+                                groups="avea_till.group_avea_owner,base.group_system"
+                            />
+                            <button
+                                string="Open supplier"
+                                name="action_avea_open_payment_supplier"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not partner_id"
+                            />
+                            <button
+                                string="Back to payments"
+                                name="action_avea_open_payments"
+                                type="object"
+                                class="btn btn-secondary"
+                            />
+                        </div>
+                    </div>
+                    <div class="o_avea_stock_product_panel">
+                        <h2 class="o_avea_workspace_section_title">Payment</h2>
+                        <div class="o_avea_stock_product_fields">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Supplier</span>
+                                <field name="partner_id" nolabel="1" readonly="1" options="{'no_open': True}"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Date</span>
+                                <field name="date" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Amount</span>
+                                <field name="avea_paid_amount" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Type</span>
+                                <field name="avea_payment_kind" nolabel="1" widget="badge" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Paid from</span>
+                                <field name="journal_id" nolabel="1" readonly="1" options="{'no_open': True}"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Reference</span>
+                                <field name="payment_ref" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Bank match</span>
+                                <field name="avea_bank_match_label" nolabel="1" readonly="1"/>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_supplier_payments" model="ir.actions.act_window">
+        <field name="name">Payments</field>
+        <field name="res_model">account.bank.statement.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_supplier_payments_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_supplier_payments_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_supplier_payment_form')}),
+        ]"/>
+        <field name="target">main</field>
+        <field name="domain">[('avea_is_supplier_payment', '=', True)]</field>
+        <field name="context">{
+            'avea_supplier_workspace': True,
+            'clear_breadcrumbs': True,
+            'no_breadcrumbs': True,
+            'create': False,
+            'delete': False,
+        }</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No supplier payments yet
+            </p>
+            <p>
+                Record a payment from cash or bank, then tick the bills it covers.
+            </p>
+        </field>
+    </record>
+
+</odoo>

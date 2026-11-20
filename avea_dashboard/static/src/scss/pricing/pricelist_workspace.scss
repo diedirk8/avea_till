@@ -1,0 +1,576 @@
+// Price lists — Avea workspace (teal accent)
+
+.o_form_view.o_avea_workspace--pricelist,
+.o_list_view.o_avea_workspace--pricelist,
+.o_avea_workspace--pricelist {
+    --avea-brand: #0d9488;
+    --avea-brand-hover: #0f766e;
+    --avea-brand-soft: rgba(13, 148, 136, 0.12);
+    --avea-brand-border: rgba(13, 148, 136, 0.35);
+    --avea-brand-focus: rgba(13, 148, 136, 0.22);
+    --bs-primary: var(--avea-brand);
+    --bs-primary-rgb: 13, 148, 136;
+    --bs-link-color: var(--avea-brand);
+    --bs-link-hover-color: var(--avea-brand-hover);
+}
+
+.o_form_view.o_avea_workspace--pricelist,
+.o_avea_workspace--pricelist {
+    .o_control_panel,
+    .o_form_statusbar,
+    header {
+        display: none !important;
+    }
+
+    .o_form_sheet_bg {
+        background: var(--o-webclient-background-color, #f4f5f7);
+    }
+
+    .o_avea_workspace_sheet {
+        height: auto;
+        margin: 0;
+        max-width: none;
+        overflow: visible;
+        padding-top: 1.15rem;
+        padding-bottom: 3rem;
+    }
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand) !important;
+    }
+
+    .o_avea_pricelist_hero {
+        align-items: stretch;
+        display: flex;
+        flex-direction: column;
+        gap: 0.85rem;
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_pricelist_hero_top {
+        align-items: flex-start;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.25rem;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    .o_avea_workspace_hero_intro {
+        flex: 1 1 18rem;
+        margin-bottom: 0;
+        min-width: 0;
+    }
+
+    .o_avea_workspace_section_subtitle {
+        max-width: 40rem;
+    }
+
+    .o_avea_pricelist_name_title input {
+        font-size: inherit;
+        font-weight: inherit;
+    }
+
+    .o_avea_workspace_hero_stats {
+        flex: 1 1 16rem;
+        margin-top: 0.15rem;
+        min-width: 0;
+    }
+
+    .o_avea_pricelist_hero_stat--summary {
+        max-width: 28rem;
+        min-width: 12rem;
+
+        .o_avea_workspace_hero_stat_value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            white-space: normal;
+        }
+    }
+
+    .o_avea_pricelist_hero_actions {
+        align-items: center;
+        border-top: 1px solid rgba(15, 23, 42, 0.08);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem;
+        justify-content: space-between;
+        padding-top: 0.85rem;
+        width: 100%;
+    }
+
+    .o_avea_pricelist_hero_actions_tools,
+    .o_avea_pricelist_hero_actions_save {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .o_avea_pricelist_hero_actions_save {
+        margin-left: auto;
+    }
+
+    .o_avea_pricelist_hero_actions .btn {
+        min-height: 2.35rem;
+        white-space: nowrap;
+    }
+
+    .btn-primary,
+    .o_form_button_save {
+        background-color: var(--avea-brand) !important;
+        border-color: var(--avea-brand) !important;
+        font-weight: 700;
+
+        &:hover,
+        &:focus,
+        &:active {
+            background-color: var(--avea-brand-hover) !important;
+            border-color: var(--avea-brand-hover) !important;
+        }
+    }
+
+    .o_avea_pricelist_panel_hint,
+    .o_avea_pricelist_field_hint {
+        color: var(--o-gray-600, #6c757d);
+        display: block;
+        font-size: 0.8125rem;
+        line-height: 1.4;
+        margin-top: 0.25rem;
+    }
+
+    .o_avea_pricelist_panel--rules {
+        min-width: 0;
+        overflow: visible;
+    }
+
+    .o_avea_pricelist_item_field,
+    .o_avea_pricelist_lines,
+    .o_avea_pricelist_lines .o_list_renderer,
+    .o_avea_pricelist_lines .table-responsive,
+    .o_avea_pricelist_lines .o_list_table {
+        max-width: 100%;
+        min-width: 0 !important;
+        overflow: visible !important;
+        width: 100%;
+    }
+
+    .o_avea_pricelist_lines .o_list_renderer,
+    .o_avea_pricelist_lines .table-responsive {
+        overflow-x: visible !important;
+    }
+
+    .o_avea_pricelist_lines .o_list_table {
+        display: block;
+        table-layout: auto;
+    }
+
+    .o_avea_pricelist_lines thead {
+        display: none;
+    }
+
+    .o_avea_pricelist_lines tbody {
+        display: flex;
+        flex-direction: column;
+        gap: 0.7rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_row,
+    .o_avea_pricelist_lines .o_data_row.o_selected_row,
+    .o_avea_pricelist_lines tr.o_data_row {
+        align-items: flex-end;
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        display: flex !important;
+        flex-wrap: wrap;
+        gap: 0.55rem 0.9rem;
+        padding: 0.8rem 0.95rem 0.9rem;
+        width: 100%;
+    }
+
+    .o_avea_pricelist_lines .o_data_row.o_selected_row {
+        border-color: var(--avea-brand-border);
+        box-shadow: 0 0 0 3px var(--avea-brand-focus);
+    }
+
+    .o_avea_pricelist_lines .o_data_cell {
+        border: none !important;
+        display: flex !important;
+        flex: 0 1 auto;
+        flex-direction: column;
+        gap: 0.28rem;
+        max-width: 18rem;
+        min-width: 7.5rem;
+        overflow: visible !important;
+        padding: 0 !important;
+        white-space: normal !important;
+        word-break: break-word;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell.o_invisible_modifier,
+    .o_avea_pricelist_lines .o_data_cell.d-none,
+    .o_avea_pricelist_lines .o_data_cell[column_invisible],
+    .o_avea_pricelist_lines .o_list_table .o_optional_columns_dropdown,
+    .o_avea_pricelist_lines .o_list_actions_header {
+        display: none !important;
+        flex: none;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell::before {
+        color: var(--o-gray-600, #6c757d);
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        line-height: 1.2;
+        white-space: nowrap;
+    }
+
+    .o_avea_pricelist_lines .o_data_row:not(.o_selected_row) .o_data_cell[name="categ_id"]:has(.o_field_empty),
+    .o_avea_pricelist_lines .o_data_row:not(.o_selected_row) .o_data_cell[data-name="categ_id"]:has(.o_field_empty),
+    .o_avea_pricelist_lines .o_data_row:not(.o_selected_row) .o_data_cell[name="product_tmpl_id"]:has(.o_field_empty),
+    .o_avea_pricelist_lines .o_data_row:not(.o_selected_row) .o_data_cell[data-name="product_tmpl_id"]:has(.o_field_empty),
+    .o_avea_pricelist_lines .o_data_row:not(.o_selected_row) .o_data_cell[name="product_id"]:has(.o_field_empty),
+    .o_avea_pricelist_lines .o_data_row:not(.o_selected_row) .o_data_cell[data-name="product_id"]:has(.o_field_empty) {
+        display: none !important;
+        flex: none;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_priority"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_priority"]::before {
+        content: "Level (1 first)";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="applied_on"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="applied_on"]::before {
+        content: "Applies to";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="categ_id"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="categ_id"]::before {
+        content: "Category";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="product_tmpl_id"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="product_tmpl_id"]::before {
+        content: "Product";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="product_id"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="product_id"]::before {
+        content: "Variant";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_method"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_method"]::before {
+        content: "How";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_amount"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_amount"]::before {
+        content: "Amount";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_result"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_result"]::before,
+    .o_avea_pricelist_lines .o_data_cell[name="price"]::before,
+    .o_avea_pricelist_lines .o_data_cell[data-name="price"]::before {
+        content: "Result";
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_priority"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_priority"] {
+        flex: 0 0 6.25rem;
+        max-width: 6.25rem;
+        min-width: 5.5rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="applied_on"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="applied_on"],
+    .o_avea_pricelist_lines .o_data_cell[name="avea_method"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_method"] {
+        flex: 0 1 12rem;
+        max-width: 16rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="categ_id"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="categ_id"],
+    .o_avea_pricelist_lines .o_data_cell[name="product_tmpl_id"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="product_tmpl_id"],
+    .o_avea_pricelist_lines .o_data_cell[name="product_id"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="product_id"] {
+        flex: 1 1 14rem;
+        max-width: 22rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_amount"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_amount"] {
+        flex: 0 1 7.5rem;
+        max-width: 8.5rem;
+        min-width: 6.5rem;
+    }
+
+    .o_avea_pricelist_lines .o_data_cell[name="avea_result"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="avea_result"],
+    .o_avea_pricelist_lines .o_data_cell[name="price"],
+    .o_avea_pricelist_lines .o_data_cell[data-name="price"] {
+        flex: 1 1 100%;
+        max-width: none;
+        font-weight: 600;
+    }
+
+    .o_avea_pricelist_lines .o_list_record_remove_container,
+    .o_avea_pricelist_lines .o_list_record_remove,
+    .o_avea_pricelist_lines .o_list_button {
+        align-self: center;
+        flex: 0 0 auto;
+        margin-left: auto;
+        max-width: none;
+        white-space: nowrap;
+    }
+
+    .o_avea_pricelist_lines .o_field_widget,
+    .o_avea_pricelist_lines .o_input,
+    .o_avea_pricelist_lines .o_field_widget span,
+    .o_avea_pricelist_lines .text-truncate {
+        max-width: 100%;
+        min-width: 0;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        white-space: normal !important;
+        width: 100%;
+        word-break: break-word;
+    }
+
+    // Odoo 19 puts o_field_x2many_list_row_add on the TD, not the TR.
+    // Spreadsheet filler rows (zero-width space) collapse into a grey square
+    // once tbody is a flex column — hide them.
+    .o_avea_pricelist_lines tbody > tr:not(.o_data_row):not(:has(.o_field_x2many_list_row_add)) {
+        display: none !important;
+    }
+
+    .o_avea_pricelist_lines tbody > tr:has(> .o_field_x2many_list_row_add) {
+        align-items: stretch;
+        background: transparent;
+        border: 1px dashed rgba(13, 148, 136, 0.45);
+        border-radius: 0.75rem;
+        box-sizing: border-box;
+        display: flex !important;
+        min-height: 2.75rem;
+        padding: 0;
+        width: 100% !important;
+
+        &:hover {
+            background: var(--avea-brand-soft);
+            border-color: var(--avea-brand);
+        }
+    }
+
+    .o_avea_pricelist_lines td.o_field_x2many_list_row_add {
+        align-items: center;
+        border: none !important;
+        display: flex !important;
+        flex: 1 1 auto !important;
+        max-width: none !important;
+        min-height: 2.75rem;
+        min-width: 0 !important;
+        overflow: visible !important;
+        padding: 0.55rem 1rem !important;
+        width: 100% !important;
+    }
+
+    .o_avea_pricelist_lines td.o_field_x2many_list_row_add a {
+        color: var(--avea-brand);
+        display: inline-flex;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .o_avea_pricelist_lines td.o_field_x2many_list_row_add a::before {
+        content: "+ ";
+    }
+}
+
+// Product-shell overflow-x:clip ancestors swallow vertical scroll. Make the
+// action pane the scroller and let this form grow with its rules table.
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist),
+body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--pricelist-prices) {
+    height: calc(100vh - var(--avea-topbar-height));
+    max-height: calc(100vh - var(--avea-topbar-height));
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+
+    .o_action,
+    .o_content,
+    .o_view_controller,
+    .o_form_view.o_avea_workspace--pricelist,
+    .o_form_view.o_avea_workspace--pricelist .o_form_sheet_bg,
+    .o_form_view.o_avea_workspace--pricelist .o_avea_workspace_sheet {
+        display: block !important;
+        flex: none !important;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0 !important;
+        overflow: visible !important;
+        overflow-x: visible !important;
+        overflow-y: visible !important;
+    }
+}
+
+.o_avea_pricelist_list_shell {
+    margin: 0;
+    max-width: none;
+    width: 100%;
+}
+
+.o_avea_pricelist_workspace {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    margin: 0;
+    max-width: none;
+    min-width: 0;
+    width: 100%;
+}
+
+.o_avea_pricelist_lower {
+    align-items: start;
+    display: grid;
+    gap: 0.85rem;
+    grid-template-columns: minmax(0, 1fr) minmax(18rem, 28rem);
+    min-width: 0;
+    width: 100%;
+}
+
+.o_avea_pricelist_panel--customers {
+    min-width: 0;
+}
+
+@media (max-width: 991.98px) {
+    .o_avea_pricelist_lower {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+.o_avea_pricelist_list_hero {
+    align-items: flex-start;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.o_avea_pricelist_list_actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.o_avea_pricelist_fields {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.o_avea_pricelist_field--wide {
+    grid-column: 1 / -1;
+}
+
+.o_avea_pricelist_panel {
+    background: #fff;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 0.75rem;
+    margin-bottom: 0.85rem;
+    padding: 1.25rem;
+}
+
+.o_list_view.o_avea_workspace--pricelist-list,
+.o_list_view.o_avea_workspace--pricelist-prices {
+    .o_control_panel {
+        display: none !important;
+    }
+}
+
+.o_avea_pricelist_back_btn {
+    color: var(--avea-brand, #0d9488) !important;
+    display: inline-block;
+    font-weight: 700;
+    margin: 0 0 0.35rem;
+    padding: 0;
+    text-decoration: none;
+
+    &:hover {
+        color: var(--avea-brand-hover, #0f766e) !important;
+        text-decoration: underline;
+    }
+}
+
+.o_avea_pricelist_prices_search {
+    margin-top: 0.85rem;
+    max-width: 28rem;
+}
+
+.o_avea_pricelist_prices_search_input {
+    min-height: 2.35rem;
+}
+
+.o_avea_workspace--pricelist-prices {
+    .o_avea_pricelist_prices_table,
+    .o_list_renderer,
+    .o_list_table {
+        width: 100%;
+    }
+
+    .o_list_table {
+        table-layout: auto;
+
+        th,
+        td {
+            overflow-wrap: anywhere;
+            vertical-align: top;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        th {
+            background: var(--o-gray-100, #f8f9fa);
+            color: var(--o-gray-600, #6c757d);
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        td[name="avea_pricelist_preview_price"],
+        th[data-name="avea_pricelist_preview_price"] {
+            color: var(--avea-brand, #0d9488);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        td[name="avea_pricelist_preview_shelf"],
+        td[name="avea_pricelist_preview_cost"],
+        th[data-name="avea_pricelist_preview_shelf"],
+        th[data-name="avea_pricelist_preview_cost"] {
+            white-space: nowrap;
+        }
+    }
+
+    .o_list_renderer {
+        background: #fff;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 0.75rem;
+        margin: 0 0 0.5rem;
+        overflow-x: auto;
+        padding: 0.15rem 0 0;
+    }
+}
+
+.o_avea_pricelist_list_footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.75rem 1rem 1.25rem;
+}

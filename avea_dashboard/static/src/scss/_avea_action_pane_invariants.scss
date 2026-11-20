@@ -1,0 +1,78 @@
+// Avea product shell: .o_action_manager sits beside the fixed sidebar
+// (margin-left: var(--avea-sidebar-width) in ux/avea_nav.scss).
+//
+// INVARIANT — do not set width: 100% (or 100vw) on .o_action_manager or the
+// outer .o_action wrapper. That sizes to the full viewport *in addition* to
+// the sidebar offset and causes horizontal overflow on every screen.
+//
+// Use this mixin only on .o_action_manager and outer .o_action wrappers.
+// Inner sheets, forms, and list views should use width:100% + max-width:100%
+// within the pane so wide tables scroll inside .o_list_renderer instead of
+// expanding the viewport.
+
+@mixin o_avea_action_pane_fill {
+    box-sizing: border-box;
+    min-width: 0;
+    width: auto;
+}
+
+@mixin o_avea_pane_inner_fill {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
+}
+
+// When .o_action_manager is the vertical scroller, flex children must keep full
+// pane width. display:block on Odoo 19 .o_form_view breaks the form flex column
+// and skips .o_form_view_container, which collapses workspace hero text.
+@mixin o_avea_page_scroll_child_unlock {
+    align-self: stretch !important;
+    box-sizing: border-box;
+    flex: 0 0 auto !important;
+    height: auto !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    width: 100% !important;
+}
+
+@mixin o_avea_page_scroll_form_chain {
+    .o_form_view {
+        display: flex !important;
+        flex: 0 0 auto !important;
+        flex-flow: column nowrap !important;
+        height: auto !important;
+        max-height: none !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+        min-width: 0 !important;
+        overflow: visible !important;
+        width: 100% !important;
+    }
+
+    .o_form_view_container,
+    .o_form_view .o_content,
+    .o_form_renderer,
+    .o_form_sheet_bg,
+    .o_form_sheet,
+    .o_avea_workspace,
+    .o_avea_workspace_sheet {
+        @include o_avea_page_scroll_child_unlock;
+    }
+
+    .o_avea_workspace_hero,
+    .o_avea_workspace_hero_intro,
+    .o_avea_workspace_eyebrow,
+    .o_avea_workspace_title {
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow-wrap: normal !important;
+        width: 100% !important;
+        word-break: normal !important;
+    }
+}

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_pos_quote_list" model="ir.ui.view">
+        <field name="name">avea.pos.quote.list</field>
+        <field name="model">avea.pos.quote</field>
+        <field name="arch" type="xml">
+            <list string="Quotes" create="false" edit="false">
+                <field name="name"/>
+                <field name="quote_date"/>
+                <field name="partner_id"/>
+                <field name="valid_until"/>
+                <field name="amount_total"/>
+                <field name="cashier_name"/>
+                <field name="email_sent"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_pos_quote_form" model="ir.ui.view">
+        <field name="name">avea.pos.quote.form</field>
+        <field name="model">avea.pos.quote</field>
+        <field name="arch" type="xml">
+            <form string="Quote" create="false" edit="false">
+                <header>
+                    <button
+                        name="%(avea_till.action_report_avea_pos_quote)d"
+                        type="action"
+                        string="Print / PDF"
+                        class="btn-primary"
+                    />
+                    <button
+                        name="action_send_email_backend"
+                        type="object"
+                        string="Email customer"
+                        class="btn-secondary"
+                    />
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id"/>
+                            <field name="quote_date"/>
+                            <field name="valid_until"/>
+                            <field name="cashier_name"/>
+                        </group>
+                        <group>
+                            <field name="config_id"/>
+                            <field name="amount_untaxed"/>
+                            <field name="amount_tax"/>
+                            <field name="amount_total"/>
+                            <field name="email_sent"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    <field name="note"/>
+                    <field name="line_ids">
+                        <list>
+                            <field name="name"/>
+                            <field name="default_code"/>
+                            <field name="quantity"/>
+                            <field name="price_unit"/>
+                            <field name="discount"/>
+                            <field name="price_subtotal"/>
+                            <field name="price_tax"/>
+                            <field name="price_total"/>
+                            <field name="currency_id" column_invisible="1"/>
+                        </list>
+                    </field>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_pos_quote" model="ir.actions.act_window">
+        <field name="name">Quotes</field>
+        <field name="res_model">avea.pos.quote</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

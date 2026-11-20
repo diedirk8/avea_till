@@ -71,7 +71,7 @@ class TestAveaWithdrawCash(TransactionCase):
         line = self.env["account.bank.statement.line"].search(
             [
                 ("journal_id", "=", self.cash_journal.id),
-                ("payment_ref", "ilike", "Owner Drawing"),
+                ("payment_ref", "ilike", "Owner / director"),
             ],
             order="id desc",
             limit=1,
@@ -139,6 +139,34 @@ class TestAveaWithdrawCash(TransactionCase):
             lambda move_line: move_line.account_id == self.other_expense_account
         )
         self.assertTrue(counterpart)
+
+    def test_bank_journal_is_allowed_when_configured_for_expenses(self):
+        bank = self.company._avea_expense_journals().filtered(
+            lambda journal: journal.type == "bank"
+        )[:1]
+        if not bank:
+            self.skipTest("No bank journal in Avea expense accounts")
+        if not bank.default_account_id:
+            self.skipTest("Bank journal has no default account")
+        wizard = self._create_wizard(
+            cash_journal_id=bank.id,
+            withdrawal_purpose="owner_drawing",
+            reference_name="Director EFT",
+        )
+        wizard.action_withdraw_cash()
+        line = self.env["account.bank.statement.line"].search(
+            [("journal_id", "=", bank.id), ("payment_ref", "=", "Director EFT")],
+            limit=1,
+        )
+        self.assertTrue(line)
+        counterpart = line.move_id.line_ids.filtered(
+            lambda move_line: move_line.account_id == self.drawings_account
+        )
+        self.assertTrue(counterpart)
+
+    def test_open_wizard_is_named_withdraw(self):
+        action = self.Wizard.action_open_wizard()
+        self.assertEqual(str(action["name"]), "Withdraw")
 
     def test_amount_must_be_positive(self):
         with self.assertRaises(ValidationError):

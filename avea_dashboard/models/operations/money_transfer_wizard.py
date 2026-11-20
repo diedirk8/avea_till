@@ -120,6 +120,10 @@ class AveaMoneyTransferWizard(models.TransientModel):
 
     @api.model
     def action_open_wizard(self):
+        from_journal = self.env.context.get("default_from_journal_id") or self.env.context.get(
+            "avea_money_journal_id"
+        )
+        to_journal = self.env.context.get("default_to_journal_id")
         return {
             "type": "ir.actions.act_window",
             "name": _("Transfer Money"),
@@ -129,6 +133,10 @@ class AveaMoneyTransferWizard(models.TransientModel):
                 "avea_till.view_avea_money_transfer_wizard_form"
             ).id,
             "target": "new",
+            "context": {
+                "default_from_journal_id": from_journal or False,
+                "default_to_journal_id": to_journal or False,
+            },
         }
 
     def action_review_transfer(self):
@@ -225,7 +233,10 @@ class AveaMoneyTransferWizard(models.TransientModel):
         if from_account == to_account:
             raise UserError(_("Choose two different company money accounts."))
         transfer_account = self.company_id.transfer_account_id
-        payment_ref = self.reference or _("Avea Money Transfer")
+        payment_ref = (self.reference or "").strip() or _(
+            "Transfer to %(destination)s",
+            destination=self.to_journal_id.display_name,
+        )
         narration = self._avea_transfer_narration()
         if transfer_account and transfer_account not in (from_account, to_account):
             from_line = self._avea_create_statement_line(
@@ -261,7 +272,11 @@ class AveaMoneyTransferWizard(models.TransientModel):
         return (
             self.env["account.bank.statement.line"]
             .sudo()
-            .with_context(no_retrieve_partner=True)
+            .with_context(
+                no_retrieve_partner=True,
+                journal_type=journal.type,
+                default_journal_id=journal.id,
+            )
             .create(
                 {
                     "journal_id": journal.id,
@@ -285,6 +300,9 @@ class AveaMoneyTransferWizard(models.TransientModel):
             lines.sudo().reconcile()
 
     def _avea_success_close(self):
+        next_action = self.env["avea.account.balance.wizard"]._avea_money_transactions_action(
+            self.to_journal_id
+        )
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
@@ -299,6 +317,6 @@ class AveaMoneyTransferWizard(models.TransientModel):
                     destination=self.to_journal_id.display_name,
                 ),
                 "type": "success",
-                "next": {"type": "ir.actions.act_window_close"},
+                "next": next_action,
             },
         }

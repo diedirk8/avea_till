@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="avea_till.AveaPromotionProductPickerField">
+        <div class="o_avea_promotion_product_picker">
+            <div
+                t-if="showM2OSelectionField"
+                class="o_avea_promotion_product_search"
+                t-ref="autoComplete"
+            >
+                <Many2XAutocomplete
+                    id="props.id"
+                    placeholder="searchPlaceholder"
+                    resModel="relation"
+                    autoSelect="true"
+                    fieldString="string"
+                    activeActions="activeActions"
+                    update="update"
+                    quickCreate="activeActions.create ? quickCreate : null"
+                    context="props.context"
+                    getDomain.bind="getDomain"
+                    isToMany="true"
+                    nameCreateField="props.nameCreateField"
+                    searchThreshold="props.searchThreshold"
+                />
+            </div>
+
+            <div t-if="selectedProducts.length" class="o_avea_promotion_product_selected">
+                <div class="o_avea_promotion_product_selected_label">
+                    Selected products (<t t-esc="selectedProducts.length"/>)
+                </div>
+                <ul class="o_avea_promotion_product_selected_list">
+                    <li
+                        t-foreach="selectedProducts"
+                        t-as="product"
+                        t-key="product.id"
+                        class="o_avea_promotion_product_selected_row"
+                    >
+                        <div class="o_avea_promotion_product_selected_main">
+                            <div class="o_avea_promotion_product_selected_text">
+                                <span
+                                    t-if="product.code"
+                                    class="o_avea_promotion_product_code"
+                                    t-esc="product.code"
+                                />
+                                <span class="o_avea_promotion_product_name" t-esc="product.name"/>
+                            </div>
+                            <div class="o_avea_promotion_product_metrics">
+                                <div class="o_avea_promotion_product_metric">
+                                    <span class="o_avea_promotion_product_metric_label">Cost</span>
+                                    <span class="o_avea_promotion_product_metric_hint">excl. tax</span>
+                                    <span class="o_avea_promotion_product_metric_value" t-esc="product.cost"/>
+                                </div>
+                                <div class="o_avea_promotion_product_metric">
+                                    <span class="o_avea_promotion_product_metric_label">Cost</span>
+                                    <span class="o_avea_promotion_product_metric_hint">incl. tax</span>
+                                    <span class="o_avea_promotion_product_metric_value" t-esc="product.costIncl"/>
+                                </div>
+                                <div class="o_avea_promotion_product_metric">
+                                    <span class="o_avea_promotion_product_metric_label">Sales Price</span>
+                                    <span class="o_avea_promotion_product_metric_hint">incl. tax</span>
+                                    <span class="o_avea_promotion_product_metric_value" t-esc="product.retail"/>
+                                </div>
+                                <div class="o_avea_promotion_product_metric">
+                                    <span class="o_avea_promotion_product_metric_label">Profit</span>
+                                    <span class="o_avea_promotion_product_metric_hint">incl. tax</span>
+                                    <span class="o_avea_promotion_product_metric_value" t-esc="product.profit"/>
+                                </div>
+                                <div class="o_avea_promotion_product_metric o_avea_promotion_product_metric--markup">
+                                    <span class="o_avea_promotion_product_metric_label">Markup</span>
+                                    <span class="o_avea_promotion_product_metric_value" t-esc="product.markup"/>
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            t-if="!props.readonly"
+                            type="button"
+                            class="btn btn-link o_avea_promotion_product_remove"
+                            title="Remove"
+                            aria-label="Remove"
+                            t-on-click="() => this.deleteTag(product.id)"
+                        >
+                            <i class="fa fa-times" aria-hidden="true"/>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </t>
+
+</templates>

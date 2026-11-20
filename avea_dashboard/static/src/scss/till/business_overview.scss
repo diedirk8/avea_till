@@ -895,3 +895,161 @@
         cursor: pointer;
     }
 }
+
+.o_avea_platform_reporting_block {
+    .o_avea_platform_reporting_totals {
+        margin-bottom: 0.75rem;
+    }
+
+    .o_avea_platform_sales_link {
+        color: var(--avea-brand, #c45c26) !important;
+        font-weight: 600;
+        padding-left: 0;
+        padding-right: 0;
+    }
+}
+
+.o_avea_platform_reporting_list .o_data_row {
+    cursor: default;
+}
+
+.o_avea_promotion_reporting_block {
+    .o_avea_promotion_reporting_totals {
+        margin-bottom: 0.85rem;
+    }
+
+    .o_avea_overview_visuals {
+        margin-top: 0.25rem;
+    }
+
+    .o_avea_promotion_analysis_cards {
+        background: var(--o-view-background-color, #fff);
+        border: 1px solid var(--border-color, var(--o-gray-300, #dee2e6));
+        border-radius: var(--border-radius-lg, 0.5rem);
+        min-width: 0;
+        overflow: hidden;
+
+        .o_field_widget,
+        .o_field_html,
+        .o_readonly {
+            display: block;
+            margin: 0;
+            min-width: 0;
+            width: 100%;
+        }
+
+        .odoo-editor-editable,
+        .note-editable,
+        .o_readonly {
+            min-height: 0 !important;
+            padding: 0 !important;
+        }
+    }
+
+    .o_avea_promo_card_list {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+
+    .o_avea_promo_card {
+        border-bottom: 1px solid var(--o-gray-200, #e9ecef);
+        min-width: 0;
+        padding: 0.95rem 1rem 1rem;
+    }
+
+    .o_avea_promo_card:last-child {
+        border-bottom: 0;
+    }
+
+    .o_avea_promo_card_title {
+        color: var(--o-gray-900, #212529);
+        font-size: 1rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.35;
+        margin: 0;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+
+    .o_avea_promo_card_subtitle {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.4;
+        margin: 0.28rem 0 0;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+
+    .o_avea_promo_card_stats {
+        display: grid;
+        gap: 0.55rem 1rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 0.75rem;
+    }
+
+    .o_avea_promo_card_stat {
+        min-width: 0;
+    }
+
+    .o_avea_promo_card_stat_label {
+        color: var(--o-gray-600, #6c757d);
+        display: block;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        line-height: 1.2;
+        text-transform: uppercase;
+    }
+
+    .o_avea_promo_card_stat_value {
+        color: var(--o-gray-900, #212529);
+        display: block;
+        font-size: 0.95rem;
+        font-variant-numeric: tabular-nums;
+        font-weight: 700;
+        line-height: 1.35;
+        margin-top: 0.15rem;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
+
+    .o_avea_promotion_analysis_list .o_list_table {
+        td[name="name"],
+        td[name="deal_summary"],
+        td[name="product_display"],
+        td[name="promotion_name"],
+        td[name="discount_display"] {
+            max-width: none;
+            overflow: visible !important;
+            overflow-wrap: anywhere;
+            text-overflow: clip !important;
+            white-space: normal !important;
+
+            .o_field_widget,
+            .o_field_char,
+            .text-truncate,
+            .min-w-0,
+            span {
+                overflow: visible !important;
+                overflow-wrap: anywhere;
+                text-overflow: clip !important;
+                white-space: normal !important;
+            }
+        }
+    }
+
+    @media (max-width: 991.98px) {
+        .o_avea_promotion_analysis_table {
+            display: none !important;
+        }
+    }
+
+    @media (min-width: 992px) {
+        .o_avea_promotion_analysis_cards {
+            display: none !important;
+        }
+    }
+}

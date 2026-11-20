@@ -29,6 +29,14 @@ class ProductProduct(models.Model):
         related="product_tmpl_id.avea_cost_ex_tax",
         readonly=False,
     )
+    avea_cost_incl_tax = fields.Float(
+        related="product_tmpl_id.avea_cost_incl_tax",
+        readonly=True,
+    )
+    avea_profit_incl_tax = fields.Float(
+        related="product_tmpl_id.avea_profit_incl_tax",
+        readonly=True,
+    )
 
     def _avea_plain_name(self):
         """Full product title without the internal reference/SKU prefix."""
