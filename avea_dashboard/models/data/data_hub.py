@@ -173,21 +173,30 @@ class AveaDataHub(models.TransientModel):
             slug = "customers"
             sheet = "Customers"
         partners = Partner.search(domain, order="name, id")
-        headers = ["Name", "Email", "Phone", "Mobile", "VAT", "Street", "City", "ZIP", "Active"]
-        rows = [
-            [
+        has_mobile = "mobile" in Partner._fields
+        headers = ["Name", "Email", "Phone"]
+        if has_mobile:
+            headers.append("Mobile")
+        headers.extend(["VAT", "Street", "City", "ZIP", "Active"])
+        rows = []
+        for partner in partners:
+            row = [
                 partner.name or "",
                 partner.email or "",
                 partner.phone or "",
-                partner.mobile or "",
-                partner.vat or "",
-                partner.street or "",
-                partner.city or "",
-                partner.zip or "",
-                yes_no(partner.active),
             ]
-            for partner in partners
-        ]
+            if has_mobile:
+                row.append(partner.mobile or "")
+            row.extend(
+                [
+                    partner.vat or "",
+                    partner.street or "",
+                    partner.city or "",
+                    partner.zip or "",
+                    yes_no(partner.active),
+                ]
+            )
+            rows.append(row)
         return headers, rows, slug, sheet
 
     def _export_customers(self):

@@ -334,13 +334,15 @@ class AveaDataImport(models.TransientModel):
                 "name": cell_text(values.get("name")),
                 "email": cell_text(values.get("email")),
                 "phone": cell_text(values.get("phone")),
-                "mobile": cell_text(values.get("mobile")),
                 "vat": cell_text(values.get("vat")),
                 "street": cell_text(values.get("street")),
                 "city": cell_text(values.get("city")),
                 "zip": cell_text(values.get("zip")),
-                "active": cell_bool(values.get("active"), True),
             }
+            if "mobile" in values:
+                payload["mobile"] = cell_text(values.get("mobile"))
+            if "active" in values:
+                payload["active"] = cell_bool(values.get("active"), True)
             key = (payload["email"] or payload["phone"] or payload["name"]).lower()
             if key and key in seen:
                 lines.append(
@@ -585,9 +587,11 @@ class AveaDataImport(models.TransientModel):
             values = json.loads(line.payload or "{}")
             vals = {
                 key: values[key]
-                for key in ("name", "email", "phone", "mobile", "vat", "street", "city", "zip", "active")
+                for key in ("name", "email", "phone", "vat", "street", "city", "zip")
                 if values.get(key) not in (None, "")
             }
+            if "mobile" in values and "mobile" in Partner._fields and values.get("mobile") not in (None, ""):
+                vals["mobile"] = values["mobile"]
             if "active" in values:
                 vals["active"] = bool(values["active"])
             if suppliers:
