@@ -25,7 +25,8 @@
                                 class="btn btn-secondary"
                                 t-on-click="onClickExport"
                             >
-                                Export
+                                <t t-if="hasSelectedRecords">Export selected</t>
+                                <t t-else="">Export</t>
                             </button>
                             <button
                                 type="button"
@@ -144,6 +145,9 @@
                             <t t-esc="selectedCount"/> selected
                         </span>
                         <div class="o_avea_stock_catalogue_selection_actions">
+                            <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.onClickExport()">
+                                Export
+                            </button>
                             <button type="button" class="btn btn-secondary btn-sm" t-on-click="() => this.onBulkArchive()">
                                 Archive
                             </button>

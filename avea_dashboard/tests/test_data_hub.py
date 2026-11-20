@@ -111,6 +111,27 @@ class TestAveaDataHub(TransactionCase):
         skus = [row[0] for row in rows]
         self.assertIn("DH-KIBBLE", skus)
 
+    def test_export_selected_products_only(self):
+        self.env["product.template"].create(
+            {
+                "name": "Data Hub Other",
+                "default_code": "DH-OTHER",
+                "type": "consu",
+                "sale_ok": True,
+                "list_price": 10.0,
+                "company_id": self.company.id,
+            }
+        )
+        _headers, rows, _slug, _sheet = self._hub()._export_products(templates=self.product)
+        skus = [row[0] for row in rows]
+        self.assertEqual(skus, ["DH-KIBBLE"])
+        action = self.env["product.template"].action_avea_export_products(
+            product_ids=self.product.ids
+        )
+        self.assertEqual(action["type"], "ir.actions.act_url")
+        with self.assertRaises(UserError):
+            self._hub()._download_product_records(self.env["product.template"])
+
     def test_export_customers_and_suppliers_are_separate(self):
         _headers, customer_rows, _, _ = self._hub()._export_customers()
         names = [row[0] for row in customer_rows]

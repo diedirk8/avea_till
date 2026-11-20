@@ -98,6 +98,14 @@ class AveaDataHub(models.TransientModel):
     def action_export_products(self):
         return self._download_export("products")
 
+    def _download_product_records(self, templates):
+        self.ensure_one()
+        if not templates:
+            raise UserError(_("Select at least one product."))
+        headers, rows, slug, sheet = self._export_products(templates=templates)
+        content = self._avea_xlsx_workbook(sheet, headers, rows)
+        return self._avea_download_bytes(f"avea_{slug}.xlsx", content, XLSX_MIME)
+
     def action_export_customers(self):
         return self._download_export("customers")
 
@@ -122,11 +130,17 @@ class AveaDataHub(models.TransientModel):
     def action_import_opening_stock(self):
         return self.env["avea.data.import"]._open_wizard("opening_stock")
 
-    def _export_products(self):
-        templates = self.env["product.template"].with_context(active_test=False).search(
-            self._company_domain() + [("sale_ok", "=", True)],
-            order="name, id",
-        )
+    def _export_products(self, templates=None):
+        Product = self.env["product.template"].with_context(active_test=False)
+        if templates is None:
+            templates = Product.search(
+                self._company_domain() + [("sale_ok", "=", True)],
+                order="name, id",
+            )
+        else:
+            templates = Product.browse(templates.ids).sorted(
+                lambda template: ((template.name or "").lower(), template.id)
+            )
         headers = [
             "SKU",
             "Barcode",

@@ -332,10 +332,15 @@ export class AveaStockCatalogueController extends ListController {
     }
 
     async onClickExport() {
+        const kwargs = {};
+        if (this.hasSelectedRecords) {
+            kwargs.product_ids = await this._selectedTemplateIds();
+        }
         const action = await this.orm.call(
             "product.template",
             "action_avea_export_products",
-            []
+            [],
+            kwargs
         );
         return this.actionService.doAction(action);
     }

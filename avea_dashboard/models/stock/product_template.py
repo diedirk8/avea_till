@@ -666,8 +666,11 @@ class ProductTemplate(models.Model):
         return self.env["avea.stock.take"].action_open_stock_take()
 
     @api.model
-    def action_avea_export_products(self):
+    def action_avea_export_products(self, product_ids=None):
         hub = self.env["avea.data.hub"].create({"company_id": self.env.company.id})
+        ids = list(product_ids or self.ids or [])
+        if ids:
+            return hub._download_product_records(self.browse(ids))
         return hub.action_export_products()
 
     @api.model
