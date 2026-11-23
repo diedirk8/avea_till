@@ -657,6 +657,9 @@ class AveaStockReceive(models.Model):
         "bill_id.invoice_line_ids.display_type",
         "bill_id.invoice_line_ids.account_id",
         "bill_id.invoice_line_ids.avea_additional_charge",
+        "bill_id.amount_untaxed",
+        "bill_id.amount_tax",
+        "bill_id.amount_total",
     )
     def _compute_amounts(self):
         for receive in self:
@@ -679,6 +682,12 @@ class AveaStockReceive(models.Model):
             receive.amount_untaxed = product_untaxed + charge_untaxed + extra_untaxed
             receive.amount_tax = product_tax + charge_tax + extra_tax
             receive.amount_total = product_total + charge_total + extra_total
+            # Bank recon matches the paid vendor bill, including its tax rounding.
+            if receive.state == "done" and receive.bill_id:
+                bill = receive.bill_id
+                receive.amount_untaxed = bill.amount_untaxed
+                receive.amount_tax = bill.amount_tax
+                receive.amount_total = bill.amount_total
 
     @api.depends("line_ids.product_id", "line_ids.quantity")
     def _compute_confirmation_stats(self):

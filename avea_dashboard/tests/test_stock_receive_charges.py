@@ -241,6 +241,8 @@ class TestAveaStockReceiveCharges(TransactionCase):
         )
         extra = receive._avea_bill_extra_charge_lines()
         self.assertFalse(extra, "Synced postage must not be counted twice")
+        self.assertAlmostEqual(receive.amount_untaxed, bill.amount_untaxed, places=2)
+        self.assertAlmostEqual(receive.amount_tax, bill.amount_tax, places=2)
 
     def test_synced_postage_does_not_double_count_existing_charges(self):
         receive = self._create_receive(
