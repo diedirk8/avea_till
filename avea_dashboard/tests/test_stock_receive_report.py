@@ -145,6 +145,10 @@ class TestAveaStockReceiveReport(TransactionCase):
         self.assertIn(b"6001234567890", html)
         self.assertIn(b"SUP-F800", html)
         self.assertIn(b"Markup", html)
+        self.assertIn(b"Retail EX (inc)", html)
+        self.assertNotIn(b"Retail INC", html)
+        self.assertIn(payload["lines"][0]["retail"].encode(), html)
+        self.assertIn(payload["lines"][0]["retail_inc"].encode(), html)
         self.assertIn(b"Estimated profit", html)
         mail = self.env["mail.mail"].search(
             [("email_to", "ilike", "owner-report@example.com")],

@@ -76,7 +76,7 @@ class AveaStockReceiveReport(models.Model):
             "margin": margin,
             "profit_unit": profit_unit,
             "profit_line": profit_unit * qty,
-            "line_total": line.price_total or 0.0,
+            "line_total": line.price_subtotal or 0.0,
             "pricing_choice": line.avea_pricing_choice,
         }
 
@@ -225,16 +225,13 @@ class AveaStockReceiveReport(models.Model):
         for line in self.line_ids.filtered("product_id"):
             values = self._avea_receive_report_line_values(line)
             profit_total += values["profit_line"]
+            sku = self._avea_receive_report_text(values["sku"])
+            barcode = self._avea_receive_report_text(values["barcode"])
+            supplier_code = self._avea_receive_report_text(values["supplier_code"])
             codes = [
-                _("SKU %(sku)s", sku=self._avea_receive_report_text(values["sku"])),
-                _(
-                    "Barcode %(barcode)s",
-                    barcode=self._avea_receive_report_text(values["barcode"]),
-                ),
-                _(
-                    "Supplier code %(code)s",
-                    code=self._avea_receive_report_text(values["supplier_code"]),
-                ),
+                _("SKU %(sku)s", sku=sku),
+                _("Barcode %(barcode)s", barcode=barcode),
+                _("Supplier code %(code)s", code=supplier_code),
             ]
             discount_note = ""
             if values["discount"]:
@@ -249,6 +246,8 @@ class AveaStockReceiveReport(models.Model):
                     "codes": " · ".join(codes),
                     "sku": values["sku"],
                     "barcode": values["barcode"],
+                    "sku_barcode": sku,
+                    "barcode_display": barcode,
                     "supplier_code": values["supplier_code"],
                     "discount_note": discount_note,
                     "pricing_label": self._avea_receive_report_pricing_label(
@@ -256,6 +255,7 @@ class AveaStockReceiveReport(models.Model):
                     ),
                     "qty": self._avea_receive_report_qty(values["qty"]),
                     "cost": self._avea_receive_report_money(values["cost"]),
+                    "retail": self._avea_receive_report_money(values["retail_ex"]),
                     "retail_inc": self._avea_receive_report_money(values["retail_inc"]),
                     "markup": self._avea_receive_report_percent(values["markup"]),
                     "margin": self._avea_receive_report_percent(values["margin"]),
@@ -266,7 +266,7 @@ class AveaStockReceiveReport(models.Model):
         charges = [
             {
                 "name": charge.name or _("Additional charge"),
-                "total": self._avea_receive_report_money(charge.price_total),
+                "total": self._avea_receive_report_money(charge.price_subtotal),
             }
             for charge in self.charge_ids.filtered(lambda charge: charge.amount)
         ]
