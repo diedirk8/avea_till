@@ -640,12 +640,23 @@ class AveaStockReceive(models.Model):
         "line_ids.price_subtotal",
         "line_ids.price_tax",
         "line_ids.price_total",
+        "line_ids.product_id",
         "charge_ids.price_subtotal",
         "charge_ids.price_tax",
         "charge_ids.price_total",
         "charge_ids.amount",
         "charge_ids.name",
         "charge_ids",
+        "state",
+        "bill_id",
+        "bill_id.invoice_line_ids",
+        "bill_id.invoice_line_ids.price_subtotal",
+        "bill_id.invoice_line_ids.price_total",
+        "bill_id.invoice_line_ids.product_id",
+        "bill_id.invoice_line_ids.name",
+        "bill_id.invoice_line_ids.display_type",
+        "bill_id.invoice_line_ids.account_id",
+        "bill_id.invoice_line_ids.avea_additional_charge",
     )
     def _compute_amounts(self):
         for receive in self:
@@ -656,14 +667,18 @@ class AveaStockReceive(models.Model):
             charge_untaxed = sum(charges.mapped("price_subtotal"))
             charge_tax = sum(charges.mapped("price_tax"))
             charge_total = sum(charges.mapped("price_total"))
-            receive.amount_charges_untaxed = charge_untaxed
-            receive.amount_charges_tax = charge_tax
-            receive.amount_charges_total = charge_total
-            receive.charge_count = len(charges)
-            receive.charge_line_count = len(receive.charge_ids)
-            receive.amount_untaxed = product_untaxed + charge_untaxed
-            receive.amount_tax = product_tax + charge_tax
-            receive.amount_total = product_total + charge_total
+            extra = receive._avea_bill_extra_charge_lines()
+            extra_untaxed = sum(extra.mapped("price_subtotal"))
+            extra_total = sum(extra.mapped("price_total"))
+            extra_tax = extra_total - extra_untaxed
+            receive.amount_charges_untaxed = charge_untaxed + extra_untaxed
+            receive.amount_charges_tax = charge_tax + extra_tax
+            receive.amount_charges_total = charge_total + extra_total
+            receive.charge_count = len(charges) + len(extra)
+            receive.charge_line_count = len(receive.charge_ids) + len(extra)
+            receive.amount_untaxed = product_untaxed + charge_untaxed + extra_untaxed
+            receive.amount_tax = product_tax + charge_tax + extra_tax
+            receive.amount_total = product_total + charge_total + extra_total
 
     @api.depends("line_ids.product_id", "line_ids.quantity")
     def _compute_confirmation_stats(self):
@@ -860,6 +875,8 @@ class AveaStockReceive(models.Model):
             self.partner_id = False
 
     def _avea_receive_action(self, record, name=None, view_xmlid=None):
+        if record and record.exists() and record.state == "done":
+            record._avea_sync_charges_from_bill()
         view_id = self.env.ref(
             view_xmlid or "avea_till.view_avea_stock_receive_form"
         ).id
@@ -1629,6 +1646,114 @@ class AveaStockReceive(models.Model):
                 )
             )
         return account
+
+    def _avea_charge_match_key(self, name, amount):
+        self.ensure_one()
+        currency = self.currency_id
+        rounded = currency.round(amount) if currency else round(amount or 0.0, 2)
+        return ((name or "").strip().casefold(), rounded)
+
+    def _avea_bill_invoice_product_lines(self):
+        """Vendor-bill product lines (skip sections, notes, and tax/payable)."""
+        self.ensure_one()
+        bill = self.bill_id
+        if not bill:
+            return self.env["account.move.line"]
+        return bill.invoice_line_ids.filtered(
+            lambda line: line.display_type in (False, "product")
+        )
+
+    def _avea_bill_line_is_charge(self, line, receive_products):
+        """Postage, courier, and other non-stock bill lines."""
+        if line.avea_additional_charge:
+            return True
+        if not line.product_id:
+            return True
+        if line.product_id in receive_products:
+            return False
+        if not line.product_id.is_storable:
+            return True
+        account = line.account_id
+        return bool(
+            account
+            and (
+                account.code == "610060"
+                or account.account_type in ("expense", "expense_direct_cost")
+            )
+        )
+
+    def _avea_bill_extra_charge_lines(self):
+        """Bill lines that are not receive products and not already on charge_ids.
+
+        Postage, courier, and other expense lines added on the vendor bill after
+        receive would otherwise be missing from Receive history and bank recon.
+        """
+        self.ensure_one()
+        if self.state != "done" or not self.bill_id:
+            return self.env["account.move.line"]
+        receive_products = self.line_ids.product_id
+        currency = self.currency_id
+        claimed = [
+            self._avea_charge_match_key(charge.name, charge.amount)
+            for charge in self.charge_ids.filtered(lambda charge: charge.amount)
+        ]
+        leftover = self.env["account.move.line"]
+        for line in self._avea_bill_invoice_product_lines():
+            amount = line.price_subtotal
+            if amount <= 0 or (currency and currency.is_zero(amount)):
+                continue
+            if not self._avea_bill_line_is_charge(line, receive_products):
+                continue
+            key = self._avea_charge_match_key(line.name, amount)
+            matched = False
+            for index, claimed_key in enumerate(claimed):
+                if claimed_key == key:
+                    claimed.pop(index)
+                    matched = True
+                    break
+            if matched:
+                continue
+            leftover |= line
+        return leftover
+
+    def _avea_sync_charges_from_bill(self):
+        """Copy extra vendor-bill expense lines onto receive charges."""
+        if self.env.context.get("avea_skip_bill_charge_sync"):
+            return self
+        for receive in self:
+            if not receive.exists() or receive.state != "done" or not receive.bill_id:
+                continue
+            leftover = receive._avea_bill_extra_charge_lines()
+            if not leftover:
+                continue
+            commands = []
+            for line in leftover:
+                commands.append(
+                    Command.create(
+                        {
+                            "name": (line.name or _("Additional charge")).strip()
+                            or _("Additional charge"),
+                            "amount": line.price_subtotal,
+                            "charge_kind": "expense",
+                        }
+                    )
+                )
+            receive.with_context(avea_skip_bill_charge_sync=True).sudo().write(
+                {"charge_ids": commands}
+            )
+            try:
+                leftover.sudo().write({"avea_additional_charge": True})
+            except Exception:
+                _logger.debug(
+                    "Could not mark extra vendor-bill lines as Avea charges on receive %s",
+                    receive.id,
+                    exc_info=True,
+                )
+        return self
+
+    def web_read(self, *args, **kwargs):
+        self._avea_sync_charges_from_bill()
+        return super().web_read(*args, **kwargs)
 
     def _avea_add_charge_lines_to_bill(self, bill):
         """Append expense lines for additional charges before the bill is posted.

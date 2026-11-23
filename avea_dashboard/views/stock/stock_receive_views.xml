@@ -24,6 +24,7 @@
                     <field name="supplier_credit_applied" invisible="1"/>
                     <field name="store_credit_applied" invisible="1"/>
                     <field name="bill_residual" invisible="1"/>
+                    <field name="charge_count" invisible="1"/>
 
                     <div class="o_avea_stock_capture" invisible="show_confirmation">
                     <div class="o_avea_workspace_hero">
@@ -438,6 +439,20 @@
                                     <span class="o_avea_workspace_info_label">Total quantity</span>
                                     <field name="quantity_total" nolabel="1" readonly="1"/>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div class="o_avea_stock_panel o_avea_stock_panel--products" invisible="not charge_count">
+                            <h2 class="o_avea_workspace_section_title">Additional charges</h2>
+                            <div class="o_avea_stock_list_surface">
+                                <field name="charge_ids" nolabel="1" readonly="1">
+                                    <list create="false" delete="false" edit="false" class="o_avea_stock_charge_list">
+                                        <field name="currency_id" column_invisible="True"/>
+                                        <field name="name" string="Description"/>
+                                        <field name="amount" string="EX-tax" widget="monetary"/>
+                                        <field name="price_total" string="Total" widget="monetary"/>
+                                    </list>
+                                </field>
                             </div>
                         </div>
 

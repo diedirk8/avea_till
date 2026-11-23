@@ -105,6 +105,7 @@
                     <field name="can_delete_payment" invisible="1"/>
                     <field name="bill_id" invisible="1"/>
                     <field name="mark_as_paid" invisible="1"/>
+                    <field name="charge_count" invisible="1"/>
 
                     <div class="o_avea_workspace_hero">
                         <div class="o_avea_workspace_hero_intro">
@@ -173,6 +174,20 @@
                         </div>
                     </div>
 
+                    <div class="o_avea_stock_panel o_avea_stock_panel--products" invisible="not charge_count">
+                        <h2 class="o_avea_workspace_section_title">Additional charges</h2>
+                        <div class="o_avea_stock_list_surface">
+                            <field name="charge_ids" nolabel="1" readonly="1">
+                                <list create="false" delete="false" edit="false" class="o_avea_stock_charge_list">
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="name" string="Description"/>
+                                    <field name="amount" string="EX-tax" widget="monetary"/>
+                                    <field name="price_total" string="Total" widget="monetary"/>
+                                </list>
+                            </field>
+                        </div>
+                    </div>
+
                     <div class="o_avea_stock_panel o_avea_stock_card--compact">
                         <div class="o_avea_tax_summary_card o_avea_stock_confirmation_totals">
                             <div class="o_avea_tax_summary_row">
@@ -182,6 +197,10 @@
                             <div class="o_avea_tax_summary_row">
                                 <span class="o_avea_tax_summary_label">Tax</span>
                                 <field name="amount_tax" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
+                            </div>
+                            <div class="o_avea_tax_summary_row" invisible="not charge_count">
+                                <span class="o_avea_tax_summary_label">Additional charges</span>
+                                <field name="amount_charges_total" nolabel="1" widget="monetary" readonly="1" class="o_avea_tax_summary_value"/>
                             </div>
                             <div class="o_avea_tax_summary_row o_avea_tax_summary_row--total">
                                 <span class="o_avea_tax_summary_label">Total</span>

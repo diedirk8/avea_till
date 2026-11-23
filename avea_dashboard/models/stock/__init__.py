@@ -16,4 +16,5 @@ from . import product_template
 from . import product_product
 from . import product_label_layout
 from . import stock_take
+from . import account_move
 from . import account_move_line
