@@ -23,7 +23,7 @@
                 <t t-call="web.internal_layout">
                     <div class="page o_avea_report_document o_avea_receive_report">
                         <h2 class="o_avea_report_title mb-3">Stock received</h2>
-                        <div class="row o_avea_report_metadata mb-4">
+                        <div class="row o_avea_report_metadata mb-2">
                             <div class="col-4">
                                 <strong>Supplier</strong>
                                 <div t-out="payload['supplier']"/>
@@ -36,6 +36,8 @@
                                 <strong>Received</strong>
                                 <div t-out="payload['received_date']"/>
                             </div>
+                        </div>
+                        <div class="row o_avea_report_metadata mb-4">
                             <div class="col-4">
                                 <strong>Received by</strong>
                                 <div t-out="payload['received_by']"/>
@@ -127,34 +129,38 @@
                             </tbody>
                         </table>
 
-                        <table class="table table-sm o_avea_report_summary_table mb-3">
-                            <tbody>
-                                <tr>
-                                    <td>Products</td>
-                                    <td class="text-end" t-out="payload['product_count']"/>
-                                </tr>
-                                <tr>
-                                    <td>Quantity</td>
-                                    <td class="text-end" t-out="payload['quantity_total']"/>
-                                </tr>
-                                <tr>
-                                    <td>Estimated profit</td>
-                                    <td class="text-end" t-out="payload['profit_total']"/>
-                                </tr>
-                                <tr>
-                                    <td>Ex-tax total</td>
-                                    <td class="text-end" t-out="payload['amount_untaxed']"/>
-                                </tr>
-                                <tr>
-                                    <td>Tax</td>
-                                    <td class="text-end" t-out="payload['amount_tax']"/>
-                                </tr>
-                                <tr class="fw-bold">
-                                    <td>Total</td>
-                                    <td class="text-end" t-out="payload['amount_total']"/>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="row">
+                            <div class="col-6 offset-6">
+                                <table class="table table-sm o_avea_report_summary_table mb-3">
+                                    <tbody>
+                                        <tr>
+                                            <td>Products</td>
+                                            <td class="text-end" t-out="payload['product_count']"/>
+                                        </tr>
+                                        <tr>
+                                            <td>Quantity</td>
+                                            <td class="text-end" t-out="payload['quantity_total']"/>
+                                        </tr>
+                                        <tr>
+                                            <td>Estimated profit</td>
+                                            <td class="text-end" t-out="payload['profit_total']"/>
+                                        </tr>
+                                        <tr>
+                                            <td>Ex-tax total</td>
+                                            <td class="text-end" t-out="payload['amount_untaxed']"/>
+                                        </tr>
+                                        <tr>
+                                            <td>Tax</td>
+                                            <td class="text-end" t-out="payload['amount_tax']"/>
+                                        </tr>
+                                        <tr class="fw-bold">
+                                            <td>Total</td>
+                                            <td class="text-end" t-out="payload['amount_total']"/>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                         <p class="text-muted small mb-0">
                             Profit is retail EX tax minus the received EX-tax cost.
                         </p>
