@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from unittest.mock import patch
 
+from markupsafe import Markup
+
 from odoo import Command, fields
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
@@ -133,6 +135,14 @@ class TestAveaStockReceiveReport(TransactionCase):
         self.assertGreater(values["margin"], 0.0)
         self.assertGreater(values["profit_unit"], 0.0)
         self.assertAlmostEqual(values["profit_line"], values["profit_unit"] * 2.0, places=4)
+        self.assertAlmostEqual(
+            values["profit_unit"], values["retail_ex"] - values["cost"], places=4
+        )
+        self.assertAlmostEqual(
+            values["profit_line"],
+            (values["retail_ex"] - values["cost"]) * values["qty"],
+            places=4,
+        )
         payload = receive.get_stock_receive_report_payload()
         self.assertEqual(payload["lines"][0]["sku"], "SKU-F800")
         self.assertIn("SKU-F800", payload["lines"][0]["codes"])
@@ -149,7 +159,12 @@ class TestAveaStockReceiveReport(TransactionCase):
         self.assertNotIn(b"Retail INC", html)
         self.assertIn(payload["lines"][0]["retail"].encode(), html)
         self.assertIn(payload["lines"][0]["retail_inc"].encode(), html)
-        self.assertIn(b"Estimated profit", html)
+        self.assertIn(b"GP at current retail", html)
+        self.assertNotIn(b"Estimated profit", html)
+        self.assertEqual(
+            payload["profit_total"],
+            receive._avea_receive_report_money(values["profit_line"]),
+        )
         mail = self.env["mail.mail"].search(
             [("email_to", "ilike", "owner-report@example.com")],
             order="id desc",
@@ -159,6 +174,7 @@ class TestAveaStockReceiveReport(TransactionCase):
         self.assertIn("Stock received", mail.subject)
         self.assertIn("IO-REPORT-1", mail.subject)
         self.assertIn("attached as a PDF", mail.body_html or "")
+        self.assertNotIn("&lt;", mail.body_html or "")
         self.assertNotIn("SKU-F800", mail.body_html or "")
         self.assertTrue(mail.attachment_ids)
         self.assertTrue(mail.attachment_ids[0].name.lower().endswith(".pdf"))
@@ -171,7 +187,9 @@ class TestAveaStockReceiveReport(TransactionCase):
         )
         self.assertIn(b"Needs attention", html)
         self.assertIn(b"Current pricing was kept", html)
-        self.assertIn("Needs attention", receive._avea_receive_report_body_html())
+        keep_body = receive._avea_receive_report_body_html()
+        self.assertIn("Needs attention", keep_body)
+        self.assertNotIn("&lt;", keep_body)
 
         line = self._create_receive(
             cost=40.0,
@@ -219,7 +237,26 @@ class TestAveaStockReceiveReport(TransactionCase):
         self.assertIn(b"HOSE-1", html)
         self.assertIn(b"SUP-HOSE", html)
         self.assertIn(b"does not match received total", html)
-        self.assertIn("Mystery hose", receive._avea_receive_report_body_html())
+        body = receive._avea_receive_report_body_html()
+        self.assertIsInstance(body, Markup)
+        self.assertIn("Mystery hose", body)
+        self.assertIn("Needs attention", body)
+        self.assertNotIn("&lt;", body)
+        self.assertNotIn("&#39;", body)
+        self.assertIn("<p", body)
+        self.assertIn("<strong>", body)
+        mail = self.env["mail.mail"].create(
+            {
+                "subject": "Receive body html check",
+                "body_html": body,
+                "email_to": "owner-report@example.com",
+            }
+        )
+        stored = mail.body_html or ""
+        self.assertIn("Needs attention", stored)
+        self.assertIn("Mystery hose", stored)
+        self.assertNotIn("&lt;p", stored)
+        self.assertNotIn("&lt;strong", stored)
 
     def test_email_failure_does_not_block_receive(self):
         receive = self._create_receive()

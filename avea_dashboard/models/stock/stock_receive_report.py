@@ -3,7 +3,7 @@ import base64
 import logging
 import re
 
-from markupsafe import escape
+from markupsafe import Markup, escape
 
 from odoo import _, models
 from odoo.exceptions import UserError
@@ -312,21 +312,19 @@ class AveaStockReceiveReport(models.Model):
         accent = (company.avea_receipt_email_accent_color or "#c45c26").strip() or "#c45c26"
         if payload["issues"]:
             issue_items = "".join(
-                f"<li style='margin:0 0 6px 0;'>{escape(issue)}</li>"
-                for issue in payload["issues"]
+                f"<br/>{escape(issue)}" for issue in payload["issues"]
             )
             issues_block = (
-                "<div style='margin:0 0 16px 0;padding:12px 14px;background:#fff7ed;"
-                "border:1px solid #fdba74;border-radius:8px;'>"
-                "<p style='margin:0 0 8px 0;font-weight:600;color:#9a3412;'>"
-                + escape(_("Needs attention"))
-                + "</p>"
-                f"<ul style='margin:0;padding-left:18px;color:#7c2d12;'>{issue_items}</ul>"
-                "</div>"
+                f'<p style="margin:0 0 16px 0;color:#9a3412;">'
+                f"<strong>{escape(_('Needs attention'))}</strong>"
+                f"{issue_items}</p>"
             )
         else:
             issues_block = ""
-        return f"""
+        # Keep this an f-string (never str + Markup). Concatenating a plain
+        # HTML string with escape() escapes the tags, which Gmail then shows.
+        return Markup(
+            f"""
 <div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.5;max-width:640px;">
   <div style="border-bottom:3px solid {escape(accent)};padding-bottom:12px;margin-bottom:16px;">
     <div style="font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:#6b7280;">
@@ -352,6 +350,7 @@ class AveaStockReceiveReport(models.Model):
   </p>
 </div>
 """
+        )
 
     def _avea_send_receive_report(self):
         """Email the owner a PDF after stock is received. Never blocks the receive."""

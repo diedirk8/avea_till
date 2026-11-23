@@ -170,7 +170,7 @@
                                 <td class="num" style="text-align:right;" t-out="payload['quantity_total']"/>
                             </tr>
                             <tr>
-                                <td>Estimated profit</td>
+                                <td>GP at current retail</td>
                                 <td class="num" style="text-align:right;" t-out="payload['profit_total']"/>
                             </tr>
                             <tr>
@@ -187,7 +187,7 @@
                             </tr>
                         </table>
                         <p class="o_avea_receive_note">
-                            Cost, retail, profit and line totals are EX VAT. The amount in brackets after retail is the till price including VAT.
+                            Cost, retail, GP and line totals are EX VAT. The amount in brackets after retail is the till price including VAT. GP at current retail is what you would make if every received unit sold at today's till price.
                         </p>
                     </div>
                 </t>
