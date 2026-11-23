@@ -146,10 +146,29 @@ class AveaPromotion(models.Model):
 
     @api.model
     def _search_schedule_status(self, operator, value):
-        today = fields.Date.context_today(self)
+        if operator in ("in", "not in"):
+            operator = "=" if operator == "in" else "!="
         if operator not in ("=", "!="):
+            return NotImplemented
+        if isinstance(value, str) or value is False or value is True or value is None:
+            statuses = [value]
+        elif isinstance(value, (list, tuple, set, frozenset)):
+            statuses = list(value)
+        else:
+            try:
+                statuses = list(value)
+            except TypeError:
+                statuses = [value]
+        today = fields.Date.context_today(self)
+        domains = [self._avea_schedule_status_domain(status, today) for status in statuses]
+        if not domains:
             return [("id", "=", False)]
-        domain = self._avea_schedule_status_domain(value, today)
+        if len(domains) == 1:
+            domain = domains[0]
+        else:
+            domain = ["|"] * (len(domains) - 1)
+            for part in domains:
+                domain.extend(part)
         if operator == "!=":
             return ["!"] + domain
         return domain

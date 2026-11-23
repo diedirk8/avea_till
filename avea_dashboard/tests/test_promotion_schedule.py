@@ -69,5 +69,9 @@ class TestAveaPromotionSchedule(TransactionCase):
         scheduled_ids = self.env["avea.promotion"].search(
             [("schedule_status", "=", "scheduled"), ("id", "in", (running | scheduled).ids)]
         )
+        scheduled_in = self.env["avea.promotion"].search(
+            [("schedule_status", "in", ["scheduled"]), ("id", "in", (running | scheduled).ids)]
+        )
         self.assertEqual(running_ids, running)
         self.assertEqual(scheduled_ids, scheduled)
+        self.assertEqual(scheduled_in, scheduled)
