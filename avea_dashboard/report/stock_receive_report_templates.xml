@@ -1,20 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <record id="paperformat_avea_stock_receive" model="report.paperformat">
-        <field name="name">Avea Stock Receive</field>
-        <field name="default" eval="False"/>
-        <field name="format">A4</field>
-        <field name="orientation">Portrait</field>
-        <field name="margin_top">12</field>
-        <field name="margin_bottom">12</field>
-        <field name="margin_left">8</field>
-        <field name="margin_right">8</field>
-        <field name="header_line" eval="False"/>
-        <field name="header_spacing">6</field>
-        <field name="dpi">90</field>
-    </record>
-
     <template id="report_avea_stock_receive_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
@@ -168,7 +154,6 @@
         <field name="report_name">avea_till.report_avea_stock_receive_document</field>
         <field name="report_file">avea_till.report_avea_stock_receive_document</field>
         <field name="print_report_name">'Stock received - %s' % (object.display_name)</field>
-        <field name="paperformat_id" ref="paperformat_avea_stock_receive"/>
     </record>
 
 </odoo>
