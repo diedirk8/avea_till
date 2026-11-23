@@ -169,7 +169,11 @@ class TestAveaStockReceiveReport(TransactionCase):
         self.assertIn(b"Current pricing was kept", html)
         self.assertIn("Needs attention", receive._avea_receive_report_body_html())
 
-        line = self._create_receive(cost=40.0, qty=1.0).line_ids
+        line = self._create_receive(
+            cost=40.0,
+            qty=1.0,
+            extra={"invoice_number": "IO-REPORT-2"},
+        ).line_ids
         wizard = (
             self.env["avea.stock.receive.pricing.wizard"]
             .with_context(default_line_id=line.id)
@@ -187,6 +191,7 @@ class TestAveaStockReceiveReport(TransactionCase):
     def test_report_mentions_unmatched_and_total_mismatch(self):
         receive = self._create_receive(
             extra={
+                "invoice_number": "IO-REPORT-3",
                 "invoice_total": 1.0,
                 "unmatched_line_ids": [
                     Command.create(
@@ -201,7 +206,7 @@ class TestAveaStockReceiveReport(TransactionCase):
                 ],
             }
         )
-        receive.action_receive_stock()
+        self.assertTrue(receive.totals_mismatch)
         html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
             "avea_till.report_avea_stock_receive_document", receive.ids
         )
