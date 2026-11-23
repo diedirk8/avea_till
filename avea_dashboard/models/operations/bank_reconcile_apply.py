@@ -100,8 +100,15 @@ class AveaBankReconcileApply(models.TransientModel):
             "('account_type', 'in', ('liability_current', 'liability_non_current'))]"
         ),
     )
+    paid_document_hint = fields.Char(compute="_compute_open_amount")
 
-    @api.depends("reconcile_line_id", "reconcile_line_id.amount", "company_id")
+    @api.depends(
+        "reconcile_line_id",
+        "reconcile_line_id.amount",
+        "reconcile_line_id.description",
+        "reconcile_line_id.reference",
+        "company_id",
+    )
     def _compute_available_move_ids(self):
         for wizard in self:
             line = wizard.reconcile_line_id
@@ -115,7 +122,7 @@ class AveaBankReconcileApply(models.TransientModel):
             else:
                 wizard.available_move_ids = False
                 continue
-            wizard.available_move_ids = self.env["account.move"].search(
+            open_moves = self.env["account.move"].search(
                 [
                     ("company_id", "=", wizard.company_id.id),
                     ("state", "=", "posted"),
@@ -124,11 +131,57 @@ class AveaBankReconcileApply(models.TransientModel):
                     ("amount_residual", "!=", 0),
                 ]
             )
+            wizard.available_move_ids = open_moves | wizard._avea_paid_moves_with_payment(
+                line, move_types
+            )
 
-    @api.depends("move_ids.amount_residual", "currency_id")
+    def _avea_paid_moves_with_payment(self, line, move_types):
+        """Already-paid bills/invoices whose existing bank payment can be linked."""
+        if not line.reconciliation_id:
+            return self.env["account.move"]
+        bills = self.env["account.move"]
+        for st_line in line.reconciliation_id._avea_uncleared_book_lines():
+            if st_line.journal_id != line.journal_id:
+                continue
+            paid = st_line._avea_paid_vendor_bills().filtered(
+                lambda move: move.move_type in move_types
+            )
+            if not paid:
+                continue
+            close = line._avea_amounts_near(st_line.amount, 1.00) or line._avea_amounts_equal(
+                st_line.amount
+            )
+            named = line._avea_name_match(st_line)[0]
+            if close or named:
+                bills |= paid
+        return bills
+
+    @api.depends(
+        "move_ids.amount_residual",
+        "move_ids.amount_total",
+        "move_ids.payment_state",
+        "currency_id",
+    )
     def _compute_open_amount(self):
         for wizard in self:
-            wizard.open_amount = sum(wizard.move_ids.mapped("amount_residual"))
+            moves = wizard.move_ids
+            paid = moves.filtered(
+                lambda move: move.payment_state in ("paid", "in_payment")
+                and move.currency_id.is_zero(move.amount_residual)
+            )
+            wizard.open_amount = sum(moves.mapped("amount_residual"))
+            if paid and paid == moves:
+                wizard.paid_document_hint = _(
+                    "This document is already paid. Apply links the existing "
+                    "supplier payment — it will not pay it again."
+                )
+                wizard.open_amount = sum(paid.mapped("amount_total"))
+            elif paid:
+                wizard.paid_document_hint = _(
+                    "Choose either open documents or already-paid ones, not both."
+                )
+            else:
+                wizard.paid_document_hint = False
 
     @api.depends("split_line_ids.amount", "currency_id")
     def _compute_split_total(self):
@@ -175,8 +228,14 @@ class AveaBankReconcileApply(models.TransientModel):
         currency = line.currency_id or self.env.company.currency_id
         target = abs(line.amount)
         wizard = self.new({"reconcile_line_id": line.id, "company_id": line.company_id.id})
+
+        def _move_match_amount(move):
+            if move.currency_id.is_zero(move.amount_residual):
+                return move.amount_total
+            return abs(move.amount_residual)
+
         exact = wizard.available_move_ids.filtered(
-            lambda move: currency.compare_amounts(move.amount_residual, target) == 0
+            lambda move: currency.compare_amounts(_move_match_amount(move), target) == 0
         )
         blob = " ".join(filter(None, [line.description or "", line.reference or ""])).lower()
         named = exact.filtered(
@@ -249,6 +308,16 @@ class AveaBankReconcileApply(models.TransientModel):
             raise UserError(_("This statement line is already matched."))
         if self.mode == "match":
             statement_line = self._avea_apply_match()
+            hint = (
+                _("Linked to the existing supplier payment")
+                if statement_line
+                and self.move_ids.filtered(
+                    lambda move: move.payment_state in ("paid", "in_payment")
+                    and move.currency_id.is_zero(move.amount_residual)
+                )
+                else None
+            )
+            return line._avea_after_booked(statement_line, hint=hint)
         elif self.mode == "settlement":
             statement_line = self._avea_apply_settlement()
         elif self.mode == "split":
@@ -266,7 +335,18 @@ class AveaBankReconcileApply(models.TransientModel):
         if not moves:
             raise UserError(_("Choose the invoice or bill this bank line pays."))
         if any(move not in self.available_move_ids for move in moves):
-            raise UserError(_("Choose an open invoice or bill for this company."))
+            raise UserError(_("Choose an invoice or bill for this company."))
+        paid = moves.filtered(
+            lambda move: move.payment_state in ("paid", "in_payment")
+            and move.currency_id.is_zero(move.amount_residual)
+        )
+        open_moves = moves - paid
+        if paid and open_moves:
+            raise UserError(
+                _("Choose either open documents or already-paid ones, not both.")
+            )
+        if paid:
+            return self._avea_link_existing_payment(paid)
         currency = self.currency_id
         bank_amount = abs(line.amount)
         residuals = [(move, abs(move.amount_residual)) for move in moves]
@@ -311,6 +391,43 @@ class AveaBankReconcileApply(models.TransientModel):
             raise UserError(_("Could not match this bank line to the document."))
         to_reconcile.sudo().reconcile()
         return statement_line
+
+    def _avea_link_existing_payment(self, moves):
+        """Tick the bank line off against the payment that already paid these bills."""
+        self.ensure_one()
+        line = self.reconcile_line_id
+        mixin = self.env["avea.stock.mixin"]
+        payments = self.env["account.bank.statement.line"]
+        for move in moves:
+            payments |= mixin._avea_statement_lines_for_bill(move).filtered(
+                lambda st_line: not st_line.avea_cleared
+                and st_line.journal_id == line.journal_id
+            )
+        if not payments:
+            raise UserError(
+                _(
+                    "This document is already paid, but Avea cannot find the "
+                    "bank payment to link. Do not record it as an expense."
+                )
+            )
+        st_line = payments.sorted(lambda payment: abs(payment.amount - line.amount))[:1]
+        if st_line.avea_cleared and (
+            st_line.avea_cleared_reconciliation_id != line.reconciliation_id
+        ):
+            raise UserError(_("That book entry is already cleared on another statement."))
+        duplicate = line.reconciliation_id.line_ids.filtered(
+            lambda other: other.id != line.id and other.statement_line_id == st_line
+        )
+        if duplicate:
+            raise UserError(_("That book entry is already linked to another statement line."))
+        line.statement_line_id = st_line.id
+        if not line._avea_amounts_equal(st_line.amount):
+            if not line._avea_amounts_near(st_line.amount, 1.00):
+                raise UserError(
+                    _("The existing payment amount is too different from this bank line.")
+                )
+            line._avea_apply_rounding_writeoff(st_line)
+        return st_line
 
     def _avea_document_account(self, move):
         if move.move_type in ("out_invoice", "out_refund"):

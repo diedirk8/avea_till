@@ -21,15 +21,18 @@
                         name="move_ids"
                         widget="many2many_tags"
                         options="{'no_create': True}"
-                        placeholder="Open invoices or bills"
+                        placeholder="Invoice, bill, or already-paid receive"
                     />
                     <field name="open_amount" readonly="1" widget="monetary"/>
+                    <field name="paid_document_hint" readonly="1" nolabel="1" invisible="not paid_document_hint"/>
                 </group>
                 <p class="text-muted" invisible="mode != 'match'">
                     Money in matches customer invoices and supplier refunds.
                     Money out matches supplier bills and customer refunds.
-                    Several documents must add up to the bank line.
-                    One document can be larger; the rest stays open.
+                    Already-paid receives and bills are listed so you can link
+                    the existing payment — Apply will not pay them again.
+                    Several open documents must add up to the bank line.
+                    One open document can be larger; the rest stays open.
                 </p>
                 <group invisible="mode != 'settlement'">
                     <field name="settlement_gross"/>

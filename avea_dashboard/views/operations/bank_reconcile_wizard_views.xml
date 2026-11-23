@@ -103,6 +103,7 @@
                     options="{'no_create': True, 'no_open': True}"
                     readonly="match_state in ('imported', 'skipped')"/>
                 <field name="match_locked" column_invisible="True"/>
+                <field name="has_supplier_payment_counterpart" column_invisible="True"/>
                 <field name="import_action" optional="hide"/>
                 <button
                     name="action_accept_line_match"
@@ -117,7 +118,7 @@
                     type="object"
                     string="Record"
                     class="btn-link"
-                    invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement"
+                    invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement or has_supplier_payment_counterpart"
                     title="Create the expense or income for this bank line"
                 />
                 <button
@@ -578,6 +579,7 @@
                                     <field name="statement_line_id" optional="hide"
                                         options="{'no_create': True, 'no_open': True}"/>
                                     <field name="match_locked" column_invisible="True"/>
+                                    <field name="has_supplier_payment_counterpart" column_invisible="True"/>
                                     <field name="import_action" optional="hide"/>
                                     <button
                                         name="action_accept_line_match"
@@ -592,7 +594,7 @@
                                         type="object"
                                         string="Record"
                                         class="btn-link"
-                                        invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement"
+                                        invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement or has_supplier_payment_counterpart"
                                         title="Create the expense or income for this bank line"
                                     />
                                     <button

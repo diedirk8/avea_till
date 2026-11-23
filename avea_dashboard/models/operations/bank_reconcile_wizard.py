@@ -14,6 +14,38 @@ from .merchant_payout_parser import AveaMerchantPayoutParser
 # and is enough to auto-match. A nearby date alone stays a suggestion.
 _MATCH_AUTO = 70.0
 _MATCH_SUGGEST = 60.0
+# Supplier EFTs often hit the bank before the receive is dated in Avea
+# (Akwa 5 Oct vs a September statement). Keep those payments visible.
+_BOOK_MATCH_GRACE_DAYS = 45
+# Auto-suggest (never auto-accept) when the partner is identifiable.
+_MATCH_NEAR_TOLERANCE = 0.05
+# User-confirmed Match may write off up to a rand (Akwa 62c stays manual).
+_MATCH_MANUAL_NEAR_TOLERANCE = 1.00
+_NAME_STOPWORDS = {
+    "internet",
+    "pmt",
+    "payment",
+    "paid",
+    "to",
+    "from",
+    "fnb",
+    "app",
+    "the",
+    "and",
+    "cc",
+    "pty",
+    "ltd",
+    "limited",
+    "magtape",
+    "credit",
+    "debit",
+    "pos",
+    "purchase",
+    "account",
+    "off-us",
+    "payshap",
+    "eft",
+}
 
 # Pets Empire FNB Gold Business Account — Avea live months from the
 # May–August 2026 working papers. New recons start from the last closing.
@@ -554,6 +586,8 @@ class AveaBankReconciliation(models.Model):
         "line_ids.bank_date",
         "line_ids.match_state",
         "line_ids.statement_line_id",
+        "line_ids.statement_line_id.date",
+        "line_ids.writeoff_amount",
         "book_line_ids.amount",
     )
     def _compute_reconciliation_balance(self):
@@ -562,7 +596,9 @@ class AveaBankReconciliation(models.Model):
             gl_balance = reconciliation._avea_gl_bank_balance()
             outstanding_lines = reconciliation._avea_outstanding_statement_lines()
             outstanding_amount = sum(outstanding_lines.mapped("amount"))
-            adjusted = gl_balance - outstanding_amount
+            later_matched = reconciliation._avea_later_matched_statement_lines()
+            later_amount = sum(later_matched.mapped("amount"))
+            adjusted = gl_balance - outstanding_amount + later_amount
             closing = reconciliation.closing_balance or 0.0
             reconciliation.gl_balance = gl_balance
             reconciliation.outstanding_amount = outstanding_amount
@@ -731,6 +767,22 @@ class AveaBankReconciliation(models.Model):
             return self.env["account.bank.statement.line"]
         return self.env["account.bank.statement.line"].search(self._avea_outstanding_domain())
 
+    def _avea_later_matched_statement_lines(self):
+        """Payments dated after the statement that this recon has ticked off.
+
+        The bank already shows them; the books only have them after date_to, so
+        the GL at the statement date must be reduced by these amounts.
+        """
+        self.ensure_one()
+        if not self.date_to:
+            return self.env["account.bank.statement.line"]
+        return self.line_ids.filtered(
+            lambda line: line.match_state == "matched"
+            and line.statement_line_id
+            and line.statement_line_id.date
+            and line.statement_line_id.date > self.date_to
+        ).mapped("statement_line_id")
+
     def _avea_normalize_account_number(self, value):
         return re.sub(r"\D", "", value or "")
 
@@ -824,7 +876,8 @@ class AveaBankReconciliation(models.Model):
                 )
                 break
             seen.add(line.statement_line_id.id)
-            if not currency.is_zero(line.statement_line_id.amount - line.amount):
+            book_amount = line.statement_line_id.amount + (line.writeoff_amount or 0.0)
+            if not currency.is_zero(book_amount - line.amount):
                 blockers.append(
                     _(
                         "%(description)s does not match the book amount.",
@@ -1329,7 +1382,7 @@ class AveaBankReconciliation(models.Model):
             line._avea_apply_booking_suggestion()
 
     def _avea_uncleared_book_lines(self):
-        """Book entries still available to tick off, including older outstanding items."""
+        """Book entries still available to tick off, including later-dated payments."""
         self.ensure_one()
         domain = [
             ("journal_id", "=", self.journal_id.id),
@@ -1337,7 +1390,9 @@ class AveaBankReconciliation(models.Model):
             ("avea_cleared", "=", False),
         ]
         if self.date_to:
-            domain.append(("date", "<=", self.date_to))
+            domain.append(
+                ("date", "<=", self.date_to + timedelta(days=_BOOK_MATCH_GRACE_DAYS))
+            )
         return self.env["account.bank.statement.line"].search(
             domain, order="date desc, id desc"
         )
@@ -1422,6 +1477,13 @@ class AveaBankReconciliation(models.Model):
                         "match_state": "matched" if score >= _MATCH_AUTO else "possible",
                     }
                 )
+                line._avea_remember_matched_payee(candidate)
+            elif not vals.get("candidate_statement_line_ids"):
+                counterpart = line._avea_supplier_payment_counterpart(pool, used)
+                if counterpart:
+                    vals["candidate_statement_line_ids"] = [
+                        Command.set(counterpart.ids)
+                    ]
             if vals:
                 line.write(vals)
 
@@ -1605,6 +1667,21 @@ class AveaBankReconcileLine(models.Model):
         default=False,
         help="Set when you choose the book entry yourself, so a refresh does not replace it.",
     )
+    writeoff_move_id = fields.Many2one(
+        "account.move",
+        string="Rounding write-off",
+        copy=False,
+        ondelete="set null",
+    )
+    writeoff_amount = fields.Monetary(
+        string="Rounding",
+        currency_field="currency_id",
+        copy=False,
+        help="Bank amount minus the book payment. Posted as a rounding entry on Accept.",
+    )
+    has_supplier_payment_counterpart = fields.Boolean(
+        compute="_compute_work_hint",
+    )
     booking_suggestion = fields.Char(
         string="Suggested booking",
         compute="_compute_booking_suggestion",
@@ -1641,9 +1718,20 @@ class AveaBankReconcileLine(models.Model):
         "booking_suggestion",
         "book_match_summary",
         "merchant_payout_id",
+        "description",
+        "reference",
+        "amount",
+        "statement_line_id",
+        "candidate_statement_line_ids",
+        "reconciliation_id.date_to",
+        "reconciliation_id.journal_id",
     )
     def _compute_work_hint(self):
         for line in self:
+            counterpart = line._avea_supplier_payment_counterpart()
+            line.has_supplier_payment_counterpart = bool(
+                counterpart or line.statement_line_id
+            ) and line.match_state not in ("matched", "imported", "skipped")
             if line.match_state == "matched":
                 line.work_hint = line.book_match_summary or _("Matched")
             elif line.match_state == "possible":
@@ -1656,6 +1744,9 @@ class AveaBankReconcileLine(models.Model):
                 line.work_hint = _(
                     "Card deposit — attach the Yoco or Capitec file, then Settle"
                 )
+            elif counterpart or line.statement_line_id:
+                line.has_supplier_payment_counterpart = True
+                line.work_hint = _("Match to the supplier payment/invoice")
             elif line.booking_suggestion:
                 line.work_hint = line.booking_suggestion
             else:
@@ -1813,6 +1904,15 @@ class AveaBankReconcileLine(models.Model):
             self.match_locked = False
             return
         if not self._avea_amounts_equal(self.statement_line_id.amount):
+            if self._avea_amounts_near(
+                self.statement_line_id.amount, _MATCH_MANUAL_NEAR_TOLERANCE
+            ):
+                score, hint = self._avea_score_candidate(self.statement_line_id)
+                self.match_confidence = score or _MATCH_SUGGEST
+                self.match_hint = hint or _("amount close — Accept to write off rounding")
+                self.match_state = "possible"
+                self.match_locked = True
+                return
             self.match_state = "unmatched"
             self.match_confidence = 0.0
             self.match_hint = _("Amount differs — choose a book entry with the same amount.")
@@ -1830,42 +1930,241 @@ class AveaBankReconcileLine(models.Model):
         currency = self.currency_id or self.env.company.currency_id
         return currency.compare_amounts(other_amount, self.amount) == 0
 
+    def _avea_amounts_near(self, other_amount, tolerance=_MATCH_NEAR_TOLERANCE):
+        self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
+        if currency.compare_amounts(self.amount or 0.0, 0.0) == 0:
+            return False
+        if (self.amount >= 0.0) != ((other_amount or 0.0) >= 0.0):
+            return False
+        return abs((self.amount or 0.0) - (other_amount or 0.0)) <= (tolerance + 1e-9)
+
+    def _avea_name_tokens(self, text):
+        words = re.findall(r"[a-z0-9]+", (text or "").lower())
+        return [word for word in words if len(word) >= 3 and word not in _NAME_STOPWORDS]
+
+    def _avea_candidate_name_blob(self, candidate):
+        partner = candidate.partner_id
+        bills = candidate._avea_paid_vendor_bills()
+        parts = [
+            candidate.payment_ref or "",
+            candidate.move_id.ref or "",
+            candidate.move_id.narration or "",
+            partner.display_name if partner else "",
+            partner.name if partner else "",
+            partner.ref if partner else "",
+            partner.commercial_company_name if partner else "",
+        ]
+        for bill in bills:
+            parts.extend([bill.ref or "", bill.name or "", bill.invoice_origin or ""])
+        company = self.company_id or self.env.company
+        parts.extend(
+            AveaBankReconcileBookingRules.aliases_for_partner(
+                self.env, company=company, partner=partner
+            )
+        )
+        return " ".join(filter(None, parts)).lower()
+
+    def _avea_name_match(self, candidate):
+        self.ensure_one()
+        blob = self._avea_candidate_name_blob(candidate)
+        bank_text = " ".join(filter(None, [self.reference or "", self.description or ""]))
+        lowered = bank_text.strip().lower()
+        if len(lowered) >= 4 and lowered in blob:
+            return True, _("description")
+        tokens = self._avea_name_tokens(bank_text)
+        blob_tokens = set(self._avea_name_tokens(blob))
+        if tokens and (set(tokens) & blob_tokens or any(token in blob for token in tokens)):
+            return True, _("name")
+        company = self.company_id or self.env.company
+        recalled = AveaBankReconcileBookingRules.recall_payee(
+            self.env,
+            company=company,
+            description=self.description,
+            reference=self.reference,
+        )
+        if recalled and candidate.partner_id and recalled == candidate.partner_id:
+            return True, _("name")
+        payee = AveaBankReconcileBookingRules._avea_extract_merchant_name(self.description)
+        if payee and candidate.partner_id:
+            partner_name = (candidate.partner_id.display_name or "").lower()
+            if payee.lower() in partner_name or partner_name in payee.lower():
+                return True, _("name")
+        return False, ""
+
     def _avea_score_candidate(self, candidate):
         self.ensure_one()
-        if not self._avea_amounts_equal(candidate.amount):
+        exact = self._avea_amounts_equal(candidate.amount)
+        near = self._avea_amounts_near(candidate.amount, _MATCH_NEAR_TOLERANCE)
+        if not exact and not near:
             return 0.0, ""
+        name_ok, name_hint = self._avea_name_match(candidate)
+        move_date = candidate.date or candidate.move_id.date
+        if not exact:
+            if not name_ok:
+                return 0.0, ""
+            score = _MATCH_SUGGEST
+            hints = [name_hint or _("name"), _("amount close")]
+            if move_date == self.bank_date:
+                score += 5.0
+                hints.append(_("date"))
+            elif move_date and abs((move_date - self.bank_date).days) <= 3:
+                score += 2.0
+                hints.append(_("near date"))
+            return min(score, _MATCH_AUTO - 1.0), ", ".join(hints)
         score = 50.0
         hints = [_("amount")]
-        move_date = candidate.date or candidate.move_id.date
         if move_date == self.bank_date:
             score += 25.0
             hints.append(_("date"))
         elif move_date and abs((move_date - self.bank_date).days) <= 3:
             score += 10.0
             hints.append(_("near date"))
-        ref_blob = " ".join(
-            filter(
-                None,
-                [
-                    candidate.payment_ref or "",
-                    candidate.move_id.ref or "",
-                    candidate.move_id.narration or "",
-                    candidate.partner_id.display_name if candidate.partner_id else "",
-                ],
-            )
-        ).lower()
-        for token in (self.reference, self.description):
-            token = (token or "").strip().lower()
-            if len(token) >= 4 and token in ref_blob:
-                score += 20.0
-                hints.append(_("description"))
-                break
-            words = [w for w in token.split() if len(w) >= 4]
-            if any(word in ref_blob for word in words[:4]):
-                score += 20.0
-                hints.append(_("name"))
-                break
+        if name_ok:
+            score += 20.0
+            hints.append(name_hint or _("name"))
+        else:
+            for token in (self.reference, self.description):
+                token = (token or "").strip().lower()
+                blob = self._avea_candidate_name_blob(candidate)
+                if len(token) >= 4 and token in blob:
+                    score += 20.0
+                    hints.append(_("description"))
+                    break
         return score, ", ".join(hints)
+
+    def _avea_supplier_payment_counterpart(self, pool=None, used=None):
+        """Existing supplier payment that this bank debit should link to."""
+        self.ensure_one()
+        if self.match_state in ("matched", "imported", "skipped"):
+            return self.env["account.bank.statement.line"]
+        reconciliation = self.reconciliation_id
+        if not reconciliation:
+            return self.env["account.bank.statement.line"]
+        if pool is None:
+            pool = reconciliation._avea_uncleared_book_lines()
+        if used is None:
+            used = set(
+                reconciliation.line_ids.filtered(
+                    lambda line: line.id != self.id and line.statement_line_id
+                ).mapped("statement_line_id").ids
+            )
+        available = pool.filtered(lambda candidate: candidate.id not in used)
+        exact = available.filtered(lambda candidate: self._avea_amounts_equal(candidate.amount))
+        if len(exact) == 1:
+            return exact
+        named_near = available.filtered(
+            lambda candidate: self._avea_name_match(candidate)[0]
+            and self._avea_amounts_near(candidate.amount, _MATCH_NEAR_TOLERANCE)
+        )
+        if named_near:
+            return named_near[:1]
+        named_similar = available.filtered(
+            lambda candidate: self._avea_name_match(candidate)[0]
+            and self._avea_amounts_near(candidate.amount, 2.0)
+        )
+        if len(named_similar) == 1:
+            return named_similar
+        return self.env["account.bank.statement.line"]
+
+    def _avea_remember_matched_payee(self, candidate=None):
+        for line in self:
+            st_line = candidate or line.statement_line_id
+            if not st_line or not st_line.partner_id:
+                continue
+            AveaBankReconcileBookingRules.remember_payee(
+                line.env,
+                company=line.company_id or line.env.company,
+                description=line.description,
+                reference=line.reference,
+                partner=st_line.partner_id,
+            )
+
+    def _avea_rounding_account(self, more_out):
+        self.ensure_one()
+        journal = self.journal_id
+        if more_out and journal.loss_account_id:
+            return journal.loss_account_id
+        if not more_out and journal.profit_account_id:
+            return journal.profit_account_id
+        return self.env["avea.bank.reconcile.apply"]._avea_fee_account(
+            self.company_id or self.env.company
+        ) or self.env["account.account"].sudo().search(
+            [
+                ("company_ids", "in", (self.company_id or self.env.company).id),
+                ("account_type", "in", ("expense", "expense_other")),
+            ],
+            limit=1,
+        )
+
+    def _avea_apply_rounding_writeoff(self, st_line):
+        """Post a small bank rounding entry so the recon still balances."""
+        self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
+        delta = currency.round((self.amount or 0.0) - (st_line.amount or 0.0))
+        if currency.is_zero(delta):
+            return self.env["account.move"]
+        if abs(delta) > _MATCH_MANUAL_NEAR_TOLERANCE + 1e-9:
+            raise UserError(
+                _("The book amount must be the same as the statement amount.")
+            )
+        if self.writeoff_move_id:
+            return self.writeoff_move_id
+        bank_account = self.journal_id.default_account_id
+        rounding_account = self._avea_rounding_account(more_out=delta < 0)
+        if not bank_account or not rounding_account:
+            raise UserError(
+                _("Set a rounding or bank-charge account before writing off cents.")
+            )
+        company = self.company_id or self.env.company
+        entry_journal = self.env["account.journal"].sudo().search(
+            [("type", "=", "general"), ("company_id", "=", company.id)],
+            limit=1,
+        ) or self.journal_id
+        abs_delta = abs(delta)
+        if delta < 0:
+            bank_debit, bank_credit = 0.0, abs_delta
+            round_debit, round_credit = abs_delta, 0.0
+        else:
+            bank_debit, bank_credit = abs_delta, 0.0
+            round_debit, round_credit = 0.0, abs_delta
+        move = (
+            self.env["account.move"]
+            .sudo()
+            .create(
+                {
+                    "journal_id": entry_journal.id,
+                    "date": self.bank_date,
+                    "ref": (_("Bank rounding: %s") % (self.description or st_line.payment_ref or ""))[:64],
+                    "line_ids": [
+                        Command.create(
+                            {
+                                "name": _("Bank rounding"),
+                                "account_id": bank_account.id,
+                                "debit": bank_debit,
+                                "credit": bank_credit,
+                            }
+                        ),
+                        Command.create(
+                            {
+                                "name": _("Bank rounding"),
+                                "account_id": rounding_account.id,
+                                "debit": round_debit,
+                                "credit": round_credit,
+                            }
+                        ),
+                    ],
+                }
+            )
+        )
+        move.action_post()
+        self.write(
+            {
+                "writeoff_move_id": move.id,
+                "writeoff_amount": delta,
+            }
+        )
+        return move
 
     def action_accept_line_match(self):
         self.ensure_one()
@@ -1879,9 +2178,18 @@ class AveaBankReconcileLine(models.Model):
         if not st_line:
             raise UserError(_("Choose the book entry before accepting this match."))
         if not self._avea_amounts_equal(st_line.amount):
-            raise UserError(
-                _("The book amount must be the same as the statement amount.")
-            )
+            if not self._avea_amounts_near(st_line.amount, _MATCH_MANUAL_NEAR_TOLERANCE):
+                raise UserError(
+                    _("The book amount must be the same as the statement amount.")
+                )
+            name_ok, _hint = self._avea_name_match(st_line)
+            if not name_ok and not self._avea_amounts_near(
+                st_line.amount, _MATCH_NEAR_TOLERANCE
+            ):
+                raise UserError(
+                    _("The book amount must be the same as the statement amount.")
+                )
+            self._avea_apply_rounding_writeoff(st_line)
         if st_line.avea_cleared and st_line.avea_cleared_reconciliation_id != self.reconciliation_id:
             raise UserError(_("That book entry is already cleared on another statement."))
         duplicate = self.reconciliation_id.line_ids.filtered(
@@ -1889,6 +2197,7 @@ class AveaBankReconcileLine(models.Model):
         )
         if duplicate:
             raise UserError(_("That book entry is already linked to another statement line."))
+        self._avea_remember_matched_payee(st_line)
         self.write(
             {
                 "match_state": "matched",
@@ -1924,6 +2233,15 @@ class AveaBankReconcileLine(models.Model):
 
     def action_open_booking_wizard(self):
         self.ensure_one()
+        if self._avea_supplier_payment_counterpart() or (
+            self.statement_line_id and self.match_state != "matched"
+        ):
+            raise UserError(
+                _(
+                    "This bank line already has a supplier payment in Avea. "
+                    "Use Match to link it — recording an expense would pay it twice."
+                )
+            )
         action = self.import_action
         if action == "expense":
             return self._avea_open_expense_wizard()
@@ -2009,7 +2327,7 @@ class AveaBankReconcileLine(models.Model):
             "context": ctx,
         }
 
-    def _avea_after_booked(self, statement_line):
+    def _avea_after_booked(self, statement_line, hint=None):
         self.ensure_one()
         self.write(
             {
@@ -2017,9 +2335,10 @@ class AveaBankReconcileLine(models.Model):
                 "match_state": "matched",
                 "match_locked": True,
                 "match_confidence": 100.0,
-                "match_hint": _("Recorded from Avea"),
+                "match_hint": hint or _("Recorded from Avea"),
             }
         )
+        self._avea_remember_matched_payee(statement_line)
         reconciliation = self.reconciliation_id
         reconciliation._avea_find_orphan_book_lines()
         return reconciliation._avea_action_form()
@@ -2029,7 +2348,8 @@ class AveaBankReconcileLine(models.Model):
         st_line = self.statement_line_id
         if not st_line or self.match_state != "matched":
             raise UserError(_("Every statement line must be matched before completing."))
-        if not self._avea_amounts_equal(st_line.amount):
+        effective = st_line.amount + (self.writeoff_amount or 0.0)
+        if not self._avea_amounts_equal(effective):
             raise UserError(_("The book amount must be the same as the statement amount."))
         if st_line.avea_cleared and st_line.avea_cleared_reconciliation_id != self.reconciliation_id:
             raise UserError(_("That book entry is already cleared on another statement."))

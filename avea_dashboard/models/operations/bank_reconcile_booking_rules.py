@@ -306,10 +306,90 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
         match = re.search(r"(?i)pos purchase\s+(.+)", text)
         if match:
             return match.group(1).strip()
-        match = re.search(r"(?i)(?:payment to|paid to)\s+(.+)", text)
+        match = re.search(
+            r"(?i)(?:internet\s+pmt\s+to|fnb\s+app\s+payment\s+to|"
+            r"payment\s+to|paid\s+to|pmt\s+to)\s+(.+)",
+            text,
+        )
         if match:
             return match.group(1).strip()
         return False
+
+    @classmethod
+    def payee_alias_key(cls, text):
+        """Fingerprint a bank payee label (Aquarium Depot, Akwa, …)."""
+        cleaned = re.sub(r"[^a-z0-9]+", " ", (text or "").lower())
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        return cleaned[:180]
+
+    @classmethod
+    def remember_payee(cls, env, *, company, description, reference="", partner=None):
+        """Remember that this bank narrative belongs to this supplier."""
+        if not partner:
+            return env["avea.bank.reconcile.payee.alias"]
+        payee = cls._avea_extract_merchant_name(description) or ""
+        keys = []
+        extracted = cls.payee_alias_key(payee)
+        if len(extracted) >= 3:
+            keys.append(extracted)
+        full = cls.payee_alias_key(
+            " ".join(filter(None, [description or "", reference or ""]))
+        )
+        if len(full) >= 6 and full not in keys:
+            keys.append(full)
+        Alias = env["avea.bank.reconcile.payee.alias"].sudo()
+        remembered = Alias.browse()
+        for key in keys:
+            existing = Alias.search(
+                [("company_id", "=", company.id), ("alias_key", "=", key)],
+                limit=1,
+            )
+            if existing:
+                existing.partner_id = partner.id
+                remembered |= existing
+                continue
+            remembered |= Alias.create(
+                {
+                    "company_id": company.id,
+                    "alias_key": key,
+                    "partner_id": partner.id,
+                }
+            )
+        return remembered
+
+    @classmethod
+    def recall_payee(cls, env, *, company, description, reference=""):
+        """Partner previously matched to this bank payee label."""
+        Alias = env["avea.bank.reconcile.payee.alias"].sudo()
+        payee = cls._avea_extract_merchant_name(description) or ""
+        keys = [
+            cls.payee_alias_key(payee),
+            cls.payee_alias_key(
+                " ".join(filter(None, [description or "", reference or ""]))
+            ),
+        ]
+        for key in keys:
+            if len(key) < 3:
+                continue
+            found = Alias.search(
+                [("company_id", "=", company.id), ("alias_key", "=", key)],
+                limit=1,
+            )
+            if found:
+                return found.partner_id
+        return env["res.partner"]
+
+    @classmethod
+    def aliases_for_partner(cls, env, *, company, partner):
+        if not partner:
+            return []
+        aliases = env["avea.bank.reconcile.payee.alias"].sudo().search(
+            [
+                ("company_id", "=", company.id),
+                ("partner_id", "=", partner.id),
+            ]
+        )
+        return [alias.alias_key for alias in aliases]
 
     @classmethod
     def suggest_partner(cls, env, *, company, partner_role, description, reference):
@@ -371,6 +451,16 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
                         return partner
             return Partner.browse()
 
+        merchant = cls._avea_extract_merchant_name(description)
+        if merchant:
+            partner = _search_name(merchant, prefer_supplier=True)
+            if partner:
+                return partner
+        recalled = cls.recall_payee(
+            env, company=company, description=description, reference=reference
+        )
+        if recalled:
+            return recalled
         return Partner.browse()
 
     @classmethod
@@ -493,6 +583,29 @@ class AveaBankReconcileLearnedBooking(models.Model):
     partner_id = fields.Many2one("res.partner", ondelete="set null")
     account_id = fields.Many2one(
         "account.account",
+        required=True,
+        ondelete="cascade",
+    )
+
+
+class AveaBankReconcilePayeeAlias(models.Model):
+    _name = "avea.bank.reconcile.payee.alias"
+    _description = "Bank statement payee alias"
+    _order = "write_date desc, id desc"
+    _company_alias_uniq = models.Constraint(
+        "unique(company_id, alias_key)",
+        "Each bank payee label remembers one supplier.",
+    )
+
+    company_id = fields.Many2one(
+        "res.company",
+        required=True,
+        ondelete="cascade",
+        index=True,
+    )
+    alias_key = fields.Char(required=True, index=True)
+    partner_id = fields.Many2one(
+        "res.partner",
         required=True,
         ondelete="cascade",
     )
