@@ -4,10 +4,10 @@
     <menuitem
         id="menu_avea_sales_platform"
         name="Sales Platforms"
-        parent="menu_avea_root"
+        parent="menu_avea_selling"
         action="action_avea_sales_platform"
         groups="avea_till.group_avea_manager"
-        sequence="16"
+        sequence="30"
     />
 
 </odoo>

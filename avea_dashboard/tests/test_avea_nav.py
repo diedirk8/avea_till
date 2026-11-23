@@ -44,14 +44,25 @@ class TestAveaNav(TestPoSCommon):
         sections = self._section_ids(self.manager)
         self.assertEqual(
             sections,
-            ["business", "sessions", "stock", "customers", "suppliers", "accounting", "money"],
+            [
+                "business",
+                "sessions",
+                "stock",
+                "selling",
+                "customers",
+                "suppliers",
+                "accounting",
+                "money",
+            ],
         )
         nav = self.manager._avea_nav_structure()
         self.assertTrue(nav["home"])
         self.assertEqual(nav["home"]["label"], "Home")
         self.assertTrue(nav["settings"])
         self.assertEqual(nav["settings"]["label"], "Settings")
-        self.assertIn("Data", [item["label"] for item in nav["settings"]["items"]])
+        settings_labels = [item["label"] for item in nav["settings"]["items"]]
+        self.assertIn("Data", settings_labels)
+        self.assertIn("Credit Reasons", settings_labels)
 
     def test_owner_matches_manager_nav(self):
         owner_nav = self.owner._avea_nav_structure()
@@ -71,15 +82,34 @@ class TestAveaNav(TestPoSCommon):
 
     def test_accounting_section_and_money_nested_groups(self):
         nav = self.manager._avea_nav_structure()
+        sessions = next(s for s in nav["sections"] if s["id"] == "sessions")
+        self.assertEqual(
+            [item["label"] for item in sessions["items"]],
+            ["Session Dashboard", "Sales Ledger", "Quotes"],
+        )
+
+        selling = next(s for s in nav["sections"] if s["id"] == "selling")
+        self.assertEqual(
+            [item["label"] for item in selling["items"]],
+            ["Promotions", "Price lists", "Sales Platforms"],
+        )
+
         customers = next(s for s in nav["sections"] if s["id"] == "customers")
         self.assertEqual(customers["items"][0]["label"], "Customers")
         store_credit = customers["items"][1]
         self.assertEqual(store_credit["label"], "Store Credit")
-        self.assertEqual(customers["items"][2]["label"], "Credit Reports")
-        self.assertEqual(customers["items"][3]["label"], "Price lists")
-        self.assertEqual(customers["items"][4]["label"], "Promotions")
-        self.assertEqual(customers["items"][5]["label"], "Sales Platforms")
-        self.assertIn("items", store_credit)
+        self.assertEqual(len(customers["items"]), 2)
+        self.assertEqual(
+            [item["label"] for item in store_credit["items"]],
+            [
+                "Credit Dashboard",
+                "Customer Ledger",
+                "Issue Credit",
+                "Statements",
+                "Outstanding Credit",
+                "Credit Activity",
+            ],
+        )
 
         suppliers = next(s for s in nav["sections"] if s["id"] == "suppliers")
         self.assertEqual(

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Folder under Avea root: store credit and reports live here too. -->
+    <!-- Folder under Avea root: store credit lives here too. -->
     <menuitem
         id="menu_avea_customers_hub"
         name="Customers"

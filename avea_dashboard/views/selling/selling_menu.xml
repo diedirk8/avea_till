@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_selling"
+        name="Selling"
+        parent="menu_avea_root"
+        groups="avea_till.group_avea_manager"
+        sequence="13"
+    />
+
+    <record id="menu_avea_selling" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+</odoo>

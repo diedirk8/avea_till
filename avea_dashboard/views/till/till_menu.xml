@@ -97,7 +97,7 @@
 
     <menuitem
         id="menu_avea_settings_email"
-        name="Email Receipt"
+        name="Email Receipts"
         parent="menu_avea_settings"
         action="action_avea_settings"
         groups="avea_till.group_avea_manager"
@@ -106,7 +106,7 @@
 
     <menuitem
         id="menu_avea_settings_printed"
-        name="Printed Receipt"
+        name="Printed Receipts"
         parent="menu_avea_settings"
         action="action_avea_printed_receipt_settings"
         groups="avea_till.group_avea_manager"
@@ -132,21 +132,12 @@
     />
 
     <menuitem
-        id="menu_avea_cash_up"
-        name="Cash Ups"
-        parent="menu_avea_root"
-        action="action_avea_cash_up"
-        groups="avea_till.group_avea_cash_up_manager"
-        sequence="16"
-    />
-
-    <menuitem
         id="menu_avea_pos_quote"
         name="Quotes"
-        parent="menu_avea_root"
+        parent="menu_avea_till"
         action="action_avea_pos_quote"
-        groups="point_of_sale.group_pos_user"
-        sequence="17"
+        groups="avea_till.group_avea_manager"
+        sequence="15"
     />
 
     <menuitem

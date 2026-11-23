@@ -71,6 +71,10 @@ class AveaNavMixin(models.AbstractModel):
                         "label": "Sales Ledger",
                         "menu_xmlid": "avea_till.menu_avea_sales_ledger",
                     },
+                    {
+                        "label": "Quotes",
+                        "menu_xmlid": "avea_till.menu_avea_pos_quote",
+                    },
                 ],
             },
             {
@@ -123,6 +127,25 @@ class AveaNavMixin(models.AbstractModel):
                 ],
             },
             {
+                "id": "selling",
+                "label": "Selling",
+                "min_role": "manager",
+                "items": [
+                    {
+                        "label": "Promotions",
+                        "menu_xmlid": "avea_till.menu_avea_promotion",
+                    },
+                    {
+                        "label": "Price lists",
+                        "menu_xmlid": "avea_till.menu_avea_pricelist_manager",
+                    },
+                    {
+                        "label": "Sales Platforms",
+                        "menu_xmlid": "avea_till.menu_avea_sales_platform",
+                    },
+                ],
+            },
+            {
                 "id": "customers",
                 "label": "Customers",
                 "min_role": "manager",
@@ -147,12 +170,6 @@ class AveaNavMixin(models.AbstractModel):
                                 "label": "Issue Credit",
                                 "menu_xmlid": "avea_till.menu_avea_credit_issue",
                             },
-                        ],
-                    },
-                    {
-                        "id": "credit_reports",
-                        "label": "Credit Reports",
-                        "items": [
                             {
                                 "label": "Statements",
                                 "menu_xmlid": "avea_till.menu_avea_credit_report_statement",
@@ -166,18 +183,6 @@ class AveaNavMixin(models.AbstractModel):
                                 "menu_xmlid": "avea_till.menu_avea_credit_report_activity",
                             },
                         ],
-                    },
-                    {
-                        "label": "Price lists",
-                        "menu_xmlid": "avea_till.menu_avea_pricelist_manager",
-                    },
-                    {
-                        "label": "Promotions",
-                        "menu_xmlid": "avea_till.menu_avea_promotion",
-                    },
-                    {
-                        "label": "Sales Platforms",
-                        "menu_xmlid": "avea_till.menu_avea_sales_platform",
                     },
                 ],
             },
@@ -332,6 +337,10 @@ class AveaNavMixin(models.AbstractModel):
             {
                 "label": "Data",
                 "menu_xmlid": "avea_till.menu_avea_settings_data",
+            },
+            {
+                "label": "Credit Reasons",
+                "menu_xmlid": "avea_till.menu_avea_credit_reason",
             },
             {
                 "label": "Avea Users",

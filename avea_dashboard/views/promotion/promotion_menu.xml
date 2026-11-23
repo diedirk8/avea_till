@@ -4,10 +4,10 @@
     <menuitem
         id="menu_avea_promotion"
         name="Promotions"
-        parent="menu_avea_root"
+        parent="menu_avea_selling"
         action="action_avea_promotion"
         groups="avea_till.group_avea_manager"
-        sequence="15"
+        sequence="10"
     />
 
 </odoo>

@@ -50,7 +50,7 @@
 
     <menuitem
         id="menu_avea_operations_expense"
-        name="Add Operational Expense"
+        name="Add Expense"
         parent="menu_avea_money_record"
         action="action_avea_operational_expense_wizard"
         groups="avea_till.group_avea_manager"
@@ -77,16 +77,20 @@
 
     <menuitem
         id="menu_avea_operations_manual_journal"
-        name="Manual Journal"
+        name="Manual Entry"
         parent="menu_avea_money_record"
         action="action_avea_manual_journal_wizard"
         groups="avea_till.group_avea_manager"
         sequence="30"
     />
 
-    <record id="menu_avea_cash_up" model="ir.ui.menu">
-        <field name="parent_id" ref="menu_avea_operations"/>
-        <field name="sequence">5</field>
-    </record>
+    <menuitem
+        id="menu_avea_cash_up"
+        name="Cash Ups"
+        parent="menu_avea_operations"
+        action="action_avea_cash_up"
+        groups="avea_till.group_avea_cash_up_manager"
+        sequence="5"
+    />
 
 </odoo>

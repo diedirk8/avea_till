@@ -93,14 +93,15 @@
 
     <record id="menu_avea_credit_config" model="ir.ui.menu">
         <field name="action" eval="False"/>
+        <field name="active" eval="False"/>
     </record>
 
     <menuitem
         id="menu_avea_credit_reason"
         name="Credit Reasons"
-        parent="menu_avea_credit_config"
+        parent="menu_avea_settings"
         action="action_avea_credit_reason"
-        sequence="10"
+        sequence="28"
         groups="avea_till.group_avea_credit_manager"
     />
 
