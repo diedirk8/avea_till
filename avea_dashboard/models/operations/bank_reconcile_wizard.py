@@ -1399,7 +1399,13 @@ class AveaBankReconciliation(models.Model):
 
     def _avea_match_lines(self):
         self.ensure_one()
+        self = self.with_context(
+            avea_recon_name_blob_cache={},
+            avea_recon_recall_cache={},
+        )
         pool = self._avea_uncleared_book_lines()
+        pool.mapped("partner_id")
+        pool.mapped("move_id")
         locked = self.line_ids.filtered(
             lambda line: line.match_locked and line.statement_line_id
         )
@@ -1727,11 +1733,33 @@ class AveaBankReconcileLine(models.Model):
         "reconciliation_id.journal_id",
     )
     def _compute_work_hint(self):
+        self = self.with_context(
+            avea_recon_name_blob_cache={},
+            avea_recon_recall_cache={},
+        )
+        pool_by_recon = {}
+        used_by_recon = {}
         for line in self:
-            counterpart = line._avea_supplier_payment_counterpart()
-            line.has_supplier_payment_counterpart = bool(
-                counterpart or line.statement_line_id
-            ) and line.match_state not in ("matched", "imported", "skipped")
+            done = line.match_state in ("matched", "imported", "skipped")
+            counterpart = line.statement_line_id or line.candidate_statement_line_ids[:1]
+            if (
+                not done
+                and not counterpart
+                and line.match_state == "unmatched"
+                and line.reconciliation_id
+            ):
+                rec = line.reconciliation_id
+                if rec.id not in pool_by_recon:
+                    pool_by_recon[rec.id] = rec._avea_uncleared_book_lines()
+                    used_by_recon[rec.id] = set(
+                        rec.line_ids.filtered("statement_line_id").mapped(
+                            "statement_line_id"
+                        ).ids
+                    )
+                counterpart = line._avea_supplier_payment_counterpart(
+                    pool_by_recon[rec.id], used_by_recon[rec.id]
+                )
+            line.has_supplier_payment_counterpart = bool(counterpart) and not done
             if line.match_state == "matched":
                 line.work_hint = line.book_match_summary or _("Matched")
             elif line.match_state == "possible":
@@ -1744,8 +1772,7 @@ class AveaBankReconcileLine(models.Model):
                 line.work_hint = _(
                     "Card deposit — attach the Yoco or Capitec file, then Settle"
                 )
-            elif counterpart or line.statement_line_id:
-                line.has_supplier_payment_counterpart = True
+            elif counterpart:
                 line.work_hint = _("Match to the supplier payment/invoice")
             elif line.booking_suggestion:
                 line.work_hint = line.booking_suggestion
@@ -1944,26 +1971,38 @@ class AveaBankReconcileLine(models.Model):
         return [word for word in words if len(word) >= 3 and word not in _NAME_STOPWORDS]
 
     def _avea_candidate_name_blob(self, candidate):
+        cache = self.env.context.get("avea_recon_name_blob_cache")
+        if cache is not None and candidate.id in cache:
+            return cache[candidate.id]
         partner = candidate.partner_id
-        bills = candidate._avea_paid_vendor_bills()
         parts = [
             candidate.payment_ref or "",
             candidate.move_id.ref or "",
-            candidate.move_id.narration or "",
             partner.display_name if partner else "",
             partner.name if partner else "",
             partner.ref if partner else "",
             partner.commercial_company_name if partner else "",
         ]
-        for bill in bills:
-            parts.extend([bill.ref or "", bill.name or "", bill.invoice_origin or ""])
-        company = self.company_id or self.env.company
-        parts.extend(
-            AveaBankReconcileBookingRules.aliases_for_partner(
-                self.env, company=company, partner=partner
-            )
+        blob = " ".join(filter(None, parts)).lower()
+        if cache is not None:
+            cache[candidate.id] = blob
+        return blob
+
+    def _avea_recalled_payee(self):
+        self.ensure_one()
+        cache = self.env.context.get("avea_recon_recall_cache")
+        key = (self.id or 0, self.description or "", self.reference or "")
+        if cache is not None and key in cache:
+            return cache[key]
+        recalled = AveaBankReconcileBookingRules.recall_payee(
+            self.env,
+            company=self.company_id or self.env.company,
+            description=self.description,
+            reference=self.reference,
         )
-        return " ".join(filter(None, parts)).lower()
+        if cache is not None:
+            cache[key] = recalled
+        return recalled
 
     def _avea_name_match(self, candidate):
         self.ensure_one()
@@ -1976,13 +2015,7 @@ class AveaBankReconcileLine(models.Model):
         blob_tokens = set(self._avea_name_tokens(blob))
         if tokens and (set(tokens) & blob_tokens or any(token in blob for token in tokens)):
             return True, _("name")
-        company = self.company_id or self.env.company
-        recalled = AveaBankReconcileBookingRules.recall_payee(
-            self.env,
-            company=company,
-            description=self.description,
-            reference=self.reference,
-        )
+        recalled = self._avea_recalled_payee()
         if recalled and candidate.partner_id and recalled == candidate.partner_id:
             return True, _("name")
         payee = AveaBankReconcileBookingRules._avea_extract_merchant_name(self.description)
@@ -2053,15 +2086,19 @@ class AveaBankReconcileLine(models.Model):
         exact = available.filtered(lambda candidate: self._avea_amounts_equal(candidate.amount))
         if len(exact) == 1:
             return exact
-        named_near = available.filtered(
-            lambda candidate: self._avea_name_match(candidate)[0]
-            and self._avea_amounts_near(candidate.amount, _MATCH_NEAR_TOLERANCE)
+        near = available.filtered(
+            lambda candidate: self._avea_amounts_near(
+                candidate.amount, _MATCH_NEAR_TOLERANCE
+            )
         )
+        named_near = near.filtered(lambda candidate: self._avea_name_match(candidate)[0])
         if named_near:
             return named_near[:1]
-        named_similar = available.filtered(
+        similar = available.filtered(
+            lambda candidate: self._avea_amounts_near(candidate.amount, 2.0)
+        )
+        named_similar = similar.filtered(
             lambda candidate: self._avea_name_match(candidate)[0]
-            and self._avea_amounts_near(candidate.amount, 2.0)
         )
         if len(named_similar) == 1:
             return named_similar

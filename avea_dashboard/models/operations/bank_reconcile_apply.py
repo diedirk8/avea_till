@@ -143,16 +143,15 @@ class AveaBankReconcileApply(models.TransientModel):
         for st_line in line.reconciliation_id._avea_uncleared_book_lines():
             if st_line.journal_id != line.journal_id:
                 continue
+            close = line._avea_amounts_near(
+                st_line.amount, 1.00
+            ) or line._avea_amounts_equal(st_line.amount)
+            if not close and not line._avea_name_match(st_line)[0]:
+                continue
             paid = st_line._avea_paid_vendor_bills().filtered(
                 lambda move: move.move_type in move_types
             )
-            if not paid:
-                continue
-            close = line._avea_amounts_near(st_line.amount, 1.00) or line._avea_amounts_equal(
-                st_line.amount
-            )
-            named = line._avea_name_match(st_line)[0]
-            if close or named:
+            if paid:
                 bills |= paid
         return bills
 
