@@ -117,7 +117,7 @@ class AveaPromotion(models.Model):
         ],
         string="Status",
         compute="_compute_schedule_status",
-        store=True,
+        search="_search_schedule_status",
     )
     deal_summary = fields.Char(compute="_compute_summary_panel")
     summary_name = fields.Char(related="name", readonly=True)
@@ -143,6 +143,46 @@ class AveaPromotion(models.Model):
         if not self.open_ended and self.date_to and today > self.date_to:
             return "expired"
         return "running"
+
+    @api.model
+    def _search_schedule_status(self, operator, value):
+        today = fields.Date.context_today(self)
+        if operator not in ("=", "!="):
+            return [("id", "=", False)]
+        domain = self._avea_schedule_status_domain(value, today)
+        if operator == "!=":
+            return ["!"] + domain
+        return domain
+
+    @api.model
+    def _avea_schedule_status_domain(self, status, today):
+        if status == "inactive":
+            return [("active", "=", False)]
+        if status == "scheduled":
+            return [("active", "=", True), ("date_from", ">", today)]
+        if status == "expired":
+            return [
+                ("active", "=", True),
+                ("open_ended", "=", False),
+                ("date_to", "!=", False),
+                ("date_to", "<", today),
+                "|",
+                ("date_from", "=", False),
+                ("date_from", "<=", today),
+            ]
+        if status == "running":
+            return [
+                ("active", "=", True),
+                "|",
+                ("date_from", "=", False),
+                ("date_from", "<=", today),
+                "|",
+                "|",
+                ("open_ended", "=", True),
+                ("date_to", "=", False),
+                ("date_to", ">=", today),
+            ]
+        return [("id", "=", False)]
 
     @api.depends(
         "name",

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from datetime import date
+from datetime import date, timedelta
 
+from odoo import fields
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 
@@ -47,3 +48,26 @@ class TestAveaPromotionSchedule(TransactionCase):
             date_to="2026-10-30",
         )
         self.assertEqual(promo.schedule_status, "inactive")
+
+    def test_schedule_status_follows_today_not_create_day(self):
+        today = fields.Date.context_today(self.env.user)
+        running = self._promotion(
+            name="Started last week",
+            date_from=today - timedelta(days=10),
+            date_to=today + timedelta(days=7),
+        )
+        scheduled = self._promotion(
+            name="Starts later",
+            date_from=today + timedelta(days=3),
+            date_to=today + timedelta(days=5),
+        )
+        self.assertEqual(running.schedule_status, "running")
+        self.assertEqual(scheduled.schedule_status, "scheduled")
+        running_ids = self.env["avea.promotion"].search(
+            [("schedule_status", "=", "running"), ("id", "in", (running | scheduled).ids)]
+        )
+        scheduled_ids = self.env["avea.promotion"].search(
+            [("schedule_status", "=", "scheduled"), ("id", "in", (running | scheduled).ids)]
+        )
+        self.assertEqual(running_ids, running)
+        self.assertEqual(scheduled_ids, scheduled)
