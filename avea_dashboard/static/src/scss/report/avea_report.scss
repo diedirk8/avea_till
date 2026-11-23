@@ -74,3 +74,39 @@
 .o_avea_report_footer_line + .o_avea_report_footer_line {
     margin-top: 0.1rem;
 }
+
+.o_avea_receive_report_alert {
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    border-radius: 0.35rem;
+    color: #7c2d12;
+    padding: 0.65rem 0.8rem;
+
+    ul {
+        padding-left: 1.1rem;
+    }
+}
+
+.o_avea_receive_report_ok {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 0.35rem;
+    color: #166534;
+    padding: 0.65rem 0.8rem;
+}
+
+.o_avea_receive_report_items {
+    font-size: 8.5pt;
+
+    td,
+    th {
+        vertical-align: top;
+    }
+}
+
+.o_avea_receive_report_codes {
+    color: #6c757d;
+    font-size: 7.5pt;
+    line-height: 1.35;
+    margin-top: 0.1rem;
+}

@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="paperformat_avea_stock_receive" model="report.paperformat">
+        <field name="name">Avea Stock Receive</field>
+        <field name="default" eval="False"/>
+        <field name="format">A4</field>
+        <field name="orientation">Portrait</field>
+        <field name="margin_top">12</field>
+        <field name="margin_bottom">12</field>
+        <field name="margin_left">8</field>
+        <field name="margin_right">8</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">6</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <template id="report_avea_stock_receive_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-set="payload" t-value="doc.get_stock_receive_report_payload()"/>
+                <t t-set="avea_report_title" t-value="'Stock received'"/>
+                <t t-call="avea_till.avea_report_document">
+                    <t t-call="avea_till.avea_report_metadata">
+                        <div class="col-6">
+                            <strong>Supplier</strong>
+                            <div t-out="payload['supplier']"/>
+                        </div>
+                        <div class="col-6">
+                            <strong>Invoice</strong>
+                            <div t-out="payload['invoice']"/>
+                        </div>
+                        <div class="col-6">
+                            <strong>Received</strong>
+                            <div t-out="payload['received_date']"/>
+                        </div>
+                        <div class="col-6">
+                            <strong>Received by</strong>
+                            <div t-out="payload['received_by']"/>
+                        </div>
+                        <div class="col-6">
+                            <strong>Payment</strong>
+                            <div t-out="payload['payment_status']"/>
+                        </div>
+                    </t>
+
+                    <t t-if="payload['issues']">
+                        <div class="o_avea_receive_report_alert mb-4">
+                            <strong>Needs attention</strong>
+                            <ul class="mb-0 mt-2">
+                                <li t-foreach="payload['issues']" t-as="issue" t-out="issue"/>
+                            </ul>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <p class="o_avea_receive_report_ok mb-4">No issues recorded on this receive.</p>
+                    </t>
+
+                    <t t-if="payload['price_changes']">
+                        <h3 class="o_avea_report_section_title">Price changes</h3>
+                        <table class="table table-sm o_avea_report_table mb-4">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Action</th>
+                                    <th>Change</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="payload['price_changes']" t-as="change">
+                                    <td t-out="change['product']"/>
+                                    <td t-out="change['choice']"/>
+                                    <td t-out="change['detail']"/>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </t>
+                    <t t-else="">
+                        <p class="text-muted mb-4">No catalogue prices were changed.</p>
+                    </t>
+
+                    <h3 class="o_avea_report_section_title">Items received</h3>
+                    <table class="table table-sm o_avea_report_table o_avea_receive_report_items mb-3">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Cost EX</th>
+                                <th class="text-end">Retail INC</th>
+                                <th class="text-end">Markup</th>
+                                <th class="text-end">Margin</th>
+                                <th class="text-end">Profit</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="payload['lines']" t-as="line">
+                                <td>
+                                    <div t-out="line['name']"/>
+                                    <div class="o_avea_receive_report_codes" t-out="line['codes']"/>
+                                    <div t-if="line['discount_note']" class="o_avea_receive_report_codes" t-out="line['discount_note']"/>
+                                    <div t-if="line['pricing_label']" class="o_avea_receive_report_codes" t-out="line['pricing_label']"/>
+                                </td>
+                                <td class="text-end" t-out="line['qty']"/>
+                                <td class="text-end" t-out="line['cost']"/>
+                                <td class="text-end" t-out="line['retail_inc']"/>
+                                <td class="text-end" t-out="line['markup']"/>
+                                <td class="text-end" t-out="line['margin']"/>
+                                <td class="text-end" t-out="line['profit_line']"/>
+                                <td class="text-end" t-out="line['line_total']"/>
+                            </tr>
+                            <tr t-foreach="payload['charges']" t-as="charge">
+                                <td>
+                                    <div t-out="charge['name']"/>
+                                    <div class="o_avea_receive_report_codes">Not a stock item — billed as an expense</div>
+                                </td>
+                                <td class="text-end"/>
+                                <td class="text-end"/>
+                                <td class="text-end"/>
+                                <td class="text-end"/>
+                                <td class="text-end"/>
+                                <td class="text-end"/>
+                                <td class="text-end" t-out="charge['total']"/>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <table class="table table-sm o_avea_report_summary_table mb-3">
+                        <tbody>
+                            <tr>
+                                <td>Products</td>
+                                <td class="text-end" t-out="payload['product_count']"/>
+                            </tr>
+                            <tr>
+                                <td>Quantity</td>
+                                <td class="text-end" t-out="payload['quantity_total']"/>
+                            </tr>
+                            <tr>
+                                <td>Estimated profit</td>
+                                <td class="text-end" t-out="payload['profit_total']"/>
+                            </tr>
+                            <tr>
+                                <td>Ex-tax total</td>
+                                <td class="text-end" t-out="payload['amount_untaxed']"/>
+                            </tr>
+                            <tr>
+                                <td>Tax</td>
+                                <td class="text-end" t-out="payload['amount_tax']"/>
+                            </tr>
+                            <tr class="fw-bold">
+                                <td>Total</td>
+                                <td class="text-end" t-out="payload['amount_total']"/>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <p class="text-muted small mb-0">
+                        Profit is retail EX tax minus the received EX-tax cost.
+                    </p>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_avea_stock_receive" model="ir.actions.report">
+        <field name="name">Stock received</field>
+        <field name="model">avea.stock.receive</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_stock_receive_document</field>
+        <field name="report_file">avea_till.report_avea_stock_receive_document</field>
+        <field name="print_report_name">'Stock received - %s' % (object.display_name)</field>
+        <field name="paperformat_id" ref="paperformat_avea_stock_receive"/>
+    </record>
+
+</odoo>

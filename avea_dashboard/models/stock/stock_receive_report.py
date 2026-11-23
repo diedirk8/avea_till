@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
+import base64
 import logging
+import re
 
 from markupsafe import escape
 
 from odoo import _, models
+from odoo.exceptions import UserError
 from odoo.tools import formataddr, format_date
 from odoo.tools.misc import formatLang
 
@@ -204,110 +207,116 @@ class AveaStockReceiveReport(models.Model):
             )
         return _("Stock received — %(supplier)s", supplier=supplier)
 
-    def _avea_receive_report_metric_cell(self, label, value, last=False):
-        border = "none" if last else "1px solid #eef0f3"
-        return (
-            "<td style='padding:8px 10px;border-bottom:%s;width:25%%;vertical-align:top;'>"
-            "<div style='font-size:11px;color:#6b7280;'>%s</div>"
-            "<div style='font-weight:600;'>%s</div>"
-            "</td>"
-            % (border, escape(label), escape(value))
+    def _avea_receive_report_pdf_filename(self):
+        self.ensure_one()
+        supplier = re.sub(
+            r"[\\/]+", "-", self.partner_id.display_name or _("Supplier")
         )
+        invoice = re.sub(r"[\\/]+", "-", (self.invoice_number or "").strip())
+        if invoice:
+            return _("Stock received - %s %s.pdf") % (supplier, invoice)
+        return _("Stock received - %s.pdf") % supplier
 
-    def _avea_receive_report_item_html(self, line):
-        values = self._avea_receive_report_line_values(line)
-        codes = [
-            _("SKU %(sku)s", sku=self._avea_receive_report_text(values["sku"])),
-            _("Barcode %(barcode)s", barcode=self._avea_receive_report_text(values["barcode"])),
-            _(
-                "Supplier code %(code)s",
-                code=self._avea_receive_report_text(values["supplier_code"]),
-            ),
-        ]
-        discount_note = ""
-        if values["discount"]:
-            discount_note = (
-                "<div style='color:#6b7280;font-size:12px;margin-top:2px;'>"
-                + escape(
-                    _(
-                        "Discount %(percent)s%% (list cost %(cost)s)",
-                        percent=values["discount"],
-                        cost=self._avea_receive_report_money(values["cost_before_discount"]),
-                    )
+    def get_stock_receive_report_payload(self):
+        """Structured data for the Receive Stock PDF."""
+        self.ensure_one()
+        lines = []
+        profit_total = 0.0
+        for line in self.line_ids.filtered("product_id"):
+            values = self._avea_receive_report_line_values(line)
+            profit_total += values["profit_line"]
+            codes = [
+                _("SKU %(sku)s", sku=self._avea_receive_report_text(values["sku"])),
+                _(
+                    "Barcode %(barcode)s",
+                    barcode=self._avea_receive_report_text(values["barcode"]),
+                ),
+                _(
+                    "Supplier code %(code)s",
+                    code=self._avea_receive_report_text(values["supplier_code"]),
+                ),
+            ]
+            discount_note = ""
+            if values["discount"]:
+                discount_note = _(
+                    "Discount %(percent)s%% (list cost %(cost)s)",
+                    percent=values["discount"],
+                    cost=self._avea_receive_report_money(values["cost_before_discount"]),
                 )
-                + "</div>"
+            lines.append(
+                {
+                    "name": values["name"],
+                    "codes": " · ".join(codes),
+                    "sku": values["sku"],
+                    "barcode": values["barcode"],
+                    "supplier_code": values["supplier_code"],
+                    "discount_note": discount_note,
+                    "pricing_label": self._avea_receive_report_pricing_label(
+                        values["pricing_choice"]
+                    ),
+                    "qty": self._avea_receive_report_qty(values["qty"]),
+                    "cost": self._avea_receive_report_money(values["cost"]),
+                    "retail_inc": self._avea_receive_report_money(values["retail_inc"]),
+                    "markup": self._avea_receive_report_percent(values["markup"]),
+                    "margin": self._avea_receive_report_percent(values["margin"]),
+                    "profit_line": self._avea_receive_report_money(values["profit_line"]),
+                    "line_total": self._avea_receive_report_money(values["line_total"]),
+                }
             )
-        choice_note = ""
-        choice_label = self._avea_receive_report_pricing_label(values["pricing_choice"])
-        if choice_label:
-            choice_note = (
-                "<div style='color:#6b7280;font-size:12px;margin-top:2px;'>"
-                + escape(choice_label)
-                + "</div>"
-            )
-        return f"""
-<table style="width:100%;border-collapse:collapse;margin:0 0 12px 0;border:1px solid #e5e7eb;border-radius:8px;">
-  <tr>
-    <td colspan="4" style="padding:10px 12px;background:#f8fafc;border-bottom:1px solid #e5e7eb;">
-      <div style="font-weight:700;">{escape(values["name"])}</div>
-      <div style="color:#6b7280;font-size:12px;margin-top:2px;">{escape(" · ".join(codes))}</div>
-      {discount_note}{choice_note}
-    </td>
-  </tr>
-  <tr>
-    {self._avea_receive_report_metric_cell(_("Qty"), self._avea_receive_report_qty(values["qty"]))}
-    {self._avea_receive_report_metric_cell(_("EX-tax cost"), self._avea_receive_report_money(values["cost"]))}
-    {self._avea_receive_report_metric_cell(_("Retail INC tax"), self._avea_receive_report_money(values["retail_inc"]))}
-    {self._avea_receive_report_metric_cell(_("Retail EX tax"), self._avea_receive_report_money(values["retail_ex"]), last=True)}
-  </tr>
-  <tr>
-    {self._avea_receive_report_metric_cell(_("Markup"), self._avea_receive_report_percent(values["markup"]))}
-    {self._avea_receive_report_metric_cell(_("Margin"), self._avea_receive_report_percent(values["margin"]))}
-    {self._avea_receive_report_metric_cell(_("Profit / unit"), self._avea_receive_report_money(values["profit_unit"]))}
-    {self._avea_receive_report_metric_cell(_("Line profit"), self._avea_receive_report_money(values["profit_line"]), last=True)}
-  </tr>
-  <tr>
-    <td colspan="3" style="padding:8px 12px;">{escape(_("Line total"))}</td>
-    <td style="padding:8px 12px;text-align:right;font-weight:700;">{escape(self._avea_receive_report_money(values["line_total"]))}</td>
-  </tr>
-</table>
-"""
+        charges = [
+            {
+                "name": charge.name or _("Additional charge"),
+                "total": self._avea_receive_report_money(charge.price_total),
+            }
+            for charge in self.charge_ids.filtered(lambda charge: charge.amount)
+        ]
+        return {
+            "supplier": self.partner_id.display_name or _("Supplier"),
+            "invoice": (self.invoice_number or "").strip() or "—",
+            "received_date": format_date(self.env, self.received_date)
+            if self.received_date
+            else "",
+            "received_by": self.user_id.display_name or _("Unknown"),
+            "payment_status": self.payment_status or _("Unpaid"),
+            "issues": self._avea_receive_report_issues(),
+            "price_changes": self._avea_receive_report_price_changes(),
+            "lines": lines,
+            "charges": charges,
+            "product_count": self.product_count,
+            "quantity_total": self._avea_receive_report_qty(self.quantity_total),
+            "profit_total": self._avea_receive_report_money(profit_total),
+            "amount_untaxed": self._avea_receive_report_money(self.amount_untaxed),
+            "amount_tax": self._avea_receive_report_money(self.amount_tax),
+            "amount_total": self._avea_receive_report_money(self.amount_total),
+        }
 
-    def _avea_receive_report_charge_html(self, charge):
-        return f"""
-<table style="width:100%;border-collapse:collapse;margin:0 0 12px 0;border:1px solid #e5e7eb;">
-  <tr>
-    <td style="padding:10px 12px;">
-      <div style="font-weight:700;">{escape(charge.name or _("Additional charge"))}</div>
-      <div style="color:#6b7280;font-size:12px;">{escape(_("Not a stock item — billed as an expense"))}</div>
-    </td>
-    <td style="padding:10px 12px;text-align:right;font-weight:700;white-space:nowrap;">
-      {escape(self._avea_receive_report_money(charge.price_total))}
-    </td>
-  </tr>
-</table>
-"""
+    def _avea_receive_report_pdf_content(self):
+        self.ensure_one()
+        report = self.env.ref("avea_till.action_report_avea_stock_receive")
+        pdf_content, _report_format = report.with_context(
+            force_report_rendering=True,
+            report_pdf_no_attachment=True,
+        )._render_qweb_pdf(
+            "avea_till.report_avea_stock_receive_document",
+            res_ids=self.ids,
+        )
+        if not pdf_content or not pdf_content.startswith(b"%PDF"):
+            raise UserError(_("The stock receive PDF could not be created."))
+        return pdf_content
 
     def _avea_receive_report_body_html(self):
+        """Short email body. Line-level detail lives in the attached PDF."""
         self.ensure_one()
+        payload = self.get_stock_receive_report_payload()
         company = self.company_id
         accent = (company.avea_receipt_email_accent_color or "#c45c26").strip() or "#c45c26"
-        supplier = self.partner_id.display_name or _("Supplier")
-        received_by = self.user_id.display_name or _("Unknown")
-        received_date = format_date(self.env, self.received_date) if self.received_date else ""
-        issues = self._avea_receive_report_issues()
-        changes = self._avea_receive_report_price_changes()
-        lines = self.line_ids.filtered("product_id")
-        profit_total = sum(
-            self._avea_receive_report_line_values(line)["profit_line"] for line in lines
-        )
-
-        if issues:
+        if payload["issues"]:
             issue_items = "".join(
-                f"<li style='margin:0 0 6px 0;'>{escape(issue)}</li>" for issue in issues
+                f"<li style='margin:0 0 6px 0;'>{escape(issue)}</li>"
+                for issue in payload["issues"]
             )
             issues_block = (
-                "<div style='margin:0 0 18px 0;padding:14px 16px;background:#fff7ed;"
+                "<div style='margin:0 0 16px 0;padding:12px 14px;background:#fff7ed;"
                 "border:1px solid #fdba74;border-radius:8px;'>"
                 "<p style='margin:0 0 8px 0;font-weight:600;color:#9a3412;'>"
                 + escape(_("Needs attention"))
@@ -316,124 +325,36 @@ class AveaStockReceiveReport(models.Model):
                 "</div>"
             )
         else:
-            issues_block = (
-                "<div style='margin:0 0 18px 0;padding:14px 16px;background:#f0fdf4;"
-                "border:1px solid #86efac;border-radius:8px;color:#166534;'>"
-                + escape(_("No issues recorded on this receive."))
-                + "</div>"
-            )
-
-        if changes:
-            change_rows = "".join(
-                "<tr>"
-                f"<td style='padding:8px 10px;border-bottom:1px solid #eef0f3;'>{escape(change['product'])}</td>"
-                f"<td style='padding:8px 10px;border-bottom:1px solid #eef0f3;'>{escape(change['choice'])}</td>"
-                f"<td style='padding:8px 10px;border-bottom:1px solid #eef0f3;'>{escape(change['detail'])}</td>"
-                "</tr>"
-                for change in changes
-            )
-            changes_block = (
-                "<h2 style='margin:0 0 10px 0;font-size:16px;color:#111827;'>"
-                + escape(_("Price changes"))
-                + "</h2>"
-                "<table style='width:100%;border-collapse:collapse;margin:0 0 18px 0;'>"
-                "<thead><tr>"
-                "<th style='padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;color:#6b7280;'>"
-                + escape(_("Product"))
-                + "</th>"
-                "<th style='padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;color:#6b7280;'>"
-                + escape(_("Action"))
-                + "</th>"
-                "<th style='padding:8px 10px;background:#f8fafc;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;color:#6b7280;'>"
-                + escape(_("Change"))
-                + "</th>"
-                "</tr></thead>"
-                f"<tbody>{change_rows}</tbody></table>"
-            )
-        else:
-            changes_block = (
-                "<p style='margin:0 0 18px 0;color:#6b7280;'>"
-                + escape(_("No catalogue prices were changed."))
-                + "</p>"
-            )
-
-        item_blocks = "".join(self._avea_receive_report_item_html(line) for line in lines)
-        charge_blocks = "".join(
-            self._avea_receive_report_charge_html(charge)
-            for charge in self.charge_ids.filtered(lambda charge: charge.amount)
-        )
-
+            issues_block = ""
         return f"""
-<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.5;max-width:800px;">
-  <div style="border-bottom:3px solid {escape(accent)};padding-bottom:12px;margin-bottom:18px;">
+<div style="font-family:Arial,Helvetica,sans-serif;color:#1f2937;font-size:14px;line-height:1.5;max-width:640px;">
+  <div style="border-bottom:3px solid {escape(accent)};padding-bottom:12px;margin-bottom:16px;">
     <div style="font-size:12px;letter-spacing:0.04em;text-transform:uppercase;color:#6b7280;">
       {escape(company.name)}
     </div>
-    <h1 style="margin:6px 0 0 0;font-size:22px;line-height:1.25;color:#111827;">
+    <h1 style="margin:6px 0 0 0;font-size:20px;line-height:1.25;color:#111827;">
       {escape(_("Stock received"))}
     </h1>
-    <p style="margin:8px 0 0 0;color:#6b7280;">
-      {escape(supplier)}
-      &nbsp;·&nbsp; {escape(self.invoice_number or "")}
-      &nbsp;·&nbsp; {escape(received_date)}
-    </p>
   </div>
-
-  <table style="width:100%;border-collapse:collapse;margin:0 0 18px 0;">
-    <tr>
-      <td style="width:50%;padding:10px 12px;background:#f8fafc;border:1px solid #e5e7eb;">
-        <div style="font-size:12px;color:#6b7280;">{escape(_("Received by"))}</div>
-        <div style="font-weight:600;">{escape(received_by)}</div>
-      </td>
-      <td style="width:50%;padding:10px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-left:none;">
-        <div style="font-size:12px;color:#6b7280;">{escape(_("Payment"))}</div>
-        <div style="font-weight:600;">{escape(self.payment_status or _("Unpaid"))}</div>
-      </td>
-    </tr>
-  </table>
-
+  <p style="margin:0 0 8px 0;">
+    {escape(payload["supplier"])}
+    &nbsp;·&nbsp; {escape(payload["invoice"])}
+    &nbsp;·&nbsp; {escape(payload["received_date"])}
+  </p>
+  <p style="margin:0 0 16px 0;color:#6b7280;">
+    {escape(_("Received by %(name)s", name=payload["received_by"]))}
+    &nbsp;·&nbsp; {escape(payload["payment_status"])}
+    &nbsp;·&nbsp; {escape(_("Total %(amount)s", amount=payload["amount_total"]))}
+  </p>
   {issues_block}
-  {changes_block}
-
-  <h2 style="margin:0 0 10px 0;font-size:16px;color:#111827;">{escape(_("Items received"))}</h2>
-  {item_blocks}
-  {charge_blocks}
-
-  <table style="width:100%;border-collapse:collapse;margin:12px 0 18px 0;">
-    <tr>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Products"))}</td>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;font-weight:600;">{self.product_count}</td>
-    </tr>
-    <tr>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Quantity"))}</td>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;font-weight:600;">{escape(self._avea_receive_report_qty(self.quantity_total))}</td>
-    </tr>
-    <tr>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Estimated profit"))}</td>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;font-weight:600;">{escape(self._avea_receive_report_money(profit_total))}</td>
-    </tr>
-    <tr>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Ex-tax total"))}</td>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;">{escape(self._avea_receive_report_money(self.amount_untaxed))}</td>
-    </tr>
-    <tr>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;">{escape(_("Tax"))}</td>
-      <td style="padding:8px 0;border-bottom:1px solid #eef0f3;text-align:right;">{escape(self._avea_receive_report_money(self.amount_tax))}</td>
-    </tr>
-    <tr>
-      <td style="padding:8px 0;">{escape(_("Total"))}</td>
-      <td style="padding:8px 0;text-align:right;font-weight:600;">{escape(self._avea_receive_report_money(self.amount_total))}</td>
-    </tr>
-  </table>
-
-  <p style="margin:0;color:#6b7280;font-size:12px;">
-    {escape(_("This is an automated Receive Stock report from Avea POS. Profit is retail EX tax minus the received EX-tax cost."))}
+  <p style="margin:0;color:#6b7280;font-size:13px;">
+    {escape(_("The full receive report is attached as a PDF."))}
   </p>
 </div>
 """
 
     def _avea_send_receive_report(self):
-        """Email the owner a summary after stock is received. Never blocks the receive."""
+        """Email the owner a PDF after stock is received. Never blocks the receive."""
         self.ensure_one()
         if self.state != "done":
             return False
@@ -455,6 +376,22 @@ class AveaStockReceiveReport(models.Model):
                 self.id,
             )
             return False
+        pdf_content = self._avea_receive_report_pdf_content()
+        filename = self._avea_receive_report_pdf_filename()
+        attachment = (
+            self.env["ir.attachment"]
+            .sudo()
+            .create(
+                {
+                    "name": filename,
+                    "type": "binary",
+                    "datas": base64.b64encode(pdf_content),
+                    "mimetype": "application/pdf",
+                    "res_model": self._name,
+                    "res_id": self.id,
+                }
+            )
+        )
         sender_name = company._avea_receipt_email_business_name() or company.name
         mail = (
             self.env["mail.mail"]
@@ -466,6 +403,7 @@ class AveaStockReceiveReport(models.Model):
                     "email_from": formataddr((sender_name, sender_email)),
                     "email_to": ", ".join(recipients),
                     "reply_to": company._avea_receipt_email_reply_to() or sender_email,
+                    "attachment_ids": [(4, attachment.id)],
                     "auto_delete": True,
                 }
             )

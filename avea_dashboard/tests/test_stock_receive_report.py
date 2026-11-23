@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from unittest.mock import patch
+
 from odoo import Command, fields
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
@@ -60,6 +62,13 @@ class TestAveaStockReceiveReport(TransactionCase):
                 "avea_receipt_sender_email": "sender@example.com",
             }
         )
+        pdf_patcher = patch.object(
+            type(cls.env["avea.stock.receive"]),
+            "_avea_receive_report_pdf_content",
+            lambda self: b"%PDF-1.4 test receive report",
+        )
+        pdf_patcher.start()
+        cls.addClassCleanup(pdf_patcher.stop)
 
     def _create_receive(self, *, cost=50.0, qty=2.0, choice="keep", extra=None):
         values = {
@@ -124,14 +133,19 @@ class TestAveaStockReceiveReport(TransactionCase):
         self.assertGreater(values["margin"], 0.0)
         self.assertGreater(values["profit_unit"], 0.0)
         self.assertAlmostEqual(values["profit_line"], values["profit_unit"] * 2.0, places=4)
-        html = receive._avea_receive_report_body_html()
-        self.assertIn("SKU-F800", html)
-        self.assertIn("6001234567890", html)
-        self.assertIn("SUP-F800", html)
-        self.assertIn("Markup", html)
-        self.assertIn("Profit / unit", html)
-        self.assertIn("Line profit", html)
-        self.assertIn("Estimated profit", html)
+        payload = receive.get_stock_receive_report_payload()
+        self.assertEqual(payload["lines"][0]["sku"], "SKU-F800")
+        self.assertIn("SKU-F800", payload["lines"][0]["codes"])
+        self.assertIn("6001234567890", payload["lines"][0]["codes"])
+        self.assertIn("SUP-F800", payload["lines"][0]["codes"])
+        html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            "avea_till.report_avea_stock_receive_document", receive.ids
+        )
+        self.assertIn(b"SKU-F800", html)
+        self.assertIn(b"6001234567890", html)
+        self.assertIn(b"SUP-F800", html)
+        self.assertIn(b"Markup", html)
+        self.assertIn(b"Estimated profit", html)
         mail = self.env["mail.mail"].search(
             [("email_to", "ilike", "owner-report@example.com")],
             order="id desc",
@@ -140,14 +154,20 @@ class TestAveaStockReceiveReport(TransactionCase):
         self.assertTrue(mail)
         self.assertIn("Stock received", mail.subject)
         self.assertIn("IO-REPORT-1", mail.subject)
-        self.assertIn("SKU-F800", mail.body_html or "")
+        self.assertIn("attached as a PDF", mail.body_html or "")
+        self.assertNotIn("SKU-F800", mail.body_html or "")
+        self.assertTrue(mail.attachment_ids)
+        self.assertTrue(mail.attachment_ids[0].name.lower().endswith(".pdf"))
 
     def test_report_mentions_price_change_and_kept_cost_difference(self):
         receive = self._create_receive(cost=40.0, qty=1.0, choice="keep")
         receive.action_receive_stock()
-        html = receive._avea_receive_report_body_html()
-        self.assertIn("Needs attention", html)
-        self.assertIn("Current pricing was kept", html)
+        html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            "avea_till.report_avea_stock_receive_document", receive.ids
+        )
+        self.assertIn(b"Needs attention", html)
+        self.assertIn(b"Current pricing was kept", html)
+        self.assertIn("Needs attention", receive._avea_receive_report_body_html())
 
         line = self._create_receive(cost=40.0, qty=1.0).line_ids
         wizard = (
@@ -157,10 +177,12 @@ class TestAveaStockReceiveReport(TransactionCase):
         )
         wizard.action_update_cost_and_pricing()
         line.receive_id.action_receive_stock()
-        changed = line.receive_id._avea_receive_report_body_html()
-        self.assertIn("Price changes", changed)
-        self.assertIn("Updated cost and retail", changed)
-        self.assertIn("Markup", changed)
+        changed, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            "avea_till.report_avea_stock_receive_document", line.receive_id.ids
+        )
+        self.assertIn(b"Price changes", changed)
+        self.assertIn(b"Updated cost and retail", changed)
+        self.assertIn(b"Markup", changed)
 
     def test_report_mentions_unmatched_and_total_mismatch(self):
         receive = self._create_receive(
@@ -180,12 +202,15 @@ class TestAveaStockReceiveReport(TransactionCase):
             }
         )
         receive.action_receive_stock()
-        html = receive._avea_receive_report_body_html()
-        self.assertIn("Needs attention", html)
-        self.assertIn("Mystery hose", html)
-        self.assertIn("HOSE-1", html)
-        self.assertIn("SUP-HOSE", html)
-        self.assertIn("does not match received total", html)
+        html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            "avea_till.report_avea_stock_receive_document", receive.ids
+        )
+        self.assertIn(b"Needs attention", html)
+        self.assertIn(b"Mystery hose", html)
+        self.assertIn(b"HOSE-1", html)
+        self.assertIn(b"SUP-HOSE", html)
+        self.assertIn(b"does not match received total", html)
+        self.assertIn("Mystery hose", receive._avea_receive_report_body_html())
 
     def test_email_failure_does_not_block_receive(self):
         receive = self._create_receive()
