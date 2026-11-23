@@ -91,6 +91,12 @@ export class AveaBillListController extends ListController {
         await this.actionService.doAction("avea_till.action_avea_pay_bills_wizard");
     }
 
+    async onClickOpeningArrears() {
+        await this.actionService.doAction(
+            "avea_till.action_avea_supplier_opening_arrears"
+        );
+    }
+
     _getActionDomain() {
         return this.props.domain?.length ? [...this.props.domain] : [];
     }

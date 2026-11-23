@@ -12,27 +12,53 @@
                     <field name="journal_id" invisible="1"/>
                     <field name="available_move_ids" invisible="1"/>
                     <field name="available_transfer_journal_ids" invisible="1"/>
+                    <field name="is_money_out" invisible="1"/>
                     <field name="description" readonly="1"/>
                     <field name="amount" readonly="1" widget="monetary"/>
                     <field name="mode" widget="radio"/>
+                </group>
+                <group invisible="mode != 'match' or not is_money_out">
+                    <field
+                        name="partner_id"
+                        options="{'no_create': True, 'no_open': True}"
+                        placeholder="Choose supplier"
+                    />
+                </group>
+                <field
+                    name="allocation_line_ids"
+                    nolabel="1"
+                    invisible="mode != 'match' or not is_money_out"
+                >
+                    <list create="false" delete="false" editable="bottom">
+                        <field name="currency_id" column_invisible="True"/>
+                        <field name="bill_id" column_invisible="True"/>
+                        <field name="pay" string="Pay"/>
+                        <field name="bill_date" string="Date" readonly="1"/>
+                        <field name="bill_label" string="What this is" readonly="1"/>
+                        <field name="bill_ref" string="Their invoice" readonly="1"/>
+                        <field name="amount_due" string="Still open" widget="monetary" readonly="1"/>
+                        <field name="amount" string="Apply" widget="monetary"/>
+                    </list>
+                </field>
+                <group invisible="mode != 'match' or not is_money_out">
+                    <field name="amount_applied" readonly="1" widget="monetary"/>
+                    <field name="amount_on_account" readonly="1" widget="monetary"/>
                 </group>
                 <group invisible="mode != 'match'">
                     <field
                         name="move_ids"
                         widget="many2many_tags"
                         options="{'no_create': True}"
-                        placeholder="Invoice, bill, or already-paid receive"
+                        placeholder="Already-paid invoice or receive to link"
                     />
                     <field name="open_amount" readonly="1" widget="monetary"/>
                     <field name="paid_document_hint" readonly="1" nolabel="1" invisible="not paid_document_hint"/>
                 </group>
                 <p class="text-muted" invisible="mode != 'match'">
-                    Money in matches customer invoices and supplier refunds.
-                    Money out matches supplier bills and customer refunds.
-                    Already-paid receives and bills are listed so you can link
-                    the existing payment — Apply will not pay them again.
-                    Several open documents must add up to the bank line.
-                    One open document can be larger; the rest stays open.
+                    Choose the supplier, then type how much of this EFT each open bill
+                    should take — this week’s invoice and old arrears can share one
+                    payment. Extra stays on the supplier. Already-paid bills are linked
+                    without paying them again.
                 </p>
                 <group invisible="mode != 'settlement'">
                     <field name="settlement_gross"/>

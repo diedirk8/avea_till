@@ -37,13 +37,24 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
         compute="_compute_available_journal_ids",
     )
     payment_ref = fields.Char(string="Reference")
+    payment_amount = fields.Monetary(
+        string="This payment",
+        currency_field="currency_id",
+        help="The amount that left the bank. Tick bills below and type how much "
+        "each one should take. Extra stays on the supplier as paid on account.",
+    )
     line_ids = fields.One2many(
         "avea.supplier.pay.bills.wizard.line",
         "wizard_id",
         string="Bills",
     )
     amount_total = fields.Monetary(
-        string="Payment total",
+        string="Applied to bills",
+        currency_field="currency_id",
+        compute="_compute_amount_total",
+    )
+    amount_on_account = fields.Monetary(
+        string="Left on supplier",
         currency_field="currency_id",
         compute="_compute_amount_total",
     )
@@ -57,16 +68,23 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
                 company.sudo()._avea_expense_journals() if company else False
             )
 
-    @api.depends("line_ids.pay", "line_ids.amount")
+    @api.depends("line_ids.pay", "line_ids.amount", "payment_amount", "currency_id")
     def _compute_amount_total(self):
         for wizard in self:
+            currency = wizard.currency_id or wizard.env.company.currency_id
             selected = wizard.line_ids.filtered(
                 lambda line: line.pay
                 and line.currency_id
                 and line.currency_id.compare_amounts(line.amount or 0.0, 0.0) > 0
             )
             wizard.selected_count = len(selected)
-            wizard.amount_total = sum(selected.mapped("amount"))
+            applied = currency.round(sum(selected.mapped("amount")))
+            wizard.amount_total = applied
+            payment = currency.round(wizard.payment_amount or 0.0)
+            if currency.compare_amounts(payment, 0.0) > 0:
+                wizard.amount_on_account = currency.round(max(payment - applied, 0.0))
+            else:
+                wizard.amount_on_account = 0.0
 
     @api.model
     def default_get(self, fields_list):
@@ -140,6 +158,27 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             self.company_id,
             preselect_bill_id=self.env.context.get("default_bill_id"),
         )
+        self._avea_auto_allocate()
+
+    @api.onchange("payment_amount")
+    def _onchange_payment_amount(self):
+        self._avea_auto_allocate()
+
+    def _avea_auto_allocate(self):
+        """Fill Pay now from the oldest open bill until this payment is used."""
+        self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
+        if not self.line_ids or currency.compare_amounts(self.payment_amount or 0.0, 0.0) <= 0:
+            return
+        bills = self.line_ids.mapped("bill_id")
+        allocated, _leftover = self.env["avea.stock.mixin"]._avea_allocate_oldest_first(
+            bills, self.payment_amount, currency
+        )
+        amount_by_bill = {bill.id: amount for bill, amount in allocated}
+        for line in self.line_ids:
+            amount = amount_by_bill.get(line.bill_id.id, 0.0)
+            line.amount = amount
+            line.pay = bool(currency.compare_amounts(amount, 0.0) > 0)
 
     def action_pay(self):
         self.ensure_one()
@@ -150,8 +189,15 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             and line.currency_id
             and line.currency_id.compare_amounts(line.amount or 0.0, 0.0) > 0
         )
-        if not selected:
-            raise UserError(_("Tick the bills this payment should cover, and enter an amount."))
+        currency = self.currency_id or self.env.company.currency_id
+        payment_amount = currency.round(self.payment_amount or 0.0)
+        if not selected and currency.compare_amounts(payment_amount, 0.0) <= 0:
+            raise UserError(
+                _(
+                    "Enter the amount that left the bank, or tick the bills "
+                    "this payment should cover."
+                )
+            )
         allowed = self.company_id.sudo()._avea_expense_journals()
         if not self.journal_id or self.journal_id not in allowed:
             raise UserError(_("Choose a cash or bank account to pay from."))
@@ -170,6 +216,7 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             self.company_id,
             self.pay_date or fields.Date.context_today(self),
             self.payment_ref,
+            payment_amount=payment_amount if currency.compare_amounts(payment_amount, 0.0) > 0 else None,
         )
         for bill, _amount in allocations:
             receive = bill.avea_linked_receive_id

@@ -1425,3 +1425,38 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
         self.assertNotIn("Record expense", line.work_hint or "")
         with self.assertRaises(UserError):
             line.action_open_booking_wizard()
+
+    def test_match_wizard_applies_eft_across_invoice_and_arrears(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        partner = self.env["res.partner"].create(
+            {"name": "Minitra Apply", "supplier_rank": 1}
+        )
+        invoice = self._create_vendor_bill(partner, 6691.60, "2097-09-08", "INV0050375")
+        arrears = self._create_vendor_bill(partner, 5000.0, "2097-09-01", "OPEN-ARREARS")
+        if not invoice or not arrears:
+            return
+        line = self._reconcile_line(journal, -8000.0, "Internet Pmt To Minitra Apply")
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "match",
+                "partner_id": partner.id,
+                "allocation_line_ids": [
+                    Command.create(
+                        {"bill_id": invoice.id, "pay": True, "amount": 6691.60}
+                    ),
+                    Command.create(
+                        {"bill_id": arrears.id, "pay": True, "amount": 1308.40}
+                    ),
+                ],
+            }
+        )
+        wizard.action_apply()
+        invoice.invalidate_recordset()
+        arrears.invalidate_recordset()
+        self.assertEqual(line.match_state, "matched")
+        self.assertTrue(invoice.currency_id.is_zero(invoice.amount_residual))
+        self.assertAlmostEqual(arrears.amount_residual, 3691.60, places=2)
+        self.assertAlmostEqual(line.statement_line_id.amount, -8000.0, places=2)

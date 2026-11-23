@@ -15,6 +15,9 @@
                             <button type="button" class="btn btn-primary" t-on-click="() => this.onClickNewPayment()">
                                 New payment
                             </button>
+                            <button type="button" class="btn btn-secondary" t-on-click="() => this.onClickOpeningArrears()">
+                                Opening arrears
+                            </button>
                         </div>
                     </div>
 

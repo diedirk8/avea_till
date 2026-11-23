@@ -131,6 +131,13 @@
                                 invisible="not id"
                             />
                             <button
+                                string="Opening arrears"
+                                name="action_avea_opening_arrears"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button
                                 string="Receive stock"
                                 name="action_avea_receive_stock"
                                 type="object"

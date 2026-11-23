@@ -496,3 +496,114 @@ class TestAveaSupplierBills(TestPoSCommon):
                 [("avea_is_bill_payment", "=", True)]
             ),
         )
+
+    def test_pay_bills_wizard_applies_eft_across_invoice_and_arrears(self):
+        today = fields.Date.context_today(self.env.user)
+        invoice = self._create_vendor_move(
+            "in_invoice", 6691.60, "INV-WEEK", today, due=today
+        )
+        arrears = self._create_vendor_move(
+            "in_invoice", 5000.0, "OPENING-ARREARS", today, due=today
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        invoice_open = invoice.amount_residual
+        surplus = 1308.40
+        wizard = self.env["avea.supplier.pay.bills.wizard"].create(
+            {
+                "partner_id": self.partner.id,
+                "pay_date": today,
+                "journal_id": journal.id,
+                "payment_amount": invoice_open + surplus,
+                "payment_ref": "Minitra EFT",
+            }
+        )
+        for line in wizard.line_ids:
+            if line.bill_id == invoice:
+                line.pay = True
+                line.amount = invoice_open
+            elif line.bill_id == arrears:
+                line.pay = True
+                line.amount = surplus
+            else:
+                line.pay = False
+                line.amount = 0.0
+        result = wizard.action_pay()
+        invoice.invalidate_recordset()
+        arrears.invalidate_recordset()
+        self.assertTrue(invoice.currency_id.is_zero(invoice.amount_residual))
+        self.assertAlmostEqual(arrears.amount_residual, arrears.amount_total - surplus, places=2)
+        payment = self.env["account.bank.statement.line"].browse(result["res_id"])
+        self.assertAlmostEqual(payment.amount, -(invoice_open + surplus), places=2)
+
+    def test_pay_bills_wizard_leftover_stays_on_account(self):
+        today = fields.Date.context_today(self.env.user)
+        bill = self._create_vendor_move(
+            "in_invoice", 6691.60, "INV-ONLY", today, due=today
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        payable = self.env["avea.stock.mixin"]._avea_supplier_payable_account(
+            self.partner, self.env.company
+        )
+        open_amount = bill.amount_residual
+        surplus = 1308.40
+        wizard = self.env["avea.supplier.pay.bills.wizard"].create(
+            {
+                "partner_id": self.partner.id,
+                "pay_date": today,
+                "journal_id": journal.id,
+                "payment_amount": open_amount + surplus,
+            }
+        )
+        for line in wizard.line_ids:
+            if line.bill_id == bill:
+                line.pay = True
+                line.amount = open_amount
+            else:
+                line.pay = False
+                line.amount = 0.0
+        result = wizard.action_pay()
+        bill.invalidate_recordset()
+        self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
+        payment = self.env["account.bank.statement.line"].browse(result["res_id"])
+        leftover = payment.move_id.line_ids.filtered(
+            lambda aml: aml.account_id == payable and not aml.reconciled
+        )
+        self.assertAlmostEqual(
+            abs(sum(leftover.mapped("amount_residual"))), surplus, places=2
+        )
+
+    def test_opening_arrears_creates_open_bill(self):
+        equity = self.env["account.account"].search(
+            [
+                ("company_ids", "in", self.env.company.id),
+                ("account_type", "in", ("equity", "equity_unaffected")),
+            ],
+            limit=1,
+        )
+        if not equity:
+            self.skipTest("No equity account for opening arrears")
+        wizard = self.env["avea.supplier.opening.arrears.wizard"].create(
+            {
+                "partner_id": self.partner.id,
+                "bill_date": "2026-09-01",
+                "amount": 10737.05,
+                "ref": "Previous system",
+                "offset_account_id": equity.id,
+            }
+        )
+        wizard.action_create_arrears()
+        bill = self.env["account.move"].search(
+            [
+                ("partner_id", "=", self.partner.id),
+                ("invoice_origin", "ilike", "Opening arrears"),
+            ],
+            limit=1,
+        )
+        self.assertTrue(bill)
+        self.assertEqual(bill.payment_state, "not_paid")
+        self.assertAlmostEqual(bill.amount_residual, 10737.05, places=2)
+        self.assertEqual(bill.avea_supplier_bill_source, "arrears")

@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
+from .bank_reconcile_booking_rules import AveaBankReconcileBookingRules
+
 
 class AveaBankReconcileApply(models.TransientModel):
     """Match a statement line to invoices, split it, or transfer it.
@@ -42,9 +44,30 @@ class AveaBankReconcileApply(models.TransientModel):
     )
     move_ids = fields.Many2many(
         "account.move",
-        string="Invoices and bills",
+        string="Already-paid documents",
         domain="[('id', 'in', available_move_ids)]",
     )
+    partner_id = fields.Many2one(
+        "res.partner",
+        string="Supplier",
+        domain="[('supplier_rank', '>', 0)]",
+    )
+    allocation_line_ids = fields.One2many(
+        "avea.bank.reconcile.apply.bill",
+        "apply_id",
+        string="Open bills",
+    )
+    amount_applied = fields.Monetary(
+        string="Applied to bills",
+        compute="_compute_allocation_totals",
+        currency_field="currency_id",
+    )
+    amount_on_account = fields.Monetary(
+        string="Left on supplier",
+        compute="_compute_allocation_totals",
+        currency_field="currency_id",
+    )
+    is_money_out = fields.Boolean(compute="_compute_is_money_out")
     open_amount = fields.Monetary(
         string="Open on the documents",
         compute="_compute_open_amount",
@@ -194,6 +217,31 @@ class AveaBankReconcileApply(models.TransientModel):
             journals = company._avea_transfer_journals() if company else self.env["account.journal"]
             wizard.available_transfer_journal_ids = journals - wizard.journal_id
 
+    @api.depends("amount")
+    def _compute_is_money_out(self):
+        for wizard in self:
+            currency = wizard.currency_id or wizard.env.company.currency_id
+            wizard.is_money_out = currency.compare_amounts(wizard.amount or 0.0, 0.0) < 0
+
+    @api.depends(
+        "allocation_line_ids.pay",
+        "allocation_line_ids.amount",
+        "amount",
+        "currency_id",
+    )
+    def _compute_allocation_totals(self):
+        for wizard in self:
+            currency = wizard.currency_id or wizard.env.company.currency_id
+            selected = wizard.allocation_line_ids.filtered(
+                lambda line: line.pay
+                and currency.compare_amounts(line.amount or 0.0, 0.0) > 0
+            )
+            applied = currency.round(sum(selected.mapped("amount")))
+            wizard.amount_applied = applied
+            bank = currency.round(abs(wizard.amount or 0.0))
+            leftover = currency.round(bank - applied)
+            wizard.amount_on_account = leftover if leftover > 0 else 0.0
+
     @api.model
     def default_get(self, fields_list):
         values = super().default_get(fields_list)
@@ -222,29 +270,115 @@ class AveaBankReconcileApply(models.TransientModel):
         capital_account = self._avea_capital_account(line.company_id)
         if capital_account and "capital_account_id" in (fields_list or ["capital_account_id"]):
             values["capital_account_id"] = capital_account.id
-        if "move_ids" not in (fields_list or ["move_ids"]):
-            return values
         currency = line.currency_id or self.env.company.currency_id
-        target = abs(line.amount)
-        wizard = self.new({"reconcile_line_id": line.id, "company_id": line.company_id.id})
+        if (
+            currency.compare_amounts(line.amount or 0.0, 0.0) < 0
+            and not values.get("partner_id")
+            and "partner_id" in (fields_list or ["partner_id"])
+        ):
+            partner = self._avea_suggest_supplier(line)
+            if partner:
+                values["partner_id"] = partner.id
+        skip_allocation = False
+        if "move_ids" in (fields_list or ["move_ids"]):
+            target = abs(line.amount)
+            wizard = self.new(
+                {"reconcile_line_id": line.id, "company_id": line.company_id.id}
+            )
 
-        def _move_match_amount(move):
-            if move.currency_id.is_zero(move.amount_residual):
-                return move.amount_total
-            return abs(move.amount_residual)
+            def _move_match_amount(move):
+                if move.currency_id.is_zero(move.amount_residual):
+                    return move.amount_total
+                return abs(move.amount_residual)
 
-        exact = wizard.available_move_ids.filtered(
-            lambda move: currency.compare_amounts(_move_match_amount(move), target) == 0
-        )
-        blob = " ".join(filter(None, [line.description or "", line.reference or ""])).lower()
-        named = exact.filtered(
-            lambda move: move.partner_id.name and move.partner_id.name.lower() in blob
-        )
-        if len(named) == 1:
-            exact = named
-        if len(exact) == 1:
-            values["move_ids"] = [Command.set(exact.ids)]
+            exact = wizard.available_move_ids.filtered(
+                lambda move: currency.compare_amounts(_move_match_amount(move), target) == 0
+            )
+            blob = " ".join(
+                filter(None, [line.description or "", line.reference or ""])
+            ).lower()
+            named = exact.filtered(
+                lambda move: move.partner_id.name and move.partner_id.name.lower() in blob
+            )
+            if len(named) == 1:
+                exact = named
+            if len(exact) == 1:
+                values["move_ids"] = [Command.set(exact.ids)]
+                paid = exact.filtered(
+                    lambda move: move.payment_state in ("paid", "in_payment")
+                    and move.currency_id.is_zero(move.amount_residual)
+                )
+                skip_allocation = bool(paid)
+        partner = self.env["res.partner"].browse(values.get("partner_id"))
+        if (
+            partner
+            and not skip_allocation
+            and "allocation_line_ids" in (fields_list or ["allocation_line_ids"])
+            and not values.get("allocation_line_ids")
+        ):
+            values["allocation_line_ids"] = self._avea_allocation_commands(
+                partner, line.company_id, abs(line.amount or 0.0), currency
+            )
         return values
+
+    @api.model
+    def _avea_suggest_supplier(self, line):
+        if not line:
+            return self.env["res.partner"]
+        return AveaBankReconcileBookingRules.suggest_partner(
+            self.env,
+            company=line.company_id or self.env.company,
+            partner_role="supplier",
+            description=line.description,
+            reference=line.reference,
+        )
+
+    @api.model
+    def _avea_open_supplier_bills(self, partner, company):
+        if not partner or not company:
+            return self.env["account.move"]
+        return self.env["account.move"].search(
+            [
+                ("partner_id", "=", partner.id),
+                ("company_id", "=", company.id),
+                ("move_type", "=", "in_invoice"),
+                ("state", "=", "posted"),
+                ("amount_residual", "!=", 0),
+            ],
+            order="invoice_date_due, invoice_date, id",
+        )
+
+    @api.model
+    def _avea_allocation_commands(self, partner, company, payment_amount, currency):
+        bills = self._avea_open_supplier_bills(partner, company)
+        allocated, _leftover = self.env["avea.stock.mixin"]._avea_allocate_oldest_first(
+            bills, payment_amount, currency
+        )
+        commands = []
+        for bill, amount in allocated:
+            commands.append(
+                Command.create(
+                    {
+                        "bill_id": bill.id,
+                        "pay": bool(currency.compare_amounts(amount, 0.0) > 0),
+                        "amount": amount,
+                    }
+                )
+            )
+        return commands
+
+    @api.onchange("partner_id")
+    def _onchange_partner_id(self):
+        self.allocation_line_ids = [Command.clear()]
+        if not self.partner_id or not self.reconcile_line_id:
+            return
+        currency = self.currency_id or self.env.company.currency_id
+        self.allocation_line_ids = self._avea_allocation_commands(
+            self.partner_id,
+            self.company_id or self.env.company,
+            abs(self.amount or 0.0),
+            currency,
+        )
 
     @api.depends(
         "settlement_gross",
@@ -314,6 +448,8 @@ class AveaBankReconcileApply(models.TransientModel):
                     lambda move: move.payment_state in ("paid", "in_payment")
                     and move.currency_id.is_zero(move.amount_residual)
                 )
+                else _("Applied to open bills")
+                if self._avea_selected_allocations()
                 else None
             )
             return line._avea_after_booked(statement_line, hint=hint)
@@ -327,50 +463,70 @@ class AveaBankReconcileApply(models.TransientModel):
             raise UserError(_("Choose how to allocate this bank line."))
         return line._avea_after_booked(statement_line)
 
+    def _avea_selected_allocations(self):
+        self.ensure_one()
+        currency = self.currency_id or self.env.company.currency_id
+        return self.allocation_line_ids.filtered(
+            lambda row: row.pay
+            and currency.compare_amounts(row.amount or 0.0, 0.0) > 0
+        )
+
     def _avea_apply_match(self):
         self.ensure_one()
         line = self.reconcile_line_id
+        currency = self.currency_id or self.env.company.currency_id
+        allocations = self._avea_selected_allocations()
         moves = self.move_ids
-        if not moves:
-            raise UserError(_("Choose the invoice or bill this bank line pays."))
-        if any(move not in self.available_move_ids for move in moves):
-            raise UserError(_("Choose an invoice or bill for this company."))
         paid = moves.filtered(
             lambda move: move.payment_state in ("paid", "in_payment")
             and move.currency_id.is_zero(move.amount_residual)
         )
-        open_moves = moves - paid
-        if paid and open_moves:
+        if paid and allocations:
             raise UserError(
-                _("Choose either open documents or already-paid ones, not both.")
+                _(
+                    "Choose either open bills to apply this EFT, or already-paid "
+                    "ones to link — not both."
+                )
             )
         if paid:
+            if any(move not in self.available_move_ids for move in paid):
+                raise UserError(_("Choose an invoice or bill for this company."))
             return self._avea_link_existing_payment(paid)
-        currency = self.currency_id
+        if allocations or (
+            self.partner_id
+            and not moves
+            and currency.compare_amounts(line.amount or 0.0, 0.0) < 0
+        ):
+            return self._avea_apply_open_bills(allocations)
+        if not moves:
+            raise UserError(_("Choose the invoice or bill this bank line pays."))
+        if any(move not in self.available_move_ids for move in moves):
+            raise UserError(_("Choose an invoice or bill for this company."))
+        open_moves = moves - paid
         bank_amount = abs(line.amount)
-        residuals = [(move, abs(move.amount_residual)) for move in moves]
+        residuals = [(move, abs(move.amount_residual)) for move in open_moves]
         open_total = sum(residual for _move, residual in residuals)
-        if len(moves) > 1 and currency.compare_amounts(open_total, bank_amount) != 0:
+        if len(open_moves) > 1 and currency.compare_amounts(open_total, bank_amount) != 0:
             raise UserError(
                 _(
                     "The open amounts must add up to this bank line, "
                     "or match a single invoice and leave the rest open."
                 )
             )
-        if len(moves) == 1 and currency.compare_amounts(open_total, bank_amount) < 0:
+        if len(open_moves) == 1 and currency.compare_amounts(open_total, bank_amount) < 0:
             raise UserError(
                 _("This document is smaller than the bank line. Split the difference or pick more documents.")
             )
         accounts = self.env["account.account"]
-        for move in moves:
+        for move in open_moves:
             accounts |= self._avea_document_account(move)
         if len(accounts) != 1:
             raise UserError(
                 _("These documents do not share one receivable or payable account.")
             )
         account = accounts
-        partner = moves.mapped("partner_id")[:1]
-        payment_ref = line.description or line.reference or moves[0].name
+        partner = open_moves.mapped("partner_id")[:1]
+        payment_ref = line.description or line.reference or open_moves[0].name
         statement_line = self._avea_create_statement_line(
             amount=line.amount,
             payment_ref=payment_ref[:255],
@@ -378,7 +534,7 @@ class AveaBankReconcileApply(models.TransientModel):
             partner=partner,
         )
         document_lines = self.env["account.move.line"]
-        for move in moves:
+        for move in open_moves:
             document_lines |= move.line_ids.filtered(
                 lambda aml, account=account: aml.account_id == account and not aml.reconciled
             )
@@ -390,6 +546,46 @@ class AveaBankReconcileApply(models.TransientModel):
             raise UserError(_("Could not match this bank line to the document."))
         to_reconcile.sudo().reconcile()
         return statement_line
+
+    def _avea_apply_open_bills(self, allocation_rows):
+        """One bank payment applied across open bills; leftover stays on account."""
+        self.ensure_one()
+        line = self.reconcile_line_id
+        currency = self.currency_id or self.env.company.currency_id
+        partner = self.partner_id
+        if not partner:
+            partners = allocation_rows.mapped("bill_id.partner_id")
+            if len(partners) != 1:
+                raise UserError(_("Choose the supplier this EFT was paid to."))
+            partner = partners
+        bank_amount = currency.round(abs(line.amount or 0.0))
+        if currency.compare_amounts(bank_amount, 0.0) <= 0:
+            raise UserError(_("This statement line has no amount."))
+        applied = currency.round(sum(allocation_rows.mapped("amount")))
+        if currency.compare_amounts(applied, bank_amount) > 0:
+            raise UserError(
+                _(
+                    "The amounts on the bills are more than this bank line. "
+                    "Lower what you apply so the extra can stay on the supplier."
+                )
+            )
+        allocations = []
+        for row in allocation_rows:
+            bill = row.bill_id.sudo()
+            if bill.move_type != "in_invoice" or bill.state != "posted":
+                raise UserError(_("Choose posted supplier bills."))
+            if bill.partner_id != partner:
+                raise UserError(_("Those bills are not all for this supplier."))
+            allocations.append((bill, row.amount))
+        return self.env["avea.stock.mixin"]._avea_pay_vendor_bills(
+            allocations,
+            line.journal_id,
+            partner,
+            line.company_id or self.env.company,
+            line.bank_date,
+            line.description or line.reference,
+            payment_amount=bank_amount,
+        )
 
     def _avea_link_existing_payment(self, moves):
         """Tick the bank line off against the payment that already paid these bills."""
@@ -818,3 +1014,55 @@ class AveaBankReconcileSplitLine(models.TransientModel):
         for line in self:
             if line.currency_id.compare_amounts(line.amount, 0.0) <= 0:
                 raise ValidationError(_("Each split amount must be greater than zero."))
+
+
+class AveaBankReconcileApplyBill(models.TransientModel):
+    _name = "avea.bank.reconcile.apply.bill"
+    _description = "Bank statement bill allocation"
+    _order = "id"
+
+    apply_id = fields.Many2one(
+        "avea.bank.reconcile.apply",
+        required=True,
+        ondelete="cascade",
+    )
+    bill_id = fields.Many2one(
+        "account.move",
+        string="Bill",
+        required=True,
+        ondelete="cascade",
+        domain="[('move_type', '=', 'in_invoice'), ('state', '=', 'posted')]",
+    )
+    currency_id = fields.Many2one(related="bill_id.currency_id")
+    bill_date = fields.Date(related="bill_id.invoice_date")
+    bill_due = fields.Date(related="bill_id.invoice_date_due")
+    bill_label = fields.Char(related="bill_id.avea_supplier_bill_label")
+    bill_ref = fields.Char(related="bill_id.ref")
+    amount_due = fields.Monetary(
+        string="Still open",
+        currency_field="currency_id",
+        related="bill_id.amount_residual",
+    )
+    pay = fields.Boolean(string="Pay")
+    amount = fields.Monetary(
+        string="Apply",
+        currency_field="currency_id",
+    )
+
+    @api.onchange("pay")
+    def _onchange_pay(self):
+        for line in self:
+            if line.pay and line.currency_id and line.currency_id.is_zero(line.amount or 0.0):
+                line.amount = line.amount_due
+            if not line.pay:
+                line.amount = 0.0
+
+    @api.onchange("amount")
+    def _onchange_amount(self):
+        for line in self:
+            if not line.currency_id:
+                continue
+            if line.currency_id.compare_amounts(line.amount or 0.0, 0.0) > 0:
+                line.pay = True
+            elif line.currency_id.is_zero(line.amount or 0.0):
+                line.pay = False

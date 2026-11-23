@@ -15,8 +15,9 @@
                             <span class="o_avea_workspace_eyebrow">Suppliers</span>
                             <h1 class="o_avea_workspace_title">New payment</h1>
                             <p class="o_avea_workspace_section_subtitle">
-                                Choose the supplier and date, then tick the bills this cash or EFT should cover.
-                                You can pay a bill in full or in part. One payment can cover several bills.
+                                Enter the amount that left the bank, then tick which open bills it should
+                                cover — this week’s invoice, old arrears, or both. Extra stays on the
+                                supplier as paid on account.
                             </p>
                         </div>
                     </div>
@@ -46,6 +47,10 @@
                                     required="1"
                                     placeholder="Choose cash or bank"
                                 />
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">This payment</span>
+                                <field name="payment_amount" nolabel="1" widget="monetary"/>
                             </div>
                             <div class="o_avea_workspace_info_item">
                                 <span class="o_avea_workspace_info_label">Reference</span>
@@ -84,8 +89,12 @@
                                 <field name="selected_count" nolabel="1" readonly="1"/>
                             </div>
                             <div class="o_avea_workspace_info_item">
-                                <span class="o_avea_workspace_info_label">Payment total</span>
+                                <span class="o_avea_workspace_info_label">Applied to bills</span>
                                 <field name="amount_total" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item" invisible="not amount_on_account">
+                                <span class="o_avea_workspace_info_label">Left on supplier</span>
+                                <field name="amount_on_account" nolabel="1" widget="monetary" readonly="1"/>
                             </div>
                         </div>
                     </div>

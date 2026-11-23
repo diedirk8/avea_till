@@ -367,7 +367,7 @@
                                 <ol class="o_avea_stock_payment_steps">
                                     <li>Tick <strong>Store credit</strong> and enter the amount you paid with Pets Empire animal-trade credit.</li>
                                     <li>Tick <strong>Already issued</strong> if you already granted it — even if some was spent on a sale.</li>
-                                    <li>Tick <strong>Mark as paid</strong>, choose cash or bank for any balance, and set the payment date.</li>
+                                    <li>Tick <strong>Mark as paid</strong> only when the cash or EFT equals this invoice. If the bank payment is a round amount that also pays old bills, leave this off and use <strong>New payment</strong> or bank rec <strong>Match</strong>.</li>
                                 </ol>
                             </div>
                         </div>

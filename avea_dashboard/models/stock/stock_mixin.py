@@ -197,21 +197,53 @@ class AveaStockMixin(models.AbstractModel):
             to_reconcile.sudo().reconcile()
         return statement_line
 
+    @api.model
+    def _avea_allocate_oldest_first(self, bills, payment_amount, currency):
+        """Spread ``payment_amount`` across open bills, oldest due first.
+
+        Returns ``(allocations, leftover)`` where ``allocations`` is a list of
+        ``(bill, amount)`` pairs (zero amounts included so the UI can clear
+        later bills) and ``leftover`` is money that stays on the supplier.
+        """
+        remaining = currency.round(payment_amount or 0.0)
+        if currency.compare_amounts(remaining, 0.0) < 0:
+            remaining = 0.0
+        allocated = []
+        for bill in bills:
+            if currency.compare_amounts(remaining, 0.0) <= 0:
+                allocated.append((bill, 0.0))
+                continue
+            due = abs(bill.amount_residual or 0.0)
+            apply = currency.round(min(due, remaining))
+            allocated.append((bill, apply))
+            remaining = currency.round(remaining - apply)
+        return allocated, remaining
+
     def _avea_pay_vendor_bills(
-        self, allocations, journal, partner, company, pay_date, payment_ref
+        self,
+        allocations,
+        journal,
+        partner,
+        company,
+        pay_date,
+        payment_ref,
+        payment_amount=None,
     ):
         """Pay several vendor bills with one cash/bank statement line.
 
         ``allocations`` is a list of ``(bill, amount)`` pairs. Partial amounts
-        are allowed. The statement line total is the sum, so one EFT can cover
-        several bills for bank matching.
+        are allowed. ``payment_amount`` is the EFT that left the bank. When it
+        is larger than the bills applied, the extra stays as a credit on the
+        supplier (paid on account). When omitted, the statement line total is
+        the sum of allocations.
         """
-        if not allocations:
-            return self.env["account.bank.statement.line"]
-        currency = allocations[0][0].currency_id
+        currency = (
+            (allocations[0][0].currency_id if allocations else None)
+            or company.currency_id
+        )
         payable = self._avea_supplier_payable_account(partner, company)
         cleaned = []
-        for bill, amount in allocations:
+        for bill, amount in allocations or ():
             pay_amount = currency.round(amount or 0.0)
             if currency.is_zero(pay_amount):
                 continue
@@ -222,9 +254,22 @@ class AveaStockMixin(models.AbstractModel):
                     % (bill.ref or bill.name or _("this bill"))
                 )
             cleaned.append((bill, pay_amount))
-        if not cleaned:
+        applied = currency.round(sum(amount for _bill, amount in cleaned))
+        if payment_amount is None:
+            total = applied
+        else:
+            total = currency.round(payment_amount or 0.0)
+            if currency.compare_amounts(total, 0.0) <= 0:
+                raise UserError(_("Enter the amount that left the bank."))
+            if currency.compare_amounts(applied, total) > 0:
+                raise UserError(
+                    _(
+                        "The amounts on the bills are more than this payment. "
+                        "Lower what you apply, or enter the full EFT amount."
+                    )
+                )
+        if currency.is_zero(total):
             return self.env["account.bank.statement.line"]
-        total = currency.round(sum(amount for _bill, amount in cleaned))
         refs = [bill.ref or bill.name for bill, _amount in cleaned if bill.ref or bill.name]
         statement_line = (
             self.env["account.bank.statement.line"]

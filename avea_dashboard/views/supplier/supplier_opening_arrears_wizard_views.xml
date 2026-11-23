@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_supplier_opening_arrears_wizard_form" model="ir.ui.view">
+        <field name="name">avea.supplier.opening.arrears.wizard.form</field>
+        <field name="model">avea.supplier.opening.arrears.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Opening arrears" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--supplier">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Suppliers</span>
+                            <h1 class="o_avea_workspace_title">Opening arrears</h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Amount still owed from the previous system. This becomes an open
+                                bill you can pay from New payment or bank rec Match. It is not
+                                an expense and not a stock receive.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="o_avea_stock_product_panel">
+                        <div class="o_avea_stock_product_fields">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Supplier</span>
+                                <field
+                                    name="partner_id"
+                                    nolabel="1"
+                                    options="{'no_create': True, 'no_open': True}"
+                                    placeholder="Choose supplier"
+                                />
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Outstanding from</span>
+                                <field name="bill_date" nolabel="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Still owed</span>
+                                <field name="amount" nolabel="1" widget="monetary"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Their reference</span>
+                                <field name="ref" nolabel="1" placeholder="Optional — old invoice numbers"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Opening account</span>
+                                <field
+                                    name="offset_account_id"
+                                    nolabel="1"
+                                    options="{'no_create': True, 'no_open': True}"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                    <footer class="o_avea_stock_footer">
+                        <button string="Cancel" special="cancel" class="btn-secondary"/>
+                        <button name="action_create_arrears" type="object" string="Add arrears" class="btn-primary"/>
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_supplier_opening_arrears" model="ir.actions.act_window">
+        <field name="name">Opening arrears</field>
+        <field name="res_model">avea.supplier.opening.arrears.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_avea_supplier_opening_arrears_wizard_form"/>
+        <field name="target">new</field>
+        <field name="context">{'avea_supplier_workspace': True}</field>
+    </record>
+
+</odoo>

@@ -29,6 +29,7 @@ class AccountMoveSupplierBill(models.Model):
             ("stock", "Stock receipt"),
             ("expense", "Expense"),
             ("credit", "Credit note"),
+            ("arrears", "Opening arrears"),
             ("bill", "Supplier bill"),
         ],
         string="Bill type",
@@ -95,6 +96,12 @@ class AccountMoveSupplierBill(models.Model):
                 move.avea_supplier_bill_label = _("Stock receipt %s", invoice)
                 continue
             origin = (move.invoice_origin or "").lower()
+            if "opening arrears" in origin:
+                move.avea_supplier_bill_source = "arrears"
+                move.avea_supplier_bill_label = (
+                    move.ref or _("Opening arrears")
+                )
+                continue
             if "operational expense" in origin:
                 lines = move.invoice_line_ids.filtered(
                     lambda line: line.display_type == "product"
@@ -136,6 +143,8 @@ class AccountMoveSupplierBill(models.Model):
                 parts.append(Domain([("id", "in", stock_bills.ids)]))
             elif item == "expense":
                 parts.append(Domain([("invoice_origin", "ilike", "operational expense")]))
+            elif item == "arrears":
+                parts.append(Domain([("invoice_origin", "ilike", "opening arrears")]))
             elif item == "bill":
                 parts.append(
                     Domain(
@@ -143,6 +152,7 @@ class AccountMoveSupplierBill(models.Model):
                             ("move_type", "=", "in_invoice"),
                             ("id", "not in", stock_bills.ids),
                             ("invoice_origin", "not ilike", "operational expense"),
+                            ("invoice_origin", "not ilike", "opening arrears"),
                         ]
                     )
                 )
