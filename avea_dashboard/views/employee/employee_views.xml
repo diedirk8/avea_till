@@ -7,7 +7,7 @@
         <field name="priority">3</field>
         <field name="arch" type="xml">
             <search string="Employees">
-                <field name="name" string="Employee" filter_domain="['|', '|', '|', ('name', 'ilike', self), ('email', 'ilike', self), ('phone', 'ilike', self), ('avea_employee_job_title', 'ilike', self)]"/>
+                <field name="name" string="Employee" filter_domain="['|', '|', '|', '|', '|', ('name', 'ilike', self), ('email', 'ilike', self), ('phone', 'ilike', self), ('avea_employee_job_title', 'ilike', self), ('avea_employee_id_number', 'ilike', self), ('avea_employee_number', 'ilike', self)]"/>
                 <field name="email"/>
                 <field name="phone"/>
                 <field name="avea_employee_job_title" string="Job"/>
@@ -48,6 +48,7 @@
                     class="btn-link"
                 />
                 <field name="display_name" string="Employee" class="o_avea_customer_wrap_cell"/>
+                <field name="avea_employee_number" string="Staff no." optional="show"/>
                 <field name="avea_employee_job_title" string="Job" optional="show"/>
                 <field name="phone" optional="show"/>
                 <field name="avea_employee_pay_frequency" string="Paid" optional="show"/>
@@ -150,13 +151,29 @@
                                     <span class="o_avea_workspace_info_label">Email</span>
                                     <field name="email" nolabel="1" widget="email"/>
                                 </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">ID number</span>
+                                    <field name="avea_employee_id_number" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Tax number</span>
+                                    <field name="avea_employee_tax_number" nolabel="1"/>
+                                </div>
                                 <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
                                     <span class="o_avea_workspace_info_label">Street</span>
                                     <field name="street" nolabel="1" placeholder="Street address"/>
                                 </div>
                                 <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Suburb / unit</span>
+                                    <field name="street2" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">City</span>
                                     <field name="city" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Code</span>
+                                    <field name="zip" nolabel="1"/>
                                 </div>
                             </div>
                         </div>
@@ -167,6 +184,10 @@
                                 Job and pay
                             </h2>
                             <div class="o_avea_stock_product_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Staff number</span>
+                                    <field name="avea_employee_number" nolabel="1" placeholder="e.g. 0004"/>
+                                </div>
                                 <div class="o_avea_workspace_info_item">
                                     <span class="o_avea_workspace_info_label">Job</span>
                                     <field name="avea_employee_job_title" nolabel="1" placeholder="e.g. Cashier"/>

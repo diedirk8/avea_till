@@ -30,7 +30,7 @@
                                 id="avea_employee_filter_search"
                                 type="search"
                                 class="o_avea_customer_filter_input form-control"
-                                placeholder="Name, phone, or email"
+                                placeholder="Name, job, staff no., or ID"
                                 t-att-value="filterState.searchText"
                                 t-on-input="(ev) => this.onFilterInputChange('searchText', ev)"
                             />

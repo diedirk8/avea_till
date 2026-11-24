@@ -20,6 +20,9 @@ class ResPartnerEmployeeCentre(models.Model):
         "avea_employee_id",
         string="Pay history",
     )
+    avea_employee_number = fields.Char(string="Staff number")
+    avea_employee_id_number = fields.Char(string="ID number")
+    avea_employee_tax_number = fields.Char(string="Tax number")
     avea_employee_job_title = fields.Char(string="Job")
     avea_employee_start_date = fields.Date(string="Started")
     avea_employee_pay_frequency = fields.Selection(

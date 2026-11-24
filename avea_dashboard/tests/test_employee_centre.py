@@ -173,6 +173,8 @@ class TestAveaEmployeeCentre(TestPoSCommon):
                 "avea_employee_usual_salary": 5000.0,
                 "avea_employee_job_title": "Cashier",
                 "avea_employee_pay_frequency": "monthly",
+                "avea_employee_number": "0004",
+                "avea_employee_id_number": "8305040995081",
             }
         )
         employee.invalidate_recordset()

@@ -120,9 +120,15 @@ export class AveaEmployeeListController extends ListController {
             domain.push(
                 "|",
                 "|",
+                "|",
+                "|",
+                "|",
                 ["name", "ilike", query],
                 ["email", "ilike", query],
-                ["phone", "ilike", query]
+                ["phone", "ilike", query],
+                ["avea_employee_job_title", "ilike", query],
+                ["avea_employee_number", "ilike", query],
+                ["avea_employee_id_number", "ilike", query]
             );
         }
         switch (this.filterState.status) {
