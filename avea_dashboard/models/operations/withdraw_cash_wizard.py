@@ -125,44 +125,63 @@ class AveaWithdrawCashWizard(models.TransientModel):
     @api.depends("employee_id", "withdrawal_purpose", "amount", "currency_id")
     def _compute_employee_advance_outstanding(self):
         for wizard in self:
+            employee = wizard.employee_id
             outstanding = 0.0
-            if wizard.employee_id and wizard.withdrawal_purpose in (
+            if employee and wizard.withdrawal_purpose in (
                 "staff_advance",
                 "salary_wages",
             ):
-                outstanding = wizard.employee_id.avea_employee_advance_outstanding or 0.0
+                outstanding = employee.avea_employee_advance_outstanding or 0.0
             wizard.employee_advance_outstanding = outstanding
             cash = wizard.amount or 0.0
             if wizard.withdrawal_purpose == "salary_wages":
                 wizard.employee_salary_including_advances = cash + outstanding
             else:
                 wizard.employee_salary_including_advances = 0.0
-            if (
-                wizard.withdrawal_purpose == "salary_wages"
-                and wizard.employee_id
-                and wizard.currency_id
-                and wizard.currency_id.compare_amounts(outstanding, 0.0) > 0
-            ):
-                wizard.employee_advance_help = _(
-                    "%(advance)s already paid as advance — that is part of this salary. "
-                    "Enter only the extra cash you are paying now. Total this salary: %(total)s.",
-                    advance=formatLang(
-                        wizard.env, outstanding, currency_obj=wizard.currency_id
-                    ),
-                    total=formatLang(
-                        wizard.env,
-                        cash + outstanding,
-                        currency_obj=wizard.currency_id,
-                    ),
+            wizard.employee_advance_help = wizard._avea_employee_pay_help(
+                employee, outstanding, cash
+            )
+
+    def _avea_employee_pay_help(self, employee, outstanding, cash):
+        self.ensure_one()
+        if not employee or not self.currency_id:
+            return False
+        currency = self.currency_id
+        money = lambda amount: formatLang(self.env, amount, currency_obj=currency)
+        if self.withdrawal_purpose == "staff_advance":
+            return _(
+                "This is salary paid early. It comes off %(name)s's next salary "
+                "so you do not pay it twice.",
+                name=employee.display_name,
+            )
+        if self.withdrawal_purpose != "salary_wages":
+            return False
+        parts = []
+        usual = employee.avea_employee_usual_salary or 0.0
+        if currency.compare_amounts(usual, 0.0) > 0:
+            parts.append(_("Usual salary %(usual)s.", usual=money(usual)))
+        if currency.compare_amounts(outstanding, 0.0) > 0:
+            parts.append(
+                _(
+                    "%(advance)s already paid — that comes off this salary.",
+                    advance=money(outstanding),
                 )
-            elif wizard.withdrawal_purpose == "staff_advance" and wizard.employee_id:
-                wizard.employee_advance_help = _(
-                    "This advance is salary paid early. It will show on %(name)s "
-                    "and count toward their next salary.",
-                    name=wizard.employee_id.display_name,
+            )
+            due = employee.avea_employee_cash_due or 0.0
+            if currency.compare_amounts(due, 0.0) > 0:
+                parts.append(
+                    _("Cash still due: %(due)s. Enter the cash you are paying now.", due=money(due))
                 )
             else:
-                wizard.employee_advance_help = False
+                parts.append(
+                    _(
+                        "Enter only extra cash if you are paying more. This salary: %(total)s.",
+                        total=money(cash + outstanding),
+                    )
+                )
+        elif currency.compare_amounts(usual, 0.0) > 0:
+            parts.append(_("Enter the cash you are paying now."))
+        return " ".join(parts) if parts else False
 
     @api.onchange("company_id")
     def _onchange_company_id_cash_journal(self):
@@ -177,6 +196,16 @@ class AveaWithdrawCashWizard(models.TransientModel):
             self.expense_account_id = False
         if self.withdrawal_purpose not in ("staff_advance", "salary_wages"):
             self.employee_id = False
+
+    @api.onchange("employee_id", "withdrawal_purpose")
+    def _onchange_employee_suggest_salary_cash(self):
+        if self.withdrawal_purpose != "salary_wages" or not self.employee_id:
+            return
+        due = self.employee_id.avea_employee_cash_due or 0.0
+        if self.currency_id.compare_amounts(due, 0.0) <= 0:
+            return
+        if self.currency_id.compare_amounts(self.amount or 0.0, 0.0) <= 0:
+            self.amount = due
 
     @api.model
     def action_open_wizard(self):

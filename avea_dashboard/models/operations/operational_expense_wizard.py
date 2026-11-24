@@ -166,32 +166,50 @@ class AveaOperationalExpenseWizard(models.TransientModel):
                 wizard.employee_salary_including_advances = cash + outstanding
             else:
                 wizard.employee_salary_including_advances = 0.0
-            if (
-                wizard.what_for == "salary"
-                and wizard.partner_id
-                and wizard.currency_id
-                and wizard.currency_id.compare_amounts(outstanding, 0.0) > 0
-            ):
-                wizard.employee_advance_help = _(
-                    "%(advance)s already paid as advance — that is part of this salary. "
-                    "Enter only the extra cash you are paying now. Total this salary: %(total)s.",
-                    advance=formatLang(
-                        wizard.env, outstanding, currency_obj=wizard.currency_id
-                    ),
-                    total=formatLang(
-                        wizard.env,
-                        cash + outstanding,
-                        currency_obj=wizard.currency_id,
-                    ),
+            wizard.employee_advance_help = wizard._avea_employee_pay_help(
+                wizard.partner_id, outstanding, cash
+            )
+
+    def _avea_employee_pay_help(self, employee, outstanding, cash):
+        self.ensure_one()
+        if not employee or not self.currency_id:
+            return False
+        currency = self.currency_id
+        money = lambda amount: formatLang(self.env, amount, currency_obj=currency)
+        if self.what_for == "advance":
+            return _(
+                "This is salary paid early. It comes off %(name)s's next salary "
+                "so you do not pay it twice.",
+                name=employee.display_name,
+            )
+        if self.what_for != "salary":
+            return False
+        parts = []
+        usual = employee.avea_employee_usual_salary or 0.0
+        if currency.compare_amounts(usual, 0.0) > 0:
+            parts.append(_("Usual salary %(usual)s.", usual=money(usual)))
+        if currency.compare_amounts(outstanding, 0.0) > 0:
+            parts.append(
+                _(
+                    "%(advance)s already paid — that comes off this salary.",
+                    advance=money(outstanding),
                 )
-            elif wizard.what_for == "advance" and wizard.partner_id:
-                wizard.employee_advance_help = _(
-                    "This advance is salary paid early. It will show on %(name)s "
-                    "and count toward their next salary.",
-                    name=wizard.partner_id.display_name,
+            )
+            due = employee.avea_employee_cash_due or 0.0
+            if currency.compare_amounts(due, 0.0) > 0:
+                parts.append(
+                    _("Cash still due: %(due)s. Enter the cash you are paying now.", due=money(due))
                 )
             else:
-                wizard.employee_advance_help = False
+                parts.append(
+                    _(
+                        "Enter only extra cash if you are paying more. This salary: %(total)s.",
+                        total=money(cash + outstanding),
+                    )
+                )
+        elif currency.compare_amounts(usual, 0.0) > 0:
+            parts.append(_("Enter the cash you are paying now."))
+        return " ".join(parts) if parts else False
 
     def _avea_salary_account(self):
         company = self.company_id or self.env.company

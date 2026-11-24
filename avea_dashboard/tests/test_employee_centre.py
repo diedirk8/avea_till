@@ -158,6 +158,43 @@ class TestAveaEmployeeCentre(TestPoSCommon):
         self.assertEqual(len(pays), 2)
         kinds = set(pays.mapped("avea_staff_pay_kind"))
         self.assertEqual(kinds, {"advance", "salary"})
+        salary = pays.filtered(lambda line: line.avea_staff_pay_kind == "salary")
+        self.assertAlmostEqual(salary.avea_staff_advance_deducted, 1000.0, places=2)
+        self.assertAlmostEqual(salary.avea_staff_salary_total, 5000.0, places=2)
+
+    def test_usual_salary_shows_cash_still_due_after_advance(self):
+        if not self.salary_account or not self.cash_journal:
+            self.skipTest("Salary account or cash journal missing")
+        employee = self.env["res.partner"].create(
+            {
+                "name": "Usual Salary Staff",
+                "avea_is_employee": True,
+                "is_company": False,
+                "avea_employee_usual_salary": 5000.0,
+                "avea_employee_job_title": "Cashier",
+                "avea_employee_pay_frequency": "monthly",
+            }
+        )
+        employee.invalidate_recordset()
+        self.assertAlmostEqual(employee.avea_employee_cash_due, 5000.0, places=2)
+        self.env["avea.operational.expense.wizard"].create(
+            {
+                "what_for": "advance",
+                "partner_id": employee.id,
+                "description": "Mid-month",
+                "amount": 1000.0,
+                "expense_date": "2026-09-15",
+                "paid_from_journal_id": self.cash_journal.id,
+            }
+        ).action_record_expense()
+        employee.invalidate_recordset()
+        self.assertAlmostEqual(employee.avea_employee_advance_outstanding, 1000.0, places=2)
+        self.assertAlmostEqual(employee.avea_employee_cash_due, 4000.0, places=2)
+
+    def test_pay_history_action_lists_staff_payments(self):
+        action = self.env["account.bank.statement.line"].action_avea_employee_pay_history()
+        self.assertEqual(action["res_model"], "account.bank.statement.line")
+        self.assertTrue(action.get("domain"))
 
     def test_record_salary_action_prefills_employee(self):
         employee = self.env["res.partner"].create(

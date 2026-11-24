@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools.safe_eval import safe_eval
 
 SALARY_WAGES_ACCOUNT_CODE = "610050"
 
@@ -17,8 +18,28 @@ class ResPartnerEmployeeCentre(models.Model):
     avea_employee_pay_ids = fields.One2many(
         "account.bank.statement.line",
         "avea_employee_id",
-        string="Salary and advances",
+        string="Pay history",
     )
+    avea_employee_job_title = fields.Char(string="Job")
+    avea_employee_start_date = fields.Date(string="Started")
+    avea_employee_pay_frequency = fields.Selection(
+        selection=[
+            ("weekly", "Weekly"),
+            ("fortnightly", "Every 2 weeks"),
+            ("monthly", "Monthly"),
+        ],
+        string="Paid",
+        default="monthly",
+    )
+    avea_employee_usual_salary = fields.Monetary(
+        string="Usual salary",
+        currency_field="avea_employee_currency_id",
+        help="What this person is usually paid. Used to show cash still due after advances.",
+    )
+    avea_employee_bank_holder = fields.Char(string="Account name")
+    avea_employee_bank_name = fields.Char(string="Bank")
+    avea_employee_bank_branch = fields.Char(string="Branch code")
+    avea_employee_bank_account = fields.Char(string="Account number")
     avea_employee_currency_id = fields.Many2one(
         "res.currency",
         string="Employee currency",
@@ -26,18 +47,37 @@ class ResPartnerEmployeeCentre(models.Model):
         store=True,
     )
     avea_employee_paid_total = fields.Monetary(
-        string="Salary paid",
+        string="Paid in total",
         compute="_compute_avea_employee_stats",
         store=True,
         currency_field="avea_employee_currency_id",
         help="All salary and advances paid to this person. Advances are part of salary.",
     )
-    avea_employee_advance_outstanding = fields.Monetary(
-        string="Advances to count",
+    avea_employee_paid_year = fields.Monetary(
+        string="Paid this year",
         compute="_compute_avea_employee_stats",
         store=True,
         currency_field="avea_employee_currency_id",
-        help="Advances not yet counted in a later salary payment.",
+    )
+    avea_employee_paid_month = fields.Monetary(
+        string="Paid this month",
+        compute="_compute_avea_employee_stats",
+        store=True,
+        currency_field="avea_employee_currency_id",
+    )
+    avea_employee_advance_outstanding = fields.Monetary(
+        string="Already paid",
+        compute="_compute_avea_employee_stats",
+        store=True,
+        currency_field="avea_employee_currency_id",
+        help="Salary paid early. Comes off the next salary so it is not paid twice.",
+    )
+    avea_employee_cash_due = fields.Monetary(
+        string="Cash still due",
+        compute="_compute_avea_employee_stats",
+        store=True,
+        currency_field="avea_employee_currency_id",
+        help="Usual salary minus what was already paid as an advance.",
     )
     avea_employee_last_paid = fields.Date(
         string="Last paid",
@@ -48,6 +88,7 @@ class ResPartnerEmployeeCentre(models.Model):
     @api.depends(
         "company_id",
         "company_id.currency_id",
+        "avea_employee_usual_salary",
         "avea_employee_pay_ids",
         "avea_employee_pay_ids.amount",
         "avea_employee_pay_ids.date",
@@ -56,6 +97,9 @@ class ResPartnerEmployeeCentre(models.Model):
     )
     def _compute_avea_employee_stats(self):
         currency = self.env.company.currency_id
+        today = fields.Date.context_today(self)
+        year_start = today.replace(month=1, day=1)
+        month_start = today.replace(day=1)
         for partner in self:
             partner.avea_employee_currency_id = (
                 partner.company_id.currency_id or currency
@@ -64,13 +108,24 @@ class ResPartnerEmployeeCentre(models.Model):
             partner.avea_employee_paid_total = sum(
                 abs(line.amount or 0.0) for line in lines
             )
+            partner.avea_employee_paid_year = sum(
+                abs(line.amount or 0.0)
+                for line in lines
+                if line.date and line.date >= year_start
+            )
+            partner.avea_employee_paid_month = sum(
+                abs(line.amount or 0.0)
+                for line in lines
+                if line.date and line.date >= month_start
+            )
             outstanding = lines.filtered(
                 lambda line: line.avea_staff_pay_kind == "advance"
                 and not line.avea_staff_applied_salary_id
             )
-            partner.avea_employee_advance_outstanding = sum(
-                abs(line.amount or 0.0) for line in outstanding
-            )
+            already_paid = sum(abs(line.amount or 0.0) for line in outstanding)
+            partner.avea_employee_advance_outstanding = already_paid
+            usual = partner.avea_employee_usual_salary or 0.0
+            partner.avea_employee_cash_due = max(usual - already_paid, 0.0) if usual else 0.0
             partner.avea_employee_last_paid = max(
                 lines.mapped("date"),
                 default=False,
@@ -191,7 +246,10 @@ class ResPartnerEmployeeCentre(models.Model):
             [
                 "avea_employee_pay_ids",
                 "avea_employee_paid_total",
+                "avea_employee_paid_year",
+                "avea_employee_paid_month",
                 "avea_employee_advance_outstanding",
+                "avea_employee_cash_due",
                 "avea_employee_last_paid",
             ]
         )
@@ -222,6 +280,22 @@ class ResPartnerEmployeeCentre(models.Model):
             avea_staff_payee=True,
             avea_employee_workspace=True,
         )
+        return action
+
+    def action_avea_open_employee_pay_history(self):
+        self.ensure_one()
+        action = self.env["account.bank.statement.line"].action_avea_employee_pay_history()
+        action["name"] = _("Pay history — %s", self.display_name)
+        action["domain"] = [
+            ("avea_employee_id", "=", self.id),
+            ("avea_staff_pay_kind", "!=", False),
+        ]
+        ctx = action.get("context") or {}
+        if isinstance(ctx, str):
+            ctx = safe_eval(ctx, {"uid": self.env.uid})
+        ctx = dict(ctx)
+        ctx["default_avea_employee_id"] = self.id
+        action["context"] = ctx
         return action
 
     def action_avea_record_employee_advance(self):

@@ -214,6 +214,10 @@ class AveaNavMixin(models.AbstractModel):
                         "label": "Employees",
                         "menu_xmlid": "avea_till.menu_avea_employee_centre",
                     },
+                    {
+                        "label": "Pay history",
+                        "menu_xmlid": "avea_till.menu_avea_employee_pay_history",
+                    },
                 ],
             },
             {

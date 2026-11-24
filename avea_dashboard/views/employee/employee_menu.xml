@@ -22,4 +22,13 @@
         sequence="1"
     />
 
+    <menuitem
+        id="menu_avea_employee_pay_history"
+        name="Pay history"
+        parent="menu_avea_employees_hub"
+        action="action_avea_employee_pay_history"
+        groups="avea_till.group_avea_manager"
+        sequence="2"
+    />
+
 </odoo>

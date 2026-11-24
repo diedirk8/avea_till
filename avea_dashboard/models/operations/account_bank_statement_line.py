@@ -73,43 +73,73 @@ class AccountBankStatementLine(models.Model):
     )
     avea_staff_applied_salary_id = fields.Many2one(
         "account.bank.statement.line",
-        string="Counted in salary",
+        string="Taken off salary",
         copy=False,
         ondelete="set null",
-        help="The later salary payment this advance was counted in.",
+        help="The later salary this advance came off.",
+    )
+    avea_staff_advance_deducted = fields.Monetary(
+        string="Already paid",
+        currency_field="currency_id",
+        copy=False,
+        help="Advance already paid that came off this salary.",
+    )
+    avea_staff_salary_total = fields.Monetary(
+        string="This salary",
+        currency_field="currency_id",
+        compute="_compute_avea_staff_salary_total",
     )
     avea_staff_pay_note = fields.Char(
-        string="Salary note",
+        string="What happened",
         compute="_compute_avea_staff_pay_note",
     )
+
+    @api.depends("amount", "avea_staff_pay_kind", "avea_staff_advance_deducted")
+    def _compute_avea_staff_salary_total(self):
+        for line in self:
+            cash = abs(line.amount or 0.0)
+            if line.avea_staff_pay_kind == "salary":
+                line.avea_staff_salary_total = cash + (line.avea_staff_advance_deducted or 0.0)
+            elif line.avea_staff_pay_kind == "advance":
+                line.avea_staff_salary_total = cash
+            else:
+                line.avea_staff_salary_total = 0.0
 
     @api.depends(
         "avea_staff_pay_kind",
         "avea_staff_applied_salary_id",
         "avea_staff_applied_salary_id.date",
+        "avea_staff_advance_deducted",
         "date",
         "amount",
+        "currency_id",
     )
     def _compute_avea_staff_pay_note(self):
         for line in self:
+            currency = line.currency_id or line.company_id.currency_id
             if line.avea_staff_pay_kind == "advance":
                 if line.avea_staff_applied_salary_id:
                     paid_on = line.avea_staff_applied_salary_id.date
                     line.avea_staff_pay_note = (
-                        _("Counted in salary on %s") % paid_on if paid_on else _("Counted in salary")
+                        _("Taken off salary on %s") % paid_on
+                        if paid_on
+                        else _("Taken off a later salary")
                     )
                 else:
-                    line.avea_staff_pay_note = _("Part of next salary")
+                    line.avea_staff_pay_note = _("Comes off next salary")
             elif line.avea_staff_pay_kind == "salary":
-                advances = line._avea_advances_counted_in()
-                if advances:
-                    total = sum(abs(advance.amount or 0.0) for advance in advances)
+                deducted = line.avea_staff_advance_deducted or 0.0
+                if currency and not currency.is_zero(deducted):
                     line.avea_staff_pay_note = _(
-                        "Includes %(amount)s already paid as advance",
-                        amount=formatLang(
+                        "This salary %(total)s — %(advance)s already paid, %(cash)s cash now",
+                        total=formatLang(
                             line.env,
-                            total,
-                            currency_obj=line.currency_id or line.company_id.currency_id,
+                            abs(line.amount or 0.0) + deducted,
+                            currency_obj=currency,
+                        ),
+                        advance=formatLang(line.env, deducted, currency_obj=currency),
+                        cash=formatLang(
+                            line.env, abs(line.amount or 0.0), currency_obj=currency
                         ),
                     )
                 else:
@@ -134,8 +164,10 @@ class AccountBankStatementLine(models.Model):
         advances = self.avea_employee_id._avea_employee_outstanding_advances(
             on_date=self.date
         ).filtered(lambda line: line.id != self.id)
+        deducted = sum(abs(line.amount or 0.0) for line in advances)
         if advances:
             advances.write({"avea_staff_applied_salary_id": self.id})
+        self.avea_staff_advance_deducted = deducted
         return advances
 
     @api.depends(
@@ -235,19 +267,39 @@ class AccountBankStatementLine(models.Model):
         return list(set(from_aml.ids) | set(from_move.ids))
 
     def get_formview_id(self, access_uid=None):
+        if self.env.context.get("avea_employee_workspace"):
+            return self.env.ref("avea_till.view_avea_employee_pay_form").id
         if self.env.context.get("avea_supplier_workspace"):
             return self.env.ref("avea_till.view_avea_supplier_payment_form").id
         return super().get_formview_id(access_uid=access_uid)
 
     def get_formview_action(self, access_uid=None):
         action = super().get_formview_action(access_uid=access_uid)
-        if self.env.context.get("avea_supplier_workspace"):
+        if self.env.context.get("avea_employee_workspace"):
+            view_id = self.env.ref("avea_till.view_avea_employee_pay_form").id
+            action["views"] = [(view_id, "form")]
+            ctx = dict(action.get("context") or {})
+            ctx["avea_employee_workspace"] = True
+            action["context"] = ctx
+        elif self.env.context.get("avea_supplier_workspace"):
             view_id = self.env.ref("avea_till.view_avea_supplier_payment_form").id
             action["views"] = [(view_id, "form")]
             ctx = dict(action.get("context") or {})
             ctx["avea_supplier_workspace"] = True
             action["context"] = ctx
         return action
+
+    @api.model
+    def action_avea_employee_pay_history(self):
+        return self.env["ir.actions.act_window"]._for_xml_id(
+            "avea_till.action_avea_employee_pay_history"
+        )
+
+    def action_avea_open_pay_employee(self):
+        self.ensure_one()
+        if not self.avea_employee_id:
+            return False
+        return self.avea_employee_id.action_avea_open_employee()
 
     def action_avea_new_payment(self):
         return self.env["ir.actions.act_window"]._for_xml_id(

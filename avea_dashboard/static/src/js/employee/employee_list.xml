@@ -12,6 +12,9 @@
                             <p class="o_avea_workspace_subtitle" t-esc="listSubtitle"/>
                         </div>
                         <div class="o_avea_customer_list_actions">
+                            <button type="button" class="btn btn-secondary" t-on-click="() => this.onClickPayHistory()">
+                                Pay history
+                            </button>
                             <button type="button" class="btn btn-primary" t-on-click="() => this.onClickCreateEmployee()">
                                 New employee
                             </button>

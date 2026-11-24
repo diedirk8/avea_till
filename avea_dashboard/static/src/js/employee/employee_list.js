@@ -7,6 +7,7 @@ import { registry } from "@web/core/registry";
 import { debounce } from "@web/core/utils/timing";
 import { useState, onMounted, onWillUnmount } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
+import { useService } from "@web/core/utils/hooks";
 
 const BASE_DOMAIN = [["avea_is_employee", "=", true]];
 const ACTION_MANAGER_SCROLL_CLASS = "o_avea_customer_list_action_manager";
@@ -15,7 +16,7 @@ const BODY_PAGE_CLASS = "o_avea_customer_list_page";
 const STATUS_OPTIONS = [
     { value: "all", label: "All" },
     { value: "active", label: "Active" },
-    { value: "advances", label: "Advances to count" },
+    { value: "advances", label: "Already paid" },
     { value: "archived", label: "Archived" },
 ];
 
@@ -24,8 +25,9 @@ const SORT_OPTIONS = [
     { value: "name_desc", label: "Name Z–A" },
     { value: "newest", label: "Newest first" },
     { value: "last_paid_desc", label: "Last paid (recent first)" },
-    { value: "paid_desc", label: "Salary paid high–low" },
-    { value: "advance_desc", label: "Advances high–low" },
+    { value: "paid_desc", label: "Paid this year high–low" },
+    { value: "advance_desc", label: "Already paid high–low" },
+    { value: "due_desc", label: "Cash still due high–low" },
 ];
 
 const ORDER_BY_MAP = {
@@ -33,8 +35,9 @@ const ORDER_BY_MAP = {
     name_desc: [{ name: "name", asc: false }],
     newest: [{ name: "create_date", asc: false }],
     last_paid_desc: [{ name: "avea_employee_last_paid", asc: false }],
-    paid_desc: [{ name: "avea_employee_paid_total", asc: false }],
+    paid_desc: [{ name: "avea_employee_paid_year", asc: false }],
     advance_desc: [{ name: "avea_employee_advance_outstanding", asc: false }],
+    due_desc: [{ name: "avea_employee_cash_due", asc: false }],
 };
 
 export class AveaEmployeeListController extends ListController {
@@ -43,6 +46,7 @@ export class AveaEmployeeListController extends ListController {
 
     setup() {
         super.setup();
+        this.actionService = useService("action");
         this.filterState = useState({
             searchText: "",
             status: "active",
@@ -83,7 +87,7 @@ export class AveaEmployeeListController extends ListController {
 
     get listSubtitle() {
         return _t(
-            "People you pay. Open someone to see salary and advances — an advance is salary paid early."
+            "People you pay. Open someone for job, bank, usual salary, and pay history. Already paid is salary given early — it comes off the next salary."
         );
     }
 
@@ -190,6 +194,10 @@ export class AveaEmployeeListController extends ListController {
 
     async onClickCreateEmployee() {
         await this.createRecord();
+    }
+
+    async onClickPayHistory() {
+        await this.actionService.doAction("avea_till.action_avea_employee_pay_history");
     }
 }
 
