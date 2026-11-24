@@ -318,6 +318,10 @@ class TestAveaStockReceivePricing(TransactionCase):
             invoice="PRICE-1C-POPUP",
         ).line_ids
         self.assertFalse(line.avea_cost_differs)
+        line.price_unit = 125.52
+        line._onchange_price_unit_cost_update()
+        self.assertFalse(line.avea_open_pricing_wizard)
+        line.price_unit = 125.514
         line._onchange_price_unit_cost_update()
         self.assertFalse(line.avea_open_pricing_wizard)
         wizard = (
@@ -338,9 +342,10 @@ class TestAveaStockReceivePricing(TransactionCase):
         self.template.avea_cost_ex_tax = 125.51
         line = self._create_receive(
             qty=1.0,
-            cost=125.53,
+            cost=125.51,
             invoice="PRICE-2C-POPUP",
         ).line_ids
+        line.price_unit = 125.53
         self.assertTrue(line.avea_cost_differs)
         line._onchange_price_unit_cost_update()
         self.assertTrue(line.avea_open_pricing_wizard)
