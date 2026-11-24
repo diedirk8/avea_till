@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+from odoo.tools.misc import formatLang
 
 
 class AveaSupplierPayBillsWizard(models.TransientModel):
@@ -58,6 +59,12 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
         currency_field="currency_id",
         compute="_compute_amount_total",
     )
+    amount_over_payment = fields.Monetary(
+        string="Over payment",
+        currency_field="currency_id",
+        compute="_compute_amount_total",
+    )
+    payment_warning = fields.Char(compute="_compute_amount_total")
     selected_count = fields.Integer(compute="_compute_amount_total")
 
     @api.depends("company_id")
@@ -83,8 +90,25 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             payment = currency.round(wizard.payment_amount or 0.0)
             if currency.compare_amounts(payment, 0.0) > 0:
                 wizard.amount_on_account = currency.round(max(payment - applied, 0.0))
+                if currency.compare_amounts(applied, payment) > 0:
+                    wizard.amount_over_payment = currency.round(applied - payment)
+                    wizard.payment_warning = _(
+                        "Pay now is %(applied)s but this payment is only %(payment)s. "
+                        "Lower what you apply, or increase this payment.",
+                        applied=formatLang(
+                            wizard.env, applied, currency_obj=currency
+                        ),
+                        payment=formatLang(
+                            wizard.env, payment, currency_obj=currency
+                        ),
+                    )
+                else:
+                    wizard.amount_over_payment = 0.0
+                    wizard.payment_warning = False
             else:
                 wizard.amount_on_account = 0.0
+                wizard.amount_over_payment = 0.0
+                wizard.payment_warning = False
 
     @api.model
     def default_get(self, fields_list):
@@ -270,6 +294,11 @@ class AveaSupplierPayBillsWizardLine(models.TransientModel):
 
     @api.onchange("pay")
     def _onchange_pay(self):
+        wizard = self.wizard_id
+        currency = wizard.currency_id or wizard.env.company.currency_id
+        if wizard and currency.compare_amounts(wizard.payment_amount or 0.0, 0.0) > 0:
+            wizard._avea_auto_allocate()
+            return
         for line in self:
             if line.pay and line.currency_id and line.currency_id.is_zero(line.amount or 0.0):
                 line.amount = line.amount_due
@@ -278,6 +307,17 @@ class AveaSupplierPayBillsWizardLine(models.TransientModel):
 
     @api.onchange("amount")
     def _onchange_amount(self):
+        wizard = self.wizard_id
+        currency = wizard.currency_id or wizard.env.company.currency_id
+        if wizard and currency.compare_amounts(wizard.payment_amount or 0.0, 0.0) > 0:
+            for line in self:
+                if not line.currency_id:
+                    continue
+                if line.currency_id.compare_amounts(line.amount or 0.0, 0.0) > 0:
+                    line.pay = True
+                elif line.currency_id.is_zero(line.amount or 0.0):
+                    line.pay = False
+            return
         for line in self:
             if not line.currency_id:
                 continue

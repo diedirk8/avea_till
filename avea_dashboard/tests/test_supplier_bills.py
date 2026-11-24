@@ -555,6 +555,63 @@ class TestAveaSupplierBills(TestPoSCommon):
             ),
         )
 
+    def test_pay_bills_wizard_auto_allocates_payment_amount_oldest_first(self):
+        today = fields.Date.context_today(self.env.user)
+        older = self._create_vendor_move(
+            "in_invoice",
+            31626.90,
+            "OPEN-1",
+            today - timedelta(days=5),
+            due=today - timedelta(days=5),
+        )
+        newer = self._create_vendor_move(
+            "in_invoice",
+            6691.60,
+            "OPEN-2",
+            today,
+            due=today + timedelta(days=7),
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        wizard = self.env["avea.supplier.pay.bills.wizard"].create(
+            {
+                "partner_id": self.partner.id,
+                "pay_date": today,
+                "journal_id": journal.id,
+                "payment_amount": 8000.0,
+            }
+        )
+        wizard._avea_auto_allocate()
+        older_line = wizard.line_ids.filtered(lambda line: line.bill_id == older)
+        newer_line = wizard.line_ids.filtered(lambda line: line.bill_id == newer)
+        self.assertTrue(older_line.pay)
+        self.assertAlmostEqual(older_line.amount, 8000.0, places=2)
+        self.assertFalse(newer_line.pay)
+        self.assertTrue(newer.currency_id.is_zero(newer_line.amount))
+
+    def test_pay_bills_wizard_rejects_applied_over_payment_amount(self):
+        today = fields.Date.context_today(self.env.user)
+        bill = self._create_vendor_move(
+            "in_invoice", 31626.90, "BIG-1", today, due=today
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        wizard = self.env["avea.supplier.pay.bills.wizard"].create(
+            {
+                "partner_id": self.partner.id,
+                "pay_date": today,
+                "journal_id": journal.id,
+                "payment_amount": 8000.0,
+            }
+        )
+        line = wizard.line_ids.filtered(lambda rec: rec.bill_id == bill)
+        line.pay = True
+        line.amount = bill.amount_residual
+        with self.assertRaises(UserError):
+            wizard.action_pay()
+
     def test_pay_bills_wizard_applies_eft_across_invoice_and_arrears(self):
         today = fields.Date.context_today(self.env.user)
         invoice = self._create_vendor_move(
