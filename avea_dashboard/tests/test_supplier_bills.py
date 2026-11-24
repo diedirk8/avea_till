@@ -447,6 +447,64 @@ class TestAveaSupplierBills(TestPoSCommon):
         bill.invalidate_recordset()
         self.assertAlmostEqual(bill.amount_residual, bill.amount_total, places=2)
 
+    def test_bulk_delete_payments(self):
+        today = fields.Date.context_today(self.env.user)
+        bill_a = self._create_vendor_move(
+            "in_invoice", 120.0, "BULK-A", today, due=today + timedelta(days=7)
+        )
+        bill_b = self._create_vendor_move(
+            "in_invoice", 80.0, "BULK-B", today, due=today + timedelta(days=7)
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        line_a = self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            bill_a, journal, self.partner, self.env.company, today, "Pay BULK-A"
+        )
+        line_b = self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            bill_b, journal, self.partner, self.env.company, today, "Pay BULK-B"
+        )
+        lines = line_a | line_b
+        self.assertTrue(all(lines.mapped("avea_can_delete_payment")))
+        with self.assertRaises(AccessError):
+            lines.with_user(self.manager).action_avea_bulk_delete_payment()
+        lines.with_user(self.owner).action_avea_bulk_delete_payment()
+        bill_a.invalidate_recordset()
+        bill_b.invalidate_recordset()
+        self.assertAlmostEqual(bill_a.amount_residual, bill_a.amount_total, places=2)
+        self.assertAlmostEqual(bill_b.amount_residual, bill_b.amount_total, places=2)
+        self.assertFalse(
+            self.env["account.bank.statement.line"].search([("id", "in", lines.ids)])
+        )
+
+    def test_bulk_delete_rejects_matched_payment_in_selection(self):
+        today = fields.Date.context_today(self.env.user)
+        bill = self._create_vendor_move(
+            "in_invoice", 90.0, "BULK-MATCH", today, due=today + timedelta(days=7)
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        ok_line = self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            bill, journal, self.partner, self.env.company, today, "Pay BULK-OK"
+        )
+        blocked = self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            self._create_vendor_move(
+                "in_invoice", 40.0, "BULK-BLOCK", today, due=today + timedelta(days=7)
+            ),
+            journal,
+            self.partner,
+            self.env.company,
+            today,
+            "Pay BULK-BLOCK",
+        )
+        blocked.avea_cleared = True
+        blocked.invalidate_recordset()
+        with self.assertRaises(UserError):
+            (ok_line | blocked).with_user(self.owner).action_avea_bulk_delete_payment()
+        self.assertTrue(ok_line.exists())
+        self.assertTrue(blocked.exists())
+
     def test_cannot_delete_payment_matched_on_statement(self):
         today = fields.Date.context_today(self.env.user)
         bill = self._create_vendor_move(

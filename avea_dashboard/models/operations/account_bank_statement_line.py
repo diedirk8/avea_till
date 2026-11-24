@@ -249,6 +249,27 @@ class AccountBankStatementLine(models.Model):
         self._avea_unlink_supplier_payment()
         return self.env["account.bank.statement.line"].action_avea_open_payments()
 
+    def action_avea_bulk_delete_payment(self):
+        """Remove mistaken supplier payments. Bills they covered go unpaid again."""
+        if not self:
+            return self.env["account.bank.statement.line"].action_avea_open_payments()
+        if not self.env.user._avea_can_delete_supplier_payment():
+            raise AccessError(_("Only an administrator can delete a payment."))
+        deletable = self.filtered("avea_can_delete_payment")
+        blocked = self - deletable
+        if blocked:
+            raise UserError(
+                _(
+                    "%(count)s selected payment(s) cannot be deleted — usually "
+                    "because they are already matched on a bank statement. "
+                    "Unmatch those in bank recon first, or clear them from the selection.",
+                    count=len(blocked),
+                )
+            )
+        for payment in deletable:
+            payment._avea_unlink_supplier_payment()
+        return self.env["account.bank.statement.line"].action_avea_open_payments()
+
     def action_avea_open_payment_supplier(self):
         self.ensure_one()
         if not self.partner_id:

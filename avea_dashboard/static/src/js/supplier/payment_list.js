@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { Pager } from "@web/core/pager/pager";
+import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { ListController } from "@web/views/list/list_controller";
 import { listView } from "@web/views/list/list_view";
 import { registry } from "@web/core/registry";
@@ -38,6 +39,9 @@ export class AveaSupplierPaymentListController extends ListController {
     setup() {
         super.setup();
         this.actionService = useService("action");
+        this.dialog = useService("dialog");
+        this.notification = useService("notification");
+        this.orm = useService("orm");
         this.filterState = useState({
             searchText: "",
             status: "bills",
@@ -80,6 +84,69 @@ export class AveaSupplierPaymentListController extends ListController {
         return _t(
             "Bill payments are cash or bank lines applied to supplier bills. Only an administrator can delete a mistaken payment."
         );
+    }
+
+    get selectedPaymentIds() {
+        return this.model.root.selection.map((record) => record.resId);
+    }
+
+    get hasSelectedPayments() {
+        return this.selectedPaymentIds.length > 0;
+    }
+
+    get selectedCount() {
+        return this.selectedPaymentIds.length;
+    }
+
+    get selectedDeletableCount() {
+        return this.model.root.selection.filter(
+            (record) => record.data.avea_can_delete_payment
+        ).length;
+    }
+
+    get canBulkDeleteSelection() {
+        const count = this.selectedCount;
+        return (
+            count > 0 && this.selectedDeletableCount === count
+        );
+    }
+
+    async onClickClearSelection() {
+        this.model.root.records.forEach((record) => record.toggleSelection(false));
+    }
+
+    async onClickBulkDeletePayments() {
+        const ids = this.selectedPaymentIds;
+        if (!ids.length) {
+            return;
+        }
+        if (!this.canBulkDeleteSelection) {
+            this.notification.add(
+                _t(
+                    "Some selected payments cannot be deleted — usually because they are matched on a bank statement. Remove those from the selection or unmatch them in bank recon first."
+                ),
+                { type: "warning" }
+            );
+            return;
+        }
+        this.dialog.add(ConfirmationDialog, {
+            title: _t("Delete payments"),
+            body: _t(
+                "Remove %(count)s payment(s) from the books? Any bills they covered will go back to unpaid.",
+                { count: ids.length }
+            ),
+            confirm: async () => {
+                await this.orm.call(
+                    "account.bank.statement.line",
+                    "action_avea_bulk_delete_payment",
+                    [ids]
+                );
+                await this.model.load();
+                await this.onClickClearSelection();
+            },
+            confirmLabel: _t("Delete"),
+            cancel: () => {},
+        });
     }
 
     async onClickNewPayment() {

@@ -61,6 +61,26 @@
                             </div>
                         </div>
                     </div>
+                    <div t-if="hasSelectedPayments" class="o_avea_customer_selection_bar" role="status">
+                        <span class="o_avea_customer_selection_count">
+                            <t t-esc="selectedCount"/> selected
+                        </span>
+                        <button
+                            type="button"
+                            class="btn btn-outline-danger btn-sm"
+                            t-att-disabled="!canBulkDeleteSelection"
+                            t-on-click="() => this.onClickBulkDeletePayments()"
+                        >
+                            Delete selected
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-link btn-sm"
+                            t-on-click="() => this.onClickClearSelection()"
+                        >
+                            Clear selection
+                        </button>
+                    </div>
                 </div>
             </div>
         </xpath>
