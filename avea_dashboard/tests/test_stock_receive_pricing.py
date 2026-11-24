@@ -312,18 +312,24 @@ class TestAveaStockReceivePricing(TransactionCase):
 
     def test_one_cent_cost_difference_does_not_open_pricing_wizard(self):
         self.template.avea_cost_ex_tax = 125.51
-        line = self._create_receive(
+        receive = self._create_receive(
             qty=2.0,
             cost=125.514,
+            choice=False,
             invoice="PRICE-1C-POPUP",
-        ).line_ids
+        )
+        line = receive.line_ids
         self.assertFalse(line.avea_cost_differs)
-        line.price_unit = 125.52
-        line._onchange_price_unit_cost_update()
-        self.assertFalse(line.avea_open_pricing_wizard)
-        line.price_unit = 125.514
-        line._onchange_price_unit_cost_update()
-        self.assertFalse(line.avea_open_pricing_wizard)
+        draft = self.env["avea.stock.receive.line"].new(
+            {
+                "receive_id": receive.id,
+                "product_id": self.product.id,
+                "quantity": 2.0,
+                "price_unit": 125.52,
+            }
+        )
+        draft._onchange_price_unit_cost_update()
+        self.assertFalse(draft.avea_open_pricing_wizard)
         wizard = (
             self.env["avea.stock.receive.pricing.wizard"]
             .with_context(default_line_id=line.id)
@@ -333,19 +339,31 @@ class TestAveaStockReceivePricing(TransactionCase):
         self.assertEqual(line.avea_pricing_choice, "keep")
         self.template.invalidate_recordset()
         self.assertAlmostEqual(self.template.avea_cost_ex_tax, 125.51, places=4)
-        line.receive_id.action_receive_stock()
-        self.assertEqual(line.receive_id.state, "done")
-        payload = line.receive_id.get_stock_receive_report_payload()
+        receive.action_receive_stock()
+        self.assertEqual(receive.state, "done")
+        payload = receive.get_stock_receive_report_payload()
         self.assertFalse(payload["price_changes"])
 
     def test_two_cent_cost_difference_still_opens_pricing_wizard(self):
         self.template.avea_cost_ex_tax = 125.51
-        line = self._create_receive(
+        receive = self._create_receive(
             qty=1.0,
-            cost=125.51,
+            cost=125.53,
+            choice=False,
             invoice="PRICE-2C-POPUP",
-        ).line_ids
-        line.price_unit = 125.53
+        )
+        line = receive.line_ids
         self.assertTrue(line.avea_cost_differs)
-        line._onchange_price_unit_cost_update()
-        self.assertTrue(line.avea_open_pricing_wizard)
+        draft = self.env["avea.stock.receive.line"].new(
+            {
+                "receive_id": receive.id,
+                "product_id": self.product.id,
+                "quantity": 1.0,
+                "price_unit": 125.53,
+            }
+        )
+        draft._onchange_price_unit_cost_update()
+        self.assertTrue(draft.avea_open_pricing_wizard)
+        result = receive.action_receive_stock()
+        self.assertEqual(result.get("res_model"), "avea.stock.receive.pricing.wizard")
+        self.assertNotEqual(receive.state, "done")
