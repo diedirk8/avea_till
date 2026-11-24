@@ -90,15 +90,31 @@
             display: grid;
             gap: 0.85rem 1.15rem;
             grid-template-columns: repeat(2, minmax(0, 1fr));
+
+            .o_field_widget,
+            .o_field_widget input,
+            .o_input {
+                background: transparent;
+                border: none;
+                border-bottom: 1px solid var(--o-gray-300, #dee2e6);
+                border-radius: 0;
+                box-shadow: none;
+                font-size: 1rem;
+                font-weight: 500;
+                min-height: 1.85rem;
+                padding: 0.15rem 0;
+                width: 100%;
+            }
+
+            .o_field_monetary {
+                align-items: baseline;
+                display: flex;
+                gap: 0.35rem;
+            }
         }
 
         .o_avea_pay_bills_fields_span {
             grid-column: 1 / -1;
-        }
-
-        .o_avea_pay_bills_amount input {
-            font-size: 1.2rem;
-            font-weight: 700;
         }
 
         .o_avea_pay_bills_stats {
@@ -168,8 +184,48 @@
                 background: #fafbfc;
             }
 
-            td.o_data_cell[name="amount"] input {
-                font-weight: 700;
+            td.o_data_cell[name="pay"] {
+                text-align: center;
+                width: 3.75rem;
+
+                .o_field_boolean,
+                .form-check,
+                .o-checkbox {
+                    display: flex;
+                    justify-content: center;
+                    margin: 0;
+                }
+
+                input[type="checkbox"],
+                .form-check-input {
+                    accent-color: var(--avea-brand, #c45c26);
+                    background: #fff;
+                    border: 1.5px solid #6b7280;
+                    border-radius: 0.28rem;
+                    cursor: pointer;
+                    flex: 0 0 auto;
+                    height: 1.2rem;
+                    margin: 0;
+                    width: 1.2rem;
+                }
+            }
+
+            td.o_data_cell[name="amount"] {
+                min-width: 8.5rem;
+
+                .o_field_widget,
+                .o_field_monetary,
+                input {
+                    background: #fff;
+                    border: 1px solid #d1d5db;
+                    border-radius: 0.35rem;
+                    box-shadow: none;
+                    font-weight: 700;
+                    min-height: 2rem;
+                    padding: 0.2rem 0.5rem;
+                    text-align: right;
+                    width: 100%;
+                }
             }
         }
 

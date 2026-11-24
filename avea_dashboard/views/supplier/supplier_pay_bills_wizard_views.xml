@@ -28,7 +28,7 @@
                             </div>
                             <div class="o_avea_workspace_info_item">
                                 <span class="o_avea_workspace_info_label">This payment</span>
-                                <field name="payment_amount" nolabel="1" widget="monetary" class="o_avea_pay_bills_amount"/>
+                                <field name="payment_amount" nolabel="1" widget="monetary"/>
                             </div>
                             <div class="o_avea_workspace_info_item">
                                 <span class="o_avea_workspace_info_label">Pay from</span>
