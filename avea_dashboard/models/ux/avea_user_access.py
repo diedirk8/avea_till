@@ -41,6 +41,14 @@ _AVEA_CAPABILITY_FIELDS = (
         "section": "customers",
     },
     {
+        "field": "avea_perm_employees",
+        "label": "Employees",
+        "help": "See staff, salaries, advances, ID numbers, and bank details.",
+        "group_xmlid": "avea_till.group_avea_employee_access",
+        "section": "people",
+        "default_on_manager": False,
+    },
+    {
         "field": "avea_perm_money",
         "label": "Money & bank",
         "help": "Expenses, transfers, bank reconciliation, and balances.",
@@ -119,6 +127,11 @@ class ResUsersAveaAccess(models.Model):
         compute="_compute_avea_permissions",
         inverse="_inverse_avea_permissions",
     )
+    avea_perm_employees = fields.Boolean(
+        string="Employees",
+        compute="_compute_avea_permissions",
+        inverse="_inverse_avea_permissions",
+    )
     avea_perm_money = fields.Boolean(
         string="Money & bank",
         compute="_compute_avea_permissions",
@@ -170,6 +183,24 @@ class ResUsersAveaAccess(models.Model):
         return user.has_group("avea_till.group_avea_owner") or user.has_group(
             "base.group_system"
         )
+
+    @api.model
+    def _avea_can_access_employees(self, user=None):
+        """Owner has this by default. Anyone else needs the Users toggle."""
+        user = user or self.env.user
+        return user.has_group("avea_till.group_avea_employee_access") or user.has_group(
+            "base.group_system"
+        )
+
+    @api.model
+    def _avea_check_employee_access(self):
+        if not self._avea_can_access_employees():
+            raise AccessError(
+                _(
+                    "You do not have permission to see employees, salaries, or advances. "
+                    "Ask the owner to turn this on for you in Users."
+                )
+            )
 
     @api.model
     def _avea_users_action_context(self, extra=None):
@@ -297,6 +328,8 @@ class ResUsersAveaAccess(models.Model):
     def _avea_apply_manager_defaults(self):
         self.ensure_one()
         for spec in _AVEA_CAPABILITY_FIELDS:
+            if spec.get("default_on_manager") is False:
+                continue
             group = self._avea_group(spec["group_xmlid"])
             if group:
                 self._avea_set_group_membership(group, True)

@@ -267,7 +267,12 @@ class AccountBankStatementLine(models.Model):
         return list(set(from_aml.ids) | set(from_move.ids))
 
     def get_formview_id(self, access_uid=None):
-        if self.env.context.get("avea_employee_workspace"):
+        user = self.env.user
+        if access_uid:
+            user = self.env["res.users"].browse(access_uid)
+        if self.env.context.get(
+            "avea_employee_workspace"
+        ) and self.env["res.users"]._avea_can_access_employees(user):
             return self.env.ref("avea_till.view_avea_employee_pay_form").id
         if self.env.context.get("avea_supplier_workspace"):
             return self.env.ref("avea_till.view_avea_supplier_payment_form").id
@@ -275,7 +280,9 @@ class AccountBankStatementLine(models.Model):
 
     def get_formview_action(self, access_uid=None):
         action = super().get_formview_action(access_uid=access_uid)
-        if self.env.context.get("avea_employee_workspace"):
+        if self.env.context.get(
+            "avea_employee_workspace"
+        ) and self.env["res.users"]._avea_can_access_employees():
             view_id = self.env.ref("avea_till.view_avea_employee_pay_form").id
             action["views"] = [(view_id, "form")]
             ctx = dict(action.get("context") or {})
@@ -291,12 +298,14 @@ class AccountBankStatementLine(models.Model):
 
     @api.model
     def action_avea_employee_pay_history(self):
+        self.env["res.users"]._avea_check_employee_access()
         return self.env["ir.actions.act_window"]._for_xml_id(
             "avea_till.action_avea_employee_pay_history"
         )
 
     def action_avea_open_pay_employee(self):
         self.ensure_one()
+        self.env["res.users"]._avea_check_employee_access()
         if not self.avea_employee_id:
             return False
         return self.avea_employee_id.action_avea_open_employee()

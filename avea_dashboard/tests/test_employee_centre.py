@@ -26,6 +26,18 @@ class TestAveaEmployeeCentre(TestPoSCommon):
                 ],
             }
         )
+        cls.owner = cls.env["res.users"].create(
+            {
+                "name": "Avea Employee Owner",
+                "login": "avea_employee_owner@dev.local",
+                "email": "avea_employee_owner@dev.local",
+                "company_id": cls.env.company.id,
+                "company_ids": [Command.set([cls.env.company.id])],
+                "group_ids": [
+                    Command.set([cls.env.ref("avea_till.group_avea_owner").id])
+                ],
+            }
+        )
         cls.salary_account = cls.env["account.account"].search(
             [("code", "=", SALARY_WAGES_ACCOUNT_CODE), ("company_ids", "in", cls.env.company.id)],
             limit=1,
@@ -49,6 +61,8 @@ class TestAveaEmployeeCentre(TestPoSCommon):
         )
         view_id = partner.with_user(self.manager).get_formview_id()
         expected = self.env.ref("avea_till.view_avea_employee_form").id
+        self.assertNotEqual(view_id, expected)
+        view_id = partner.with_user(self.owner).get_formview_id()
         self.assertEqual(view_id, expected)
 
     def test_customer_form_still_wins_for_shoppers(self):
@@ -71,6 +85,10 @@ class TestAveaEmployeeCentre(TestPoSCommon):
             avea_employee_workspace=True
         ).get_formview_id()
         expected = self.env.ref("avea_till.view_avea_employee_form").id
+        self.assertNotEqual(view_id, expected)
+        view_id = partner.with_user(self.owner).with_context(
+            avea_employee_workspace=True
+        ).get_formview_id()
         self.assertEqual(view_id, expected)
 
     def test_name_create_employee_from_staff_context(self):

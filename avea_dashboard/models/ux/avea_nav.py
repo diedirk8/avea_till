@@ -208,7 +208,7 @@ class AveaNavMixin(models.AbstractModel):
             {
                 "id": "employees",
                 "label": "Employees",
-                "min_role": "manager",
+                "min_role": "cashier",
                 "items": [
                     {
                         "label": "Employees",

@@ -3,6 +3,8 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 from odoo.tools.safe_eval import safe_eval
 
+EMPLOYEE_ACCESS_GROUP = "avea_till.group_avea_employee_access,base.group_system"
+
 SALARY_WAGES_ACCOUNT_CODE = "610050"
 
 
@@ -19,12 +21,28 @@ class ResPartnerEmployeeCentre(models.Model):
         "account.bank.statement.line",
         "avea_employee_id",
         string="Pay history",
+        groups=EMPLOYEE_ACCESS_GROUP,
     )
-    avea_employee_number = fields.Char(string="Staff number")
-    avea_employee_id_number = fields.Char(string="ID number")
-    avea_employee_tax_number = fields.Char(string="Tax number")
-    avea_employee_job_title = fields.Char(string="Job")
-    avea_employee_start_date = fields.Date(string="Started")
+    avea_employee_number = fields.Char(
+        string="Staff number",
+        groups=EMPLOYEE_ACCESS_GROUP,
+    )
+    avea_employee_id_number = fields.Char(
+        string="ID number",
+        groups=EMPLOYEE_ACCESS_GROUP,
+    )
+    avea_employee_tax_number = fields.Char(
+        string="Tax number",
+        groups=EMPLOYEE_ACCESS_GROUP,
+    )
+    avea_employee_job_title = fields.Char(
+        string="Job",
+        groups=EMPLOYEE_ACCESS_GROUP,
+    )
+    avea_employee_start_date = fields.Date(
+        string="Started",
+        groups=EMPLOYEE_ACCESS_GROUP,
+    )
     avea_employee_pay_frequency = fields.Selection(
         selection=[
             ("weekly", "Weekly"),
@@ -33,16 +51,30 @@ class ResPartnerEmployeeCentre(models.Model):
         ],
         string="Paid",
         default="monthly",
+        groups=EMPLOYEE_ACCESS_GROUP,
     )
     avea_employee_usual_salary = fields.Monetary(
         string="Usual salary",
         currency_field="avea_employee_currency_id",
         help="What this person is usually paid. Used to show cash still due after advances.",
+        groups=EMPLOYEE_ACCESS_GROUP,
     )
-    avea_employee_bank_holder = fields.Char(string="Account name")
-    avea_employee_bank_name = fields.Char(string="Bank")
-    avea_employee_bank_branch = fields.Char(string="Branch code")
-    avea_employee_bank_account = fields.Char(string="Account number")
+    avea_employee_bank_holder = fields.Char(
+        string="Account name",
+        groups=EMPLOYEE_ACCESS_GROUP,
+    )
+    avea_employee_bank_name = fields.Char(
+        string="Bank",
+        groups=EMPLOYEE_ACCESS_GROUP,
+    )
+    avea_employee_bank_branch = fields.Char(
+        string="Branch code",
+        groups=EMPLOYEE_ACCESS_GROUP,
+    )
+    avea_employee_bank_account = fields.Char(
+        string="Account number",
+        groups=EMPLOYEE_ACCESS_GROUP,
+    )
     avea_employee_currency_id = fields.Many2one(
         "res.currency",
         string="Employee currency",
@@ -104,10 +136,11 @@ class ResPartnerEmployeeCentre(models.Model):
         year_start = today.replace(month=1, day=1)
         month_start = today.replace(day=1)
         for partner in self:
+            src = partner.sudo()
             partner.avea_employee_currency_id = (
-                partner.company_id.currency_id or currency
+                src.company_id.currency_id or currency
             )
-            lines = partner.avea_employee_pay_ids.filtered("avea_staff_pay_kind")
+            lines = src.avea_employee_pay_ids.filtered("avea_staff_pay_kind")
             partner.avea_employee_paid_total = sum(
                 abs(line.amount or 0.0) for line in lines
             )
@@ -127,7 +160,7 @@ class ResPartnerEmployeeCentre(models.Model):
             )
             already_paid = sum(abs(line.amount or 0.0) for line in outstanding)
             partner.avea_employee_advance_outstanding = already_paid
-            usual = partner.avea_employee_usual_salary or 0.0
+            usual = src.avea_employee_usual_salary or 0.0
             partner.avea_employee_cash_due = max(usual - already_paid, 0.0) if usual else 0.0
             partner.avea_employee_last_paid = max(
                 lines.mapped("date"),
@@ -139,6 +172,7 @@ class ResPartnerEmployeeCentre(models.Model):
         if self.env.context.get("avea_employee_workspace") or self.env.context.get(
             "avea_staff_payee"
         ):
+            self.env["res.users"]._avea_check_employee_access()
             for vals in vals_list:
                 vals.setdefault("avea_is_employee", True)
                 vals.setdefault("is_company", False)
@@ -146,6 +180,8 @@ class ResPartnerEmployeeCentre(models.Model):
 
     def _avea_use_employee_workspace_form(self):
         self.ensure_one()
+        if not self.env["res.users"]._avea_can_access_employees():
+            return False
         if self.env.context.get("avea_employee_workspace"):
             return True
         if self.env.context.get("avea_supplier_workspace") or self.env.context.get(
@@ -210,6 +246,7 @@ class ResPartnerEmployeeCentre(models.Model):
     ):
         """Post salary or advance against this employee. Advances stay part of salary."""
         self.ensure_one()
+        self.env["res.users"]._avea_check_employee_access()
         self._avea_mark_employee()
         destination = self._avea_salary_account()
         if not destination:
@@ -260,6 +297,7 @@ class ResPartnerEmployeeCentre(models.Model):
 
     def action_avea_open_employee(self):
         self.ensure_one()
+        self.env["res.users"]._avea_check_employee_access()
         return {
             "type": "ir.actions.act_window",
             "res_model": "res.partner",
@@ -274,6 +312,7 @@ class ResPartnerEmployeeCentre(models.Model):
 
     def action_avea_record_employee_salary(self):
         self.ensure_one()
+        self.env["res.users"]._avea_check_employee_access()
         self._avea_mark_employee()
         action = self.env["avea.withdraw.cash.wizard"].action_open_wizard()
         action["context"] = dict(
@@ -287,6 +326,7 @@ class ResPartnerEmployeeCentre(models.Model):
 
     def action_avea_open_employee_pay_history(self):
         self.ensure_one()
+        self.env["res.users"]._avea_check_employee_access()
         action = self.env["account.bank.statement.line"].action_avea_employee_pay_history()
         action["name"] = _("Pay history — %s", self.display_name)
         action["domain"] = [
@@ -303,6 +343,7 @@ class ResPartnerEmployeeCentre(models.Model):
 
     def action_avea_record_employee_advance(self):
         self.ensure_one()
+        self.env["res.users"]._avea_check_employee_access()
         self._avea_mark_employee()
         action = self.env["avea.withdraw.cash.wizard"].action_open_wizard()
         action["context"] = dict(

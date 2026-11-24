@@ -382,6 +382,7 @@
     <record id="action_avea_employee_centre" model="ir.actions.act_window">
         <field name="name">Employees</field>
         <field name="res_model">res.partner</field>
+        <field name="groups_id" eval="[(4, ref('group_avea_employee_access'))]"/>
         <field name="view_mode">list,form</field>
         <field name="search_view_id" ref="view_avea_employee_search"/>
         <field name="view_ids" eval="[(5, 0, 0),

@@ -5,7 +5,7 @@
         id="menu_avea_employees_hub"
         name="Employees"
         parent="menu_avea_root"
-        groups="avea_till.group_avea_manager"
+        groups="avea_till.group_avea_employee_access"
         sequence="13"
     />
 
@@ -18,7 +18,7 @@
         name="Employees"
         parent="menu_avea_employees_hub"
         action="action_avea_employee_centre"
-        groups="avea_till.group_avea_manager"
+        groups="avea_till.group_avea_employee_access"
         sequence="1"
     />
 
@@ -27,7 +27,7 @@
         name="Pay history"
         parent="menu_avea_employees_hub"
         action="action_avea_employee_pay_history"
-        groups="avea_till.group_avea_manager"
+        groups="avea_till.group_avea_employee_access"
         sequence="2"
     />
 

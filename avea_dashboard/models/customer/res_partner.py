@@ -457,6 +457,8 @@ class ResPartner(models.Model):
         return action
 
     def _avea_staff_payee_context(self):
+        if not self.env["res.users"]._avea_can_access_employees():
+            return False
         return bool(
             self.env.context.get("avea_staff_payee")
             or self.env.context.get("avea_employee_workspace")

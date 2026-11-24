@@ -105,6 +105,9 @@ class TestAveaUxRoles(TestPoSCommon):
             self.assertFalse(user.has_group("base.group_system"))
 
         self.assertTrue(self.owner.has_group("avea_till.group_avea_manager"))
+        self.assertTrue(self.owner.has_group("avea_till.group_avea_employee_access"))
+        self.assertFalse(self.manager.has_group("avea_till.group_avea_employee_access"))
+        self.assertFalse(self.cashier.has_group("avea_till.group_avea_employee_access"))
 
     def test_normal_users_only_see_avea_root(self):
         for user in (self.cashier, self.manager, self.owner):

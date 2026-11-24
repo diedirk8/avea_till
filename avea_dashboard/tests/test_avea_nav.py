@@ -51,7 +51,6 @@ class TestAveaNav(TestPoSCommon):
                 "selling",
                 "customers",
                 "suppliers",
-                "employees",
                 "accounting",
                 "money",
             ],
@@ -65,15 +64,22 @@ class TestAveaNav(TestPoSCommon):
         self.assertIn("Data", settings_labels)
         self.assertIn("Credit Reasons", settings_labels)
 
-    def test_owner_matches_manager_nav(self):
+    def test_owner_matches_manager_nav_except_employees(self):
         owner_nav = self.owner._avea_nav_structure()
         manager_nav = self.manager._avea_nav_structure()
+        self.assertNotIn("employees", self._section_ids(self.manager))
+        self.assertIn("employees", self._section_ids(self.owner))
         self.assertEqual(
-            self._section_ids(self.owner),
+            [section for section in self._section_ids(self.owner) if section != "employees"],
             self._section_ids(self.manager),
         )
         self.assertEqual(owner_nav["home"], manager_nav["home"])
         self.assertEqual(owner_nav["settings"], manager_nav["settings"])
+
+    def test_manager_with_employee_access_sees_employees(self):
+        group = self.env.ref("avea_till.group_avea_employee_access")
+        self.manager.write({"group_ids": [Command.link(group.id)]})
+        self.assertIn("employees", self._section_ids(self.manager))
 
     def test_business_section_excludes_overview(self):
         nav = self.manager._avea_nav_structure()
@@ -118,6 +124,7 @@ class TestAveaNav(TestPoSCommon):
             ["Suppliers", "Bills", "Payments"],
         )
 
+        nav = self.owner._avea_nav_structure()
         employees = next(s for s in nav["sections"] if s["id"] == "employees")
         self.assertEqual(
             [item["label"] for item in employees["items"]],

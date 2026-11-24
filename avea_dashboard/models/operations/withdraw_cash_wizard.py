@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tools.misc import formatLang
 
 SALARY_WAGES_ACCOUNT_CODE = "610050"
@@ -22,12 +22,7 @@ class AveaWithdrawCashWizard(models.TransientModel):
         compute="_compute_available_journal_ids",
     )
     withdrawal_purpose = fields.Selection(
-        [
-            ("staff_advance", "Staff Advance"),
-            ("salary_wages", "Salary / Wages"),
-            ("owner_drawing", "Owner / director"),
-            ("other_expense", "Other Expense"),
-        ],
+        selection="_selection_withdrawal_purpose",
         string="For",
         required=True,
         default="owner_drawing",
@@ -99,6 +94,18 @@ class AveaWithdrawCashWizard(models.TransientModel):
     def default_get(self, fields_list):
         return super().default_get(fields_list)
 
+    @api.model
+    def _selection_withdrawal_purpose(self):
+        options = [
+            ("staff_advance", "Staff Advance"),
+            ("salary_wages", "Salary / Wages"),
+            ("owner_drawing", "Owner / director"),
+            ("other_expense", "Other Expense"),
+        ]
+        if not self.env["res.users"]._avea_can_access_employees():
+            return [option for option in options if option[0] not in ("staff_advance", "salary_wages")]
+        return options
+
     @api.constrains("amount")
     def _check_amount_positive(self):
         for wizard in self:
@@ -114,10 +121,16 @@ class AveaWithdrawCashWizard(models.TransientModel):
     @api.constrains("withdrawal_purpose", "employee_id")
     def _check_employee_for_salary(self):
         for wizard in self:
-            if (
-                wizard.withdrawal_purpose in ("staff_advance", "salary_wages")
-                and not wizard.employee_id
-            ):
+            if wizard.withdrawal_purpose not in ("staff_advance", "salary_wages"):
+                continue
+            if not self.env["res.users"]._avea_can_access_employees():
+                raise AccessError(
+                    _(
+                        "You do not have permission to record salary or advances. "
+                        "Ask the owner to turn on Employees for you in Users."
+                    )
+                )
+            if not wizard.employee_id:
                 raise ValidationError(
                     _("Choose the employee this salary or advance is for.")
                 )

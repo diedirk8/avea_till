@@ -1876,6 +1876,8 @@ class AveaBankReconcileLine(models.Model):
             AveaBankReconcileBookingRules.partner_hint_for_role(role)
         )
         what_for = "expense"
+        if role == "employee" and not self.env["res.users"]._avea_can_access_employees():
+            role = "supplier"
         if role == "employee":
             blob = f"{self.description or ''} {self.reference or ''}".lower()
             what_for = "advance" if "advance" in blob else "salary"

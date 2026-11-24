@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="group_avea_employee_access" model="res.groups">
+        <field name="name">Employees</field>
+        <field name="comment">See the Employees section: staff details, salaries, advances, ID numbers, and bank details. Owners have this automatically. Grant it to anyone else from Avea Users.</field>
+        <field name="sequence">28</field>
+        <field name="privilege_id" ref="res_groups_privilege_avea_role"/>
+        <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
+    <record id="group_avea_owner" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_avea_employee_access'))]"/>
+    </record>
+
+</odoo>

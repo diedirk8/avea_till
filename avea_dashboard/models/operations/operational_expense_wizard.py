@@ -16,11 +16,7 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         required=True,
     )
     what_for = fields.Selection(
-        selection=[
-            ("expense", "Shop / operating expense"),
-            ("salary", "Salary / wages"),
-            ("advance", "Salary advance"),
-        ],
+        selection="_selection_what_for",
         string="What is this?",
         default="expense",
         required=True,
@@ -149,6 +145,17 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         for wizard in self:
             if wizard.what_for == "expense" and not wizard.expense_account_id:
                 raise ValidationError(_("Select what the money was spent on."))
+
+    @api.model
+    def _selection_what_for(self):
+        options = [
+            ("expense", "Shop / operating expense"),
+            ("salary", "Salary / wages"),
+            ("advance", "Salary advance"),
+        ]
+        if not self.env["res.users"]._avea_can_access_employees():
+            return [options[0]]
+        return options
 
     def _avea_is_staff_pay(self):
         self.ensure_one()
@@ -279,6 +286,7 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         self.ensure_one()
         self._avea_resolve_partner()
         if self._avea_is_staff_pay():
+            self.env["res.users"]._avea_check_employee_access()
             statement_line = self._avea_post_staff_pay()
         else:
             if not self.expense_account_id:

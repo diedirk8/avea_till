@@ -179,6 +179,28 @@
 
                         <section
                             class="o_avea_workspace_info_card o_avea_settings_section"
+                            invisible="avea_access_role == 'none'"
+                        >
+                            <h2 class="o_avea_settings_section_title">Employees</h2>
+                            <p class="o_avea_settings_section_help">
+                                Staff names, ID numbers, bank details, salaries, and advances.
+                                Only the owner has this unless you turn it on here.
+                            </p>
+                            <div class="o_avea_settings_toggle_grid">
+                                <div class="o_avea_settings_toggle_item">
+                                    <span class="o_avea_settings_toggle_label">Employees</span>
+                                    <field
+                                        name="avea_perm_employees"
+                                        widget="boolean_toggle"
+                                        nolabel="1"
+                                        readonly="avea_access_role == 'owner'"
+                                    />
+                                </div>
+                            </div>
+                        </section>
+
+                        <section
+                            class="o_avea_workspace_info_card o_avea_settings_section"
                             invisible="avea_access_role not in ('manager', 'owner')"
                         >
                             <h2 class="o_avea_settings_section_title">Manager capabilities</h2>
