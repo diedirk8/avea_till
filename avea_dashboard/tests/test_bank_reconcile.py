@@ -249,12 +249,27 @@ Date Description Amount Balance Accrued Bank Charges
             currency=currency,
         )
         self.assertIn("salary", salary["booking_suggestion"].lower())
+        internet_salary = AveaBankReconcileBookingRules.infer(
+            self.env,
+            company=company,
+            description="Internet Pmt To Mokoena, Emily Salar",
+            reference="",
+            amount=-4935.0,
+            bank_date="2026-09-30",
+            currency=currency,
+        )
+        self.assertIn("salary", internet_salary["booking_suggestion"].lower())
+        self.assertEqual(internet_salary["partner_role"], "employee")
 
     def test_extract_salary_payee_name(self):
         name = AveaBankReconcileBookingRules._avea_extract_employee_name(
             "Payshap Account Off-Us N Mokoena Salary"
         )
         self.assertEqual(name, "N Mokoena")
+        internet_name = AveaBankReconcileBookingRules._avea_extract_employee_name(
+            "Internet Pmt To Mokoena, Emily Salar"
+        )
+        self.assertEqual(internet_name, "Mokoena, Emily")
 
     def test_recording_an_expense_teaches_the_next_similar_bank_line(self):
         journal = self._bank_journal()
@@ -1425,6 +1440,41 @@ Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
         self.assertNotIn("Record expense", line.work_hint or "")
         with self.assertRaises(UserError):
             line.action_open_booking_wizard()
+
+    def test_pos_purchase_keeps_record_when_amount_matches_unrelated_payment(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        other = self.env["res.partner"].create(
+            {"name": "Unrelated Shop", "supplier_rank": 1}
+        )
+        self._statement_line(
+            journal,
+            amount=-40.0,
+            date="2097-09-04",
+            payment_ref="UNRELATED-40",
+            partner_id=other.id,
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2097-09-01",
+                "date_to": "2097-09-30",
+            }
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2097-09-04",
+                "description": "POS Purchase Ik *Barn Owl On The",
+                "amount": -40.0,
+            }
+        )
+        line.invalidate_recordset()
+        self.assertFalse(line.has_supplier_payment_counterpart)
+        action = line.action_open_booking_wizard()
+        self.assertEqual(action["res_model"], "avea.operational.expense.wizard")
 
     def test_match_wizard_applies_eft_across_invoice_and_arrears(self):
         journal = self._bank_journal()

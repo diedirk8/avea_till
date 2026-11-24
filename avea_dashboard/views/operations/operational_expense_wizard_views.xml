@@ -11,6 +11,13 @@
                 <field name="available_expense_account_ids" invisible="1"/>
                 <field name="bank_reconcile_line_id" invisible="1"/>
                 <field name="booking_partner_role" invisible="1"/>
+                <group>
+                    <field
+                        name="what_for"
+                        widget="radio"
+                        options="{'horizontal': true}"
+                    />
+                </group>
                 <div
                     class="alert alert-secondary mb-0 py-2"
                     role="status"

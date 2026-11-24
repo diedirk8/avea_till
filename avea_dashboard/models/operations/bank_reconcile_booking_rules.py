@@ -50,12 +50,12 @@ _KEYWORD_RULES = (
         "partner_role": "bank",
     },
     {
-        "keys": ("salary", "wages", "payroll", "payshap"),
+        "keys": ("salary", "salar", "wages", "payroll", "payshap"),
         "label": "Record salary / wages payment",
         "import_action": "expense",
         "account_codes": (SALARY_WAGES_ACCOUNT_CODE,),
         "account_names": ("salary", "wages", "payroll"),
-        "require_any": ("salary", "wages", "payroll"),
+        "require_any": ("salary", "salar", "wages", "payroll"),
         "partner_role": "employee",
     },
     {
@@ -296,7 +296,13 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
     def _avea_extract_employee_name(cls, description):
         text = re.sub(r"(?i)payshap account off-us", "", (description or "")).strip()
         text = re.sub(r"(?i)payshap", "", text).strip()
-        text = re.sub(r"(?i)\b(salary|wages|payroll)\b", "", text).strip()
+        text = re.sub(
+            r"(?i)(?:internet\s+pmt\s+to|fnb\s+app\s+payment\s+to|"
+            r"payment\s+to|paid\s+to|pmt\s+to)\s+",
+            "",
+            text,
+        ).strip()
+        text = re.sub(r"(?i)\b(salary|salar|wages|payroll)\b", "", text).strip(" ,")
         text = re.sub(r"\s+", " ", text)
         return text if len(text) >= 2 else False
 

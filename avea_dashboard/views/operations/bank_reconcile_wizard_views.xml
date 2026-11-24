@@ -118,8 +118,8 @@
                     type="object"
                     string="Record"
                     class="btn-link"
-                    invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement or has_supplier_payment_counterpart"
-                    title="Create the expense or income for this bank line"
+                    invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement"
+                    title="Create the expense, salary, or income for this bank line"
                 />
                 <button
                     name="action_open_allocate_wizard"
@@ -594,7 +594,7 @@
                                         type="object"
                                         string="Record"
                                         class="btn-link"
-                                        invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement or has_supplier_payment_counterpart"
+                                        invisible="match_state in ('matched', 'imported', 'skipped') or is_card_settlement"
                                         title="Create the expense or income for this bank line"
                                     />
                                     <button

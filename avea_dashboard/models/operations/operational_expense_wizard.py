@@ -2,6 +2,7 @@ from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 
 from .bank_reconcile_booking_rules import AveaBankReconcileBookingRules
+from .withdraw_cash_wizard import SALARY_WAGES_ACCOUNT_CODE
 
 
 class AveaOperationalExpenseWizard(models.TransientModel):
@@ -10,7 +11,16 @@ class AveaOperationalExpenseWizard(models.TransientModel):
 
     partner_id = fields.Many2one(
         "res.partner",
-        string="Supplier",
+        string="Paid to",
+        required=True,
+    )
+    what_for = fields.Selection(
+        selection=[
+            ("expense", "Shop / operating expense"),
+            ("salary", "Salary / wages"),
+        ],
+        string="What is this?",
+        default="expense",
         required=True,
     )
     expense_date = fields.Date(
@@ -119,6 +129,50 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         for wizard in self:
             if wizard.currency_id.compare_amounts(wizard.amount, 0.0) <= 0:
                 raise ValidationError(_("Amount must be greater than zero."))
+
+    def _avea_salary_account(self):
+        company = self.company_id or self.env.company
+        return self.env["account.account"].sudo().search(
+            [
+                ("code", "=", SALARY_WAGES_ACCOUNT_CODE),
+                ("company_ids", "in", company.id),
+                ("active", "=", True),
+            ],
+            limit=1,
+        ) or self.env["account.account"].sudo().search(
+            [
+                ("company_ids", "in", company.id),
+                ("active", "=", True),
+                ("name", "ilike", "salary"),
+            ],
+            limit=1,
+        )
+
+    @api.onchange("what_for", "company_id")
+    def _onchange_what_for(self):
+        if self.what_for != "salary":
+            if self.booking_partner_role == "employee":
+                self.booking_partner_role = "supplier"
+                self.partner_hint = False
+            return
+        self.booking_partner_role = "employee"
+        self.partner_hint = AveaBankReconcileBookingRules.partner_hint_for_role(
+            "employee"
+        )
+        salary_account = self._avea_salary_account()
+        if salary_account:
+            self.expense_account_id = salary_account
+        line = self.bank_reconcile_line_id
+        if line and not self.partner_id:
+            partner = AveaBankReconcileBookingRules.suggest_partner(
+                self.env,
+                company=self.company_id or self.env.company,
+                partner_role="employee",
+                description=line.description,
+                reference=line.reference,
+            )
+            if partner:
+                self.partner_id = partner
 
     @api.onchange("company_id")
     def _onchange_company_id_paid_from(self):

@@ -1741,13 +1741,8 @@ class AveaBankReconcileLine(models.Model):
         used_by_recon = {}
         for line in self:
             done = line.match_state in ("matched", "imported", "skipped")
-            counterpart = line.statement_line_id or line.candidate_statement_line_ids[:1]
-            if (
-                not done
-                and not counterpart
-                and line.match_state == "unmatched"
-                and line.reconciliation_id
-            ):
+            counterpart = False
+            if not done and line.match_state == "unmatched" and line.reconciliation_id:
                 rec = line.reconciliation_id
                 if rec.id not in pool_by_recon:
                     pool_by_recon[rec.id] = rec._avea_uncleared_book_lines()
@@ -1759,7 +1754,7 @@ class AveaBankReconcileLine(models.Model):
                 counterpart = line._avea_supplier_payment_counterpart(
                     pool_by_recon[rec.id], used_by_recon[rec.id]
                 )
-            line.has_supplier_payment_counterpart = bool(counterpart) and not done
+            line.has_supplier_payment_counterpart = bool(counterpart)
             if line.match_state == "matched":
                 line.work_hint = line.book_match_summary or _("Matched")
             elif line.match_state == "possible":
@@ -1883,6 +1878,7 @@ class AveaBankReconcileLine(models.Model):
         ctx = {
             "avea_booking_partner_role": role,
             "default_partner_hint": hint,
+            "default_what_for": "salary" if role == "employee" else "expense",
         }
         if role == "employee":
             ctx["avea_expense_payee_person"] = True
@@ -2083,9 +2079,6 @@ class AveaBankReconcileLine(models.Model):
                 ).mapped("statement_line_id").ids
             )
         available = pool.filtered(lambda candidate: candidate.id not in used)
-        exact = available.filtered(lambda candidate: self._avea_amounts_equal(candidate.amount))
-        if len(exact) == 1:
-            return exact
         near = available.filtered(
             lambda candidate: self._avea_amounts_near(
                 candidate.amount, _MATCH_NEAR_TOLERANCE
