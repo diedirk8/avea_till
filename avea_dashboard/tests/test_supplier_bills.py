@@ -590,6 +590,52 @@ class TestAveaSupplierBills(TestPoSCommon):
         self.assertFalse(newer_line.pay)
         self.assertTrue(newer.currency_id.is_zero(newer_line.amount))
 
+    def test_pay_bills_wizard_manual_split_across_two_bills(self):
+        today = fields.Date.context_today(self.env.user)
+        older = self._create_vendor_move(
+            "in_invoice",
+            31626.90,
+            "CLOSE-OPEN",
+            today - timedelta(days=5),
+            due=today - timedelta(days=5),
+        )
+        newer = self._create_vendor_move(
+            "in_invoice",
+            6691.60,
+            "INV0050375",
+            today,
+            due=today + timedelta(days=7),
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        wizard = self.env["avea.supplier.pay.bills.wizard"].create(
+            {
+                "partner_id": self.partner.id,
+                "pay_date": today,
+                "journal_id": journal.id,
+                "payment_amount": 8000.0,
+            }
+        )
+        wizard._avea_auto_allocate()
+        older_line = wizard.line_ids.filtered(lambda line: line.bill_id == older)
+        newer_line = wizard.line_ids.filtered(lambda line: line.bill_id == newer)
+        older_line.pay = True
+        older_line.amount = 1308.40
+        newer_line.pay = True
+        newer_line._onchange_pay()
+        self.assertAlmostEqual(older_line.amount, 1308.40, places=2)
+        self.assertAlmostEqual(newer_line.amount, 6691.60, places=2)
+        result = wizard.action_pay()
+        older.invalidate_recordset()
+        newer.invalidate_recordset()
+        self.assertTrue(newer.currency_id.is_zero(newer.amount_residual))
+        self.assertAlmostEqual(
+            older.amount_residual, older.amount_total - 1308.40, places=2
+        )
+        payment = self.env["account.bank.statement.line"].browse(result["res_id"])
+        self.assertAlmostEqual(payment.amount, -8000.0, places=2)
+
     def test_pay_bills_wizard_rejects_applied_over_payment_amount(self):
         today = fields.Date.context_today(self.env.user)
         bill = self._create_vendor_move(

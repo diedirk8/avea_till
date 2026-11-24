@@ -186,7 +186,52 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
 
     @api.onchange("payment_amount")
     def _onchange_payment_amount(self):
+        if self._avea_has_manual_line_amounts():
+            return
         self._avea_auto_allocate()
+
+    def _avea_has_manual_line_amounts(self):
+        currency = self.currency_id or self.env.company.currency_id
+        return any(
+            line.currency_id
+            and currency.compare_amounts(line.amount or 0.0, 0.0) > 0
+            for line in self.line_ids
+        )
+
+    def _avea_applied_total(self, exclude_lines=None):
+        exclude_lines = exclude_lines or self.env["avea.supplier.pay.bills.wizard.line"]
+        currency = self.currency_id or self.env.company.currency_id
+        lines = self.line_ids - exclude_lines
+        return currency.round(
+            sum(
+                (line.amount or 0.0)
+                for line in lines.filtered("pay")
+                if line.currency_id
+                and line.currency_id.compare_amounts(line.amount or 0.0, 0.0) > 0
+            )
+        )
+
+    def _avea_remaining_payment_capacity(self, exclude_lines=None):
+        currency = self.currency_id or self.env.company.currency_id
+        payment = currency.round(self.payment_amount or 0.0)
+        if currency.compare_amounts(payment, 0.0) <= 0:
+            return None
+        return currency.round(max(payment - self._avea_applied_total(exclude_lines), 0.0))
+
+    def action_allocate_oldest_first(self):
+        self.ensure_one()
+        self._avea_auto_allocate()
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": self._name,
+            "res_id": self.id,
+            "view_mode": "form",
+            "view_id": self.env.ref(
+                "avea_till.view_avea_supplier_pay_bills_wizard_form"
+            ).id,
+            "target": "new",
+            "context": dict(self.env.context, avea_supplier_workspace=True),
+        }
 
     def _avea_auto_allocate(self):
         """Fill Pay now from the oldest open bill until this payment is used."""
@@ -296,14 +341,19 @@ class AveaSupplierPayBillsWizardLine(models.TransientModel):
     def _onchange_pay(self):
         wizard = self.wizard_id
         currency = wizard.currency_id or wizard.env.company.currency_id
-        if wizard and currency.compare_amounts(wizard.payment_amount or 0.0, 0.0) > 0:
-            wizard._avea_auto_allocate()
-            return
         for line in self:
-            if line.pay and line.currency_id and line.currency_id.is_zero(line.amount or 0.0):
-                line.amount = line.amount_due
             if not line.pay:
                 line.amount = 0.0
+                continue
+            if not line.currency_id or not line.currency_id.is_zero(line.amount or 0.0):
+                continue
+            capacity = wizard._avea_remaining_payment_capacity(
+                exclude_lines=wizard.line_ids - line
+            )
+            if capacity is not None:
+                line.amount = min(line.amount_due or 0.0, capacity)
+            else:
+                line.amount = line.amount_due
 
     @api.onchange("amount")
     def _onchange_amount(self):
