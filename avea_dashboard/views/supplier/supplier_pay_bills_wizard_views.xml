@@ -5,102 +5,56 @@
         <field name="name">avea.supplier.pay.bills.wizard.form</field>
         <field name="model">avea.supplier.pay.bills.wizard</field>
         <field name="arch" type="xml">
-            <form string="New payment" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--supplier o_avea_pay_bills_wizard">
+            <form string="Pay bills" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--supplier o_avea_pay_bills_wizard o_avea_pay_bills_wizard--qb">
                 <sheet class="o_avea_workspace_sheet o_avea_pay_bills_sheet">
                     <field name="company_id" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
                     <field name="available_journal_ids" invisible="1"/>
                     <field name="payment_warning" invisible="1"/>
                     <field name="amount_over_payment" invisible="1"/>
-                    <div class="o_avea_workspace_hero o_avea_pay_bills_hero">
-                        <div class="o_avea_workspace_hero_intro">
-                            <span class="o_avea_workspace_eyebrow">Suppliers</span>
-                            <h1 class="o_avea_workspace_title">New payment</h1>
-                            <p class="o_avea_workspace_section_subtitle">
-                                Enter the EFT amount, then choose how much goes to each open bill.
-                                Use <strong>Fill oldest first</strong> as a starting point — you can
-                                still edit <strong>Pay now</strong> on any line. Unallocated money
-                                stays on the supplier as paid on account.
-                            </p>
+                    <field name="highlight_line_id" invisible="1"/>
+                    <div class="o_avea_pay_bills_toolbar">
+                        <div class="o_avea_pay_bills_supplier_pick">
+                            <span class="o_avea_workspace_info_label">Supplier</span>
+                            <field
+                                name="partner_id"
+                                nolabel="1"
+                                options="{'no_create': True, 'no_open': True}"
+                                placeholder="Choose supplier"
+                                context="{'res_partner_search_mode': 'supplier', 'default_supplier_rank': 1}"
+                            />
                         </div>
                     </div>
-                    <div class="o_avea_stock_product_panel o_avea_pay_bills_panel">
-                        <div class="o_avea_pay_bills_header_grid">
-                            <div class="o_avea_workspace_info_item">
-                                <span class="o_avea_workspace_info_label">Supplier</span>
-                                <field
-                                    name="partner_id"
-                                    nolabel="1"
-                                    options="{'no_create': True, 'no_open': True}"
-                                    placeholder="Choose supplier"
-                                    context="{'res_partner_search_mode': 'supplier', 'default_supplier_rank': 1}"
-                                />
+                    <section class="o_avea_pay_bills_section">
+                        <header class="o_avea_pay_bills_section_head">
+                            <h2 class="o_avea_pay_bills_section_title">Select bills to pay</h2>
+                            <div class="o_avea_pay_bills_filters">
+                                <field name="show_all_bills" nolabel="1" class="o_avea_pay_bills_show_all"/>
+                                <span class="o_avea_pay_bills_filter_due" invisible="show_all_bills">
+                                    <span class="o_avea_workspace_info_label">Due on or before</span>
+                                    <field name="due_on_or_before" nolabel="1"/>
+                                </span>
+                                <span class="o_avea_pay_bills_filter_sort text-muted">Sorted by due date</span>
                             </div>
-                            <div class="o_avea_workspace_info_item">
-                                <span class="o_avea_workspace_info_label">This payment</span>
-                                <field name="payment_amount" nolabel="1" widget="monetary" class="o_avea_pay_bills_payment_amount"/>
-                            </div>
-                            <div class="o_avea_workspace_info_item">
-                                <span class="o_avea_workspace_info_label">Paid on</span>
-                                <field name="pay_date" nolabel="1"/>
-                            </div>
-                            <div class="o_avea_workspace_info_item">
-                                <span class="o_avea_workspace_info_label">Pay from</span>
-                                <field
-                                    name="journal_id"
-                                    nolabel="1"
-                                    options="{'no_create': True, 'no_open': True}"
-                                    required="1"
-                                    placeholder="Choose cash or bank"
-                                />
-                            </div>
-                            <div class="o_avea_workspace_info_item o_avea_pay_bills_ref_span">
-                                <span class="o_avea_workspace_info_label">Reference</span>
-                                <field name="payment_ref" nolabel="1" placeholder="EFT reference from the bank"/>
-                            </div>
-                        </div>
-                    </div>
-                    <div
-                        class="o_avea_pay_bills_summary"
-                        invisible="not line_ids"
-                    >
-                        <div class="o_avea_pay_bills_summary_card">
-                            <span class="o_avea_pay_bills_summary_label">This payment</span>
-                            <field name="payment_amount" nolabel="1" widget="monetary" readonly="1"/>
-                        </div>
-                        <div class="o_avea_pay_bills_summary_card">
-                            <span class="o_avea_pay_bills_summary_label">Applied to bills</span>
-                            <field name="amount_total" nolabel="1" widget="monetary" readonly="1"/>
-                        </div>
-                        <div class="o_avea_pay_bills_summary_card" invisible="not amount_on_account">
-                            <span class="o_avea_pay_bills_summary_label">Left on supplier</span>
-                            <field name="amount_on_account" nolabel="1" widget="monetary" readonly="1"/>
-                        </div>
-                        <div class="o_avea_pay_bills_summary_card">
-                            <span class="o_avea_pay_bills_summary_label">Bills with pay</span>
-                            <field name="selected_count" nolabel="1" readonly="1"/>
-                        </div>
-                    </div>
-                    <div
-                        class="alert alert-warning o_avea_pay_bills_warning"
-                        role="alert"
-                        invisible="not payment_warning"
-                    >
-                        <field name="payment_warning" nolabel="1" readonly="1"/>
-                    </div>
-                    <div class="o_avea_stock_product_panel o_avea_pay_bills_lines_panel">
-                        <div class="o_avea_pay_bills_lines_heading">
-                            <h2 class="o_avea_workspace_section_title">Apply to open bills</h2>
+                        </header>
+                        <div class="o_avea_pay_bills_table_tools">
+                            <button
+                                name="action_clear_bill_selections"
+                                type="object"
+                                string="Clear selections"
+                                class="btn btn-link btn-sm"
+                                invisible="not line_ids"
+                            />
                             <button
                                 name="action_allocate_oldest_first"
                                 type="object"
-                                string="Fill oldest first"
-                                class="btn btn-secondary btn-sm"
+                                string="Suggest oldest first"
+                                class="btn btn-link btn-sm"
                                 invisible="not payment_amount"
                             />
                         </div>
                         <p class="text-muted o_avea_supplier_open_hint" invisible="line_ids">
-                            Choose a supplier to see their open bills.
+                            Choose a supplier to see open bills.
                         </p>
                         <field name="line_ids" nolabel="1" invisible="not line_ids">
                             <list
@@ -112,25 +66,115 @@
                                 <field name="currency_id" column_invisible="True"/>
                                 <field name="bill_id" column_invisible="True"/>
                                 <field name="pay" string="Pay"/>
-                                <field name="bill_date" string="Date" readonly="1" optional="hide"/>
-                                <field name="bill_due" string="Due" readonly="1"/>
-                                <field name="bill_label" string="What this is" readonly="1"/>
-                                <field name="bill_ref" string="Their invoice" optional="hide" readonly="1"/>
-                                <field name="amount_due" string="Still open" widget="monetary" readonly="1"/>
-                                <field name="amount" string="Pay now" widget="monetary"/>
+                                <field name="bill_due" string="Date due" readonly="1"/>
+                                <field name="bill_ref" string="Ref. No." readonly="1" optional="show"/>
+                                <field name="bill_label" string="Description" readonly="1"/>
+                                <field name="amount_due" string="Amt. due" widget="monetary" readonly="1" sum="Total due"/>
+                                <field name="amount" string="Amt. to pay" widget="monetary" sum="Total to pay"/>
                             </list>
                         </field>
+                        <div class="o_avea_pay_bills_grid_totals" invisible="not line_ids">
+                            <div class="o_avea_pay_bills_grid_total">
+                                <span class="o_avea_pay_bills_summary_label">Total open (selected)</span>
+                                <field name="grid_total_amount_due" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                            <div class="o_avea_pay_bills_grid_total o_avea_pay_bills_grid_total--pay">
+                                <span class="o_avea_pay_bills_summary_label">Total to pay</span>
+                                <field name="grid_total_amount_to_pay" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                        </div>
+                    </section>
+                    <section
+                        class="o_avea_pay_bills_section o_avea_pay_bills_detail_section"
+                        invisible="not highlight_line_id"
+                    >
+                        <h2 class="o_avea_pay_bills_section_title">Bill you are paying</h2>
+                        <div class="o_avea_pay_bills_detail_grid">
+                            <div class="o_avea_pay_bills_detail_item">
+                                <span class="o_avea_workspace_info_label">Supplier</span>
+                                <field name="partner_id" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_pay_bills_detail_item">
+                                <span class="o_avea_workspace_info_label">Ref. No.</span>
+                                <field name="detail_bill_ref" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_pay_bills_detail_item">
+                                <span class="o_avea_workspace_info_label">Due</span>
+                                <field name="detail_bill_due" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_pay_bills_detail_item">
+                                <span class="o_avea_workspace_info_label">Description</span>
+                                <field name="detail_bill_label" nolabel="1" readonly="1"/>
+                            </div>
+                            <div class="o_avea_pay_bills_detail_item">
+                                <span class="o_avea_workspace_info_label">Amt. due</span>
+                                <field name="detail_amount_due" nolabel="1" widget="monetary" readonly="1"/>
+                            </div>
+                            <div class="o_avea_pay_bills_detail_actions">
+                                <button
+                                    name="action_open_highlighted_bill"
+                                    type="object"
+                                    string="Open bill"
+                                    class="btn btn-secondary btn-sm"
+                                />
+                            </div>
+                        </div>
+                    </section>
+                    <div
+                        class="alert alert-warning o_avea_pay_bills_warning"
+                        role="alert"
+                        invisible="not payment_warning"
+                    >
+                        <field name="payment_warning" nolabel="1" readonly="1"/>
                     </div>
+                    <section class="o_avea_pay_bills_section o_avea_pay_bills_payment_box">
+                        <h2 class="o_avea_pay_bills_section_title">Payment</h2>
+                        <div class="o_avea_pay_bills_payment_grid">
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Date</span>
+                                <field name="pay_date" nolabel="1"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Method</span>
+                                <field name="journal_type" nolabel="1" readonly="1" invisible="not journal_id"/>
+                                <span class="text-muted" invisible="journal_id">—</span>
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Account</span>
+                                <field
+                                    name="journal_id"
+                                    nolabel="1"
+                                    options="{'no_create': True, 'no_open': True}"
+                                    required="1"
+                                    placeholder="Bank or cash"
+                                />
+                            </div>
+                            <div class="o_avea_workspace_info_item">
+                                <span class="o_avea_workspace_info_label">Reference</span>
+                                <field name="payment_ref" nolabel="1" placeholder="EFT reference"/>
+                            </div>
+                            <div class="o_avea_workspace_info_item o_avea_pay_bills_ending_balance">
+                                <span class="o_avea_workspace_info_label">Ending balance</span>
+                                <field name="payment_amount" nolabel="1" widget="monetary" class="o_avea_pay_bills_payment_amount"/>
+                                <span class="o_avea_pay_bills_ending_hint text-muted">
+                                    Amount that left the bank (EFT total)
+                                </span>
+                            </div>
+                        </div>
+                        <div class="o_avea_pay_bills_payment_summary" invisible="not line_ids">
+                            <span>
+                                Applied to bills:
+                                <field name="amount_total" nolabel="1" widget="monetary" readonly="1" class="oe_inline"/>
+                            </span>
+                            <span invisible="not amount_on_account">
+                                · On supplier:
+                                <field name="amount_on_account" nolabel="1" widget="monetary" readonly="1" class="oe_inline"/>
+                            </span>
+                        </motion.div>
+                    </section>
                     <footer class="o_avea_stock_footer o_avea_pay_bills_footer">
                         <button string="Cancel" special="cancel" class="btn-secondary"/>
-                        <button
-                            name="action_allocate_oldest_first"
-                            type="object"
-                            string="Fill oldest first"
-                            class="btn btn-outline-secondary"
-                            invisible="not payment_amount"
-                        />
-                        <button name="action_pay" type="object" string="Record payment" class="btn-primary"/>
+                        <button name="action_pay" type="object" string="Pay selected bills" class="btn-primary"/>
                     </footer>
                 </sheet>
             </form>
@@ -138,7 +182,7 @@
     </record>
 
     <record id="action_avea_pay_bills_wizard" model="ir.actions.act_window">
-        <field name="name">New payment</field>
+        <field name="name">Pay bills</field>
         <field name="res_model">avea.supplier.pay.bills.wizard</field>
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_avea_supplier_pay_bills_wizard_form"/>
