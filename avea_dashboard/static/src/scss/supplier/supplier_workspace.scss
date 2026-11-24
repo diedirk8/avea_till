@@ -71,19 +71,19 @@
     }
 }
 
-.modal:has(.o_avea_pay_bills_wizard) {
+.o_dialog:has(.o_avea_pay_bills_wizard) {
     .modal-dialog {
         margin: 1.5rem auto;
-        max-width: min(56rem, calc(100vw - 3rem));
+        max-width: 56rem;
         width: calc(100vw - 3rem);
     }
 
-    .modal-content {
+    .modal-content,
+    .modal-body {
         overflow: visible;
     }
 
     .modal-body {
-        overflow: visible;
         padding: 0.25rem 0 0;
     }
 }
