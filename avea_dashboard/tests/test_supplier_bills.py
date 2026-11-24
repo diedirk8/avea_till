@@ -623,7 +623,10 @@ class TestAveaSupplierBills(TestPoSCommon):
         older_line.pay = True
         older_line.amount = 1308.40
         newer_line.pay = True
-        newer_line._onchange_pay()
+        newer_line.amount = 6691.60
+        older_line.amount = 1308.40
+        newer_line._onchange_amount()
+        older_line._onchange_amount()
         self.assertAlmostEqual(older_line.amount, 1308.40, places=2)
         self.assertAlmostEqual(newer_line.amount, 6691.60, places=2)
         result = wizard.action_pay()

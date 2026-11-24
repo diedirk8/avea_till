@@ -232,7 +232,7 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             )
         return commands
 
-    @api.onchange("partner_id", "company_id", "show_all_bills", "due_on_or_before")
+    @api.onchange("partner_id", "company_id")
     def _onchange_partner_id(self):
         self.line_ids = [(5, 0, 0)]
         self.highlight_line_id = False
@@ -244,7 +244,29 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             preselect_bill_id=self.env.context.get("default_bill_id"),
             due_on_or_before=self._avea_due_filter_date(),
         )
-        self._avea_auto_allocate()
+
+    @api.onchange("show_all_bills", "due_on_or_before")
+    def _onchange_bill_filters(self):
+        if not self.partner_id or not self.company_id:
+            return
+        saved = {
+            line.bill_id.id: (line.pay, line.amount or 0.0) for line in self.line_ids
+        }
+        self.line_ids = [(5, 0, 0)]
+        commands = self._avea_line_commands(
+            self.partner_id,
+            self.company_id,
+            preselect_bill_id=self.env.context.get("default_bill_id"),
+            due_on_or_before=self._avea_due_filter_date(),
+        )
+        lines = []
+        for _command, _x, vals in commands:
+            bill_id = vals["bill_id"]
+            if bill_id in saved:
+                pay, amount = saved[bill_id]
+                vals = dict(vals, pay=pay, amount=amount)
+            lines.append((0, 0, vals))
+        self.line_ids = lines
 
     def action_clear_bill_selections(self):
         self.ensure_one()
@@ -275,20 +297,6 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             "target": "new",
             "context": dict(self.env.context, avea_supplier_workspace=True),
         }
-
-    @api.onchange("payment_amount")
-    def _onchange_payment_amount(self):
-        if self._avea_has_manual_line_amounts():
-            return
-        self._avea_auto_allocate()
-
-    def _avea_has_manual_line_amounts(self):
-        currency = self.currency_id or self.env.company.currency_id
-        return any(
-            line.currency_id
-            and currency.compare_amounts(line.amount or 0.0, 0.0) > 0
-            for line in self.line_ids
-        )
 
     def _avea_applied_total(self, exclude_lines=None):
         exclude_lines = exclude_lines or self.env["avea.supplier.pay.bills.wizard.line"]
@@ -427,38 +435,16 @@ class AveaSupplierPayBillsWizardLine(models.TransientModel):
 
     @api.onchange("pay")
     def _onchange_pay(self):
-        wizard = self.wizard_id
-        currency = wizard.currency_id or wizard.env.company.currency_id
         for line in self:
             if not line.pay:
                 line.amount = 0.0
                 continue
-            if not line.currency_id or not line.currency_id.is_zero(line.amount or 0.0):
-                line._avea_highlight_line_on_wizard()
-                continue
-            capacity = wizard._avea_remaining_payment_capacity(
-                exclude_lines=wizard.line_ids - line
-            )
-            if capacity is not None:
-                line.amount = min(line.amount_due or 0.0, capacity)
-            else:
+            if line.currency_id and line.currency_id.is_zero(line.amount or 0.0):
                 line.amount = line.amount_due
             line._avea_highlight_line_on_wizard()
 
     @api.onchange("amount")
     def _onchange_amount(self):
-        wizard = self.wizard_id
-        currency = wizard.currency_id or wizard.env.company.currency_id
-        if wizard and currency.compare_amounts(wizard.payment_amount or 0.0, 0.0) > 0:
-            for line in self:
-                if not line.currency_id:
-                    continue
-                if line.currency_id.compare_amounts(line.amount or 0.0, 0.0) > 0:
-                    line.pay = True
-                elif line.currency_id.is_zero(line.amount or 0.0):
-                    line.pay = False
-            self._avea_highlight_line_on_wizard()
-            return
         for line in self:
             if not line.currency_id:
                 continue

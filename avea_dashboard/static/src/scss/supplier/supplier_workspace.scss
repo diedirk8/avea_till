@@ -48,8 +48,9 @@
         .o_avea_pay_bills_sheet {
             display: flex;
             flex-direction: column;
-            gap: 1.1rem;
+            gap: 0.65rem;
             max-width: none;
+            min-height: 0;
         }
 
         .o_avea_pay_bills_summary_label {
@@ -61,8 +62,12 @@
         }
 
         .o_avea_pay_bills_toolbar {
+            align-items: flex-end;
             border-bottom: 1px solid var(--o-gray-300, #dee2e6);
-            padding-bottom: 0.85rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.65rem 1.5rem;
+            padding-bottom: 0.55rem;
         }
 
         .o_avea_pay_bills_supplier_pick {
@@ -75,12 +80,19 @@
         .o_avea_pay_bills_section {
             background: #fff;
             border: 1px solid var(--o-gray-300, #dee2e6);
-            border-radius: 0.65rem;
-            padding: 1rem 1.1rem 1.05rem;
+            border-radius: 0.45rem;
+            padding: 0.65rem 0.75rem 0.7rem;
+        }
+
+        .o_avea_pay_bills_section--bills {
+            display: flex;
+            flex: 1 1 auto;
+            flex-direction: column;
+            min-height: 12rem;
         }
 
         .o_avea_pay_bills_section_title {
-            font-size: 1rem;
+            font-size: 0.92rem;
             font-weight: 700;
             margin: 0;
         }
@@ -126,20 +138,31 @@
 
         .o_list_renderer {
             border: 1px solid var(--o-gray-200, #e5e7eb);
-            border-radius: 0.45rem;
-            max-height: 22rem;
+            border-radius: 0.35rem;
+            flex: 1 1 auto;
+            max-height: none;
+            min-height: 10rem;
             overflow: auto;
         }
 
         .o_avea_pay_bills_lines .o_list_table {
-            min-width: 40rem;
+            font-size: 0.875rem;
+            min-width: 36rem;
 
             thead th {
                 background: var(--o-gray-100, #f3f4f6);
-                font-size: 0.7rem;
+                font-size: 0.68rem;
                 font-weight: 700;
                 letter-spacing: 0.04em;
+                padding-bottom: 0.35rem;
+                padding-top: 0.35rem;
                 text-transform: uppercase;
+            }
+
+            tbody td {
+                padding-bottom: 0.3rem;
+                padding-top: 0.3rem;
+                vertical-align: middle;
             }
 
             tfoot td {
@@ -188,11 +211,16 @@
             background: var(--o-gray-100, #f8f9fa);
         }
 
+        .o_avea_pay_bills_detail_section {
+            padding-bottom: 0.5rem;
+            padding-top: 0.5rem;
+        }
+
         .o_avea_pay_bills_detail_grid {
             display: grid;
-            gap: 0.75rem 1.25rem;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            margin-top: 0.65rem;
+            gap: 0.45rem 1rem;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            margin-top: 0.35rem;
         }
 
         .o_avea_pay_bills_detail_item {
@@ -219,15 +247,16 @@
         }
 
         .o_avea_pay_bills_payment_grid {
+            align-items: end;
             display: grid;
-            gap: 0.85rem 1.25rem;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            margin-top: 0.65rem;
+            gap: 0.5rem 1rem;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            margin-top: 0.45rem;
         }
 
         .o_avea_pay_bills_ending_balance {
-            grid-column: 1 / -1;
-            max-width: 20rem;
+            grid-column: span 2;
+            max-width: none;
 
             .o_avea_pay_bills_payment_amount input {
                 font-size: 1.35rem;
@@ -264,10 +293,57 @@
     }
 
     &.o_avea_pay_bills_wizard--qb {
-        min-width: min(52rem, 92vw);
+        min-width: 0;
     }
 }
 
-.modal:has(.o_avea_pay_bills_wizard--qb) .modal-dialog {
-    max-width: min(58rem, 96vw);
+body.o_avea_pay_bills_fullscreen_open .modal.o_avea_pay_bills_fullscreen_modal {
+    padding: 0 !important;
+}
+
+.modal-dialog.o_avea_pay_bills_fullscreen_dialog {
+    height: 100vh !important;
+    margin: 0 !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+}
+
+.modal-content.o_avea_pay_bills_fullscreen_content {
+    border-radius: 0 !important;
+    display: flex;
+    flex-direction: column;
+    height: 100vh !important;
+    max-height: 100vh !important;
+}
+
+.o_avea_pay_bills_fullscreen_content .o_form_view.o_avea_pay_bills_wizard {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.o_avea_pay_bills_fullscreen_content .o_avea_pay_bills_sheet {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding-bottom: 0.35rem;
+}
+
+.o_avea_pay_bills_fullscreen_content .o_avea_pay_bills_section--bills .o_list_renderer {
+    max-height: calc(100vh - 17.5rem);
+}
+
+.o_avea_pay_bills_fullscreen_content .o_avea_pay_bills_payment_box {
+    margin-top: auto;
+}
+
+.o_avea_pay_bills_fullscreen_content footer.o_avea_pay_bills_footer {
+    background: #fff;
+    border-top: 1px solid var(--o-gray-300, #dee2e6);
+    bottom: 0;
+    margin: 0;
+    padding: 0.65rem 0.85rem;
+    position: sticky;
+    z-index: 2;
 }

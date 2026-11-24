@@ -5,7 +5,7 @@
         <field name="name">avea.supplier.pay.bills.wizard.form</field>
         <field name="model">avea.supplier.pay.bills.wizard</field>
         <field name="arch" type="xml">
-            <form string="Pay bills" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--supplier o_avea_pay_bills_wizard o_avea_pay_bills_wizard--qb">
+            <form string="Pay bills" js_class="avea_supplier_pay_bills_form" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--supplier o_avea_pay_bills_wizard o_avea_pay_bills_wizard--qb o_avea_pay_bills_wizard--fullscreen">
                 <sheet class="o_avea_workspace_sheet o_avea_pay_bills_sheet">
                     <field name="company_id" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
@@ -25,7 +25,7 @@
                             />
                         </div>
                     </div>
-                    <section class="o_avea_pay_bills_section">
+                    <section class="o_avea_pay_bills_section o_avea_pay_bills_section--bills">
                         <header class="o_avea_pay_bills_section_head">
                             <h2 class="o_avea_pay_bills_section_title">Select bills to pay</h2>
                             <div class="o_avea_pay_bills_filters">
