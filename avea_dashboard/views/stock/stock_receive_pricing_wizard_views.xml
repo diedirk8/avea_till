@@ -18,7 +18,8 @@
                         <field name="product_id" nolabel="1" readonly="1" options="{'no_open': True}"/>
                     </p>
                     <p class="o_avea_stock_pricing_wizard_hint">
-                        The receive cost differs from this product's cost. Choose what to update.
+                        The typed EX-tax unit cost differs from this product's usual cost.
+                        A discount on this invoice is for this bill only and does not change the usual cost.
                     </p>
                 </div>
 

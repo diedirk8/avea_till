@@ -39,14 +39,16 @@ class AveaStockReceiveLine(models.Model):
         string="EX-Tax Cost",
         digits=AVEA_SUPPLIER_COST_PRECISION,
         default=0.0,
-        help="Original EX-tax unit cost from the supplier invoice, before discount. "
+        help="Usual EX-tax unit cost from the supplier invoice, before any line discount. "
+        "This is the figure that can update the product's catalogue cost if you change it. "
         "Use 0 for a free product; the usual cost and selling price stay the same.",
     )
     discount = fields.Float(
         string="Discount (%)",
         digits="Discount",
         default=0.0,
-        help="Percentage discount on this line. Applied to the EX-tax cost before tax.",
+        help="This invoice only. Applied to the EX-tax cost before tax. "
+        "It does not change the product's usual catalogue cost.",
     )
     price_unit_discounted = fields.Float(
         string="Discounted Cost",
@@ -194,7 +196,10 @@ class AveaStockReceiveLine(models.Model):
 
     @api.onchange("price_unit", "discount")
     def _onchange_price_unit_cost_update(self):
-        """Flag a pricing review when receive cost differs from the product cost."""
+        """Flag a pricing review when the typed unit cost differs from catalogue.
+
+        A line discount is this bill only and must not open the cost wizard.
+        """
         mixin = self.env["avea.stock.mixin"]
         for line in self:
             if not line.product_id:
@@ -209,11 +214,25 @@ class AveaStockReceiveLine(models.Model):
             current = line._avea_product_cost()
             new_cost = line.price_unit or 0.0
             if mixin._avea_compare_supplier_cost(new_cost, current) == 0:
-                line.avea_pricing_choice = False
                 line.avea_open_pricing_wizard = False
                 line.avea_update_product_cost = False
+                if line.avea_pricing_choice == "cost_only":
+                    line.avea_pricing_choice = "keep"
                 continue
-            # Reset previous decision whenever the typed cost changes.
+            origin = line._origin
+            typed_cost_changed = True
+            if origin:
+                typed_cost_changed = (
+                    mixin._avea_compare_supplier_cost(
+                        origin.price_unit or 0.0,
+                        new_cost,
+                    )
+                    != 0
+                )
+            if not typed_cost_changed:
+                line.avea_open_pricing_wizard = False
+                continue
+            # Reset previous decision only when the typed unit cost changes.
             line.avea_pricing_choice = False
             line.avea_update_product_cost = False
             line.avea_open_pricing_wizard = True
@@ -222,25 +241,28 @@ class AveaStockReceiveLine(models.Model):
         res = super().write(vals)
         if self.env.context.get("avea_skip_pricing_wizard"):
             return res
-        if "price_unit" in vals or "discount" in vals:
-            mixin = self.env["avea.stock.mixin"]
-            for line in self:
-                if not line.product_id:
-                    continue
-                if line._avea_is_free_line():
-                    if not line.avea_pricing_choice:
-                        line.avea_pricing_choice = "keep"
-                    continue
-                if (
-                    mixin._avea_compare_supplier_cost(
-                        line.price_unit,
-                        line._avea_product_cost(),
-                    )
-                    != 0
-                    and not line.avea_pricing_choice
-                ):
-                    # Persisted signal for the receive form JS to open the popup.
-                    line.avea_pricing_choice = False
+        if "price_unit" not in vals and "discount" not in vals:
+            return res
+        mixin = self.env["avea.stock.mixin"]
+        for line in self:
+            if not line.product_id:
+                continue
+            if line._avea_is_free_line():
+                if not line.avea_pricing_choice:
+                    line.avea_pricing_choice = "keep"
+                continue
+            if "price_unit" not in vals:
+                continue
+            if (
+                mixin._avea_compare_supplier_cost(
+                    line.price_unit,
+                    line._avea_product_cost(),
+                )
+                != 0
+                and not line.avea_pricing_choice
+            ):
+                # Persisted signal for the receive form JS to open the popup.
+                line.avea_pricing_choice = False
         return res
 
     def action_open_pricing_wizard(self):

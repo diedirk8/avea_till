@@ -206,9 +206,31 @@ class TestAveaStockReceiveReport(TransactionCase):
         changed, _report_type = self.env["ir.actions.report"]._render_qweb_html(
             "avea_till.report_avea_stock_receive_document", line.receive_id.ids
         )
-        self.assertIn(b"Price changes", changed)
+        self.assertIn(b"Buying cost updates", changed)
         self.assertIn(b"Updated cost and retail", changed)
         self.assertIn(b"Markup", changed)
+        self.assertNotIn(b"Price changes", changed)
+
+    def test_report_hides_discount_only_as_catalogue_cost_change(self):
+        self.product.product_tmpl_id.avea_cost_ex_tax = 247.39
+        line = self._create_receive(
+            cost=247.39,
+            qty=4.0,
+            extra={"invoice_number": "IO-REPORT-DISC"},
+        ).line_ids
+        line.write({"discount": 5.0, "avea_pricing_choice": "cost_only"})
+        line.receive_id.action_receive_stock()
+        html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            "avea_till.report_avea_stock_receive_document", line.receive_id.ids
+        )
+        self.assertNotIn(b"Buying cost updates", html)
+        self.assertNotIn(b"Price changes", html)
+        self.assertIn(b"this bill only", html)
+        payload = line.receive_id.get_stock_receive_report_payload()
+        self.assertFalse(payload["price_changes"])
+        values = line.receive_id._avea_receive_report_line_values(line)
+        self.assertAlmostEqual(values["catalog_cost"], 247.39, places=4)
+        self.assertAlmostEqual(values["cost"], 247.39 * 0.95, places=4)
 
     def test_report_mentions_unmatched_and_total_mismatch(self):
         receive = self._create_receive(

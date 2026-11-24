@@ -267,6 +267,10 @@ class AveaStockReceivePricingWizard(models.TransientModel):
                     "so the usual cost and selling price stay the same."
                 )
             )
+        mixin = self._avea_mixin()
+        current = template._avea_get_cost_ex_tax()
+        if mixin._avea_compare_supplier_cost(cost, current) == 0:
+            return self.action_keep_current_pricing()
         self.line_id._avea_snapshot_catalog_pricing()
         template._avea_apply_catalog_cost(cost)
         self.line_id.with_context(avea_skip_pricing_wizard=True).write(

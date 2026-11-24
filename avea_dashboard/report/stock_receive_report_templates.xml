@@ -81,7 +81,8 @@
                         </t>
 
                         <t t-if="payload['price_changes']">
-                            <h3>Price changes</h3>
+                            <h3 t-out="payload['price_changes_title']"/>
+                            <p class="o_avea_receive_note" style="margin:0 0 8px 0;" t-out="payload['price_changes_intro']"/>
                             <table class="o_avea_receive_table" style="margin-bottom:12px;">
                                 <thead>
                                     <tr>
@@ -100,7 +101,7 @@
                             </table>
                         </t>
                         <t t-else="">
-                            <p class="o_avea_receive_note" style="margin-bottom:12px;">No catalogue prices were changed.</p>
+                            <p class="o_avea_receive_note" style="margin-bottom:12px;" t-out="payload['price_changes_intro']"/>
                         </t>
 
                         <h3>Items received</h3>

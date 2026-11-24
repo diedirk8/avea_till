@@ -56,11 +56,13 @@ class TestAveaStockReceivePricing(TransactionCase):
         if cls.product.cost_method != "average":
             raise SkipTest("Average costing category required for pricing tests.")
 
-    def _create_receive(self, *, qty=1.0, cost=100.0, choice="keep"):
+    def _create_receive(
+        self, *, qty=1.0, cost=100.0, choice="keep", discount=0.0, invoice="PRICE-TEST-001"
+    ):
         return self.env["avea.stock.receive"].create(
             {
                 "partner_id": self.partner.id,
-                "invoice_number": "PRICE-TEST-001",
+                "invoice_number": invoice,
                 "invoice_date": fields.Date.today(),
                 "received_date": fields.Date.today(),
                 "company_id": self.company.id,
@@ -72,6 +74,7 @@ class TestAveaStockReceivePricing(TransactionCase):
                             "product_id": self.product.id,
                             "quantity": qty,
                             "price_unit": cost,
+                            "discount": discount,
                             "avea_pricing_choice": choice,
                         }
                     )
@@ -232,3 +235,77 @@ class TestAveaStockReceivePricing(TransactionCase):
             qty_before + 3.0,
             places=2,
         )
+
+    def test_line_discount_does_not_change_catalogue_cost(self):
+        self.template.avea_cost_ex_tax = 247.39
+        receive = self._create_receive(
+            qty=4.0,
+            cost=247.39,
+            discount=5.0,
+            choice="keep",
+            invoice="PRICE-DISC-KEEP",
+        )
+        receive.action_receive_stock()
+        self.template.invalidate_recordset()
+        self.assertAlmostEqual(self.template.avea_cost_ex_tax, 247.39, places=4)
+        line = receive.line_ids
+        self.assertAlmostEqual(line.price_unit, 247.39, places=4)
+        self.assertAlmostEqual(line.price_unit_discounted, 235.0205, places=4)
+
+    def test_update_cost_only_uses_typed_unit_cost_not_discount(self):
+        self.template.avea_cost_ex_tax = 86.12
+        line = self._create_receive(
+            qty=2.0,
+            cost=87.20,
+            discount=5.0,
+            invoice="PRICE-DISC-TYPED",
+        ).line_ids
+        wizard = (
+            self.env["avea.stock.receive.pricing.wizard"]
+            .with_context(default_line_id=line.id)
+            .create({"line_id": line.id})
+        )
+        wizard.action_update_cost_only()
+        self.template.invalidate_recordset()
+        self.assertAlmostEqual(self.template.avea_cost_ex_tax, 87.20, places=4)
+        self.assertAlmostEqual(line.price_unit, 87.20, places=4)
+        self.assertAlmostEqual(line.price_unit_discounted, 82.84, places=2)
+        line.receive_id.action_receive_stock()
+        payload = line.receive_id.get_stock_receive_report_payload()
+        self.assertEqual(len(payload["price_changes"]), 1)
+        detail = payload["price_changes"][0]["detail"]
+        self.assertIn("Buying cost", detail)
+        self.assertNotIn("82.84", detail)
+        self.assertNotIn("82,84", detail)
+        self.assertAlmostEqual(line.avea_previous_cost, 86.12, places=2)
+        self.assertAlmostEqual(line.price_unit, 87.20, places=2)
+
+    def test_update_cost_only_matching_typed_cost_keeps_catalogue(self):
+        self.template.avea_cost_ex_tax = 247.39
+        line = self._create_receive(
+            qty=4.0,
+            cost=247.39,
+            discount=5.0,
+            invoice="PRICE-DISC-SAME",
+        ).line_ids
+        wizard = (
+            self.env["avea.stock.receive.pricing.wizard"]
+            .with_context(default_line_id=line.id)
+            .create({"line_id": line.id})
+        )
+        wizard.action_update_cost_only()
+        self.assertEqual(line.avea_pricing_choice, "keep")
+        self.template.invalidate_recordset()
+        self.assertAlmostEqual(self.template.avea_cost_ex_tax, 247.39, places=4)
+
+    def test_discount_onchange_does_not_open_pricing_wizard(self):
+        self.template.avea_cost_ex_tax = 247.39
+        line = self._create_receive(
+            qty=1.0,
+            cost=247.39,
+            invoice="PRICE-DISC-ONCHANGE",
+        ).line_ids
+        line.discount = 5.0
+        line._onchange_price_unit_cost_update()
+        self.assertFalse(line.avea_open_pricing_wizard)
+        self.assertNotEqual(line.avea_pricing_choice, "cost_only")

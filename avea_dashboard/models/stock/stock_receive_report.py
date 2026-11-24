@@ -54,7 +54,8 @@ class AveaStockReceiveReport(models.Model):
         self.ensure_one()
         product = line.product_id
         template = product.product_tmpl_id
-        cost = line.price_unit_discounted or line.price_unit or 0.0
+        catalog_cost = line.price_unit or 0.0
+        cost = line.price_unit_discounted or catalog_cost
         retail_inc = template.list_price or 0.0
         retail_ex, markup, margin = template._avea_pricing_from_cost_retail(
             cost, retail_inc
@@ -68,7 +69,8 @@ class AveaStockReceiveReport(models.Model):
             "supplier_code": self._avea_receive_report_supplier_code(line),
             "qty": qty,
             "cost": cost,
-            "cost_before_discount": line.price_unit or 0.0,
+            "catalog_cost": catalog_cost,
+            "cost_before_discount": catalog_cost,
             "discount": line.discount or 0.0,
             "retail_inc": retail_inc,
             "retail_ex": retail_ex,
@@ -153,47 +155,98 @@ class AveaStockReceiveReport(models.Model):
             if choice not in ("cost_only", "cost_and_pricing"):
                 continue
             values = self._avea_receive_report_line_values(line)
-            parts = [
-                _(
-                    "Cost %(old)s → %(new)s",
-                    old=self._avea_receive_report_money(line.avea_previous_cost),
-                    new=self._avea_receive_report_money(values["cost"]),
+            catalog_cost = values["catalog_cost"]
+            cost_changed = (
+                mixin._avea_compare_supplier_cost(
+                    catalog_cost,
+                    line.avea_previous_cost,
                 )
-            ]
+                != 0
+            )
+            retail_changed = False
+            new_retail = values["retail_inc"]
             if choice == "cost_and_pricing":
                 new_retail = line.avea_pending_retail or values["retail_inc"]
-                if (
+                retail_changed = (
                     mixin._avea_compare_product_cost(
                         new_retail,
                         line.avea_previous_retail,
                     )
                     != 0
-                ):
-                    parts.append(
-                        _(
-                            "Retail %(old)s → %(new)s",
-                            old=self._avea_receive_report_money(line.avea_previous_retail),
-                            new=self._avea_receive_report_money(new_retail),
-                        )
+                )
+            if not cost_changed and not retail_changed:
+                continue
+            parts = []
+            if cost_changed:
+                parts.append(
+                    _(
+                        "Buying cost %(old)s → %(new)s",
+                        old=self._avea_receive_report_money(line.avea_previous_cost),
+                        new=self._avea_receive_report_money(catalog_cost),
                     )
-                else:
-                    parts.append(_("Retail unchanged"))
+                )
             else:
-                parts.append(_("Retail unchanged"))
+                parts.append(
+                    _(
+                        "Buying cost unchanged at %(cost)s",
+                        cost=self._avea_receive_report_money(catalog_cost),
+                    )
+                )
+            if retail_changed:
+                parts.append(
+                    _(
+                        "Selling price %(old)s → %(new)s",
+                        old=self._avea_receive_report_money(line.avea_previous_retail),
+                        new=self._avea_receive_report_money(new_retail),
+                    )
+                )
+            else:
+                parts.append(_("Selling price unchanged"))
+            retail_ex, markup, margin = line.product_id.product_tmpl_id._avea_pricing_from_cost_retail(
+                catalog_cost, new_retail
+            )
             parts.append(
                 _("Markup %(markup)s · Margin %(margin)s · Profit %(profit)s / unit",
-                  markup=self._avea_receive_report_percent(values["markup"]),
-                  margin=self._avea_receive_report_percent(values["margin"]),
-                  profit=self._avea_receive_report_money(values["profit_unit"]))
+                  markup=self._avea_receive_report_percent(markup),
+                  margin=self._avea_receive_report_percent(margin),
+                  profit=self._avea_receive_report_money(retail_ex - catalog_cost))
             )
             changes.append(
                 {
                     "product": values["name"],
                     "detail": " · ".join(parts),
                     "choice": self._avea_receive_report_pricing_label(choice),
+                    "retail_changed": retail_changed,
                 }
             )
         return changes
+
+    def _avea_receive_report_price_changes_copy(self, changes):
+        """Plain-language heading so cost-only updates are not read as shelf prices."""
+        if not changes:
+            return {
+                "title": "",
+                "intro": _(
+                    "No catalogue buying costs or selling prices were changed. "
+                    "A line discount on this invoice is this bill only."
+                ),
+            }
+        if any(change.get("retail_changed") for change in changes):
+            return {
+                "title": _("Cost and selling price updates"),
+                "intro": _(
+                    "The typed EX-tax unit cost and/or till selling price was updated. "
+                    "A line discount on this invoice is this bill only and does not change catalogue cost."
+                ),
+            }
+        return {
+            "title": _("Buying cost updates"),
+            "intro": _(
+                "The stored buying cost was updated because the typed EX-tax unit cost "
+                "differed from the catalogue. A line discount on this invoice is this bill "
+                "only and does not change the usual cost. Selling prices on the till were not changed."
+            ),
+        }
 
     def _avea_receive_report_subject(self):
         self.ensure_one()
@@ -270,6 +323,8 @@ class AveaStockReceiveReport(models.Model):
             }
             for charge in self.charge_ids.filtered(lambda charge: charge.amount)
         ]
+        price_changes = self._avea_receive_report_price_changes()
+        price_copy = self._avea_receive_report_price_changes_copy(price_changes)
         return {
             "supplier": self.partner_id.display_name or _("Supplier"),
             "invoice": (self.invoice_number or "").strip() or "—",
@@ -279,7 +334,9 @@ class AveaStockReceiveReport(models.Model):
             "received_by": self.user_id.display_name or _("Unknown"),
             "payment_status": self.payment_status or _("Unpaid"),
             "issues": self._avea_receive_report_issues(),
-            "price_changes": self._avea_receive_report_price_changes(),
+            "price_changes": price_changes,
+            "price_changes_title": price_copy["title"],
+            "price_changes_intro": price_copy["intro"],
             "lines": lines,
             "charges": charges,
             "product_count": self.product_count,
