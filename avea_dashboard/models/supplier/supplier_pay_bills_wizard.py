@@ -41,8 +41,7 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
     payment_amount = fields.Monetary(
         string="This payment",
         currency_field="currency_id",
-        help="The amount that left the bank. Tick bills below and type how much "
-        "each one should take. Extra stays on the supplier as paid on account.",
+        help="The amount that left the bank. Split it across bills below.",
     )
     line_ids = fields.One2many(
         "avea.supplier.pay.bills.wizard.line",
@@ -55,7 +54,7 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
         compute="_compute_amount_total",
     )
     amount_on_account = fields.Monetary(
-        string="Left on supplier",
+        string="Still unassigned",
         currency_field="currency_id",
         compute="_compute_amount_total",
     )
@@ -64,40 +63,15 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
         currency_field="currency_id",
         compute="_compute_amount_total",
     )
+    has_leftover = fields.Boolean(compute="_compute_amount_total")
     payment_warning = fields.Char(compute="_compute_amount_total")
     selected_count = fields.Integer(compute="_compute_amount_total")
-    show_all_bills = fields.Boolean(
-        string="Show all open bills",
-        default=True,
-        help="When off, only bills due on or before the date below are listed.",
-    )
-    due_on_or_before = fields.Date(
-        string="Due on or before",
-        default=fields.Date.context_today,
-    )
-    highlight_line_id = fields.Many2one(
-        "avea.supplier.pay.bills.wizard.line",
-        string="Highlighted bill",
-        ondelete="set null",
-    )
-    detail_bill_due = fields.Date(related="highlight_line_id.bill_due", readonly=True)
-    detail_bill_ref = fields.Char(related="highlight_line_id.bill_ref", readonly=True)
-    detail_bill_label = fields.Char(related="highlight_line_id.bill_label", readonly=True)
-    detail_amount_due = fields.Monetary(
-        related="highlight_line_id.amount_due",
-        currency_field="currency_id",
-        readonly=True,
-    )
-    journal_type = fields.Selection(related="journal_id.type", string="Method", readonly=True)
-    grid_total_amount_due = fields.Monetary(
-        string="Total still open",
-        currency_field="currency_id",
-        compute="_compute_grid_totals",
-    )
-    grid_total_amount_to_pay = fields.Monetary(
-        string="Total to pay",
-        currency_field="currency_id",
-        compute="_compute_grid_totals",
+    leftover_action = fields.Selection(
+        selection=[
+            ("supplier_credit", "Keep on supplier as credit"),
+            ("apply_more", "Apply to more bills"),
+        ],
+        string="What's left of this payment?",
     )
 
     @api.depends("company_id")
@@ -106,18 +80,6 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             company = wizard.company_id
             wizard.available_journal_ids = (
                 company.sudo()._avea_expense_journals() if company else False
-            )
-
-    @api.depends("line_ids.pay", "line_ids.amount", "line_ids.amount_due", "currency_id")
-    def _compute_grid_totals(self):
-        for wizard in self:
-            currency = wizard.currency_id or wizard.env.company.currency_id
-            selected = wizard.line_ids.filtered("pay")
-            wizard.grid_total_amount_due = currency.round(
-                sum(selected.mapped("amount_due"))
-            )
-            wizard.grid_total_amount_to_pay = currency.round(
-                sum(selected.mapped("amount"))
             )
 
     @api.depends("line_ids.pay", "line_ids.amount", "payment_amount", "currency_id")
@@ -134,12 +96,14 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             wizard.amount_total = applied
             payment = currency.round(wizard.payment_amount or 0.0)
             if currency.compare_amounts(payment, 0.0) > 0:
-                wizard.amount_on_account = currency.round(max(payment - applied, 0.0))
+                leftover = currency.round(max(payment - applied, 0.0))
+                wizard.amount_on_account = leftover
+                wizard.has_leftover = currency.compare_amounts(leftover, 0.0) > 0
                 if currency.compare_amounts(applied, payment) > 0:
                     wizard.amount_over_payment = currency.round(applied - payment)
                     wizard.payment_warning = _(
                         "Pay now is %(applied)s but this payment is only %(payment)s. "
-                        "Lower what you apply, or increase this payment.",
+                        "Lower the amounts on the bills.",
                         applied=formatLang(
                             wizard.env, applied, currency_obj=currency
                         ),
@@ -152,8 +116,13 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
                     wizard.payment_warning = False
             else:
                 wizard.amount_on_account = 0.0
+                wizard.has_leftover = False
                 wizard.amount_over_payment = 0.0
                 wizard.payment_warning = False
+
+    @api.onchange("payment_amount")
+    def _onchange_payment_amount(self):
+        self.leftover_action = False
 
     @api.model
     def default_get(self, fields_list):
@@ -173,7 +142,6 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
                 partner,
                 company,
                 preselect_bill_id=self.env.context.get("default_bill_id"),
-                due_on_or_before=None,
             )
         return values
 
@@ -186,38 +154,24 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
                     wizard.partner_id,
                     wizard.company_id,
                     preselect_bill_id=self.env.context.get("default_bill_id"),
-                    due_on_or_before=wizard._avea_due_filter_date(),
                 )
         return wizards
 
-    def _avea_open_bills(self, partner, company, due_on_or_before=None):
-        domain = [
-            ("partner_id", "=", partner.id),
-            ("company_id", "=", company.id),
-            ("move_type", "=", "in_invoice"),
-            ("state", "=", "posted"),
-            ("amount_residual", "!=", 0),
-        ]
-        if due_on_or_before:
-            domain.append(("invoice_date_due", "<=", due_on_or_before))
+    def _avea_open_bills(self, partner, company):
         return self.env["account.move"].search(
-            domain,
+            [
+                ("partner_id", "=", partner.id),
+                ("company_id", "=", company.id),
+                ("move_type", "=", "in_invoice"),
+                ("state", "=", "posted"),
+                ("amount_residual", "!=", 0),
+            ],
             order="invoice_date_due, invoice_date, id",
         )
 
-    def _avea_due_filter_date(self):
-        self.ensure_one()
-        if self.show_all_bills:
-            return False
-        return self.due_on_or_before or fields.Date.context_today(self)
-
-    def _avea_line_commands(
-        self, partner, company, preselect_bill_id=None, due_on_or_before=None
-    ):
+    def _avea_line_commands(self, partner, company, preselect_bill_id=None):
         commands = []
-        for bill in self._avea_open_bills(
-            partner, company, due_on_or_before=due_on_or_before
-        ):
+        for bill in self._avea_open_bills(partner, company):
             selected = bool(preselect_bill_id and bill.id == preselect_bill_id)
             commands.append(
                 (
@@ -235,68 +189,14 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
     @api.onchange("partner_id", "company_id")
     def _onchange_partner_id(self):
         self.line_ids = [(5, 0, 0)]
-        self.highlight_line_id = False
+        self.leftover_action = False
         if not self.partner_id or not self.company_id:
             return
         self.line_ids = self._avea_line_commands(
             self.partner_id,
             self.company_id,
             preselect_bill_id=self.env.context.get("default_bill_id"),
-            due_on_or_before=self._avea_due_filter_date(),
         )
-
-    @api.onchange("show_all_bills", "due_on_or_before")
-    def _onchange_bill_filters(self):
-        if not self.partner_id or not self.company_id:
-            return
-        saved = {
-            line.bill_id.id: (line.pay, line.amount or 0.0) for line in self.line_ids
-        }
-        self.line_ids = [(5, 0, 0)]
-        commands = self._avea_line_commands(
-            self.partner_id,
-            self.company_id,
-            preselect_bill_id=self.env.context.get("default_bill_id"),
-            due_on_or_before=self._avea_due_filter_date(),
-        )
-        lines = []
-        for _command, _x, vals in commands:
-            bill_id = vals["bill_id"]
-            if bill_id in saved:
-                pay, amount = saved[bill_id]
-                vals = dict(vals, pay=pay, amount=amount)
-            lines.append((0, 0, vals))
-        self.line_ids = lines
-
-    def action_clear_bill_selections(self):
-        self.ensure_one()
-        for line in self.line_ids:
-            line.pay = False
-            line.amount = 0.0
-        self.highlight_line_id = False
-        return self._avea_reopen_wizard()
-
-    def action_open_highlighted_bill(self):
-        self.ensure_one()
-        if not self.highlight_line_id or not self.highlight_line_id.bill_id:
-            raise UserError(_("Select a bill in the list first."))
-        return self.highlight_line_id.bill_id.with_context(
-            avea_supplier_workspace=True
-        ).get_formview_action()
-
-    def _avea_reopen_wizard(self):
-        self.ensure_one()
-        return {
-            "type": "ir.actions.act_window",
-            "res_model": self._name,
-            "res_id": self.id,
-            "view_mode": "form",
-            "view_id": self.env.ref(
-                "avea_till.view_avea_supplier_pay_bills_wizard_form"
-            ).id,
-            "target": "new",
-            "context": dict(self.env.context, avea_supplier_workspace=True),
-        }
 
     def _avea_applied_total(self, exclude_lines=None):
         exclude_lines = exclude_lines or self.env["avea.supplier.pay.bills.wizard.line"]
@@ -321,10 +221,21 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
     def action_allocate_oldest_first(self):
         self.ensure_one()
         self._avea_auto_allocate()
-        return self._avea_reopen_wizard()
+        self.leftover_action = False
+        return {
+            "type": "ir.actions.act_window",
+            "res_model": self._name,
+            "res_id": self.id,
+            "view_mode": "form",
+            "view_id": self.env.ref(
+                "avea_till.view_avea_supplier_pay_bills_wizard_form"
+            ).id,
+            "target": "new",
+            "context": dict(self.env.context, avea_supplier_workspace=True),
+        }
 
     def _avea_auto_allocate(self):
-        """Fill Pay now from the oldest open bill until this payment is used."""
+        """Optional shortcut: spread this payment oldest-first (user can still edit)."""
         self.ensure_one()
         currency = self.currency_id or self.env.company.currency_id
         if not self.line_ids or currency.compare_amounts(self.payment_amount or 0.0, 0.0) <= 0:
@@ -343,20 +254,45 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
         self.ensure_one()
         if not self.partner_id:
             raise UserError(_("Choose the supplier you paid."))
+        currency = self.currency_id or self.env.company.currency_id
+        payment_amount = currency.round(self.payment_amount or 0.0)
+        if currency.compare_amounts(payment_amount, 0.0) <= 0:
+            raise UserError(_("Enter this payment amount at the top."))
         selected = self.line_ids.filtered(
             lambda line: line.pay
             and line.currency_id
             and line.currency_id.compare_amounts(line.amount or 0.0, 0.0) > 0
         )
-        currency = self.currency_id or self.env.company.currency_id
-        payment_amount = currency.round(self.payment_amount or 0.0)
-        if not selected and currency.compare_amounts(payment_amount, 0.0) <= 0:
+        applied = currency.round(sum(selected.mapped("amount")))
+        if currency.compare_amounts(applied, payment_amount) > 0:
             raise UserError(
                 _(
-                    "Enter the amount that left the bank, or tick the bills "
-                    "this payment should cover."
+                    "You applied %(applied)s but this payment is only %(payment)s.",
+                    applied=formatLang(self.env, applied, currency_obj=currency),
+                    payment=formatLang(self.env, payment_amount, currency_obj=currency),
                 )
             )
+        if not selected and currency.is_zero(payment_amount):
+            raise UserError(_("Tick bills or enter a payment amount."))
+        leftover = currency.round(max(payment_amount - applied, 0.0))
+        if currency.compare_amounts(leftover, 0.0) > 0:
+            if self.leftover_action == "apply_more":
+                raise UserError(
+                    _(
+                        "Apply the remaining %(leftover)s on other bills below, "
+                        "or choose to keep it on the supplier as credit.",
+                        leftover=formatLang(self.env, leftover, currency_obj=currency),
+                    )
+                )
+            if self.leftover_action != "supplier_credit":
+                raise UserError(
+                    _(
+                        "This payment still has %(leftover)s unassigned. "
+                        "Apply it on more bills, or choose to keep it on the "
+                        "supplier as credit.",
+                        leftover=formatLang(self.env, leftover, currency_obj=currency),
+                    )
+                )
         allowed = self.company_id.sudo()._avea_expense_journals()
         if not self.journal_id or self.journal_id not in allowed:
             raise UserError(_("Choose a cash or bank account to pay from."))
@@ -367,6 +303,14 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
                 raise UserError(_("Choose posted supplier bills."))
             if bill.partner_id != self.partner_id:
                 raise UserError(_("Those bills are not all for this supplier."))
+            if currency.compare_amounts(line.amount or 0.0, bill.amount_residual) > 0:
+                raise UserError(
+                    _(
+                        "You cannot pay more than is still open on a bill "
+                        "(%(bill)s).",
+                        bill=bill.avea_supplier_bill_label or bill.ref or bill.name,
+                    )
+                )
             allocations.append((bill, line.amount))
         statement_line = self.env["avea.stock.mixin"]._avea_pay_vendor_bills(
             allocations,
@@ -375,7 +319,7 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             self.company_id,
             self.pay_date or fields.Date.context_today(self),
             self.payment_ref,
-            payment_amount=payment_amount if currency.compare_amounts(payment_amount, 0.0) > 0 else None,
+            payment_amount=payment_amount,
         )
         for bill, _amount in allocations:
             receive = bill.avea_linked_receive_id
@@ -427,29 +371,52 @@ class AveaSupplierPayBillsWizardLine(models.TransientModel):
         currency_field="currency_id",
     )
 
-    def _avea_highlight_line_on_wizard(self):
+    def _avea_clear_leftover_choice(self):
         for line in self:
-            wizard = line.wizard_id
-            if wizard and line.pay:
-                wizard.highlight_line_id = line
+            if line.wizard_id:
+                line.wizard_id.leftover_action = False
 
     @api.onchange("pay")
     def _onchange_pay(self):
+        wizard = self.wizard_id
+        currency = wizard.currency_id or wizard.env.company.currency_id
         for line in self:
             if not line.pay:
                 line.amount = 0.0
                 continue
             if line.currency_id and line.currency_id.is_zero(line.amount or 0.0):
-                line.amount = line.amount_due
-            line._avea_highlight_line_on_wizard()
+                due = line.amount_due or 0.0
+                if currency.compare_amounts(wizard.payment_amount or 0.0, 0.0) > 0:
+                    cap = wizard._avea_remaining_payment_capacity(
+                        exclude_lines=wizard.line_ids - line
+                    )
+                    if cap is not None:
+                        due = min(due, cap)
+                line.amount = due
+        self._avea_clear_leftover_choice()
 
     @api.onchange("amount")
     def _onchange_amount(self):
+        wizard = self.wizard_id
+        currency = wizard.currency_id or wizard.env.company.currency_id
         for line in self:
             if not line.currency_id:
                 continue
             if line.currency_id.compare_amounts(line.amount or 0.0, 0.0) > 0:
                 line.pay = True
+                if line.currency_id.compare_amounts(
+                    line.amount, line.amount_due or 0.0
+                ) > 0:
+                    line.amount = line.amount_due
             elif line.currency_id.is_zero(line.amount or 0.0):
                 line.pay = False
-        self._avea_highlight_line_on_wizard()
+            if currency.compare_amounts(wizard.payment_amount or 0.0, 0.0) > 0:
+                cap = wizard._avea_remaining_payment_capacity(
+                    exclude_lines=wizard.line_ids - line
+                )
+                if (
+                    cap is not None
+                    and line.currency_id.compare_amounts(line.amount or 0.0, cap) > 0
+                ):
+                    line.amount = cap
+        self._avea_clear_leftover_choice()

@@ -639,6 +639,32 @@ class TestAveaSupplierBills(TestPoSCommon):
         payment = self.env["account.bank.statement.line"].browse(result["res_id"])
         self.assertAlmostEqual(payment.amount, -8000.0, places=2)
 
+    def test_pay_bills_wizard_leftover_requires_choice(self):
+        today = fields.Date.context_today(self.env.user)
+        bill = self._create_vendor_move(
+            "in_invoice", 6691.60, "PART", today, due=today
+        )
+        journal = self._pay_journal()
+        if not journal:
+            self.skipTest("No Avea cash/bank journal is configured")
+        wizard = self.env["avea.supplier.pay.bills.wizard"].create(
+            {
+                "partner_id": self.partner.id,
+                "pay_date": today,
+                "journal_id": journal.id,
+                "payment_amount": 8000.0,
+            }
+        )
+        line = wizard.line_ids.filtered(lambda rec: rec.bill_id == bill)
+        line.pay = True
+        line.amount = 6691.60
+        with self.assertRaises(UserError):
+            wizard.action_pay()
+        wizard.leftover_action = "supplier_credit"
+        wizard.action_pay()
+        bill.invalidate_recordset()
+        self.assertTrue(bill.currency_id.is_zero(bill.amount_residual))
+
     def test_pay_bills_wizard_rejects_applied_over_payment_amount(self):
         today = fields.Date.context_today(self.env.user)
         bill = self._create_vendor_move(
