@@ -331,13 +331,18 @@ class ResPartner(models.Model):
 
     def _avea_use_customer_workspace_form(self):
         self.ensure_one()
-        if self.env.context.get("avea_supplier_workspace"):
+        if self.env.context.get("avea_supplier_workspace") or self.env.context.get(
+            "avea_employee_workspace"
+        ):
             return False
         if self.env.context.get("avea_customer_workspace"):
             return True
         return bool(self.customer_rank) and not (
             hasattr(self, "_avea_use_supplier_workspace_form")
             and self._avea_use_supplier_workspace_form()
+        ) and not (
+            hasattr(self, "_avea_use_employee_workspace_form")
+            and self._avea_use_employee_workspace_form()
         )
 
     def _avea_paid_pos_order_domain(self):
@@ -405,6 +410,11 @@ class ResPartner(models.Model):
         if hasattr(user, "_avea_uses_product_shell") and user._avea_uses_product_shell():
             if len(self) == 1:
                 if (
+                    hasattr(self, "_avea_use_employee_workspace_form")
+                    and self._avea_use_employee_workspace_form()
+                ):
+                    return self.env.ref("avea_till.view_avea_employee_form").id
+                if (
                     hasattr(self, "_avea_use_supplier_workspace_form")
                     and self._avea_use_supplier_workspace_form()
                 ):
@@ -421,6 +431,15 @@ class ResPartner(models.Model):
         if hasattr(user, "_avea_uses_product_shell") and user._avea_uses_product_shell():
             if len(self) == 1:
                 if (
+                    hasattr(self, "_avea_use_employee_workspace_form")
+                    and self._avea_use_employee_workspace_form()
+                ):
+                    view_id = self.env.ref("avea_till.view_avea_employee_form").id
+                    action["views"] = [(view_id, "form")]
+                    ctx = dict(action.get("context") or {})
+                    ctx["avea_employee_workspace"] = True
+                    action["context"] = ctx
+                elif (
                     hasattr(self, "_avea_use_supplier_workspace_form")
                     and self._avea_use_supplier_workspace_form()
                 ):
@@ -437,9 +456,27 @@ class ResPartner(models.Model):
                     action["context"] = ctx
         return action
 
+    def _avea_staff_payee_context(self):
+        return bool(
+            self.env.context.get("avea_staff_payee")
+            or self.env.context.get("avea_employee_workspace")
+            or self.env.context.get("avea_expense_payee_person")
+        )
+
     @api.model
     def name_search(self, name="", args=None, operator="ilike", limit=100, domain=None):
         search_domain = list(domain if domain is not None else (args or []))
+        if self._avea_staff_payee_context():
+            employee_domain = list(search_domain) + [("avea_is_employee", "=", True)]
+            results = super().name_search(
+                name, employee_domain, operator=operator, limit=limit
+            )
+            if results or not (name or "").strip():
+                return results
+            people_domain = list(search_domain) + [("is_company", "=", False)]
+            return super().name_search(
+                name, people_domain, operator=operator, limit=limit
+            )
         if self.env.context.get("avea_operational_expense_supplier") and not self.env.context.get(
             "avea_expense_payee_person"
         ):
@@ -450,17 +487,28 @@ class ResPartner(models.Model):
 
     @api.model
     def name_create(self, name):
-        """Quick-create a supplier from the operational expense wizard."""
+        """Quick-create an employee or supplier from Avea payee fields."""
+        clean_name = (name or "").strip()
+        if self._avea_staff_payee_context():
+            if not clean_name:
+                raise ValidationError(_("Enter the employee's name."))
+            partner = self.sudo().create(
+                {
+                    "name": clean_name,
+                    "avea_is_employee": True,
+                    "is_company": False,
+                    "company_id": self.env.company.id,
+                }
+            )
+            return partner.id, partner.display_name
         if self.env.context.get("avea_operational_expense_supplier"):
-            clean_name = (name or "").strip()
             if not clean_name:
                 raise ValidationError(_("Enter a supplier name."))
-            as_person = bool(self.env.context.get("avea_expense_payee_person"))
             partner = self.sudo().create(
                 {
                     "name": clean_name,
                     "supplier_rank": 1,
-                    "is_company": not as_person,
+                    "is_company": True,
                     "company_id": self.env.company.id,
                 }
             )

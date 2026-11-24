@@ -407,17 +407,27 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
             ("company_id", "in", company.id),
         ]
 
-        def _search_name(name, *, prefer_supplier=False, prefer_person=False):
+        def _search_name(
+            name, *, prefer_supplier=False, prefer_person=False, prefer_employee=False
+        ):
             if not name or len(name) < 2:
                 return Partner.browse()
             domain = company_domain + [("name", "ilike", name)]
             if prefer_supplier:
                 domain.append(("supplier_rank", ">", 0))
+            if prefer_employee:
+                domain.append(("avea_is_employee", "=", True))
             candidates = Partner.search(domain, limit=8)
+            if prefer_employee and not candidates:
+                domain = company_domain + [("name", "ilike", name)]
+                candidates = Partner.search(domain, limit=8)
             if prefer_person:
                 people = candidates.filtered(lambda partner: not partner.is_company)
                 if people:
-                    return people[0]
+                    candidates = people
+            employees = candidates.filtered("avea_is_employee")
+            if prefer_employee and employees:
+                candidates = employees
             exact = candidates.filtered(
                 lambda partner: partner.name.strip().lower() == name.lower()
             )
@@ -428,11 +438,15 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
         if partner_role == "employee":
             payee = cls._avea_extract_employee_name(description)
             if payee:
-                partner = _search_name(payee, prefer_person=True)
+                partner = _search_name(
+                    payee, prefer_person=True, prefer_employee=True
+                )
                 if partner:
                     return partner
                 if " " in payee:
-                    partner = _search_name(payee.split()[-1], prefer_person=True)
+                    partner = _search_name(
+                        payee.split()[-1], prefer_person=True, prefer_employee=True
+                    )
                     if partner:
                         return partner
             return Partner.browse()
@@ -473,9 +487,9 @@ class AveaBankReconcileBookingRules(models.AbstractModel):
     def partner_hint_for_role(cls, partner_role):
         if partner_role == "employee":
             return _(
-                "Salary is paid to a person, not a shop. Choose the employee "
-                "(or type their name to add them). Odoo needs a payee contact "
-                "to post the payment."
+                "Salary is paid to a person, not a shop. Choose them from Employees "
+                "(or type their name to add them). Advances already paid to them "
+                "count as part of this salary."
             )
         if partner_role == "bank":
             return _(

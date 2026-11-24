@@ -25,6 +25,15 @@
                 >
                     <field name="partner_hint" nolabel="1" readonly="1"/>
                 </div>
+                <div
+                    class="alert alert-secondary mb-0 py-2"
+                    role="status"
+                    invisible="not employee_advance_help"
+                >
+                    <field name="employee_advance_help" nolabel="1" readonly="1"/>
+                    <field name="employee_advance_outstanding" invisible="1"/>
+                    <field name="employee_salary_including_advances" invisible="1"/>
+                </div>
                 <group>
                     <group>
                         <field
@@ -33,7 +42,7 @@
                             widget="avea_expense_supplier_many2one"
                             placeholder="Search payee"
                             options="{'no_open': True, 'no_create_edit': True}"
-                            context="{'res_partner_search_mode': 'supplier', 'avea_operational_expense_supplier': 1, 'avea_expense_payee_person': booking_partner_role == 'employee', 'default_supplier_rank': 1, 'default_is_company': booking_partner_role != 'employee'}"
+                            context="{'res_partner_search_mode': what_for == 'expense' and 'supplier' or '', 'avea_operational_expense_supplier': what_for == 'expense', 'avea_expense_payee_person': what_for in ('salary', 'advance') or booking_partner_role == 'employee', 'avea_staff_payee': what_for in ('salary', 'advance') or booking_partner_role == 'employee', 'default_supplier_rank': what_for == 'expense' and 1 or 0, 'default_avea_is_employee': what_for in ('salary', 'advance'), 'default_is_company': what_for == 'expense'}"
                         />
                         <field name="expense_date"/>
                         <field
@@ -44,6 +53,8 @@
                     <group>
                         <field
                             name="expense_account_id"
+                            invisible="what_for in ('salary', 'advance')"
+                            required="what_for == 'expense'"
                             options="{'no_create': True, 'no_open': True}"
                         />
                         <field name="amount"/>

@@ -53,6 +53,90 @@ class AccountBankStatementLine(models.Model):
     avea_can_delete_payment = fields.Boolean(
         compute="_compute_avea_is_supplier_payment",
     )
+    avea_employee_id = fields.Many2one(
+        "res.partner",
+        string="Employee",
+        index=True,
+        ondelete="restrict",
+        copy=False,
+        help="The employee this salary or advance was paid to.",
+    )
+    avea_staff_pay_kind = fields.Selection(
+        selection=[
+            ("salary", "Salary"),
+            ("advance", "Advance"),
+        ],
+        string="Salary type",
+        index=True,
+        copy=False,
+        help="Advance is salary paid early. It is counted in the next salary payment.",
+    )
+    avea_staff_applied_salary_id = fields.Many2one(
+        "account.bank.statement.line",
+        string="Counted in salary",
+        copy=False,
+        ondelete="set null",
+        help="The later salary payment this advance was counted in.",
+    )
+    avea_staff_pay_note = fields.Char(
+        string="Salary note",
+        compute="_compute_avea_staff_pay_note",
+    )
+
+    @api.depends(
+        "avea_staff_pay_kind",
+        "avea_staff_applied_salary_id",
+        "avea_staff_applied_salary_id.date",
+        "date",
+        "amount",
+    )
+    def _compute_avea_staff_pay_note(self):
+        for line in self:
+            if line.avea_staff_pay_kind == "advance":
+                if line.avea_staff_applied_salary_id:
+                    paid_on = line.avea_staff_applied_salary_id.date
+                    line.avea_staff_pay_note = (
+                        _("Counted in salary on %s") % paid_on if paid_on else _("Counted in salary")
+                    )
+                else:
+                    line.avea_staff_pay_note = _("Part of next salary")
+            elif line.avea_staff_pay_kind == "salary":
+                advances = line._avea_advances_counted_in()
+                if advances:
+                    total = sum(abs(advance.amount or 0.0) for advance in advances)
+                    line.avea_staff_pay_note = _(
+                        "Includes %(amount)s already paid as advance",
+                        amount=formatLang(
+                            line.env,
+                            total,
+                            currency_obj=line.currency_id or line.company_id.currency_id,
+                        ),
+                    )
+                else:
+                    line.avea_staff_pay_note = _("Salary")
+            else:
+                line.avea_staff_pay_note = False
+
+    def _avea_advances_counted_in(self):
+        self.ensure_one()
+        return self.sudo().search(
+            [
+                ("avea_staff_applied_salary_id", "=", self.id),
+                ("avea_staff_pay_kind", "=", "advance"),
+            ]
+        )
+
+    def _avea_apply_employee_advances(self):
+        """Count outstanding advances in this salary. They are already salary paid early."""
+        self.ensure_one()
+        if self.avea_staff_pay_kind != "salary" or not self.avea_employee_id:
+            return self.env["account.bank.statement.line"]
+        advances = self.avea_employee_id._avea_employee_outstanding_advances(
+            on_date=self.date
+        ).filtered(lambda line: line.id != self.id)
+        if advances:
+            advances.write({"avea_staff_applied_salary_id": self.id})
+        return advances
 
     @api.depends(
         "amount",
@@ -60,6 +144,8 @@ class AccountBankStatementLine(models.Model):
         "journal_id",
         "journal_id.type",
         "avea_cleared",
+        "avea_staff_pay_kind",
+        "avea_employee_id",
         "move_id.line_ids.matched_debit_ids",
         "move_id.line_ids.matched_credit_ids",
     )
@@ -67,8 +153,9 @@ class AccountBankStatementLine(models.Model):
         for line in self:
             money_out = (line.amount or 0.0) < 0.0
             cash_or_bank = line.journal_id.type in ("bank", "cash")
+            is_staff = bool(line.avea_staff_pay_kind or line.avea_employee_id)
             line.avea_is_supplier_payment = bool(
-                line.partner_id and money_out and cash_or_bank
+                line.partner_id and money_out and cash_or_bank and not is_staff
             )
             line.avea_is_bill_payment = bool(line._avea_paid_vendor_bills())
             line.avea_payment_kind = "bill" if line.avea_is_bill_payment else "other"
@@ -101,10 +188,13 @@ class AccountBankStatementLine(models.Model):
             ("partner_id", "!=", False),
             ("journal_id.type", "in", ("bank", "cash")),
             ("amount", "<", 0),
+            ("avea_staff_pay_kind", "=", False),
+            ("avea_employee_id", "=", False),
         ]
         if positive:
             return domain
-        return ["!", "&", "&"] + domain
+        ands = ["&"] * (len(domain) - 1)
+        return ["!"] + ands + domain
 
     def _search_avea_is_bill_payment(self, operator, value):
         if operator in ("in", "not in"):

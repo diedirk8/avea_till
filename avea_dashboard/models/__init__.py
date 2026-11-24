@@ -1,6 +1,7 @@
 from . import customer
 from . import data
 from . import supplier
+from . import employee
 from . import credit
 from . import operations
 from . import pricing

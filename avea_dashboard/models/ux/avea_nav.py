@@ -206,6 +206,17 @@ class AveaNavMixin(models.AbstractModel):
                 ],
             },
             {
+                "id": "employees",
+                "label": "Employees",
+                "min_role": "manager",
+                "items": [
+                    {
+                        "label": "Employees",
+                        "menu_xmlid": "avea_till.menu_avea_employee_centre",
+                    },
+                ],
+            },
+            {
                 "id": "accounting",
                 "label": "Accounting",
                 "min_role": "manager",

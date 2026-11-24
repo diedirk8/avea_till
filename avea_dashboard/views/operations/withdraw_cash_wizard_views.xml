@@ -22,6 +22,15 @@
                         />
                         <field name="withdrawal_purpose" widget="radio"/>
                         <field
+                            name="employee_id"
+                            widget="avea_employee_many2one"
+                            invisible="withdrawal_purpose not in ('staff_advance', 'salary_wages')"
+                            required="withdrawal_purpose in ('staff_advance', 'salary_wages')"
+                            placeholder="Search employee"
+                            options="{'no_open': True, 'no_create_edit': True}"
+                            context="{'avea_staff_payee': 1, 'avea_employee_workspace': 1, 'default_avea_is_employee': 1, 'default_is_company': 0}"
+                        />
+                        <field
                             name="expense_account_id"
                             invisible="withdrawal_purpose != 'other_expense'"
                             required="withdrawal_purpose == 'other_expense'"
@@ -33,12 +42,21 @@
                         <field name="withdrawal_date"/>
                         <field
                             name="reference_name"
-                            placeholder="e.g. John - salary advance"
+                            placeholder="e.g. Weekly wages"
                         />
                         <field name="currency_id" invisible="1"/>
                         <field name="company_id" groups="base.group_multi_company"/>
                     </group>
                 </group>
+                <div
+                    class="alert alert-secondary mb-0 py-2"
+                    role="status"
+                    invisible="not employee_advance_help"
+                >
+                    <field name="employee_advance_help" nolabel="1" readonly="1"/>
+                    <field name="employee_advance_outstanding" invisible="1"/>
+                    <field name="employee_salary_including_advances" invisible="1"/>
+                </div>
                 <footer>
                     <button
                         name="action_withdraw_cash"

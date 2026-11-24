@@ -37,6 +37,24 @@ class AveaWithdrawCashWizard(models.TransientModel):
         required=True,
         currency_field="currency_id",
     )
+    employee_id = fields.Many2one(
+        "res.partner",
+        string="Employee",
+        help="Who this salary or advance is for. Advances are part of their salary.",
+    )
+    employee_advance_outstanding = fields.Monetary(
+        string="Advances already paid",
+        compute="_compute_employee_advance_outstanding",
+        currency_field="currency_id",
+    )
+    employee_salary_including_advances = fields.Monetary(
+        string="Salary including advances",
+        compute="_compute_employee_advance_outstanding",
+        currency_field="currency_id",
+    )
+    employee_advance_help = fields.Char(
+        compute="_compute_employee_advance_outstanding",
+    )
     reference_name = fields.Char(
         string="Reference / Name",
         help="A short label for this withdrawal, e.g. John - salary advance.",
@@ -93,6 +111,59 @@ class AveaWithdrawCashWizard(models.TransientModel):
             if wizard.withdrawal_purpose == "other_expense" and not wizard.expense_account_id:
                 raise ValidationError(_("Select what the money was spent on."))
 
+    @api.constrains("withdrawal_purpose", "employee_id")
+    def _check_employee_for_salary(self):
+        for wizard in self:
+            if (
+                wizard.withdrawal_purpose in ("staff_advance", "salary_wages")
+                and not wizard.employee_id
+            ):
+                raise ValidationError(
+                    _("Choose the employee this salary or advance is for.")
+                )
+
+    @api.depends("employee_id", "withdrawal_purpose", "amount", "currency_id")
+    def _compute_employee_advance_outstanding(self):
+        for wizard in self:
+            outstanding = 0.0
+            if wizard.employee_id and wizard.withdrawal_purpose in (
+                "staff_advance",
+                "salary_wages",
+            ):
+                outstanding = wizard.employee_id.avea_employee_advance_outstanding or 0.0
+            wizard.employee_advance_outstanding = outstanding
+            cash = wizard.amount or 0.0
+            if wizard.withdrawal_purpose == "salary_wages":
+                wizard.employee_salary_including_advances = cash + outstanding
+            else:
+                wizard.employee_salary_including_advances = 0.0
+            if (
+                wizard.withdrawal_purpose == "salary_wages"
+                and wizard.employee_id
+                and wizard.currency_id
+                and wizard.currency_id.compare_amounts(outstanding, 0.0) > 0
+            ):
+                wizard.employee_advance_help = _(
+                    "%(advance)s already paid as advance — that is part of this salary. "
+                    "Enter only the extra cash you are paying now. Total this salary: %(total)s.",
+                    advance=formatLang(
+                        wizard.env, outstanding, currency_obj=wizard.currency_id
+                    ),
+                    total=formatLang(
+                        wizard.env,
+                        cash + outstanding,
+                        currency_obj=wizard.currency_id,
+                    ),
+                )
+            elif wizard.withdrawal_purpose == "staff_advance" and wizard.employee_id:
+                wizard.employee_advance_help = _(
+                    "This advance is salary paid early. It will show on %(name)s "
+                    "and count toward their next salary.",
+                    name=wizard.employee_id.display_name,
+                )
+            else:
+                wizard.employee_advance_help = False
+
     @api.onchange("company_id")
     def _onchange_company_id_cash_journal(self):
         journal = self.cash_journal_id
@@ -104,6 +175,8 @@ class AveaWithdrawCashWizard(models.TransientModel):
     def _onchange_withdrawal_purpose(self):
         if self.withdrawal_purpose != "other_expense":
             self.expense_account_id = False
+        if self.withdrawal_purpose not in ("staff_advance", "salary_wages"):
+            self.employee_id = False
 
     @api.model
     def action_open_wizard(self):
@@ -222,6 +295,8 @@ class AveaWithdrawCashWizard(models.TransientModel):
             raise UserError(_("Amount must be greater than zero."))
         if self.withdrawal_purpose == "other_expense" and not self.expense_account_id:
             raise UserError(_("Select what the money was spent on."))
+        if self.withdrawal_purpose in ("staff_advance", "salary_wages") and not self.employee_id:
+            raise UserError(_("Choose the employee this salary or advance is for."))
         self._avea_cash_journal()
         self._avea_destination_account()
 
@@ -236,6 +311,8 @@ class AveaWithdrawCashWizard(models.TransientModel):
         reference = (self.reference_name or "").strip()
         if reference:
             return reference
+        if self.employee_id:
+            return _("%(name)s — %(purpose)s", name=self.employee_id.name, purpose=self._avea_purpose_label())
         return self._avea_purpose_label()
 
     def _avea_narration(self):
@@ -247,19 +324,41 @@ class AveaWithdrawCashWizard(models.TransientModel):
                 purpose=self._avea_purpose_label(),
             )
         ]
+        if self.employee_id:
+            parts.append(_("Employee: %(name)s", name=self.employee_id.display_name))
         reference = (self.reference_name or "").strip()
         if reference:
             parts.append(_("Reference: %(reference)s", reference=reference))
+        if self.withdrawal_purpose == "staff_advance":
+            parts.append(_("This advance is part of the employee's salary."))
         if self.withdrawal_purpose == "other_expense":
             parts.append(
                 _("Expense: %(account)s", account=self.expense_account_id.display_name)
             )
         return "\n".join(parts)
 
+    def _avea_staff_pay_kind(self):
+        self.ensure_one()
+        if self.withdrawal_purpose == "staff_advance":
+            return "advance"
+        if self.withdrawal_purpose == "salary_wages":
+            return "salary"
+        return False
+
     def _avea_post_withdrawal(self):
         """Reduce the selected cash or bank account via a statement line."""
         self.ensure_one()
         journal = self._avea_cash_journal()
+        kind = self._avea_staff_pay_kind()
+        if kind and self.employee_id:
+            return self.employee_id._avea_post_staff_pay(
+                journal=journal,
+                amount=self.amount,
+                pay_date=self.withdrawal_date,
+                kind=kind,
+                reference=self._avea_payment_reference(),
+                narration=self._avea_narration(),
+            )
         destination_account = self._avea_destination_account()
         statement_line = (
             self.env["account.bank.statement.line"]
@@ -289,12 +388,17 @@ class AveaWithdrawCashWizard(models.TransientModel):
             "params": {
                 "title": _("Withdrawn"),
                 "message": _(
-                    "%(amount)s withdrawn from %(source)s for %(purpose)s.",
+                    "%(amount)s withdrawn from %(source)s for %(purpose)s%(employee)s.",
                     amount=formatLang(
                         self.env, self.amount, currency_obj=self.currency_id
                     ),
                     source=self.cash_journal_id.display_name,
                     purpose=self._avea_purpose_label(),
+                    employee=(
+                        _(" — %(name)s", name=self.employee_id.display_name)
+                        if self.employee_id
+                        else ""
+                    ),
                 ),
                 "type": "success",
                 "next": {"type": "ir.actions.act_window_close"},

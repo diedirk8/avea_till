@@ -51,6 +51,7 @@ class TestAveaNav(TestPoSCommon):
                 "selling",
                 "customers",
                 "suppliers",
+                "employees",
                 "accounting",
                 "money",
             ],
@@ -115,6 +116,12 @@ class TestAveaNav(TestPoSCommon):
         self.assertEqual(
             [item["label"] for item in suppliers["items"]],
             ["Suppliers", "Bills", "Payments"],
+        )
+
+        employees = next(s for s in nav["sections"] if s["id"] == "employees")
+        self.assertEqual(
+            [item["label"] for item in employees["items"]],
+            ["Employees"],
         )
 
         accounting = next(s for s in nav["sections"] if s["id"] == "accounting")

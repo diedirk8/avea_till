@@ -40,6 +40,19 @@ class TestAveaOperationalExpense(TransactionCase):
         self.assertEqual(partner.name, "Expense Wizard Supplier")
         self.assertGreaterEqual(partner.supplier_rank, 1)
 
+    def test_name_create_employee_from_salary_payee_context(self):
+        Partner = self.env["res.partner"].with_context(
+            avea_operational_expense_supplier=True,
+            avea_expense_payee_person=True,
+            avea_staff_payee=True,
+        )
+        partner_id, display_name = Partner.name_create("Emily Salar")
+        partner = Partner.browse(partner_id)
+        self.assertEqual(display_name, partner.display_name)
+        self.assertTrue(partner.avea_is_employee)
+        self.assertFalse(partner.is_company)
+        self.assertEqual(partner.supplier_rank, 0)
+
     def test_name_search_accepts_odoo19_domain_keyword(self):
         Partner = self.env["res.partner"].with_context(
             avea_operational_expense_supplier=True

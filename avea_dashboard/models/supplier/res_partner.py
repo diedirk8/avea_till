@@ -151,9 +151,11 @@ class ResPartnerSupplierCentre(models.Model):
         self.ensure_one()
         if self.env.context.get("avea_supplier_workspace"):
             return True
-        if self.env.context.get("avea_customer_workspace"):
+        if self.env.context.get("avea_customer_workspace") or self.env.context.get(
+            "avea_employee_workspace"
+        ):
             return False
-        return bool(self.supplier_rank) and not self.customer_rank
+        return bool(self.supplier_rank) and not self.customer_rank and not self.avea_is_employee
 
     @api.model
     def action_avea_export_suppliers(self):
