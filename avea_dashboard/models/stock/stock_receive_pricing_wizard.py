@@ -261,7 +261,12 @@ class AveaStockReceivePricingWizard(models.TransientModel):
             raise UserError(_("No product on this line."))
         cost = self._avea_resolve_new_cost()
         if float_compare(cost, 0.0, precision_digits=AVEA_PRICING_WIZARD_COST_DIGITS) <= 0:
-            raise UserError(_("Cost must be greater than zero."))
+            raise UserError(
+                _(
+                    "This product is free on this invoice. Keep current pricing "
+                    "so the usual cost and selling price stay the same."
+                )
+            )
         self.line_id._avea_snapshot_catalog_pricing()
         template._avea_apply_catalog_cost(cost)
         self.line_id.with_context(avea_skip_pricing_wizard=True).write(
@@ -284,7 +289,12 @@ class AveaStockReceivePricingWizard(models.TransientModel):
         mixin = self._avea_mixin()
         cost = self._avea_resolve_new_cost()
         if float_compare(cost, 0.0, precision_digits=AVEA_PRICING_WIZARD_COST_DIGITS) <= 0:
-            raise UserError(_("Cost must be greater than zero."))
+            raise UserError(
+                _(
+                    "This product is free on this invoice. Keep current pricing "
+                    "so the usual cost and selling price stay the same."
+                )
+            )
         retail = mixin._avea_round_product_cost(self.new_retail or 0.0)
         self.line_id._avea_snapshot_catalog_pricing()
         template._avea_apply_catalog_cost(cost)

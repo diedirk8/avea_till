@@ -39,7 +39,8 @@ class AveaStockReceiveLine(models.Model):
         string="EX-Tax Cost",
         digits=AVEA_SUPPLIER_COST_PRECISION,
         default=0.0,
-        help="Original EX-tax unit cost from the supplier invoice, before discount.",
+        help="Original EX-tax unit cost from the supplier invoice, before discount. "
+        "Use 0 for a free product; the usual cost and selling price stay the same.",
     )
     discount = fields.Float(
         string="Discount (%)",
@@ -131,6 +132,36 @@ class AveaStockReceiveLine(models.Model):
             return 0.0
         return self.product_id.product_tmpl_id._avea_get_cost_ex_tax()
 
+    def _avea_discounted_unit_cost(self):
+        self.ensure_one()
+        return (self.price_unit or 0.0) * (1.0 - (self.discount or 0.0) / 100.0)
+
+    def _avea_is_free_line(self):
+        self.ensure_one()
+        return (
+            self.env["avea.stock.mixin"]._avea_compare_supplier_cost(
+                self._avea_discounted_unit_cost(),
+                0.0,
+            )
+            == 0
+        )
+
+    def _avea_keep_pricing_for_free_lines(self):
+        """Free / FOC lines must not rewrite catalogue cost or retail."""
+        for line in self:
+            if not line.product_id or not line._avea_is_free_line():
+                continue
+            if line.avea_pricing_choice:
+                continue
+            vals = {
+                "avea_pricing_choice": "keep",
+                "avea_update_product_cost": False,
+            }
+            if line._origin:
+                line.with_context(avea_skip_pricing_wizard=True).write(vals)
+            else:
+                line.update(vals)
+
     @api.depends("product_id", "product_id.product_tmpl_id.avea_cost_ex_tax", "price_unit")
     def _compute_avea_cost_differs(self):
         mixin = self.env["avea.stock.mixin"]
@@ -161,17 +192,22 @@ class AveaStockReceiveLine(models.Model):
             line.avea_update_product_cost = False
             line.avea_open_pricing_wizard = False
 
-    @api.onchange("price_unit")
+    @api.onchange("price_unit", "discount")
     def _onchange_price_unit_cost_update(self):
         """Flag a pricing review when receive cost differs from the product cost."""
+        mixin = self.env["avea.stock.mixin"]
         for line in self:
             if not line.product_id:
                 line.avea_pricing_choice = False
                 line.avea_open_pricing_wizard = False
                 continue
+            if line._avea_is_free_line():
+                line.avea_pricing_choice = "keep"
+                line.avea_open_pricing_wizard = False
+                line.avea_update_product_cost = False
+                continue
             current = line._avea_product_cost()
             new_cost = line.price_unit or 0.0
-            mixin = self.env["avea.stock.mixin"]
             if mixin._avea_compare_supplier_cost(new_cost, current) == 0:
                 line.avea_pricing_choice = False
                 line.avea_open_pricing_wizard = False
@@ -186,12 +222,17 @@ class AveaStockReceiveLine(models.Model):
         res = super().write(vals)
         if self.env.context.get("avea_skip_pricing_wizard"):
             return res
-        if "price_unit" in vals:
+        if "price_unit" in vals or "discount" in vals:
             mixin = self.env["avea.stock.mixin"]
             for line in self:
+                if not line.product_id:
+                    continue
+                if line._avea_is_free_line():
+                    if not line.avea_pricing_choice:
+                        line.avea_pricing_choice = "keep"
+                    continue
                 if (
-                    line.product_id
-                    and mixin._avea_compare_supplier_cost(
+                    mixin._avea_compare_supplier_cost(
                         line.price_unit,
                         line._avea_product_cost(),
                     )
@@ -1353,6 +1394,7 @@ class AveaStockReceive(models.Model):
             return self._avea_confirmation_action()
         partner = self._avea_ensure_supplier()
         self._avea_check_receive(partner)
+        self.line_ids._avea_keep_pricing_for_free_lines()
         mixin = self.env["avea.stock.mixin"]
         pending = self.line_ids.filtered(
             lambda line: line.product_id
@@ -1461,13 +1503,13 @@ class AveaStockReceive(models.Model):
                     _("Discount for %(product)s must be between 0 and 100%.",
                       product=line.product_id.display_name)
                 )
-            discounted = (line.price_unit or 0.0) * (1.0 - (line.discount or 0.0) / 100.0)
-            if mixin._avea_compare_supplier_cost(line.price_unit, 0.0) <= 0 or (
-                mixin._avea_compare_supplier_cost(discounted, 0.0) <= 0
+            discounted = line._avea_discounted_unit_cost()
+            if mixin._avea_compare_supplier_cost(line.price_unit, 0.0) < 0 or (
+                mixin._avea_compare_supplier_cost(discounted, 0.0) < 0
             ):
                 raise ValidationError(
                     _(
-                        "Cost for %(product)s must be greater than zero.",
+                        "Cost for %(product)s cannot be negative.",
                         product=line.product_id.display_name,
                     )
                 )

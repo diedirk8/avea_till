@@ -7,7 +7,7 @@ from odoo.tests.common import TransactionCase
 
 @tagged("post_install", "-at_install", "avea_stock")
 class TestAveaStockReceiveGuards(TransactionCase):
-    """Receive Stock must refuse duplicate invoices, total mismatches, and zero cost."""
+    """Receive Stock must refuse duplicate invoices, total mismatches, and negative cost."""
 
     @classmethod
     def setUpClass(cls):
@@ -67,7 +67,7 @@ class TestAveaStockReceiveGuards(TransactionCase):
         values.update(vals)
         return self.env["avea.stock.receive"].create(values)
 
-    def test_zero_cost_is_rejected(self):
+    def test_zero_cost_free_product_is_allowed(self):
         receive = self._create_receive(
             line_ids=[
                 Command.create(
@@ -75,16 +75,15 @@ class TestAveaStockReceiveGuards(TransactionCase):
                         "product_id": self.product.id,
                         "quantity": 1.0,
                         "price_unit": 0.0,
-                        "avea_pricing_choice": "keep",
                     }
                 )
             ]
         )
-        with self.assertRaises(ValidationError) as error:
-            receive._avea_check_receive(self.partner)
-        self.assertIn("greater than zero", str(error.exception))
+        receive._avea_check_receive(self.partner)
+        receive.line_ids._avea_keep_pricing_for_free_lines()
+        self.assertEqual(receive.line_ids.avea_pricing_choice, "keep")
 
-    def test_full_discount_zero_cost_is_rejected(self):
+    def test_full_discount_free_product_is_allowed(self):
         receive = self._create_receive(
             line_ids=[
                 Command.create(
@@ -93,6 +92,22 @@ class TestAveaStockReceiveGuards(TransactionCase):
                         "quantity": 1.0,
                         "price_unit": 10.0,
                         "discount": 100.0,
+                    }
+                )
+            ]
+        )
+        receive._avea_check_receive(self.partner)
+        receive.line_ids._avea_keep_pricing_for_free_lines()
+        self.assertEqual(receive.line_ids.avea_pricing_choice, "keep")
+
+    def test_negative_cost_is_rejected(self):
+        receive = self._create_receive(
+            line_ids=[
+                Command.create(
+                    {
+                        "product_id": self.product.id,
+                        "quantity": 1.0,
+                        "price_unit": -1.0,
                         "avea_pricing_choice": "keep",
                     }
                 )
@@ -100,7 +115,7 @@ class TestAveaStockReceiveGuards(TransactionCase):
         )
         with self.assertRaises(ValidationError) as error:
             receive._avea_check_receive(self.partner)
-        self.assertIn("greater than zero", str(error.exception))
+        self.assertIn("cannot be negative", str(error.exception))
 
     def test_invoice_total_mismatch_blocks_receive(self):
         receive = self._create_receive(invoice_total=1.0)
@@ -141,4 +156,4 @@ class TestAveaStockReceiveGuards(TransactionCase):
         wizard.new_cost = 0.0
         with self.assertRaises(UserError) as error:
             wizard.action_update_cost_only()
-        self.assertIn("greater than zero", str(error.exception))
+        self.assertIn("Keep current pricing", str(error.exception))

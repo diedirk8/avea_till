@@ -196,3 +196,39 @@ class TestAveaStockReceivePricing(TransactionCase):
         self.product.invalidate_recordset()
         self.assertAlmostEqual(self.template.avea_cost_ex_tax, 100.0, places=4)
         self.assertNotAlmostEqual(self.product.standard_price, 100.0, places=2)
+
+    def test_free_product_receive_keeps_catalog_cost(self):
+        location = self.env.ref("stock.stock_location_stock")
+        qty_before = self.product.with_context(location=location.id).qty_available
+        receive = self.env["avea.stock.receive"].create(
+            {
+                "partner_id": self.partner.id,
+                "invoice_number": "FREE-TEST-001",
+                "invoice_date": fields.Date.today(),
+                "received_date": fields.Date.today(),
+                "company_id": self.company.id,
+                "currency_id": self.currency.id,
+                "mark_as_paid": False,
+                "line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 3.0,
+                            "price_unit": 0.0,
+                        }
+                    )
+                ],
+            }
+        )
+        receive.action_receive_stock()
+
+        self.product.invalidate_recordset()
+        self.template.invalidate_recordset()
+        self.assertEqual(receive.state, "done")
+        self.assertEqual(receive.line_ids.avea_pricing_choice, "keep")
+        self.assertAlmostEqual(self.template.avea_cost_ex_tax, 100.0, places=4)
+        self.assertAlmostEqual(
+            self.product.with_context(location=location.id).qty_available,
+            qty_before + 3.0,
+            places=2,
+        )

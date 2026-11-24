@@ -235,6 +235,7 @@
                                 </div>
                                 <p class="o_avea_stock_products_cost_hint">
                                     If the EX-tax cost differs from the product cost, use Pricing to keep or update cost and retail.
+                                    Type 0 for a free product — the usual cost and selling price stay the same.
                                 </p>
                             </div>
                         </div>
