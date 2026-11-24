@@ -53,5 +53,15 @@ if [[ "$DEV_CSS_MD5" != "$PROD_CSS_MD5" ]]; then
   echo "error: DEV and PROD web.assets_web.min.css blobs differ (run avea_sync_prod_assets_from_dev.sh)." >&2
   exit 1
 fi
+for key in avea_employee_list avea_employee_pay_list; do
+  DEV_HITS=$(docker exec "$DEV_CONTAINER" grep -c "$key" "$DEV_JS_PATH" || true)
+  PROD_HITS=$(docker exec "$PROD_CONTAINER" grep -c "$key" "$PROD_JS_PATH" || true)
+  echo "dev $key count=$DEV_HITS"
+  echo "prod $key count=$PROD_HITS"
+  if [[ "$DEV_HITS" -lt 1 || "$PROD_HITS" -lt 1 ]]; then
+    echo "error: compiled web.assets_web.min.js is missing views-registry key $key" >&2
+    exit 1
+  fi
+done
 echo "ok: DEV and PROD JS/CSS blobs match."
 EOF

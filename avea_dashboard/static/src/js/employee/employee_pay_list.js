@@ -184,7 +184,11 @@ export class AveaEmployeePayListController extends ListController {
     }
 }
 
-registry.category("views").add("avea_employee_pay_list", {
-    ...listView,
-    Controller: AveaEmployeePayListController,
-});
+registry.category("views").add(
+    "avea_employee_pay_list",
+    {
+        ...listView,
+        Controller: AveaEmployeePayListController,
+    },
+    { force: true }
+);

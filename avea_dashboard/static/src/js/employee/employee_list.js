@@ -207,7 +207,11 @@ export class AveaEmployeeListController extends ListController {
     }
 }
 
-registry.category("views").add("avea_employee_list", {
-    ...listView,
-    Controller: AveaEmployeeListController,
-});
+registry.category("views").add(
+    "avea_employee_list",
+    {
+        ...listView,
+        Controller: AveaEmployeeListController,
+    },
+    { force: true }
+);

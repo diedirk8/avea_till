@@ -216,6 +216,21 @@ class TestAveaEmployeeCentre(TestPoSCommon):
         self.assertEqual(action["res_model"], "account.bank.statement.line")
         self.assertTrue(action.get("domain"))
 
+    def test_employee_js_classes_are_in_web_assets(self):
+        paths = self.env["ir.asset"]._get_asset_paths("web.assets_web", {})
+        joined = "\n".join(
+            "/".join(str(part) for part in item)
+            if isinstance(item, (list, tuple))
+            else str(item)
+            for item in paths
+        )
+        self.assertIn("employee_list.js", joined)
+        self.assertIn("employee_pay_list.js", joined)
+        pay_arch = self.env.ref("avea_till.view_avea_employee_pay_list").arch or ""
+        self.assertIn('js_class="avea_employee_pay_list"', pay_arch)
+        list_arch = self.env.ref("avea_till.view_avea_employee_list").arch or ""
+        self.assertIn('js_class="avea_employee_list"', list_arch)
+
     def test_record_salary_action_prefills_employee(self):
         employee = self.env["res.partner"].create(
             {"name": "Prefill Staff", "avea_is_employee": True, "is_company": False}
