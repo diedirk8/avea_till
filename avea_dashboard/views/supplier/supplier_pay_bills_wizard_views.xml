@@ -170,7 +170,7 @@
                                 · On supplier:
                                 <field name="amount_on_account" nolabel="1" widget="monetary" readonly="1" class="oe_inline"/>
                             </span>
-                        </motion.div>
+                        </div>
                     </section>
                     <footer class="o_avea_stock_footer o_avea_pay_bills_footer">
                         <button string="Cancel" special="cancel" class="btn-secondary"/>
