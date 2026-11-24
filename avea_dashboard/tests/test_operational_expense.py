@@ -39,3 +39,10 @@ class TestAveaOperationalExpense(TransactionCase):
         self.assertEqual(display_name, partner.display_name)
         self.assertEqual(partner.name, "Expense Wizard Supplier")
         self.assertGreaterEqual(partner.supplier_rank, 1)
+
+    def test_name_search_accepts_odoo19_domain_keyword(self):
+        Partner = self.env["res.partner"].with_context(
+            avea_operational_expense_supplier=True
+        )
+        results = Partner.name_search("Expense", domain=[], operator="ilike", limit=8)
+        self.assertIsInstance(results, list)

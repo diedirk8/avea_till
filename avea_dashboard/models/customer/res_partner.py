@@ -438,11 +438,15 @@ class ResPartner(models.Model):
         return action
 
     @api.model
-    def name_search(self, name="", args=None, operator="ilike", limit=100):
-        args = list(args or [])
-        if self.env.context.get("avea_operational_expense_supplier"):
-            args.append(("supplier_rank", ">", 0))
-        return super().name_search(name, args, operator, limit)
+    def name_search(self, name="", args=None, operator="ilike", limit=100, domain=None):
+        search_domain = list(domain if domain is not None else (args or []))
+        if self.env.context.get("avea_operational_expense_supplier") and not self.env.context.get(
+            "avea_expense_payee_person"
+        ):
+            search_domain.append(("supplier_rank", ">", 0))
+        return super().name_search(
+            name, search_domain, operator=operator, limit=limit
+        )
 
     @api.model
     def name_create(self, name):

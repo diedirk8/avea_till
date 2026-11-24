@@ -33,7 +33,7 @@
                             widget="avea_expense_supplier_many2one"
                             placeholder="Search payee"
                             options="{'no_open': True, 'no_create_edit': True}"
-                            context="{'res_partner_search_mode': 'supplier', 'avea_operational_expense_supplier': 1, 'default_supplier_rank': 1, 'default_is_company': True}"
+                            context="{'res_partner_search_mode': 'supplier', 'avea_operational_expense_supplier': 1, 'avea_expense_payee_person': booking_partner_role == 'employee', 'default_supplier_rank': 1, 'default_is_company': booking_partner_role != 'employee'}"
                         />
                         <field name="expense_date"/>
                         <field
