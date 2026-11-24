@@ -344,9 +344,8 @@ class AveaWithdrawCashWizard(models.TransientModel):
 
     def _avea_purpose_label(self):
         self.ensure_one()
-        return dict(self._fields["withdrawal_purpose"].selection).get(
-            self.withdrawal_purpose, ""
-        )
+        selection = self._fields["withdrawal_purpose"]._description_selection(self.env)
+        return dict(selection).get(self.withdrawal_purpose) or ""
 
     def _avea_payment_reference(self):
         self.ensure_one()

@@ -355,7 +355,10 @@ class AveaOperationalExpenseWizard(models.TransientModel):
                 "Recorded from Avea. Paid from %(journal)s to %(name)s (%(kind)s).",
                 journal=self.paid_from_journal_id.display_name,
                 name=self.partner_id.display_name,
-                kind=dict(self._fields["what_for"].selection).get(self.what_for),
+                kind=dict(
+                    self._fields["what_for"]._description_selection(self.env)
+                ).get(self.what_for)
+                or "",
             ),
         )
 

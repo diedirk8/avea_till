@@ -221,6 +221,20 @@ class TestAveaWithdrawCash(TransactionCase):
         action = self.Wizard.action_open_wizard()
         self.assertEqual(str(action["name"]), "Withdraw")
 
+    def test_purpose_label_works_with_method_selection(self):
+        wizard = self._create_wizard(withdrawal_purpose="owner_drawing")
+        self.assertEqual(wizard._avea_purpose_label(), "Owner / director")
+        salary = self._create_wizard(
+            withdrawal_purpose="salary_wages",
+            employee_id=self.employee.id,
+        )
+        self.assertEqual(salary._avea_purpose_label(), "Salary / Wages")
+        advance = self._create_wizard(
+            withdrawal_purpose="staff_advance",
+            employee_id=self.employee.id,
+        )
+        self.assertEqual(advance._avea_purpose_label(), "Staff Advance")
+
     def test_amount_must_be_positive(self):
         with self.assertRaises(ValidationError):
             self._create_wizard(amount=0.0)
