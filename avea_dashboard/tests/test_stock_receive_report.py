@@ -232,6 +232,23 @@ class TestAveaStockReceiveReport(TransactionCase):
         self.assertAlmostEqual(values["catalog_cost"], 247.39, places=4)
         self.assertAlmostEqual(values["cost"], 247.39 * 0.95, places=4)
 
+    def test_report_hides_identical_displayed_cost_as_price_change(self):
+        self.product.product_tmpl_id.avea_cost_ex_tax = 125.51
+        line = self._create_receive(
+            cost=125.51,
+            qty=2.0,
+            extra={"invoice_number": "IO-REPORT-NEXGARD"},
+        ).line_ids
+        line.write({"avea_pricing_choice": "cost_only"})
+        line.receive_id.action_receive_stock()
+        html, _report_type = self.env["ir.actions.report"]._render_qweb_html(
+            "avea_till.report_avea_stock_receive_document", line.receive_id.ids
+        )
+        self.assertNotIn(b"Buying cost updates", html)
+        self.assertNotIn(b"Price changes", html)
+        payload = line.receive_id.get_stock_receive_report_payload()
+        self.assertFalse(payload["price_changes"])
+
     def test_report_mentions_unmatched_and_total_mismatch(self):
         receive = self._create_receive(
             extra={

@@ -134,6 +134,14 @@ class AveaStockReceiveLine(models.Model):
             return 0.0
         return self.product_id.product_tmpl_id._avea_get_cost_ex_tax()
 
+    def _avea_typed_cost_matches_catalogue(self):
+        """True when the typed EX-tax unit cost is within 1c of catalogue cost."""
+        self.ensure_one()
+        return self.env["avea.stock.mixin"]._avea_amounts_within_cent(
+            self.price_unit or 0.0,
+            self._avea_product_cost(),
+        )
+
     def _avea_discounted_unit_cost(self):
         self.ensure_one()
         return (self.price_unit or 0.0) * (1.0 - (self.discount or 0.0) / 100.0)
@@ -166,18 +174,11 @@ class AveaStockReceiveLine(models.Model):
 
     @api.depends("product_id", "product_id.product_tmpl_id.avea_cost_ex_tax", "price_unit")
     def _compute_avea_cost_differs(self):
-        mixin = self.env["avea.stock.mixin"]
         for line in self:
             if not line.product_id:
                 line.avea_cost_differs = False
                 continue
-            line.avea_cost_differs = (
-                mixin._avea_compare_supplier_cost(
-                    line.price_unit,
-                    line._avea_product_cost(),
-                )
-                != 0
-            )
+            line.avea_cost_differs = not line._avea_typed_cost_matches_catalogue()
 
     @api.onchange("product_id")
     def _onchange_product_id(self):
@@ -213,7 +214,7 @@ class AveaStockReceiveLine(models.Model):
                 continue
             current = line._avea_product_cost()
             new_cost = line.price_unit or 0.0
-            if mixin._avea_compare_supplier_cost(new_cost, current) == 0:
+            if mixin._avea_amounts_within_cent(new_cost, current):
                 line.avea_open_pricing_wizard = False
                 line.avea_update_product_cost = False
                 if line.avea_pricing_choice == "cost_only":
@@ -222,12 +223,9 @@ class AveaStockReceiveLine(models.Model):
             origin = line._origin
             typed_cost_changed = True
             if origin:
-                typed_cost_changed = (
-                    mixin._avea_compare_supplier_cost(
-                        origin.price_unit or 0.0,
-                        new_cost,
-                    )
-                    != 0
+                typed_cost_changed = not mixin._avea_amounts_within_cent(
+                    origin.price_unit or 0.0,
+                    new_cost,
                 )
             if not typed_cost_changed:
                 line.avea_open_pricing_wizard = False
@@ -243,7 +241,6 @@ class AveaStockReceiveLine(models.Model):
             return res
         if "price_unit" not in vals and "discount" not in vals:
             return res
-        mixin = self.env["avea.stock.mixin"]
         for line in self:
             if not line.product_id:
                 continue
@@ -254,11 +251,7 @@ class AveaStockReceiveLine(models.Model):
             if "price_unit" not in vals:
                 continue
             if (
-                mixin._avea_compare_supplier_cost(
-                    line.price_unit,
-                    line._avea_product_cost(),
-                )
-                != 0
+                not line._avea_typed_cost_matches_catalogue()
                 and not line.avea_pricing_choice
             ):
                 # Persisted signal for the receive form JS to open the popup.
@@ -871,7 +864,9 @@ class AveaStockReceive(models.Model):
                 continue
             difference = currency.round(receive.amount_total - receive.invoice_total)
             receive.invoice_difference = difference
-            receive.totals_mismatch = not currency.is_zero(difference)
+            receive.totals_mismatch = not self.env[
+                "avea.stock.mixin"
+            ]._avea_amounts_within_cent(receive.amount_total, receive.invoice_total)
 
     @api.model
     def default_get(self, fields_list):
@@ -1420,11 +1415,7 @@ class AveaStockReceive(models.Model):
         mixin = self.env["avea.stock.mixin"]
         pending = self.line_ids.filtered(
             lambda line: line.product_id
-            and mixin._avea_compare_supplier_cost(
-                line.price_unit,
-                line._avea_product_cost(),
-            )
-            != 0
+            and not line._avea_typed_cost_matches_catalogue()
             and not line.avea_pricing_choice
         )
         if pending:

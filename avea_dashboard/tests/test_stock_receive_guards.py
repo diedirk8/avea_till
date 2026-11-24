@@ -130,6 +130,12 @@ class TestAveaStockReceiveGuards(TransactionCase):
         self.assertFalse(receive.totals_mismatch)
         receive._avea_check_receive(self.partner)
 
+    def test_one_cent_invoice_total_difference_is_allowed(self):
+        receive = self._create_receive()
+        receive.invoice_total = receive.amount_total - 0.01
+        self.assertFalse(receive.totals_mismatch)
+        receive._avea_check_receive(self.partner)
+
     def test_duplicate_invoice_number_for_same_supplier_is_rejected(self):
         self._create_receive(state="done", invoice_number="INV-DUP-77")
         second = self._create_receive(invoice_number="inv-dup-77")

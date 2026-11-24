@@ -120,12 +120,9 @@ class AveaStockReceiveReport(models.Model):
         for line in self.line_ids.filtered("product_id"):
             if line.avea_pricing_choice != "keep":
                 continue
-            if (
-                mixin._avea_compare_supplier_cost(
-                    line.price_unit,
-                    line.avea_previous_cost,
-                )
-                != 0
+            if not mixin._avea_amounts_within_cent(
+                line.price_unit,
+                line.avea_previous_cost,
             ):
                 issues.append(
                     _(
@@ -156,12 +153,9 @@ class AveaStockReceiveReport(models.Model):
                 continue
             values = self._avea_receive_report_line_values(line)
             catalog_cost = values["catalog_cost"]
-            cost_changed = (
-                mixin._avea_compare_supplier_cost(
-                    catalog_cost,
-                    line.avea_previous_cost,
-                )
-                != 0
+            cost_changed = not mixin._avea_amounts_within_cent(
+                catalog_cost,
+                line.avea_previous_cost,
             )
             retail_changed = False
             new_retail = values["retail_inc"]

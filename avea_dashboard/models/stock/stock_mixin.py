@@ -53,15 +53,19 @@ class AveaStockMixin(models.AbstractModel):
         )
 
     @api.model
+    def _avea_amounts_within_cent(self, left, right):
+        """True when two EX-tax amounts differ by 1 cent or less.
+
+        Staff should not be prompted for rounding between 4dp supplier cost
+        and 2dp catalogue/currency display (for example R 125.51 → R 125.51).
+        """
+        delta = abs((left or 0.0) - (right or 0.0))
+        return float_compare(delta, 0.01, precision_digits=4) <= 0
+
+    @api.model
     def _avea_supplier_cost_matches_product_cost(self, supplier_cost, product_cost):
-        """True when a 4dp supplier cost equals a 2dp Avea product cost."""
-        return (
-            self._avea_compare_product_cost(supplier_cost, product_cost) == 0
-            or self._avea_compare_product_cost(
-                self._avea_round_supplier_cost(supplier_cost), product_cost
-            )
-            == 0
-        )
+        """True when a receive/supplier cost is the same catalogue cost for staff."""
+        return self._avea_amounts_within_cent(supplier_cost, product_cost)
 
     @api.model
     def _avea_default_stock_location(self, company=None):
