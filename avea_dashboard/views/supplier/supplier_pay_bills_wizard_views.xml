@@ -6,7 +6,7 @@
         <field name="model">avea.supplier.pay.bills.wizard</field>
         <field name="arch" type="xml">
             <form string="New payment" class="o_avea_workspace o_avea_workspace--supplier o_avea_pay_bills_wizard">
-                <sheet class="o_avea_workspace_sheet">
+                <sheet class="o_avea_pay_bills_sheet">
                     <field name="company_id" invisible="1"/>
                     <field name="currency_id" invisible="1"/>
                     <field name="available_journal_ids" invisible="1"/>

@@ -44,7 +44,46 @@
         margin-top: 0.25rem;
     }
 
-    &.o_avea_pay_bills_wizard .o_list_renderer {
-        max-height: 22rem;
+    &.o_avea_pay_bills_wizard {
+        overflow: visible;
+
+        .o_form_sheet_bg {
+            overflow: visible;
+            padding: 0;
+        }
+
+        .o_avea_pay_bills_sheet {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            max-width: none;
+            overflow: visible;
+            padding: 1.25rem 1.75rem 1rem;
+        }
+
+        .o_list_renderer {
+            max-height: 22rem;
+        }
+
+        .o_inner_group {
+            min-width: 0;
+        }
+    }
+}
+
+.modal:has(.o_avea_pay_bills_wizard) {
+    .modal-dialog {
+        margin: 1.5rem auto;
+        max-width: min(56rem, calc(100vw - 3rem));
+        width: calc(100vw - 3rem);
+    }
+
+    .modal-content {
+        overflow: visible;
+    }
+
+    .modal-body {
+        overflow: visible;
+        padding: 0.25rem 0 0;
     }
 }

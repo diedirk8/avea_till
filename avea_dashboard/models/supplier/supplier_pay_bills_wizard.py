@@ -198,25 +198,27 @@ class AveaSupplierPayBillsWizard(models.TransientModel):
             preselect_bill_id=self.env.context.get("default_bill_id"),
         )
 
-    def _avea_applied_total(self, exclude_lines=None):
-        exclude_lines = exclude_lines or self.env["avea.supplier.pay.bills.wizard.line"]
+    def _avea_applied_total(self, exclude_bill_ids=None):
+        exclude_bill_ids = set(exclude_bill_ids or [])
         currency = self.currency_id or self.env.company.currency_id
-        lines = self.line_ids - exclude_lines
         return currency.round(
             sum(
                 (line.amount or 0.0)
-                for line in lines.filtered("pay")
-                if line.currency_id
+                for line in self.line_ids.filtered("pay")
+                if line.bill_id.id not in exclude_bill_ids
+                and line.currency_id
                 and line.currency_id.compare_amounts(line.amount or 0.0, 0.0) > 0
             )
         )
 
-    def _avea_remaining_payment_capacity(self, exclude_lines=None):
+    def _avea_remaining_payment_capacity(self, exclude_bill_ids=None):
         currency = self.currency_id or self.env.company.currency_id
         payment = currency.round(self.payment_amount or 0.0)
         if currency.compare_amounts(payment, 0.0) <= 0:
             return None
-        return currency.round(max(payment - self._avea_applied_total(exclude_lines), 0.0))
+        return currency.round(
+            max(payment - self._avea_applied_total(exclude_bill_ids), 0.0)
+        )
 
     def action_allocate_oldest_first(self):
         self.ensure_one()
@@ -379,26 +381,22 @@ class AveaSupplierPayBillsWizardLine(models.TransientModel):
     @api.onchange("pay")
     def _onchange_pay(self):
         wizard = self.wizard_id
-        currency = wizard.currency_id or wizard.env.company.currency_id
         for line in self:
             if not line.pay:
                 line.amount = 0.0
                 continue
             if line.currency_id and line.currency_id.is_zero(line.amount or 0.0):
                 due = line.amount_due or 0.0
-                if currency.compare_amounts(wizard.payment_amount or 0.0, 0.0) > 0:
-                    cap = wizard._avea_remaining_payment_capacity(
-                        exclude_lines=wizard.line_ids - line
-                    )
-                    if cap is not None:
-                        due = min(due, cap)
+                cap = wizard._avea_remaining_payment_capacity(
+                    exclude_bill_ids=line.bill_id.ids
+                )
+                if cap is not None:
+                    due = min(due, cap)
                 line.amount = due
         self._avea_clear_leftover_choice()
 
     @api.onchange("amount")
     def _onchange_amount(self):
-        wizard = self.wizard_id
-        currency = wizard.currency_id or wizard.env.company.currency_id
         for line in self:
             if not line.currency_id:
                 continue
@@ -410,13 +408,4 @@ class AveaSupplierPayBillsWizardLine(models.TransientModel):
                     line.amount = line.amount_due
             elif line.currency_id.is_zero(line.amount or 0.0):
                 line.pay = False
-            if currency.compare_amounts(wizard.payment_amount or 0.0, 0.0) > 0:
-                cap = wizard._avea_remaining_payment_capacity(
-                    exclude_lines=wizard.line_ids - line
-                )
-                if (
-                    cap is not None
-                    and line.currency_id.compare_amounts(line.amount or 0.0, cap) > 0
-                ):
-                    line.amount = cap
         self._avea_clear_leftover_choice()
