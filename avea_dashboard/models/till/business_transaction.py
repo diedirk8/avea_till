@@ -27,7 +27,7 @@ class AveaBusinessTransaction(models.Model):
             ("expense", "Expense"),
             ("supplier_payment", "Supplier Payment"),
             ("customer_payment", "Customer Payment"),
-            ("cash_withdrawal", "Cash Withdrawal"),
+            ("cash_withdrawal", "Withdrawal"),
             ("cash_transfer", "Cash Transfer"),
             ("cash_up", "Cash Up"),
             ("store_credit", "Store Credit"),

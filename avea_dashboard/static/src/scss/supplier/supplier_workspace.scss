@@ -1,0 +1,289 @@
+.o_avea_workspace--supplier,
+.o_list_view.o_avea_workspace--supplier {
+    --avea-brand: #c45c26;
+    --avea-brand-hover: #a84d1f;
+    --avea-brand-soft: rgba(196, 92, 38, 0.12);
+    --avea-brand-border: rgba(196, 92, 38, 0.35);
+}
+
+.o_list_view.o_avea_bills_list .o_list_table {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+.o_list_view.o_avea_bills_list {
+    th.o_list_button,
+    td.o_list_button {
+        min-width: 5.5rem;
+        width: 5.5rem;
+        white-space: nowrap;
+    }
+
+    td.o_list_button .btn-link {
+        font-weight: 600;
+        padding-inline: 0.25rem;
+        white-space: nowrap;
+    }
+}
+
+.o_form_view.o_avea_workspace--supplier {
+    .o_avea_supplier_open_hint {
+        margin: 0 0 0.65rem;
+        max-width: 40rem;
+    }
+
+    .o_avea_customer_main .o_list_renderer {
+        max-height: 22rem;
+    }
+
+    .o_avea_supplier_outstanding .o_list_renderer {
+        max-height: 28rem;
+    }
+
+    .o_avea_supplier_payment_panel .btn-primary {
+        margin-top: 0.25rem;
+    }
+
+    &.o_avea_pay_bills_wizard {
+        overflow: visible !important;
+
+        .o_form_sheet_bg {
+            background: #f4f5f7;
+            overflow: visible !important;
+            padding: 0 !important;
+        }
+
+        .o_avea_pay_bills_sheet {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            margin: 0;
+            max-width: none;
+            overflow: visible;
+            padding: 1.25rem 1.5rem 1.35rem;
+        }
+
+        .o_avea_pay_bills_card {
+            background: #fff;
+            border: 1px solid var(--o-gray-300, #dee2e6);
+            border-radius: 0.65rem;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+            margin: 0 0 0.85rem;
+            padding: 0.95rem 1.1rem 1.05rem;
+        }
+
+        .o_avea_pay_bills_card_head {
+            align-items: center;
+            color: var(--o-gray-800, #343a40);
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 0.78rem;
+            font-weight: 700;
+            gap: 0.5rem 0.85rem;
+            justify-content: space-between;
+            letter-spacing: 0.04em;
+            margin-bottom: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        .o_avea_pay_bills_fields {
+            display: grid;
+            gap: 0.85rem 1.15rem;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+
+            .o_field_widget,
+            .o_field_widget input,
+            .o_input {
+                background: transparent;
+                border: none;
+                border-bottom: 1px solid var(--o-gray-300, #dee2e6);
+                border-radius: 0;
+                box-shadow: none;
+                font-size: 1rem;
+                font-weight: 500;
+                min-height: 1.85rem;
+                padding: 0.15rem 0;
+                width: 100%;
+            }
+
+            .o_field_monetary {
+                align-items: baseline;
+                display: flex;
+                gap: 0.35rem;
+            }
+        }
+
+        .o_avea_pay_bills_fields_span {
+            grid-column: 1 / -1;
+        }
+
+        .o_avea_pay_bills_stats {
+            display: grid;
+            gap: 0.65rem;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            margin-top: 0.95rem;
+        }
+
+        .o_avea_pay_bills_stat {
+            background: var(--o-gray-100, #f3f4f6);
+            border: 1px solid var(--o-gray-200, #e5e7eb);
+            border-radius: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+            padding: 0.55rem 0.75rem;
+        }
+
+        .o_avea_pay_bills_stat_label {
+            color: var(--o-gray-600, #6b7280);
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .o_avea_pay_bills_stat .o_field_widget {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .o_avea_pay_bills_stat--left {
+            background: var(--avea-brand-soft, rgba(196, 92, 38, 0.1));
+            border-color: var(--avea-brand-border, rgba(196, 92, 38, 0.28));
+        }
+
+        .o_avea_pay_bills_alert {
+            border-radius: 0.5rem;
+            margin: 0 0 0.85rem;
+        }
+
+        .o_avea_pay_bills_card--leftover {
+            background: #fff8f3;
+            border-color: var(--avea-brand-border, rgba(196, 92, 38, 0.35));
+        }
+
+        .o_avea_pay_bills_leftover_amount {
+            margin: 0 0 0.65rem;
+        }
+
+        .o_list_renderer {
+            border: 1px solid var(--o-gray-200, #e5e7eb);
+            border-radius: 0.45rem;
+            max-height: 18rem;
+            overflow: auto;
+        }
+
+        .o_avea_pay_bills_lines .o_list_table {
+            thead th {
+                background: var(--o-gray-100, #f3f4f6);
+                font-size: 0.72rem;
+                font-weight: 700;
+            }
+
+            tbody tr:nth-child(even) td {
+                background: #fafbfc;
+            }
+
+            td.o_data_cell[name="pay"] {
+                text-align: center;
+                width: 3.75rem;
+
+                .o_field_boolean,
+                .form-check,
+                .o-checkbox {
+                    display: flex;
+                    justify-content: center;
+                    margin: 0;
+                }
+
+                input[type="checkbox"],
+                .form-check-input {
+                    accent-color: var(--avea-brand, #c45c26);
+                    background: #fff;
+                    border: 1.5px solid #6b7280;
+                    border-radius: 0.28rem;
+                    cursor: pointer;
+                    flex: 0 0 auto;
+                    height: 1.2rem;
+                    margin: 0;
+                    width: 1.2rem;
+                }
+            }
+
+            td.o_data_cell[name="amount"] {
+                min-width: 8.5rem;
+
+                .o_field_widget,
+                .o_field_monetary,
+                input {
+                    background: #fff;
+                    border: 1px solid #d1d5db;
+                    border-radius: 0.35rem;
+                    box-shadow: none;
+                    font-weight: 700;
+                    min-height: 2rem;
+                    padding: 0.2rem 0.5rem;
+                    text-align: right;
+                    width: 100%;
+                }
+            }
+        }
+
+        footer {
+            background: #fff;
+            border-top: 1px solid var(--o-gray-300, #dee2e6);
+            bottom: 0;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            margin: 0;
+            padding: 0.85rem 1.5rem;
+            position: sticky;
+            z-index: 5;
+
+            .btn-primary {
+                min-width: 10.5rem;
+            }
+        }
+    }
+}
+
+.o_dialog:has(.o_avea_pay_bills_wizard) {
+    .modal-dialog {
+        margin: 1.25rem auto;
+        max-width: 64rem;
+        width: 92%;
+    }
+
+    .modal-content {
+        display: flex;
+        flex-direction: column;
+        max-height: 90vh;
+        overflow: hidden;
+    }
+
+    .modal-header {
+        flex: 0 0 auto;
+        padding: 0.9rem 1.5rem;
+    }
+
+    .modal-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        padding: 0;
+    }
+
+    .modal-footer {
+        background: #fff;
+        border-top: 1px solid var(--o-gray-300, #dee2e6);
+        flex: 0 0 auto;
+        gap: 0.5rem;
+        justify-content: flex-end;
+        padding: 0.85rem 1.5rem;
+    }
+
+    .modal-footer .btn-primary {
+        min-width: 10.5rem;
+    }
+}

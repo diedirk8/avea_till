@@ -1,0 +1,1512 @@
+# -*- coding: utf-8 -*-
+import base64
+
+from odoo import Command
+from odoo.exceptions import UserError
+from odoo.tests import tagged
+from odoo.tests.common import TransactionCase
+
+from odoo.addons.avea_till.models.operations.bank_reconcile_booking_rules import (
+    AveaBankReconcileBookingRules,
+)
+from odoo.addons.avea_till.models.operations.bank_statement_parser import (
+    AveaBankStatementParser,
+)
+from odoo.addons.avea_till.models.operations.merchant_payout_parser import (
+    AveaMerchantPayoutParser,
+)
+
+
+@tagged("post_install", "-at_install", "avea_till")
+class TestAveaBankReconcile(TransactionCase):
+    def test_parse_fnb_style_csv(self):
+        content = """Recreated Statement
+Date,20241001
+Account Number,62812345678
+Opening Balance,1000.00
+Closing Balance,850.00
+Effective Date,Description,Reference,Amount,Balance
+20241002,Supplier payment,INV001,-150.00,850.00
+"""
+        parsed = AveaBankStatementParser.parse("fnb_statement.csv", content.encode())
+        self.assertEqual(parsed["source"], "fnb_csv")
+        self.assertEqual(parsed["account_number"], "62812345678")
+        self.assertEqual(len(parsed["transactions"]), 1)
+        tx = parsed["transactions"][0]
+        self.assertEqual(str(tx["date"]), "2024-10-02")
+        self.assertEqual(tx["amount"], -150.0)
+        self.assertEqual(tx["reference"], "INV001")
+
+    def test_fnb_service_fee_and_card_settlement_names(self):
+        from odoo.addons.avea_till.models.operations.bank_statement_parser import (
+            _clean_fnb_description,
+        )
+
+        fee, original = _clean_fnb_description("09 Jul", -1.07)
+        self.assertEqual(fee, "FNB service fee")
+        self.assertEqual(original, "09 Jul")
+        blank_fee, _blank_ref = _clean_fnb_description("", -349.0, "")
+        self.assertEqual(blank_fee, "FNB service fee")
+        card, _card_ref = _clean_fnb_description("", -94.09, "400568*2514 18 Jul")
+        self.assertEqual(card, "POS purchase")
+        named, _named_ref = _clean_fnb_description("POS Purchase Checkers Sixty60", -1535.22)
+        self.assertEqual(named, "POS Purchase Checkers Sixty60")
+        name, raw = _clean_fnb_description(
+            "Magtape Credit Capitec 0107Possettle 260630",
+            651.57,
+        )
+        self.assertEqual(name, "Capitec card settlement (sales 30 Jun 2026)")
+        self.assertIn("Possettle", raw)
+        yoco, _raw = _clean_fnb_description("Magtape Credit Yoco 9Chxd 010726", 2869.47)
+        self.assertEqual(yoco, "Yoco card settlement (sales 1 Jul 2026)")
+
+    def test_parse_fnb_gold_business_columnar_pdf(self):
+        content = """
+Gold Business Account : 62920038462
+Statement Period : 30 June 2026 to 31 July 2026
+Transactions in RAND (ZAR)
+
+Date
+Description
+Amount
+Balance
+
+01 Jul Payshap Account Off-Us N Mokoena Salary
+01 Jul
+FNB App Payment From Cash
+5,599.41
+1,000.00Cr
+2,307.97Cr
+3,307.97Cr
+"""
+        parsed = AveaBankStatementParser._parse_fnb_pdf_text(content)
+        self.assertGreaterEqual(len(parsed["transactions"]), 2)
+        self.assertEqual(parsed["transactions"][0]["amount"], -5599.41)
+        self.assertEqual(parsed["transactions"][1]["amount"], 1000.0)
+        self.assertEqual(str(parsed["date_from"]), "2026-06-30")
+        self.assertEqual(str(parsed["date_to"]), "2026-07-31")
+
+    def test_parse_fnb_pdf_text(self):
+        content = """
+FIRST NATIONAL BANK
+Statement period: 01 March 2024 to 31 March 2024
+Account Number: 62812345678
+Opening Balance 10 000.00
+Closing Balance 9 850.00
+
+Date Description Amount Balance Accrued Bank Charges
+01 Mar Supplier payment -150.00 9 850.00 0.00
+15 Mar Customer deposit 500.00 10 350.00 0.00
+"""
+        parsed = AveaBankStatementParser._parse_fnb_pdf_text(content)
+        self.assertEqual(parsed["source"], "fnb_pdf")
+        self.assertEqual(len(parsed["transactions"]), 2)
+        self.assertEqual(parsed["transactions"][0]["amount"], -150.0)
+        self.assertEqual(str(parsed["transactions"][0]["date"]), "2024-03-01")
+
+    def test_parse_generic_header_csv(self):
+        content = """Date,Description,Amount
+2024-10-05,Card purchase,-45.50
+2024-10-06,Deposit,200.00
+"""
+        parsed = AveaBankStatementParser.parse("statement.csv", content.encode())
+        self.assertEqual(len(parsed["transactions"]), 2)
+        self.assertEqual(parsed["transactions"][0]["amount"], -45.5)
+
+    def test_match_scores_existing_statement_line(self):
+        journal = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
+            limit=1,
+        )
+        if not journal or not journal.suspense_account_id:
+            return
+        st_line = (
+            self.env["account.bank.statement.line"]
+            .sudo()
+            .with_context(no_retrieve_partner=True)
+            .create(
+                {
+                    "journal_id": journal.id,
+                    "amount": -250.0,
+                    "date": "2026-10-01",
+                    "payment_ref": "FNB TEST PAYMENT",
+                    "counterpart_account_id": journal.suspense_account_id.id,
+                }
+            )
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress"}
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-10-01",
+                "description": "FNB TEST PAYMENT",
+                "reference": "ABC",
+                "amount": -250.0,
+            }
+        )
+        score, hint = line._avea_score_candidate(st_line)
+        self.assertGreaterEqual(score, 70.0)
+        self.assertIn("amount", hint)
+
+    def test_possible_match_near_date(self):
+        journal = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
+            limit=1,
+        )
+        if not journal or not journal.suspense_account_id:
+            return
+        st_line = (
+            self.env["account.bank.statement.line"]
+            .sudo()
+            .with_context(no_retrieve_partner=True)
+            .create(
+                {
+                    "journal_id": journal.id,
+                    "amount": -5599.41,
+                    "date": "2026-07-02",
+                    "payment_ref": "N Mokoena Salary",
+                    "counterpart_account_id": journal.suspense_account_id.id,
+                }
+            )
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress"}
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-07-01",
+                "description": "Payshap N Mokoena Salary",
+                "amount": -5599.41,
+            }
+        )
+        score, _hint = line._avea_score_candidate(st_line)
+        self.assertGreaterEqual(score, 50.0)
+        reconciliation._avea_match_lines()
+        line.invalidate_recordset()
+        self.assertIn(line.match_state, ("matched", "possible"))
+        self.assertTrue(line.book_match_summary)
+
+    def test_booking_suggestion_bank_fee_date_only(self):
+        journal = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
+            limit=1,
+        )
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress"}
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-07-09",
+                "description": "09 Jul",
+                "amount": -1.07,
+            }
+        )
+        self.assertTrue(line.amount_spent_display)
+        self.assertFalse(line.amount_received_display)
+        self.assertFalse(line.is_card_settlement)
+        received = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-07-01",
+                "description": "Capitec card settlement (sales 30 Jun 2026)",
+                "amount": 651.57,
+            }
+        )
+        self.assertFalse(received.amount_spent_display)
+        self.assertTrue(received.amount_received_display)
+        self.assertTrue(received.is_card_settlement)
+        self.assertIn("Settle", received.booking_suggestion or "")
+        self.assertIn("bank charge", (line.booking_suggestion or "").lower())
+        line._avea_apply_booking_suggestion()
+        self.assertEqual(line.import_action, "expense")
+
+    def test_booking_suggestion_fuel_and_salary(self):
+        company = self.env.company
+        currency = company.currency_id
+        fuel = AveaBankReconcileBookingRules.infer(
+            self.env,
+            company=company,
+            description="POS Purchase Engen Garage",
+            reference="",
+            amount=-450.0,
+            bank_date="2026-07-10",
+            currency=currency,
+        )
+        self.assertIn("fuel", fuel["booking_suggestion"].lower())
+        salary = AveaBankReconcileBookingRules.infer(
+            self.env,
+            company=company,
+            description="Payshap N Mokoena Salary",
+            reference="",
+            amount=-5599.41,
+            bank_date="2026-07-01",
+            currency=currency,
+        )
+        self.assertIn("salary", salary["booking_suggestion"].lower())
+        internet_salary = AveaBankReconcileBookingRules.infer(
+            self.env,
+            company=company,
+            description="Internet Pmt To Mokoena, Emily Salar",
+            reference="",
+            amount=-4935.0,
+            bank_date="2026-09-30",
+            currency=currency,
+        )
+        self.assertIn("salary", internet_salary["booking_suggestion"].lower())
+        self.assertEqual(internet_salary["partner_role"], "employee")
+
+    def test_extract_salary_payee_name(self):
+        name = AveaBankReconcileBookingRules._avea_extract_employee_name(
+            "Payshap Account Off-Us N Mokoena Salary"
+        )
+        self.assertEqual(name, "N Mokoena")
+        internet_name = AveaBankReconcileBookingRules._avea_extract_employee_name(
+            "Internet Pmt To Mokoena, Emily Salar"
+        )
+        self.assertEqual(internet_name, "Mokoena, Emily")
+
+    def test_recording_an_expense_teaches_the_next_similar_bank_line(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        account = self.env["account.account"].search(
+            [
+                ("company_ids", "in", self.env.company.id),
+                ("account_type", "in", ("expense", "expense_other")),
+            ],
+            limit=1,
+        )
+        if not account:
+            return
+        partner = self.env["res.partner"].create(
+            {"name": "Google", "supplier_rank": 1}
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress"}
+        )
+        first = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-08-31",
+                "description": "POS Purchase Google Myfitnesspal",
+                "amount": -139.99,
+            }
+        )
+        wizard = self.env["avea.operational.expense.wizard"].create(
+            {
+                "partner_id": partner.id,
+                "expense_account_id": account.id,
+                "description": first.description,
+                "amount": 139.99,
+                "expense_date": "2026-08-31",
+                "paid_from_journal_id": journal.id,
+                "company_id": self.env.company.id,
+                "bank_reconcile_line_id": first.id,
+            }
+        )
+        wizard._avea_remember_bank_booking()
+        later = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-09-30",
+                "description": "POS Purchase Google Myfitnesspal",
+                "amount": -139.99,
+            }
+        )
+        inferred = later._avea_infer_booking()
+        self.assertTrue(inferred["from_memory"])
+        self.assertEqual(inferred["learned_partner_id"], partner.id)
+        self.assertEqual(inferred["suggested_expense_account_id"], account.id)
+        self.assertIn("Same as last time", inferred["booking_suggestion"])
+        self.assertIn("Google", later.work_hint)
+        action = later._avea_open_expense_wizard()
+        self.assertEqual(action["context"]["default_partner_id"], partner.id)
+        self.assertEqual(action["context"]["default_expense_account_id"], account.id)
+
+    def test_expense_wizard_lists_drawings_for_personal_card_spend(self):
+        drawings = self.env["account.account"].search(
+            [
+                ("code", "=", "300070"),
+                ("company_ids", "in", self.env.company.id),
+            ],
+            limit=1,
+        )
+        if not drawings:
+            return
+        wizard = self.env["avea.operational.expense.wizard"].new(
+            {"company_id": self.env.company.id}
+        )
+        self.assertIn(drawings, wizard.available_expense_account_ids)
+
+    def test_parse_statement_csv_and_read_lines(self):
+        journal = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
+            limit=1,
+        )
+        if not journal:
+            return
+        csv_body = """Date,Description,Amount
+2024-10-05,Card purchase,-45.50
+"""
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "draft",
+                "statement_file": base64.b64encode(csv_body.encode()),
+                "statement_filename": "statement.csv",
+            }
+        )
+        reconciliation.action_parse_statement()
+        self.assertEqual(reconciliation.state, "in_progress")
+        self.assertEqual(len(reconciliation.line_ids), 1)
+        data = reconciliation.with_context(
+            avea_bank_reconcile_labels=True
+        ).line_ids.read(["statement_line_id", "book_match_summary"])
+        self.assertEqual(len(data), 1)
+
+    def _bank_journal(self):
+        journal = self.env["account.journal"].search(
+            [("type", "=", "bank"), ("company_id", "=", self.env.company.id)],
+            limit=1,
+        )
+        if not journal or not journal.suspense_account_id:
+            return self.env["account.journal"]
+        return journal
+
+    def _statement_line(self, journal, **vals):
+        values = {
+            "journal_id": journal.id,
+            "amount": -80.0,
+            "date": "2026-07-15",
+            "payment_ref": "AVEA RECON TEST",
+            "counterpart_account_id": journal.suspense_account_id.id,
+        }
+        values.update(vals)
+        return (
+            self.env["account.bank.statement.line"]
+            .sudo()
+            .with_context(no_retrieve_partner=True)
+            .create(values)
+        )
+
+    def test_reversed_or_near_amount_does_not_score(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        st_line = self._statement_line(journal, amount=-250.0, payment_ref="RENT")
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "in_progress", "date_to": "2026-07-31"}
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-07-15",
+                "description": "RENT",
+                "amount": 250.0,
+            }
+        )
+        score, _hint = line._avea_score_candidate(st_line)
+        self.assertEqual(score, 0.0)
+        near = self._statement_line(journal, amount=-249.0, payment_ref="RENT")
+        score, _hint = line._avea_score_candidate(near)
+        self.assertEqual(score, 0.0)
+
+    def test_one_book_entry_matches_only_one_statement_line(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        st_line = self._statement_line(
+            journal, amount=-42.42, date="2026-07-10", payment_ref="ONCE"
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-07-01",
+                "date_to": "2026-07-31",
+            }
+        )
+        for _index in range(2):
+            self.env["avea.bank.reconcile.line"].create(
+                {
+                    "reconciliation_id": reconciliation.id,
+                    "bank_date": "2026-07-10",
+                    "description": "ONCE",
+                    "amount": -42.42,
+                }
+            )
+        reconciliation._avea_match_lines()
+        linked = reconciliation.line_ids.filtered(
+            lambda line: line.statement_line_id == st_line
+        )
+        self.assertEqual(len(linked), 1)
+
+    def test_older_book_entry_is_outstanding_only_when_asked(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        old = self._statement_line(
+            journal, amount=-15.0, date="2098-05-01", payment_ref="OLD CHEQUE"
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2099-07-01",
+                "date_to": "2099-07-31",
+            }
+        )
+        outstanding = reconciliation._avea_outstanding_statement_lines()
+        if reconciliation._avea_has_prior_reconciliation():
+            self.assertIn(old, outstanding)
+        else:
+            self.assertNotIn(old, outstanding)
+            reconciliation.prior_items_outstanding = True
+            self.assertIn(old, reconciliation._avea_outstanding_statement_lines())
+
+    def test_complete_requires_a_zero_difference_and_clears_the_line(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        st_line = self._statement_line(
+            journal,
+            amount=-321.55,
+            date="2099-07-20",
+            payment_ref="CLEAR ME",
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2099-07-01",
+                "date_to": "2099-07-31",
+                "balances_from_file": True,
+                "prior_items_outstanding": True,
+            }
+        )
+        self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2099-07-20",
+                "description": "CLEAR ME",
+                "amount": -321.55,
+            }
+        )
+        reconciliation._avea_match_lines()
+        self.assertEqual(reconciliation.line_ids.match_state, "matched")
+        with self.assertRaises(UserError):
+            reconciliation.action_apply_reconciliation()
+        currency = reconciliation.currency_id
+        reconciliation.closing_balance = reconciliation.adjusted_book_balance
+        reconciliation.opening_balance = currency.round(
+            reconciliation.closing_balance - sum(reconciliation.line_ids.mapped("amount"))
+        )
+        self.assertTrue(currency.is_zero(reconciliation.statement_difference))
+        reconciliation.action_apply_reconciliation()
+        self.assertEqual(reconciliation.state, "done")
+        self.assertTrue(st_line.avea_cleared)
+        self.assertEqual(st_line.avea_cleared_reconciliation_id, reconciliation)
+        again = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2099-08-01",
+                "date_to": "2099-08-31",
+            }
+        )
+        self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": again.id,
+                "bank_date": "2099-07-20",
+                "description": "CLEAR ME",
+                "amount": -321.55,
+            }
+        )
+        again._avea_match_lines()
+        self.assertFalse(again.line_ids.statement_line_id)
+
+    def _reconcile_line(self, journal, amount, description="Allocate test"):
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2099-07-01",
+                "date_to": "2099-07-31",
+            }
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2099-07-18",
+                "description": description,
+                "amount": amount,
+            }
+        )
+        return line
+
+    def test_match_open_vendor_bill(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        partner = self.env["res.partner"].create({"name": "Avea Recon Supplier"})
+        expense = self.env["account.account"].search(
+            [
+                ("account_type", "=", "expense"),
+                ("company_ids", "in", self.env.company.id),
+            ],
+            limit=1,
+        )
+        if not expense:
+            return
+        bill = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": partner.id,
+                "invoice_date": "2099-07-18",
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "name": "Shop supplies",
+                            "account_id": expense.id,
+                            "quantity": 1,
+                            "price_unit": 88.0,
+                            "tax_ids": [Command.clear()],
+                        }
+                    )
+                ],
+            }
+        )
+        bill.action_post()
+        line = self._reconcile_line(journal, -bill.amount_residual, partner.name)
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "match",
+                "move_ids": [Command.set(bill.ids)],
+            }
+        )
+        wizard.action_apply()
+        self.assertEqual(line.match_state, "matched")
+        self.assertTrue(line.statement_line_id)
+        self.assertEqual(bill.payment_state, "paid")
+
+    def test_split_bank_line_across_two_accounts(self):
+        journal = self._bank_journal()
+        if not journal or not journal.suspense_account_id:
+            return
+        accounts = self.env["account.account"].search(
+            [
+                ("account_type", "=", "expense"),
+                ("company_ids", "in", self.env.company.id),
+            ],
+            limit=2,
+        )
+        if len(accounts) < 2:
+            return
+        line = self._reconcile_line(journal, -100.0, "Split payment")
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "split",
+                "split_line_ids": [
+                    Command.create(
+                        {"account_id": accounts[0].id, "name": "Fuel", "amount": 40.0}
+                    ),
+                    Command.create(
+                        {"account_id": accounts[1].id, "name": "Repairs", "amount": 60.0}
+                    ),
+                ],
+            }
+        )
+        wizard.action_apply()
+        self.assertEqual(line.match_state, "matched")
+        move_lines = line.statement_line_id.move_id.line_ids
+        fuel = move_lines.filtered(lambda item: item.account_id == accounts[0])
+        repairs = move_lines.filtered(lambda item: item.account_id == accounts[1])
+        self.assertAlmostEqual(fuel.debit, 40.0, places=2)
+        self.assertAlmostEqual(repairs.debit, 60.0, places=2)
+
+    def test_transfer_between_money_accounts(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        others = self.env.company._avea_transfer_journals() - journal
+        other = others[:1]
+        if not other:
+            return
+        line = self._reconcile_line(journal, -55.0, "Move to cash")
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "transfer",
+                "transfer_journal_id": other.id,
+            }
+        )
+        wizard.action_apply()
+        self.assertEqual(line.match_state, "matched")
+        self.assertEqual(line.statement_line_id.journal_id, journal)
+        self.assertAlmostEqual(line.statement_line_id.amount, -55.0, places=2)
+
+    def test_parse_yoco_csv_skips_sep_and_includes_capital(self):
+        content = """sep=,
+Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,Pocket Savings,State
+2026/08/01 00:01:04,3062.51,99.50,13.00,602.29,0,paid
+2026/09/01 00:01:02,3965.99,81.97,10.70,771.04,0,paid
+"""
+        raw = content.encode()
+        self.assertEqual(AveaMerchantPayoutParser.detect("Yoco-payouts.csv", raw), "yoco")
+        parsed = AveaMerchantPayoutParser.parse("Yoco-payouts.csv", raw)
+        self.assertEqual(parsed["provider"], "yoco")
+        self.assertEqual(len(parsed["payouts"]), 2)
+        first = next(row for row in parsed["payouts"] if str(row["payout_date"]) == "2026-08-01")
+        self.assertEqual(str(first["payout_date"]), "2026-08-01")
+        self.assertAlmostEqual(first["net_amount"], 3062.51)
+        self.assertAlmostEqual(first["fee_amount"], 112.50)
+        self.assertAlmostEqual(first["capital_amount"], 602.29)
+        self.assertAlmostEqual(first["gross_amount"], 3777.30)
+
+    def test_parse_capitec_merchant_statement_text(self):
+        content = """
+Capitec Bank Limited
+Merchant Statement
+PETS EMPIRE
+Statement period 2 Jul 2026 - 1 Aug 2026
+All settlements
+Payout Date Reference Total
+02/07/2026 CAPITEC 0207PosSettle 260701 R2 375.55
+03/07/2026 CAPITEC 0307PosSettle 260702 R2 165.23
+Settlements for card machine transactions: NP531080 Total: R4 598.00
+02/07/2026 CAPITEC 0207PosSettle 260701 R2 399.00
+03/07/2026 CAPITEC 0307PosSettle 260702 R2 199.00
+"""
+        parsed = AveaMerchantPayoutParser._parse_capitec_text(content)
+        self.assertEqual(parsed["provider"], "capitec")
+        self.assertEqual(len(parsed["payouts"]), 2)
+        first = parsed["payouts"][0]
+        self.assertEqual(str(first["payout_date"]), "2026-07-02")
+        self.assertEqual(str(first["trading_date"]), "2026-07-01")
+        self.assertAlmostEqual(first["net_amount"], 2375.55)
+        self.assertAlmostEqual(first["gross_amount"], 2399.00)
+        self.assertAlmostEqual(first["fee_amount"], 23.45)
+        self.assertAlmostEqual(first["capital_amount"], 0.0)
+
+    def test_parse_capitec_columnar_merchant_pdf_text(self):
+        content = """
+Merchant Statement
+Capitec Bank Limited
+All settlements
+Payout Date
+Reference
+02/07/2026
+CAPITEC 0207PosSettle 260701
+03/07/2026
+CAPITEC 0307PosSettle 260702
+Total
+R2 375.55
+R2 165.23
+Settlements for card machine transactions: NP531080 Total: R4 598.00
+02/07/2026
+CAPITEC 0207PosSettle 260701
+03/07/2026
+CAPITEC 0307PosSettle 260702
+R2 399.00
+R2 199.00
+"""
+        parsed = AveaMerchantPayoutParser._parse_capitec_text(content)
+        self.assertEqual(len(parsed["payouts"]), 2)
+        self.assertAlmostEqual(parsed["payouts"][0]["net_amount"], 2375.55)
+        self.assertAlmostEqual(parsed["payouts"][0]["gross_amount"], 2399.00)
+        self.assertAlmostEqual(parsed["payouts"][1]["gross_amount"], 2199.00)
+        self.assertAlmostEqual(sum(row["gross_amount"] for row in parsed["payouts"]), 4598.00)
+
+    def test_parse_capitec_legacy_detail_of_deposits(self):
+        content = """
+Capitec Bank Limited
+Merchant Statement
+PETS EMPIRE
+Statement Period
+02 Sep - 01 Oct 2024
+DETAIL OF DEPOSITS
+Batch Transmission Date
+2024-09-02
+2024-09-03
+Reference Number
+CAPITEC 0209PosSettle 240902
+CAPITEC 0309PosSettle 240903
+Total Deposit Amount
+355.49
+5 584.27
+5 939.76
+A registered credit provider. NCR Reg. No.: NCRCP13
+Batch Total
+359.00
+5 673.00
+"""
+        parsed = AveaMerchantPayoutParser._parse_capitec_text(content)
+        self.assertEqual(len(parsed["payouts"]), 2)
+        first = parsed["payouts"][0]
+        self.assertEqual(str(first["payout_date"]), "2024-09-02")
+        self.assertEqual(str(first["trading_date"]), "2024-09-02")
+        self.assertAlmostEqual(first["net_amount"], 355.49)
+        self.assertAlmostEqual(first["gross_amount"], 359.00)
+        self.assertAlmostEqual(first["fee_amount"], 3.51)
+        self.assertAlmostEqual(parsed["payouts"][1]["net_amount"], 5584.27)
+        self.assertAlmostEqual(parsed["payouts"][1]["gross_amount"], 5673.00)
+
+    def test_parse_capitec_drops_scrambled_gross_column(self):
+        content = """
+Merchant Statement
+Capitec Bank Limited
+All settlements
+02/07/2026 CAPITEC 0207PosSettle 260701 R100.00
+03/07/2026 CAPITEC 0307PosSettle 260702 R200.00
+Settlements for card machine
+02/07/2026 CAPITEC 0207PosSettle 260701 R250.00
+03/07/2026 CAPITEC 0307PosSettle 260702 R50.00
+"""
+        parsed = AveaMerchantPayoutParser._parse_capitec_text(content)
+        self.assertEqual(len(parsed["payouts"]), 2)
+        self.assertAlmostEqual(parsed["payouts"][0]["net_amount"], 100.0)
+        self.assertAlmostEqual(parsed["payouts"][0]["gross_amount"], 100.0)
+        self.assertAlmostEqual(parsed["payouts"][0]["fee_amount"], 0.0)
+        self.assertAlmostEqual(parsed["payouts"][1]["net_amount"], 200.0)
+
+    def test_yoco_file_rejected_as_bank_statement(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        content = """sep=,
+Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
+2026/08/01 00:01:04,3062.51,99.50,13.00,602.29,paid
+"""
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "draft",
+                "statement_file": base64.b64encode(content.encode()),
+                "statement_filename": "Yoco-payouts.csv",
+            }
+        )
+        with self.assertRaises(UserError):
+            reconciliation.action_parse_statement()
+
+    def test_yoco_payout_matches_fnb_line_and_splits_capital(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        card = self.env["pos.payment.method"].search([("name", "ilike", "card")], limit=1)
+        if not card or not card.outstanding_account_id:
+            return
+        fee_account = self.env["account.account"].search(
+            [
+                ("company_ids", "in", self.env.company.id),
+                ("account_type", "=", "expense"),
+            ],
+            limit=1,
+        )
+        loan_account = self.env["account.account"].search(
+            [
+                ("company_ids", "in", self.env.company.id),
+                ("account_type", "=", "liability_current"),
+            ],
+            limit=1,
+        )
+        if not fee_account or not loan_account:
+            return
+        yoco = """sep=,
+Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
+2026/08/01 00:01:04,3062.51,99.50,13.00,602.29,paid
+"""
+        fnb = """Date,Description,Amount
+2026-08-01,Yoco card settlement (sales 1 Aug 2026),3062.51
+"""
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "draft",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "statement_file": base64.b64encode(fnb.encode()),
+                "statement_filename": "statement.csv",
+                "merchant_file_ids": [
+                    Command.create(
+                        {
+                            "datas": base64.b64encode(yoco.encode()),
+                            "filename": "Yoco-payouts.csv",
+                        }
+                    )
+                ],
+            }
+        )
+        reconciliation.action_parse_statement()
+        line = reconciliation.line_ids[:1]
+        self.assertTrue(line.is_card_settlement)
+        self.assertTrue(line.merchant_payout_id)
+        self.assertAlmostEqual(line.merchant_payout_id.gross_amount, 3777.30)
+        self.assertEqual(reconciliation.ready_card_batch_count, 1)
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "settlement",
+                "settlement_gross": line.merchant_payout_id.gross_amount,
+                "settlement_capital": line.merchant_payout_id.capital_amount,
+                "fee_account_id": fee_account.id,
+                "capital_account_id": loan_account.id,
+            }
+        )
+        self.assertAlmostEqual(wizard.settlement_fee, 112.50)
+        wizard.action_apply()
+        move_lines = line.statement_line_id.move_id.line_ids
+        self.assertAlmostEqual(
+            sum(move_lines.filtered(lambda aml: aml.account_id == fee_account).mapped("debit")),
+            112.50,
+            places=2,
+        )
+        self.assertAlmostEqual(
+            sum(move_lines.filtered(lambda aml: aml.account_id == loan_account).mapped("debit")),
+            602.29,
+            places=2,
+        )
+        outstanding = card.outstanding_account_id
+        self.assertAlmostEqual(
+            sum(move_lines.filtered(lambda aml: aml.account_id == outstanding).mapped("credit")),
+            3777.30,
+            places=2,
+        )
+
+    def test_yoco_file_can_be_added_after_the_statement_is_loaded(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        fnb = """Date,Description,Amount
+2026-08-01,Yoco card settlement (sales 1 Aug 2026),3062.51
+"""
+        yoco = """sep=,
+Date,Amount,Fee amount,Fee VAT amount,Capital Repayment,State
+2026/08/01 00:01:04,3062.51,99.50,13.00,602.29,paid
+"""
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "draft",
+                "statement_file": base64.b64encode(fnb.encode()),
+                "statement_filename": "statement.csv",
+            }
+        )
+        reconciliation.action_parse_statement()
+        self.assertFalse(reconciliation.merchant_payout_ids)
+        self.env["avea.bank.reconcile.merchant.file"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "datas": base64.b64encode(yoco.encode()),
+                "filename": "Yoco-payouts.csv",
+            }
+        )
+        self.assertTrue(reconciliation.merchant_payout_ids)
+        self.assertEqual(reconciliation.line_ids[:1].merchant_payout_id, reconciliation.merchant_payout_ids[:1])
+
+    def test_statement_dates_are_editable_and_refresh_card_period(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "line_filter": "needs_work",
+            }
+        )
+        payout = self.env["avea.bank.reconcile.merchant.payout"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "provider": "yoco",
+                "payout_date": "2026-08-15",
+                "net_amount": 100.0,
+                "gross_amount": 110.0,
+                "fee_amount": 10.0,
+                "capital_amount": 0.0,
+                "on_this_statement": True,
+            }
+        )
+        reconciliation.write({"date_from": "2026-09-01", "date_to": "2026-09-30"})
+        self.assertFalse(payout.on_this_statement)
+        reconciliation.write({"date_from": "2026-08-01", "date_to": "2026-08-31"})
+        self.assertTrue(payout.on_this_statement)
+
+    def test_work_filter_hides_matched_lines_and_ranks_unmatched_first(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+            }
+        )
+        unmatched = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-08-10",
+                "description": "Unmatched rent",
+                "amount": -50.0,
+                "match_state": "unmatched",
+                "sequence": 20,
+            }
+        )
+        matched = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2026-08-01",
+                "description": "Already done",
+                "amount": -10.0,
+                "match_state": "matched",
+                "sequence": 10,
+            }
+        )
+        self.assertEqual(reconciliation.work_remaining_count, 1)
+        self.assertEqual(reconciliation.line_filter, "needs_work")
+        self.assertEqual(reconciliation.display_line_ids, unmatched)
+        self.assertIn("Record", unmatched.work_hint)
+        reconciliation.line_filter = "all"
+        self.assertEqual(reconciliation.display_line_ids, unmatched | matched)
+        self.assertLess(unmatched.match_work_rank, matched.match_work_rank)
+        self.assertEqual(reconciliation.next_step_kind, "work_lines")
+
+    def test_draft_guidance_asks_for_the_statement_file(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "draft"}
+        )
+        self.assertEqual(reconciliation.next_step_kind, "upload")
+        self.assertFalse(reconciliation.can_complete)
+        reconciliation.statement_filename = "fnb.pdf"
+        reconciliation.statement_file = base64.b64encode(b"placeholder")
+        self.assertEqual(reconciliation.next_step_kind, "load")
+
+    def test_reconciliation_form_keeps_the_statement_table_on_the_page(self):
+        view = self.env.ref("avea_till.view_avea_bank_reconciliation_form")
+        arch = view.arch_db or ""
+        self.assertIn("display_line_ids", arch)
+        self.assertIn("o_avea_bank_reconcile_wizard", arch)
+        self.assertIn('js_class="avea_bank_reconciliation_form"', arch)
+        self.assertIn("Bank statement", arch)
+        self.assertIn("Yoco CSV or Capitec PDF", arch)
+        self.assertIn("even after the FNB", arch)
+        journal = self._bank_journal()
+        if not journal:
+            return
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {"journal_id": journal.id, "state": "draft"}
+        )
+        action = reconciliation._avea_action_form()
+        self.assertEqual(action["view_id"], view.id)
+        self.assertEqual(action["views"], [(view.id, "form")])
+
+    def test_new_recon_starts_from_the_last_completed_balances(self):
+        Recon = self.env["avea.bank.reconciliation"]
+        journal = Recon._avea_default_bank_journal()
+        if not journal:
+            return
+        last = Recon.create(
+            {
+                "journal_id": journal.id,
+                "state": "done",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "opening_balance": 7584.04,
+                "closing_balance": 9873.06,
+                "balances_from_file": True,
+            }
+        )
+        next_id = Recon.action_create_draft()
+        nxt = Recon.browse(next_id)
+        self.assertEqual(nxt.journal_id, journal)
+        self.assertEqual(nxt.state, "draft")
+        self.assertAlmostEqual(nxt.opening_balance, 9873.06, places=2)
+        self.assertEqual(str(nxt.date_from), "2026-09-01")
+        self.assertTrue(nxt.has_previous_statement)
+        self.assertAlmostEqual(nxt.previous_closing_balance, 9873.06, places=2)
+        self.assertEqual(nxt._avea_previous_reconciliation(), last)
+        self.assertEqual(nxt.next_step_kind, "upload")
+        self.assertIn("Continue from the last statement", nxt.next_step_title)
+        self.assertTrue(nxt.next_step_message)
+        action = Recon.action_new_reconciliation()
+        self.assertEqual(action["res_id"], nxt.id)
+        self.assertEqual(Recon.action_create_draft(), nxt.id)
+
+    def test_fnb_statement_may_start_on_the_previous_closing_day(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        prior = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "done",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "opening_balance": 7584.04,
+                "closing_balance": 9873.06,
+                "balances_from_file": True,
+            }
+        )
+        nxt = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-31",
+                "date_to": "2026-09-30",
+                "opening_balance": 9000.0,
+                "closing_balance": 12126.94,
+                "balances_from_file": True,
+            }
+        )
+        self.env["avea.bank.reconcile.line"].create(
+            [
+                {
+                    "reconciliation_id": nxt.id,
+                    "bank_date": "2026-08-31",
+                    "description": "Last August settlement",
+                    "amount": 873.06,
+                },
+                {
+                    "reconciliation_id": nxt.id,
+                    "bank_date": "2026-09-01",
+                    "description": "September sale",
+                    "amount": 2253.88,
+                },
+            ]
+        )
+        self.assertEqual(nxt._avea_previous_reconciliation(), prior)
+        self.assertFalse(nxt._avea_overlap_warning())
+        warning = nxt.balance_warning or ""
+        self.assertNotIn("already covers this period", warning)
+        self.assertNotIn("opening balance does not match", warning)
+
+    def test_fnb_opening_may_already_equal_the_previous_close(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "done",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "opening_balance": 7584.04,
+                "closing_balance": 9873.06,
+                "balances_from_file": True,
+            }
+        )
+        nxt = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-31",
+                "date_to": "2026-09-30",
+                "opening_balance": 9873.06,
+                "closing_balance": 9725.07,
+                "balances_from_file": True,
+            }
+        )
+        self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": nxt.id,
+                "bank_date": "2026-08-31",
+                "description": "FNB service fee",
+                "amount": -147.99,
+            }
+        )
+        warning = nxt.balance_warning or ""
+        self.assertNotIn("opening balance does not match", warning)
+        self.assertFalse(nxt._avea_overlap_warning())
+
+    def test_interior_period_overlap_still_warns(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "done",
+                "date_from": "2026-08-01",
+                "date_to": "2026-08-31",
+                "opening_balance": 7584.04,
+                "closing_balance": 9873.06,
+                "balances_from_file": True,
+            }
+        )
+        nxt = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-08-15",
+                "date_to": "2026-09-30",
+                "opening_balance": 8000.0,
+                "closing_balance": 9000.0,
+            }
+        )
+        self.assertTrue(nxt._avea_overlap_warning())
+        self.assertIn("already covers this period", nxt.balance_warning or "")
+
+    def test_brought_forward_fnb_recons_are_idempotent(self):
+        Recon = self.env["avea.bank.reconciliation"]
+        if not Recon._avea_default_bank_journal():
+            return
+        journal = Recon._avea_default_bank_journal()
+        blocker = Recon.create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2026-07-01",
+                "date_to": "2026-07-31",
+            }
+        )
+        first = Recon._avea_ensure_brought_forward_recons(force=True)
+        self.assertEqual(len(first), 4)
+        self.assertEqual(blocker.state, "cancelled")
+        self.assertTrue(all(rec.state == "done" and rec.brought_forward for rec in first))
+        august = first.filtered(lambda rec: str(rec.date_to) == "2026-08-31")
+        self.assertAlmostEqual(august.closing_balance, 9873.06, places=2)
+        self.assertFalse(Recon._avea_ensure_brought_forward_recons(force=True))
+        self.assertEqual(len(Recon.search([("brought_forward", "=", True)])), 4)
+
+    def test_recon_views_show_last_statement_and_balances(self):
+        recon_list = self.env.ref("avea_till.view_avea_bank_reconciliation_list").arch_db or ""
+        self.assertIn('name="opening_balance"', recon_list)
+        self.assertIn('name="closing_balance"', recon_list)
+        form = self.env.ref("avea_till.view_avea_bank_reconciliation_form").arch_db or ""
+        self.assertIn("Last completed statement", form)
+        self.assertIn("previous_closing_balance", form)
+
+    def _expense_account(self):
+        return self.env["account.account"].search(
+            [
+                ("account_type", "=", "expense"),
+                ("company_ids", "in", self.env.company.id),
+            ],
+            limit=1,
+        )
+
+    def _create_vendor_bill(self, partner, amount, invoice_date, ref):
+        expense = self._expense_account()
+        if not expense:
+            return self.env["account.move"]
+        bill = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": partner.id,
+                "invoice_date": invoice_date,
+                "ref": ref,
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "name": ref,
+                            "account_id": expense.id,
+                            "quantity": 1,
+                            "price_unit": amount,
+                            "tax_ids": [Command.clear()],
+                        }
+                    )
+                ],
+            }
+        )
+        bill.action_post()
+        return bill
+
+    def test_extract_internet_pmt_payee_name(self):
+        name = AveaBankReconcileBookingRules._avea_extract_merchant_name(
+            "Internet Pmt To Aquarium Depot"
+        )
+        self.assertEqual(name, "Aquarium Depot")
+        akwa = AveaBankReconcileBookingRules._avea_extract_merchant_name(
+            "FNB App Payment To Akwa"
+        )
+        self.assertEqual(akwa, "Akwa")
+
+    def test_cks_style_name_mismatch_unique_amount_auto_matches(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        partner = self.env["res.partner"].create(
+            {"name": "CKS IMPORTS CC", "supplier_rank": 1}
+        )
+        st_line = self._statement_line(
+            journal,
+            amount=-3870.90,
+            date="2097-09-04",
+            payment_ref="80305",
+            partner_id=partner.id,
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2097-09-01",
+                "date_to": "2097-09-30",
+            }
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2097-09-03",
+                "description": "Internet Pmt To Aquarium Depot",
+                "amount": -3870.90,
+            }
+        )
+        score, _hint = line._avea_score_candidate(st_line)
+        self.assertGreaterEqual(score, 50.0)
+        reconciliation._avea_match_lines()
+        line.invalidate_recordset()
+        self.assertEqual(line.statement_line_id, st_line)
+        self.assertEqual(line.match_state, "matched")
+        recalled = AveaBankReconcileBookingRules.recall_payee(
+            self.env,
+            company=self.env.company,
+            description=line.description,
+        )
+        self.assertEqual(recalled, partner)
+
+    def test_later_dated_book_payment_is_in_the_match_pool(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        partner = self.env["res.partner"].create(
+            {"name": "Akwa Later", "supplier_rank": 1}
+        )
+        st_line = self._statement_line(
+            journal,
+            amount=-5028.84,
+            date="2097-10-05",
+            payment_ref="IN370359",
+            partner_id=partner.id,
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2097-09-01",
+                "date_to": "2097-09-30",
+            }
+        )
+        pool = reconciliation._avea_uncleared_book_lines()
+        self.assertIn(st_line, pool)
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2097-09-02",
+                "description": "FNB App Payment To Akwa Later",
+                "amount": -5028.84,
+            }
+        )
+        reconciliation._avea_match_lines()
+        line.invalidate_recordset()
+        self.assertEqual(line.statement_line_id, st_line)
+        self.assertEqual(line.match_state, "matched")
+
+    def test_match_wizard_links_paid_bill_without_double_payment(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        partner = self.env["res.partner"].create(
+            {"name": "CKS Paid Bill", "supplier_rank": 1}
+        )
+        bill = self._create_vendor_bill(partner, 3870.90, "2097-09-04", "80305-PAID")
+        if not bill:
+            return
+        payment = self.env["avea.stock.mixin"]._avea_pay_vendor_bill(
+            bill,
+            journal,
+            partner,
+            self.env.company,
+            "2097-10-05",
+            "80305-PAID",
+        )
+        self.assertEqual(bill.payment_state, "paid")
+        line = self._reconcile_line(journal, -3870.90, "Internet Pmt To Aquarium Depot")
+        line.reconciliation_id.date_from = "2097-09-01"
+        line.reconciliation_id.date_to = "2097-09-30"
+        payment_count = self.env["account.bank.statement.line"].search_count(
+            [("journal_id", "=", journal.id), ("partner_id", "=", partner.id)]
+        )
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "match",
+                "move_ids": [Command.set(bill.ids)],
+            }
+        )
+        self.assertIn(bill, wizard.available_move_ids)
+        wizard.action_apply()
+        self.assertEqual(line.match_state, "matched")
+        self.assertEqual(line.statement_line_id, payment)
+        self.assertEqual(bill.payment_state, "paid")
+        self.assertEqual(
+            self.env["account.bank.statement.line"].search_count(
+                [("journal_id", "=", journal.id), ("partner_id", "=", partner.id)]
+            ),
+            payment_count,
+        )
+
+    def test_two_cent_difference_is_possible_match_with_writeoff(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        partner = self.env["res.partner"].create(
+            {"name": "Akwa", "supplier_rank": 1}
+        )
+        st_line = self._statement_line(
+            journal,
+            amount=-5028.84,
+            date="2097-10-05",
+            payment_ref="IN370359",
+            partner_id=partner.id,
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2097-09-01",
+                "date_to": "2097-09-30",
+            }
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2097-09-02",
+                "description": "FNB App Payment To Akwa",
+                "amount": -5028.86,
+            }
+        )
+        score, hint = line._avea_score_candidate(st_line)
+        self.assertGreaterEqual(score, 60.0)
+        self.assertLess(score, 70.0)
+        self.assertIn("amount close", hint)
+        reconciliation._avea_match_lines()
+        line.invalidate_recordset()
+        self.assertEqual(line.match_state, "possible")
+        self.assertEqual(line.statement_line_id, st_line)
+        line._avea_accept_match()
+        self.assertEqual(line.match_state, "matched")
+        self.assertTrue(line.writeoff_move_id)
+        self.assertAlmostEqual(line.writeoff_amount, -0.02, places=2)
+        self.assertEqual(line.writeoff_move_id.state, "posted")
+
+    def test_work_hint_match_not_record_when_paid_supplier_payment_exists(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        partner = self.env["res.partner"].create(
+            {"name": "Akwa Hint", "supplier_rank": 1}
+        )
+        st_line = self._statement_line(
+            journal,
+            amount=-15235.02,
+            date="2097-10-05",
+            payment_ref="IN370817",
+            partner_id=partner.id,
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2097-09-01",
+                "date_to": "2097-09-30",
+            }
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2097-09-18",
+                "description": "Internet Pmt To Akwa Hint",
+                "amount": -15234.40,
+            }
+        )
+        score, _hint = line._avea_score_candidate(st_line)
+        self.assertEqual(score, 0.0)
+        self.assertTrue(line.has_supplier_payment_counterpart)
+        self.assertIn("Match to the supplier payment", line.work_hint)
+        self.assertNotIn("Record expense", line.work_hint or "")
+        with self.assertRaises(UserError):
+            line.action_open_booking_wizard()
+
+    def test_pos_purchase_keeps_record_when_amount_matches_unrelated_payment(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        other = self.env["res.partner"].create(
+            {"name": "Unrelated Shop", "supplier_rank": 1}
+        )
+        self._statement_line(
+            journal,
+            amount=-40.0,
+            date="2097-09-04",
+            payment_ref="UNRELATED-40",
+            partner_id=other.id,
+        )
+        reconciliation = self.env["avea.bank.reconciliation"].create(
+            {
+                "journal_id": journal.id,
+                "state": "in_progress",
+                "date_from": "2097-09-01",
+                "date_to": "2097-09-30",
+            }
+        )
+        line = self.env["avea.bank.reconcile.line"].create(
+            {
+                "reconciliation_id": reconciliation.id,
+                "bank_date": "2097-09-04",
+                "description": "POS Purchase Ik *Barn Owl On The",
+                "amount": -40.0,
+            }
+        )
+        line.invalidate_recordset()
+        self.assertFalse(line.has_supplier_payment_counterpart)
+        action = line.action_open_booking_wizard()
+        self.assertEqual(action["res_model"], "avea.operational.expense.wizard")
+
+    def test_match_wizard_applies_eft_across_invoice_and_arrears(self):
+        journal = self._bank_journal()
+        if not journal:
+            return
+        partner = self.env["res.partner"].create(
+            {"name": "Minitra Apply", "supplier_rank": 1}
+        )
+        invoice = self._create_vendor_bill(partner, 6691.60, "2097-09-08", "INV0050375")
+        arrears = self._create_vendor_bill(partner, 5000.0, "2097-09-01", "OPEN-ARREARS")
+        if not invoice or not arrears:
+            return
+        line = self._reconcile_line(journal, -8000.0, "Internet Pmt To Minitra Apply")
+        wizard = self.env["avea.bank.reconcile.apply"].create(
+            {
+                "reconcile_line_id": line.id,
+                "mode": "match",
+                "partner_id": partner.id,
+                "allocation_line_ids": [
+                    Command.create(
+                        {"bill_id": invoice.id, "pay": True, "amount": 6691.60}
+                    ),
+                    Command.create(
+                        {"bill_id": arrears.id, "pay": True, "amount": 1308.40}
+                    ),
+                ],
+            }
+        )
+        wizard.action_apply()
+        invoice.invalidate_recordset()
+        arrears.invalidate_recordset()
+        self.assertEqual(line.match_state, "matched")
+        self.assertTrue(invoice.currency_id.is_zero(invoice.amount_residual))
+        self.assertAlmostEqual(arrears.amount_residual, 3691.60, places=2)
+        self.assertAlmostEqual(line.statement_line_id.amount, -8000.0, places=2)

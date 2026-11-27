@@ -27,10 +27,12 @@
                         <field
                             name="from_journal_id"
                             options="{'no_create': True, 'no_open': True}"
+                            placeholder="Choose cash or bank"
                         />
                         <field
                             name="to_journal_id"
                             options="{'no_create': True, 'no_open': True}"
+                            placeholder="Choose cash or bank"
                         />
                         <field name="amount"/>
                     </group>

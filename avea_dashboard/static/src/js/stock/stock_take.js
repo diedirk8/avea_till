@@ -7,6 +7,7 @@ import { useService } from "@web/core/utils/hooks";
 import { debounce } from "@web/core/utils/timing";
 
 const SELECTED_SUMMARY_LIMIT = 8;
+const MATCHED_PAGE_SIZE = 100;
 
 export class AveaStockTakeClientAction extends Component {
     static template = "avea_till.StockTake";
@@ -29,7 +30,8 @@ export class AveaStockTakeClientAction extends Component {
             previewCount: null,
             matchedProducts: [],
             matchedCount: 0,
-            matchedTruncated: false,
+            matchedOffset: 0,
+            matchedHasMore: false,
             productsLoading: false,
             selectedProducts: {},
             showCancelConfirm: false,
@@ -175,6 +177,10 @@ export class AveaStockTakeClientAction extends Component {
         return this.state.form.scope_mode === "partial";
     }
 
+    get isPartialScope() {
+        return this.isPartial || this.stockTake?.scope_mode === "partial";
+    }
+
     get hasPartialFilter() {
         const form = this.state.form;
         return Boolean(
@@ -191,18 +197,33 @@ export class AveaStockTakeClientAction extends Component {
         return this.state.form.manual_product_ids.length;
     }
 
-    get allVisibleSelected() {
-        const visibleIds = this.state.matchedProducts.map((product) => product.id);
+    get allPageSelected() {
+        const pageIds = this.state.matchedProducts.map((product) => product.id);
         return (
-            visibleIds.length > 0 &&
-            visibleIds.every((id) => this.state.form.manual_product_ids.includes(id))
+            pageIds.length > 0 &&
+            pageIds.every((id) => this.state.form.manual_product_ids.includes(id))
         );
     }
 
-    get visibleSelectedCount() {
+    get pageSelectedCount() {
         return this.state.matchedProducts.filter((product) =>
             this.isProductSelected(product.id)
         ).length;
+    }
+
+    get matchedRangeStart() {
+        if (!this.state.matchedCount || !this.state.matchedProducts.length) {
+            return 0;
+        }
+        return this.state.matchedOffset + 1;
+    }
+
+    get matchedRangeEnd() {
+        return this.state.matchedOffset + this.state.matchedProducts.length;
+    }
+
+    get canGoToPreviousResultsPage() {
+        return this.state.matchedOffset > 0;
     }
 
     get selectedProductsList() {
@@ -284,23 +305,33 @@ export class AveaStockTakeClientAction extends Component {
             filter_product_name: this.state.form.filter_product_name,
             filter_sku: this.state.form.filter_sku,
             filter_barcode: this.state.form.filter_barcode,
-            filter_category_id: this.state.form.filter_category_id || false,
-            filter_supplier_id: this.state.form.filter_supplier_id || false,
+            filter_category_id: this._parseFilterId(this.state.form.filter_category_id),
+            filter_supplier_id: this._parseFilterId(this.state.form.filter_supplier_id),
             filter_stock_status: this.state.form.filter_stock_status,
             manual_product_ids: [[6, 0, this.state.form.manual_product_ids]],
         };
     }
 
-    _filterPayload() {
-        return {
+    _parseFilterId(value) {
+        const parsed = parseInt(value, 10);
+        return Number.isFinite(parsed) ? parsed : false;
+    }
+
+    _filterPayload(includePagination = false) {
+        const payload = {
             scope_mode: "partial",
             filter_product_name: this.state.form.filter_product_name,
             filter_sku: this.state.form.filter_sku,
             filter_barcode: this.state.form.filter_barcode,
-            filter_category_id: this.state.form.filter_category_id || false,
-            filter_supplier_id: this.state.form.filter_supplier_id || false,
+            filter_category_id: this._parseFilterId(this.state.form.filter_category_id),
+            filter_supplier_id: this._parseFilterId(this.state.form.filter_supplier_id),
             filter_stock_status: this.state.form.filter_stock_status,
         };
+        if (includePagination) {
+            payload.selection_offset = this.state.matchedOffset;
+            payload.selection_limit = MATCHED_PAGE_SIZE;
+        }
+        return payload;
     }
 
     async _refreshPreview() {
@@ -347,30 +378,36 @@ export class AveaStockTakeClientAction extends Component {
         }
     }
 
-    async _refreshProductList() {
+    async _refreshProductList(resetPage = true) {
         if (this.state.form.scope_mode !== "partial") {
             this.state.matchedProducts = [];
             this.state.matchedCount = 0;
-            this.state.matchedTruncated = false;
+            this.state.matchedOffset = 0;
+            this.state.matchedHasMore = false;
             return;
         }
         if (!this.hasPartialFilter) {
             this.state.matchedProducts = [];
             this.state.matchedCount = 0;
-            this.state.matchedTruncated = false;
+            this.state.matchedOffset = 0;
+            this.state.matchedHasMore = false;
             this.state.previewCount = this.selectedCount;
             return;
+        }
+        if (resetPage) {
+            this.state.matchedOffset = 0;
         }
         this.state.productsLoading = true;
         try {
             const result = await this.orm.call(
                 "avea.stock.take",
                 "search_products_for_selection",
-                [this._filterPayload()]
+                [this._filterPayload(true)]
             );
             this.state.matchedProducts = result.products || [];
             this.state.matchedCount = result.count || 0;
-            this.state.matchedTruncated = Boolean(result.truncated);
+            this.state.matchedOffset = result.offset ?? this.state.matchedOffset;
+            this.state.matchedHasMore = Boolean(result.has_more);
             for (const product of this.state.matchedProducts) {
                 if (this.isProductSelected(product.id)) {
                     this._rememberProduct(product);
@@ -380,6 +417,22 @@ export class AveaStockTakeClientAction extends Component {
         } finally {
             this.state.productsLoading = false;
         }
+    }
+
+    async onPreviousResultsPage() {
+        if (!this.canGoToPreviousResultsPage || this.state.productsLoading) {
+            return;
+        }
+        this.state.matchedOffset = Math.max(0, this.state.matchedOffset - MATCHED_PAGE_SIZE);
+        await this._refreshProductList(false);
+    }
+
+    async onNextResultsPage() {
+        if (!this.state.matchedHasMore || this.state.productsLoading) {
+            return;
+        }
+        this.state.matchedOffset += this.state.matchedProducts.length || MATCHED_PAGE_SIZE;
+        await this._refreshProductList(false);
     }
 
     async _refreshSelection() {
@@ -442,28 +495,109 @@ export class AveaStockTakeClientAction extends Component {
         this.state.previewCount = 0;
     }
 
-    onToggleSelectAllVisible() {
-        const visibleProducts = this.state.matchedProducts;
-        if (!visibleProducts.length) {
+    _confirmZeroAndArchive() {
+        return window.confirm(
+            _t(
+                "Set stock to 0 and archive this product? It will no longer appear in active product or POS searches. Sales history is kept."
+            )
+        );
+    }
+
+    async onZeroAndArchiveProduct(product, ev) {
+        ev?.stopPropagation?.();
+        if (!this._confirmZeroAndArchive()) {
             return;
         }
-        if (this.allVisibleSelected) {
-            const visibleIds = new Set(visibleProducts.map((product) => product.id));
-            for (const productId of visibleIds) {
+        try {
+            await this.orm.call("avea.stock.take", "action_zero_and_archive_product", [product.id]);
+            if (this.isProductSelected(product.id)) {
+                this.onRemoveSelected(product.id);
+            }
+            await this._refreshProductList();
+            this.notification.add(_t("Product archived and stock set to zero."), { type: "success" });
+        } catch (error) {
+            this.notification.add(error.message || _t("Could not archive product."), { type: "danger" });
+        }
+    }
+
+    async onZeroAndArchiveLine(line, ev) {
+        ev?.stopPropagation?.();
+        if (!this.stockTake?.stock_take_id || !this._confirmZeroAndArchive()) {
+            return;
+        }
+        try {
+            const payload = await this.orm.call(
+                "avea.stock.take",
+                "action_zero_and_archive_line",
+                [[this.stockTake.stock_take_id], line.id]
+            );
+            this._setStockTake(payload);
+            this.notification.add(_t("Product archived and stock set to zero."), { type: "success" });
+        } catch (error) {
+            this.notification.add(error.message || _t("Could not archive product."), { type: "danger" });
+        }
+    }
+
+    onToggleSelectAllPage() {
+        const pageProducts = this.state.matchedProducts;
+        if (!pageProducts.length) {
+            return;
+        }
+        if (this.allPageSelected) {
+            const pageIds = new Set(pageProducts.map((product) => product.id));
+            for (const productId of pageIds) {
                 this._forgetProduct(productId);
             }
             this.state.form.manual_product_ids = this.state.form.manual_product_ids.filter(
-                (id) => !visibleIds.has(id)
+                (id) => !pageIds.has(id)
             );
         } else {
             const selected = new Set(this.state.form.manual_product_ids);
-            for (const product of visibleProducts) {
+            for (const product of pageProducts) {
                 selected.add(product.id);
                 this._rememberProduct(product);
             }
             this.state.form.manual_product_ids = Array.from(selected);
         }
         this.state.previewCount = this.selectedCount;
+    }
+
+    async onAddAllMatching() {
+        if (!this.hasPartialFilter || !this.state.matchedCount) {
+            return;
+        }
+        this.state.productsLoading = true;
+        try {
+            const result = await this.orm.call(
+                "avea.stock.take",
+                "product_ids_matching_partial_filters",
+                [this._filterPayload()]
+            );
+            const matchingIds = result.product_ids || [];
+            const selected = new Set(this.state.form.manual_product_ids);
+            const newIds = [];
+            for (const productId of matchingIds) {
+                if (!selected.has(productId)) {
+                    selected.add(productId);
+                    newIds.push(productId);
+                }
+            }
+            if (!newIds.length) {
+                this.notification.add(_t("All matching products are already selected."), {
+                    type: "info",
+                });
+                return;
+            }
+            this.state.form.manual_product_ids = Array.from(selected);
+            await this._loadSelectedProductDetails(newIds);
+            this.state.previewCount = this.selectedCount;
+            this.notification.add(
+                _t("Added %s products to the count (%s matching in total).", newIds.length, result.count),
+                { type: "success" }
+            );
+        } finally {
+            this.state.productsLoading = false;
+        }
     }
 
     onContinueLater() {
@@ -661,7 +795,8 @@ export class AveaStockTakeClientAction extends Component {
         this.state.showCancelConfirm = false;
         this.state.matchedProducts = [];
         this.state.matchedCount = 0;
-        this.state.matchedTruncated = false;
+        this.state.matchedOffset = 0;
+        this.state.matchedHasMore = false;
         this.state.selectedProducts = {};
         await this._refreshSelection();
     }

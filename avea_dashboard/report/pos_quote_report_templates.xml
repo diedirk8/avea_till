@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <template id="report_avea_pos_quote_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="quote">
+                <t t-call="web.external_layout">
+                    <div class="page o_avea_report_document">
+                        <h2 class="o_avea_report_title mb-1">
+                            Quote <span t-field="quote.name"/>
+                        </h2>
+                        <p class="mb-4">
+                            This is a quote, not a tax invoice. Stock is not reserved.
+                            Prices are valid until <span t-field="quote.valid_until"/>.
+                        </p>
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <strong>Customer</strong>
+                                <div t-field="quote.partner_id" t-options="{'widget': 'contact', 'fields': ['address', 'name', 'phone', 'email'], 'no_marker': True}"/>
+                            </div>
+                            <div class="col-6">
+                                <div><strong>Date</strong> <span t-field="quote.quote_date"/></div>
+                                <div t-if="quote.cashier_name"><strong>Cashier</strong> <span t-field="quote.cashier_name"/></div>
+                                <div t-if="quote.config_id"><strong>Till</strong> <span t-field="quote.config_id"/></div>
+                            </div>
+                        </div>
+                        <table class="table table-sm o_avea_report_table mb-4">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>SKU</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Unit price</th>
+                                    <th class="text-end">Discount %</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="quote.line_ids" t-as="line">
+                                    <td><span t-field="line.name"/></td>
+                                    <td><span t-esc="line.default_code or ''"/></td>
+                                    <td class="text-end"><span t-field="line.quantity"/></td>
+                                    <td class="text-end"><span t-field="line.price_unit"/></td>
+                                    <td class="text-end">
+                                        <span t-if="line.discount" t-field="line.discount"/>
+                                    </td>
+                                    <td class="text-end"><span t-field="line.price_total"/></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <div class="row">
+                            <div class="col-6">
+                                <p t-if="quote.note">
+                                    <strong>Note</strong><br/>
+                                    <span t-field="quote.note"/>
+                                </p>
+                            </div>
+                            <div class="col-6">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td>Ex tax</td>
+                                        <td class="text-end"><span t-field="quote.amount_untaxed"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td>Tax</td>
+                                        <td class="text-end"><span t-field="quote.amount_tax"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Total</strong></td>
+                                        <td class="text-end"><strong><span t-field="quote.amount_total"/></strong></td>
+                                    </tr>
+                                </table>
+                                <p class="text-muted">Unit prices and line totals include tax.</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_avea_pos_quote" model="ir.actions.report">
+        <field name="name">Quote</field>
+        <field name="model">avea.pos.quote</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">avea_till.report_avea_pos_quote_document</field>
+        <field name="report_file">avea_till.report_avea_pos_quote_document</field>
+        <field name="print_report_name">'Quote-%s' % (object.name)</field>
+    </record>
+
+</odoo>

@@ -7,6 +7,7 @@
         <field name="arch" type="xml">
             <form string="Pricing update" class="o_avea_wizard o_avea_stock_pricing_wizard">
                 <field name="currency_id" invisible="1"/>
+                <field name="currency_symbol" invisible="1"/>
                 <field name="line_id" invisible="1"/>
                 <field name="product_id" invisible="1"/>
                 <field name="product_tmpl_id" invisible="1"/>
@@ -17,7 +18,8 @@
                         <field name="product_id" nolabel="1" readonly="1" options="{'no_open': True}"/>
                     </p>
                     <p class="o_avea_stock_pricing_wizard_hint">
-                        The receive cost differs from this product's cost. Choose what to update.
+                        The typed EX-tax unit cost differs from this product's usual cost.
+                        A discount on this invoice is for this bill only and does not change the usual cost.
                     </p>
                 </div>
 
@@ -26,7 +28,10 @@
                         <div class="o_avea_stock_pricing_compare_heading">Current</div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Cost EX Tax</span>
-                            <field name="current_cost" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}" class="o_avea_stock_pricing_value"/>
+                            <div class="o_avea_stock_pricing_value o_avea_stock_pricing_cost">
+                                <span class="o_avea_stock_pricing_currency"><field name="currency_symbol" nolabel="1" readonly="1"/></span>
+                                <field name="current_cost" nolabel="1" readonly="1"/>
+                            </div>
                         </div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Retail INC Tax</span>
@@ -46,7 +51,10 @@
                         <div class="o_avea_stock_pricing_compare_heading">New</div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Cost EX Tax</span>
-                            <field name="new_cost" nolabel="1" widget="monetary" options="{'currency_field': 'currency_id'}" class="o_avea_stock_pricing_value"/>
+                            <div class="o_avea_stock_pricing_value o_avea_stock_pricing_cost">
+                                <span class="o_avea_stock_pricing_currency"><field name="currency_symbol" nolabel="1" readonly="1"/></span>
+                                <field name="new_cost" nolabel="1"/>
+                            </div>
                         </div>
                         <div class="o_avea_stock_pricing_row">
                             <span class="o_avea_stock_pricing_label">Retail INC Tax</span>

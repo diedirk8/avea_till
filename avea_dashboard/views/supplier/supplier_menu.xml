@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_suppliers_hub"
+        name="Suppliers"
+        parent="menu_avea_root"
+        groups="avea_till.group_avea_manager"
+        sequence="12"
+    />
+
+    <record id="menu_avea_suppliers_hub" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_supplier_centre"
+        name="Suppliers"
+        parent="menu_avea_suppliers_hub"
+        action="action_avea_supplier_centre"
+        groups="avea_till.group_avea_manager"
+        sequence="1"
+    />
+
+    <menuitem
+        id="menu_avea_bills"
+        name="Bills"
+        parent="menu_avea_suppliers_hub"
+        action="action_avea_bills"
+        groups="avea_till.group_avea_manager"
+        sequence="2"
+    />
+
+    <menuitem
+        id="menu_avea_supplier_payments"
+        name="Payments"
+        parent="menu_avea_suppliers_hub"
+        action="action_avea_supplier_payments"
+        groups="avea_till.group_avea_manager"
+        sequence="3"
+    />
+
+</odoo>

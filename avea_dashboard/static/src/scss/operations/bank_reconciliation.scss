@@ -1,0 +1,268 @@
+.o_form_view.o_avea_workspace--bank-recon-form,
+.o_avea_workspace--bank-recon-form {
+    --avea-brand: #0f766e;
+    --avea-brand-hover: #115e59;
+    --avea-brand-soft: rgba(15, 118, 110, 0.12);
+    --avea-brand-border: rgba(15, 118, 110, 0.35);
+    --bs-link-color: var(--avea-brand);
+    --bs-link-hover-color: var(--avea-brand-hover);
+
+    // Only hide the classic header when the in-sheet next-step bar is present.
+    // Live DBs that still have the old recon XML keep Refresh / Complete visible.
+    &:has(.o_avea_bank_recon_next) {
+        .o_control_panel,
+        .o_form_statusbar,
+        header {
+            display: none !important;
+        }
+    }
+
+    .o_form_sheet_bg {
+        background: var(--o-webclient-background-color, #f4f5f7);
+    }
+
+    .o_avea_workspace_sheet {
+        height: auto;
+        margin: 0;
+        max-width: 100%;
+        overflow-x: hidden;
+        overflow-y: visible;
+        padding-top: 1.15rem;
+        padding-bottom: 3rem;
+    }
+
+    .o_avea_workspace_eyebrow {
+        color: var(--avea-brand) !important;
+    }
+}
+
+.o_avea_bank_reconcile_wizard {
+    .o_form_sheet {
+        max-width: none;
+    }
+
+    .o_avea_bank_recon_hint {
+        margin-bottom: 0.75rem;
+        max-width: 62rem;
+    }
+
+    .o_avea_bank_recon_next {
+        align-items: flex-start;
+        background: #f0fdfa;
+        border: 1px solid var(--avea-brand-border, rgba(15, 118, 110, 0.35));
+        border-radius: 0.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 1.25rem;
+        justify-content: space-between;
+        margin: 0 0 1.25rem;
+        padding: 1rem 1.15rem;
+    }
+
+    .o_avea_bank_recon_next_copy {
+        display: flex;
+        flex: 1 1 22rem;
+        flex-direction: column;
+        gap: 0.25rem;
+        min-width: 0;
+
+        strong,
+        strong .o_field_widget {
+            color: #115e59;
+            font-size: 1rem;
+        }
+
+        .o_field_widget {
+            color: var(--o-gray-700, #495057);
+            font-size: 0.95rem;
+            margin-bottom: 0;
+            white-space: normal;
+        }
+    }
+
+    .o_avea_bank_recon_next_actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+
+        .btn-primary {
+            font-weight: 600;
+            min-height: 2.5rem;
+            padding-left: 1.1rem;
+            padding-right: 1.1rem;
+        }
+    }
+
+    .o_avea_bank_recon_stat--ok {
+        background-color: #ecfdf5 !important;
+        border-color: #a7f3d0 !important;
+
+        .o_avea_workspace_hero_stat_label {
+            color: #047857 !important;
+        }
+
+        .o_avea_workspace_hero_stat_value,
+        .o_field_widget {
+            color: #047857 !important;
+        }
+    }
+
+    .o_avea_bank_recon_stat--warn {
+        background-color: #fff7ed !important;
+        border-color: #fed7aa !important;
+
+        .o_avea_workspace_hero_stat_label {
+            color: #c2410c !important;
+        }
+
+        .o_avea_workspace_hero_stat_value,
+        .o_field_widget {
+            color: #9a3412 !important;
+        }
+    }
+
+    .o_avea_bank_recon_setup {
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_bank_recon_filters {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.65rem 1rem;
+        margin: 0 0 0.85rem;
+
+        .o_avea_workspace_info_label {
+            margin-bottom: 0;
+        }
+
+        .o_field_widget {
+            margin-bottom: 0;
+        }
+    }
+
+    .o_avea_bank_recon_filter_count {
+        color: var(--o-gray-600, #6c757d);
+        font-size: 0.85rem;
+    }
+
+    .o_notebook,
+    .o_notebook_content,
+    .tab-content,
+    .tab-pane.active,
+    .tab-pane.show,
+    .o_field_x2many,
+    .o_field_one2many,
+    .o_field_x2many_list,
+    .o_list_view {
+        display: block;
+        flex: none;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 0;
+        overflow: visible !important;
+    }
+
+    .o_list_renderer,
+    .o_avea_bank_reconcile_lines.o_list_renderer,
+    .o_avea_bank_reconcile_lines .o_list_renderer {
+        display: block;
+        flex: none;
+        height: auto !important;
+        max-height: none !important;
+        min-height: 22rem;
+        overflow-x: hidden !important;
+        overflow-y: visible !important;
+    }
+
+    .o_avea_bank_reconcile_lines.o_list_renderer,
+    .o_avea_bank_reconcile_lines .o_list_renderer {
+        .o_resize {
+            display: none !important;
+            pointer-events: none !important;
+        }
+
+        .o_list_table {
+                min-width: 0;
+                table-layout: fixed;
+                width: 100%;
+
+                th,
+                td {
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    vertical-align: top;
+                }
+
+                th[data-name="description"],
+                td[name="description"],
+                th[data-name="work_hint"],
+                td[name="work_hint"],
+                th[data-name="booking_suggestion"],
+                td[name="booking_suggestion"] {
+                    overflow-wrap: anywhere;
+                    white-space: normal;
+                }
+
+                th[data-name="bank_date"],
+                td[name="bank_date"] {
+                    white-space: nowrap;
+                    width: 6.5rem;
+                }
+
+                th[data-name="amount_spent_display"],
+                td[name="amount_spent_display"],
+                th[data-name="amount_received_display"],
+                td[name="amount_received_display"],
+                td.o_avea_bank_money {
+                    text-align: right;
+                    white-space: nowrap;
+                    width: 7.5rem;
+                }
+
+                th[data-name="match_state"],
+                td[name="match_state"] {
+                    white-space: nowrap;
+                    width: 7rem;
+                }
+
+                td.o_list_button,
+                th.o_list_button_header,
+                .o_list_button {
+                    overflow: visible;
+                    text-overflow: clip;
+                    white-space: nowrap;
+                    width: 8rem;
+                }
+
+                button {
+                    white-space: nowrap;
+                }
+        }
+    }
+}
+
+.o_avea_workspace--bank-recon {
+    .o_avea_bank_recon_list_shell {
+        margin-bottom: 1rem;
+    }
+
+    .o_avea_bank_recon_list_hero {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+    }
+
+    .o_avea_bank_recon_list_actions {
+        flex-shrink: 0;
+
+        .btn-primary {
+            min-height: 2.75rem;
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
+        }
+    }
+}

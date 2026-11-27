@@ -31,6 +31,13 @@ class TestAveaWithdrawCash(TransactionCase):
             limit=1,
         )
         cls.cash_journal = cls._require_cash_journal()
+        cls.employee = cls.env["res.partner"].create(
+            {
+                "name": "John Staff",
+                "avea_is_employee": True,
+                "is_company": False,
+            }
+        )
 
     @classmethod
     def _require_account(cls, code, label):
@@ -71,7 +78,7 @@ class TestAveaWithdrawCash(TransactionCase):
         line = self.env["account.bank.statement.line"].search(
             [
                 ("journal_id", "=", self.cash_journal.id),
-                ("payment_ref", "ilike", "Owner Drawing"),
+                ("payment_ref", "ilike", "Owner / director"),
             ],
             order="id desc",
             limit=1,
@@ -85,6 +92,7 @@ class TestAveaWithdrawCash(TransactionCase):
     def test_salary_wages_posts_to_salary_account(self):
         wizard = self._create_wizard(
             withdrawal_purpose="salary_wages",
+            employee_id=self.employee.id,
             reference_name="Weekly wages",
         )
         wizard.action_withdraw_cash()
@@ -96,6 +104,9 @@ class TestAveaWithdrawCash(TransactionCase):
             limit=1,
         )
         self.assertTrue(line)
+        self.assertEqual(line.partner_id, self.employee)
+        self.assertEqual(line.avea_employee_id, self.employee)
+        self.assertEqual(line.avea_staff_pay_kind, "salary")
         counterpart = line.move_id.line_ids.filtered(
             lambda move_line: move_line.account_id == self.salary_account
         )
@@ -104,6 +115,7 @@ class TestAveaWithdrawCash(TransactionCase):
     def test_staff_advance_posts_to_salary_account_with_reference(self):
         wizard = self._create_wizard(
             withdrawal_purpose="staff_advance",
+            employee_id=self.employee.id,
             reference_name="John - salary advance",
         )
         wizard.action_withdraw_cash()
@@ -115,12 +127,53 @@ class TestAveaWithdrawCash(TransactionCase):
             limit=1,
         )
         self.assertTrue(line)
-        self.assertEqual(line.partner_id, self.company.partner_id)
+        self.assertEqual(line.partner_id, self.employee)
+        self.assertEqual(line.avea_employee_id, self.employee)
+        self.assertEqual(line.avea_staff_pay_kind, "advance")
+        self.assertFalse(line.avea_staff_applied_salary_id)
         counterpart = line.move_id.line_ids.filtered(
             lambda move_line: move_line.account_id == self.salary_account
         )
         self.assertTrue(counterpart)
         self.assertIn("John - salary advance", line.move_id.narration)
+
+    def test_salary_counts_outstanding_advance(self):
+        self._create_wizard(
+            withdrawal_purpose="staff_advance",
+            employee_id=self.employee.id,
+            amount=1000.0,
+            reference_name="Early pay",
+        ).action_withdraw_cash()
+        self.employee.invalidate_recordset()
+        self.assertAlmostEqual(self.employee.avea_employee_advance_outstanding, 1000.0, places=2)
+        self._create_wizard(
+            withdrawal_purpose="salary_wages",
+            employee_id=self.employee.id,
+            amount=4000.0,
+            reference_name="Week salary",
+        ).action_withdraw_cash()
+        self.employee.invalidate_recordset()
+        self.assertAlmostEqual(self.employee.avea_employee_advance_outstanding, 0.0, places=2)
+        self.assertAlmostEqual(self.employee.avea_employee_paid_total, 5000.0, places=2)
+        salary = self.env["account.bank.statement.line"].search(
+            [
+                ("avea_employee_id", "=", self.employee.id),
+                ("avea_staff_pay_kind", "=", "salary"),
+            ],
+            limit=1,
+        )
+        advance = self.env["account.bank.statement.line"].search(
+            [
+                ("avea_employee_id", "=", self.employee.id),
+                ("avea_staff_pay_kind", "=", "advance"),
+            ],
+            limit=1,
+        )
+        self.assertEqual(advance.avea_staff_applied_salary_id, salary)
+
+    def test_salary_requires_employee(self):
+        with self.assertRaises(ValidationError):
+            self._create_wizard(withdrawal_purpose="salary_wages")
 
     def test_other_expense_uses_selected_account(self):
         self.assertTrue(self.other_expense_account)
@@ -139,6 +192,48 @@ class TestAveaWithdrawCash(TransactionCase):
             lambda move_line: move_line.account_id == self.other_expense_account
         )
         self.assertTrue(counterpart)
+
+    def test_bank_journal_is_allowed_when_configured_for_expenses(self):
+        bank = self.company._avea_expense_journals().filtered(
+            lambda journal: journal.type == "bank"
+        )[:1]
+        if not bank:
+            self.skipTest("No bank journal in Avea expense accounts")
+        if not bank.default_account_id:
+            self.skipTest("Bank journal has no default account")
+        wizard = self._create_wizard(
+            cash_journal_id=bank.id,
+            withdrawal_purpose="owner_drawing",
+            reference_name="Director EFT",
+        )
+        wizard.action_withdraw_cash()
+        line = self.env["account.bank.statement.line"].search(
+            [("journal_id", "=", bank.id), ("payment_ref", "=", "Director EFT")],
+            limit=1,
+        )
+        self.assertTrue(line)
+        counterpart = line.move_id.line_ids.filtered(
+            lambda move_line: move_line.account_id == self.drawings_account
+        )
+        self.assertTrue(counterpart)
+
+    def test_open_wizard_is_named_withdraw(self):
+        action = self.Wizard.action_open_wizard()
+        self.assertEqual(str(action["name"]), "Withdraw")
+
+    def test_purpose_label_works_with_method_selection(self):
+        wizard = self._create_wizard(withdrawal_purpose="owner_drawing")
+        self.assertEqual(wizard._avea_purpose_label(), "Owner / director")
+        salary = self._create_wizard(
+            withdrawal_purpose="salary_wages",
+            employee_id=self.employee.id,
+        )
+        self.assertEqual(salary._avea_purpose_label(), "Salary / Wages")
+        advance = self._create_wizard(
+            withdrawal_purpose="staff_advance",
+            employee_id=self.employee.id,
+        )
+        self.assertEqual(advance._avea_purpose_label(), "Staff Advance")
 
     def test_amount_must_be_positive(self):
         with self.assertRaises(ValidationError):

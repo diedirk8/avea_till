@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="avea_till.AveaQuoteReceipt">
+        <div t-attf-class="pos-receipt p-2 avea-quote-receipt {{ layoutClass }}">
+            <img t-if="showLogo" t-att-src="logoUrl" alt="Logo" class="pos-receipt-logo" t-att-class="logoClass" t-att-style="logoStyle or None"/>
+            <div class="text-center pt-3" style="font-size: 75%;">
+                <span class="pos-receipt-vat">
+                    <span class="avea-receipt-order-label">Quote</span>
+                    <t t-if="show('avea_print_receipt_show_order_number')" t-esc="receipt.name"/>
+                </span>
+                <div t-if="show('avea_print_receipt_show_datetime')" id="order-date" t-esc="receipt.quote_date_display"/>
+            </div>
+            <div class="d-flex flex-column align-items-center">
+                <div class="pos-receipt-contact">
+                    <div t-if="config.receipt_header" style="white-space:pre-line" t-esc="config.receipt_header"/>
+                    <div t-if="show('avea_print_receipt_show_cashier') and receipt.cashier_name" class="cashier">
+                        <div>Served by: <t t-esc="receipt.cashier_name"/></div>
+                    </div>
+                </div>
+                <div t-if="show('avea_print_receipt_show_customer') and receipt.partner_name" class="pos-receipt-customer mt-2">
+                    <div t-esc="receipt.partner_name"/>
+                    <div t-if="receipt.partner_address" t-esc="receipt.partner_address"/>
+                    <div t-if="receipt.partner_phone" t-esc="receipt.partner_phone"/>
+                    <div t-if="receipt.partner_vat" t-esc="receipt.partner_vat"/>
+                </div>
+            </div>
+
+            <div class="pt-3"/>
+            <div class="order-container text-start">
+                <t t-foreach="receipt.lines" t-as="line" t-key="line_index">
+                    <div class="orderline">
+                        <div class="d-flex flex-column w-100">
+                            <div class="line-details d-flex justify-content-between align-items-center">
+                                <div class="product-name d-flex flex-grow-1 pe-2">
+                                    <span t-if="show('avea_print_receipt_show_quantity')" class="qty d-inline-block fw-bolder pe-2" t-esc="line.quantity"/>
+                                    <span class="text-wrap d-inline">
+                                        <t t-esc="line.name"/>
+                                        <div t-if="show('avea_print_receipt_show_sku') and line.default_code" class="avea-pos-receipt-sku">
+                                            SKU: <t t-esc="line.default_code"/>
+                                        </div>
+                                    </span>
+                                </div>
+                                <div class="product-price price font-monospace" t-esc="line.price_total"/>
+                            </div>
+                            <ul class="info-list d-flex flex-column mb-0 ms-2" style="font-size: 75%;">
+                                <li t-if="show('avea_print_receipt_show_unit_price')" class="price-per-unit" t-esc="line.price_unit"/>
+                                <li t-if="show('avea_print_receipt_show_discounts') and line.discount" class="price-per-unit">
+                                    <i class="fa fa-tag pe-1"/><em><t t-esc="line.discount"/>% </em> discount
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </t>
+            </div>
+
+            <div t-if="show('avea_print_receipt_show_tax') or show('avea_print_receipt_show_subtotal')" class="pos-receipt-taxes pt-3">
+                <div t-if="show('avea_print_receipt_show_subtotal')" class="d-flex">
+                    <span class="text-nowrap mw-100">Subtotal</span>
+                    <span t-esc="receipt.amount_untaxed" class="ms-auto font-monospace"/>
+                </div>
+                <div t-if="show('avea_print_receipt_show_tax')" class="d-flex">
+                    <span>Taxes</span>
+                    <span t-esc="receipt.amount_tax" class="ms-auto font-monospace"/>
+                </div>
+            </div>
+            <div t-if="show('avea_print_receipt_show_total')" class="pos-receipt-amount receipt-total fw-bolder">
+                <span class="label-total">Total</span>
+                <span t-esc="receipt.amount_total" class="pos-receipt-right-align font-monospace"/>
+            </div>
+
+            <div t-if="receipt.note" class="text-start pt-2">
+                <div class="fw-bolder">Note</div>
+                <div t-esc="receipt.note"/>
+            </div>
+            <div class="pos-receipt-center-align pt-3 text-center">
+                This is a quote, not a tax invoice. Stock is not reserved.
+            </div>
+            <div class="pos-receipt-center-align text-center">
+                Valid until <t t-esc="receipt.valid_until_display"/>.
+            </div>
+            <div class="pos-receipt-center-align text-center">
+                Unit prices and line totals include tax.
+            </div>
+
+            <div t-if="customize and footerMessage" class="pos-receipt-center-align pt-3 text-center avea-pos-receipt-custom-footer">
+                <t t-esc="footerMessage"/>
+            </div>
+            <div t-if="config.receipt_footer" class="pos-receipt-center-align pt-3 text-center" style="white-space:pre-line">
+                <t t-esc="config.receipt_footer"/>
+            </div>
+
+            <div class="d-flex gap-2 pt-3">
+                <div class="w-50 text-break text-start" style="font-size: 75%;">
+                    <div class="pos-config-name" t-esc="config.name"/>
+                    <div>
+                        <t t-if="company.street" t-esc="company.street"/>
+                        <t t-if="company.city">, <t t-esc="company.city"/></t>
+                        <t t-if="company.state_id and company.state_id.code">, <t t-esc="company.state_id.code"/></t>
+                        <t t-if="company.zip">, <t t-esc="company.zip"/></t>
+                    </div>
+                </div>
+                <div class="w-50 text-break text-end" style="font-size: 75%;">
+                    <div t-if="vatText" t-esc="vatText"/>
+                    <div t-if="company.phone">Tel: <span dir="ltr" t-esc="company.phone"/></div>
+                    <div t-if="company.email" t-esc="company.email"/>
+                    <div t-if="company.website" t-esc="company.website"/>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

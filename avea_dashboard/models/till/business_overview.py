@@ -12,6 +12,7 @@ from .reporting_period import (
     PERIOD_LAST_30,
     PERIOD_MTD,
     PERIOD_TODAY,
+    PERIOD_YESTERDAY,
     PERIOD_WTD,
     PERIOD_YTD,
     normalize_period_key,
@@ -64,11 +65,13 @@ class AveaBusinessOverviewProductLine(models.TransientModel):
 class AveaBusinessOverview(models.TransientModel):
     _name = "avea.business.overview"
     _description = "Business Overview"
+    _inherit = ["avea.reporting.workspace.mixin"]
     _rec_name = "period_label"
 
     period = fields.Selection(
         [
             ("today", "Today"),
+            ("yesterday", "Yesterday"),
             ("wtd", "Week to Date"),
             ("mtd", "Month to Date"),
             ("last_7", "Last 7 Days"),
@@ -123,6 +126,75 @@ class AveaBusinessOverview(models.TransientModel):
         string="Average Sale",
         compute="_compute_metrics",
         currency_field="currency_id",
+    )
+    sales_ex_tax = fields.Monetary(
+        string="Sales",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    cost_of_goods_sold = fields.Monetary(
+        string="Cost of Goods Sold",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    gross_profit = fields.Monetary(
+        string="Gross Profit",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    gross_margin_percent = fields.Float(
+        string="Gross Margin %",
+        compute="_compute_metrics",
+        digits=(16, 1),
+    )
+    discounts_given = fields.Monetary(
+        string="Discounts Given",
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    previous_sales_ex_tax = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    previous_cost_of_goods_sold = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    previous_gross_profit = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    previous_discounts_given = fields.Monetary(
+        compute="_compute_metrics",
+        currency_field="currency_id",
+    )
+    sales_ex_tax_change_display = fields.Char(
+        compute="_compute_metrics",
+    )
+    sales_ex_tax_change_tone = fields.Selection(
+        [("up", "Up"), ("down", "Down"), ("flat", "Flat")],
+        compute="_compute_metrics",
+    )
+    cost_of_goods_sold_change_display = fields.Char(
+        compute="_compute_metrics",
+    )
+    cost_of_goods_sold_change_tone = fields.Selection(
+        [("up", "Up"), ("down", "Down"), ("flat", "Flat")],
+        compute="_compute_metrics",
+    )
+    gross_profit_change_display = fields.Char(
+        compute="_compute_metrics",
+    )
+    gross_profit_change_tone = fields.Selection(
+        [("up", "Up"), ("down", "Down"), ("flat", "Flat")],
+        compute="_compute_metrics",
+    )
+    discounts_given_change_display = fields.Char(
+        compute="_compute_metrics",
+    )
+    discounts_given_change_tone = fields.Selection(
+        [("up", "Up"), ("down", "Down"), ("flat", "Flat")],
+        compute="_compute_metrics",
     )
     previous_sales = fields.Monetary(
         string="Previous Period",
@@ -205,6 +277,33 @@ class AveaBusinessOverview(models.TransientModel):
     )
     show_products = fields.Boolean(
         compute="_compute_show_products",
+    )
+    platform_line_ids = fields.One2many(
+        "avea.business.reporting.platform.line",
+        "overview_id",
+        string="Sales platforms",
+        readonly=True,
+    )
+    show_platform_reporting = fields.Boolean(compute="_compute_platform_reporting")
+    platform_sales_ex_tax = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_cost_total = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_gross_profit = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_commission = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
+    )
+    platform_contribution = fields.Monetary(
+        compute="_compute_platform_reporting",
+        currency_field="currency_id",
     )
     activity_refund_count = fields.Integer(
         string="Refunds",
@@ -306,18 +405,38 @@ class AveaBusinessOverview(models.TransientModel):
     def create(self, vals_list):
         overviews = super().create(vals_list)
         overviews._populate_product_lines()
+        overviews._populate_platform_lines()
         return overviews
 
     def write(self, vals):
         res = super().write(vals)
         if any(key in vals for key in ("period", "date_from", "date_to")):
             self._populate_product_lines()
+            self._populate_platform_lines()
         return res
 
     @api.depends("product_line_ids")
     def _compute_show_products(self):
         for overview in self:
             overview.show_products = bool(overview.product_line_ids)
+
+    @api.depends(
+        "platform_line_ids",
+        "platform_line_ids.sales_ex_tax",
+        "platform_line_ids.cost_total",
+        "platform_line_ids.gross_profit",
+        "platform_line_ids.commission",
+        "platform_line_ids.contribution",
+    )
+    def _compute_platform_reporting(self):
+        for overview in self:
+            lines = overview.platform_line_ids
+            overview.show_platform_reporting = bool(lines)
+            overview.platform_sales_ex_tax = sum(lines.mapped("sales_ex_tax"))
+            overview.platform_cost_total = sum(lines.mapped("cost_total"))
+            overview.platform_gross_profit = sum(lines.mapped("gross_profit"))
+            overview.platform_commission = sum(lines.mapped("commission"))
+            overview.platform_contribution = sum(lines.mapped("contribution"))
 
     @api.model
     def action_open_business_overview(
@@ -342,6 +461,9 @@ class AveaBusinessOverview(models.TransientModel):
 
     def action_period_today(self):
         return self.action_open_business_overview(period=PERIOD_TODAY)
+
+    def action_period_yesterday(self):
+        return self.action_open_business_overview(period=PERIOD_YESTERDAY)
 
     def action_period_wtd(self):
         return self.action_open_business_overview(period=PERIOD_WTD)
@@ -388,66 +510,44 @@ class AveaBusinessOverview(models.TransientModel):
             date_to=self.date_to,
         )
 
-    def _timezone(self):
-        tzname = self.env.user.tz or self.env.context.get("tz") or "UTC"
-        try:
-            return ZoneInfo(tzname)
-        except Exception:
-            return ZoneInfo("UTC")
-
-    def _utc_bounds(self, day_from, day_to):
-        tz = self._timezone()
-        start_local = datetime.combine(day_from, time.min, tzinfo=tz)
-        end_local = datetime.combine(
-            day_to,
-            time.max.replace(microsecond=0),
-            tzinfo=tz,
+    def action_open_profit_report(self):
+        self.ensure_one()
+        return self.env["avea.profit.report"].action_open_for_workspace(
+            period=self.period,
+            date_from=self.date_from,
+            date_to=self.date_to,
+            source_model=self._name,
         )
-        return (
-            start_local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None),
-            end_local.astimezone(ZoneInfo("UTC")).replace(tzinfo=None),
+
+    def action_open_discount_report(self):
+        self.ensure_one()
+        return self.env["avea.discount.report"].action_open_for_workspace(
+            period=self.period,
+            date_from=self.date_from,
+            date_to=self.date_to,
+            source_model=self._name,
         )
 
     @api.model
     def _normalize_custom_dates(self, date_from=None, date_to=None):
-        today = fields.Date.context_today(self)
-        start = date_from or today.replace(day=1)
-        end = date_to or today
-        if start > end:
-            start, end = end, start
-        return start, end
+        return self._reporting_normalize_custom_dates(date_from, date_to)
 
     def _reporting_period(self, period=None):
         self.ensure_one()
-        today = fields.Date.context_today(self)
+        windows = self._period_windows(period or self.period or PERIOD_TODAY)
         return resolve_reporting_period(
             period=period or self.period or PERIOD_TODAY,
-            today=today,
+            today=windows["today"],
             custom_from=self.date_from,
             custom_to=self.date_to,
         )
 
     def _period_windows(self, period):
-        """Adapter around the reporting-period source of truth."""
-        reporting = resolve_reporting_period(
-            period=period,
-            today=fields.Date.context_today(self),
-            custom_from=self.date_from,
-            custom_to=self.date_to,
+        return self._reporting_period_windows(
+            period,
+            date_from=self.date_from,
+            date_to=self.date_to,
         )
-        current = reporting.current
-        previous = reporting.comparison
-        return {
-            "display_current": current,
-            "data_current": current,
-            "display_previous": previous,
-            "data_previous": previous,
-            "labels": (_(reporting.label), _(reporting.comparison_label)),
-            "show_through_today": False,
-            "today": reporting.today,
-            "elapsed_days": reporting.elapsed_days,
-            "key": reporting.key,
-        }
 
     def _chart_period_days(self, period, windows):
         """Charts use the same inclusive dates as the selected reporting period."""
@@ -458,34 +558,13 @@ class AveaBusinessOverview(models.TransientModel):
         return day_from == day_to
 
     def _format_day_range(self, day_from, day_to):
-        """Readable date range in the user's language, e.g. 18–25 August 2026."""
-        if day_from == day_to:
-            return format_date(self.env, day_from, date_format="d MMMM y")
-        end = format_date(self.env, day_to, date_format="d MMMM y")
-        same_month = day_from.month == day_to.month and day_from.year == day_to.year
-        if same_month:
-            start_day = format_date(self.env, day_from, date_format="d")
-            return f"{start_day}–{end}"
-        if day_from.year == day_to.year:
-            start = format_date(self.env, day_from, date_format="d MMMM")
-            return f"{start}–{end}"
-        start = format_date(self.env, day_from, date_format="d MMMM y")
-        return f"{start}–{end}"
+        return self._reporting_format_day_range(day_from, day_to)
 
     def _paid_orders_between(self, day_from, day_to):
-        start, end = self._utc_bounds(day_from, day_to)
-        Session = self.env["pos.session"]
-        return self.env["pos.order"].search(
-            [
-                ("company_id", "=", self.env.company.id),
-                ("state", "in", Session._avea_paid_order_states()),
-                ("date_order", ">=", start),
-                ("date_order", "<=", end),
-            ]
-        )
+        return self._reporting_paid_orders_between(day_from, day_to)
 
     def _cash_activity_between(self, day_from, day_to):
-        start, end = self._utc_bounds(day_from, day_to)
+        start, end = self._reporting_utc_bounds(day_from, day_to)
         Movement = self.env["avea.till.movement"]
         domain = [
             ("session_id.company_id", "=", self.env.company.id),
@@ -519,11 +598,20 @@ class AveaBusinessOverview(models.TransientModel):
             tone = "down"
         return display, tone, delta
 
+    def _currency_delta_display(self, delta):
+        currency = self.env.company.currency_id
+        if currency.is_zero(delta):
+            return _("—"), "flat"
+        formatted = self._format_money(abs(delta))
+        if delta > 0:
+            return f"+{formatted}", "up"
+        return f"-{formatted}", "down"
+
     def _local_order_datetime(self, order):
         if not order.date_order:
             return False
         return order.date_order.replace(tzinfo=ZoneInfo("UTC")).astimezone(
-            self._timezone()
+            self._reporting_timezone()
         )
 
     def _format_hour_range(self, hour):
@@ -918,7 +1006,25 @@ class AveaBusinessOverview(models.TransientModel):
             previous_orders = overview._paid_orders_between(*windows["data_previous"])
             sales = Session._avea_sales_summary_from_orders(current_orders)
             previous_sales = Session._avea_sales_summary_from_orders(previous_orders)
+            financial = overview._reporting_financial_summary_for_period(
+                orders=current_orders
+            )
+            previous_financial = overview._reporting_financial_summary_for_period(
+                orders=previous_orders
+            )
             activity = Session._avea_activity_from_orders(current_orders)
+            sales_ex_tax_delta = overview._currency_delta_display(
+                financial["revenue_ex_tax"] - previous_financial["revenue_ex_tax"]
+            )
+            cogs_delta = overview._currency_delta_display(
+                financial["cost_total"] - previous_financial["cost_total"]
+            )
+            gp_delta = overview._currency_delta_display(
+                financial["gross_profit"] - previous_financial["gross_profit"]
+            )
+            discounts_delta = overview._currency_delta_display(
+                financial["discounts_given"] - previous_financial["discounts_given"]
+            )
             cash = overview._cash_activity_between(*windows["data_current"])
             change_display, tone, delta = overview._change_display(
                 sales["total_sales"],
@@ -975,6 +1081,23 @@ class AveaBusinessOverview(models.TransientModel):
                     ),
                     "show_through_today": windows["show_through_today"],
                     "total_sales": sales["total_sales"],
+                    "sales_ex_tax": financial["revenue_ex_tax"],
+                    "cost_of_goods_sold": financial["cost_total"],
+                    "gross_profit": financial["gross_profit"],
+                    "gross_margin_percent": financial["gross_margin_percent"],
+                    "discounts_given": financial["discounts_given"],
+                    "previous_sales_ex_tax": previous_financial["revenue_ex_tax"],
+                    "previous_cost_of_goods_sold": previous_financial["cost_total"],
+                    "previous_gross_profit": previous_financial["gross_profit"],
+                    "previous_discounts_given": previous_financial["discounts_given"],
+                    "sales_ex_tax_change_display": sales_ex_tax_delta[0],
+                    "sales_ex_tax_change_tone": sales_ex_tax_delta[1],
+                    "cost_of_goods_sold_change_display": cogs_delta[0],
+                    "cost_of_goods_sold_change_tone": cogs_delta[1],
+                    "gross_profit_change_display": gp_delta[0],
+                    "gross_profit_change_tone": gp_delta[1],
+                    "discounts_given_change_display": discounts_delta[0],
+                    "discounts_given_change_tone": discounts_delta[1],
                     "order_count": sales["order_count"],
                     "average_order_value": sales["average_order_value"],
                     "previous_sales": previous_sales["total_sales"],
@@ -1041,6 +1164,14 @@ class AveaBusinessOverview(models.TransientModel):
             orders,
             limit=OVERVIEW_PRODUCT_LIMIT,
         )
+
+    def _populate_platform_lines(self):
+        for overview in self:
+            if not overview.id:
+                continue
+            windows = overview._period_windows(overview.period or "today")
+            orders = overview._paid_orders_between(*windows["data_current"])
+            overview._reporting_populate_platform_lines(overview, orders)
 
     def _populate_product_lines(self):
         ProductLine = self.env["avea.business.overview.product.line"]

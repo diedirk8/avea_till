@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_employees_hub"
+        name="Employees"
+        parent="menu_avea_root"
+        groups="avea_till.group_avea_employee_access"
+        sequence="13"
+    />
+
+    <record id="menu_avea_employees_hub" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_employee_centre"
+        name="Employees"
+        parent="menu_avea_employees_hub"
+        action="action_avea_employee_centre"
+        groups="avea_till.group_avea_employee_access"
+        sequence="1"
+    />
+
+    <menuitem
+        id="menu_avea_employee_pay_history"
+        name="Pay history"
+        parent="menu_avea_employees_hub"
+        action="action_avea_employee_pay_history"
+        groups="avea_till.group_avea_employee_access"
+        sequence="2"
+    />
+
+</odoo>

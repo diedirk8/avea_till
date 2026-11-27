@@ -3,9 +3,10 @@
 
     <menuitem
         id="menu_avea_operations"
-        name="Operations"
+        name="Money"
         parent="menu_avea_root"
-        sequence="18"
+        groups="avea_till.group_avea_manager"
+        sequence="16"
     />
 
     <record id="menu_avea_operations" model="ir.ui.menu">
@@ -17,39 +18,79 @@
         name="Account Balances"
         parent="menu_avea_operations"
         action="action_avea_account_balance_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="5"
     />
 
     <menuitem
-        id="menu_avea_operations_expense"
-        name="Add Operational Expense"
+        id="menu_avea_operations_bank_reconcile_new"
+        name="New bank reconciliation"
         parent="menu_avea_operations"
+        action="action_avea_new_bank_reconciliation"
+        groups="avea_till.group_avea_manager"
+        sequence="6"
+    />
+
+    <menuitem
+        id="menu_avea_operations_bank_reconcile"
+        name="Bank reconciliations"
+        parent="menu_avea_operations"
+        action="action_avea_bank_reconciliation"
+        groups="avea_till.group_avea_manager"
+        sequence="7"
+    />
+
+    <menuitem
+        id="menu_avea_money_record"
+        name="Record"
+        parent="menu_avea_operations"
+        groups="avea_till.group_avea_manager"
+        sequence="20"
+    />
+
+    <menuitem
+        id="menu_avea_operations_expense"
+        name="Add Expense"
+        parent="menu_avea_money_record"
         action="action_avea_operational_expense_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="10"
     />
 
     <menuitem
         id="menu_avea_operations_transfer"
         name="Transfer Money"
-        parent="menu_avea_operations"
+        parent="menu_avea_money_record"
         action="action_avea_money_transfer_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="20"
     />
 
     <menuitem
         id="menu_avea_operations_withdraw_cash"
-        name="Withdraw Cash"
-        parent="menu_avea_operations"
+        name="Withdraw"
+        parent="menu_avea_money_record"
         action="action_avea_withdraw_cash_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="25"
     />
 
     <menuitem
         id="menu_avea_operations_manual_journal"
-        name="Manual Journal"
-        parent="menu_avea_operations"
+        name="Manual Entry"
+        parent="menu_avea_money_record"
         action="action_avea_manual_journal_wizard"
+        groups="avea_till.group_avea_manager"
         sequence="30"
+    />
+
+    <menuitem
+        id="menu_avea_cash_up"
+        name="Cash Ups"
+        parent="menu_avea_operations"
+        action="action_avea_cash_up"
+        groups="avea_till.group_avea_cash_up_manager"
+        sequence="5"
     />
 
 </odoo>

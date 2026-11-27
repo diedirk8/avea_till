@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <menuitem
+        id="menu_avea_accounting"
+        name="Accounting"
+        parent="menu_avea_root"
+        groups="avea_till.group_avea_manager"
+        sequence="15"
+    />
+
+    <record id="menu_avea_accounting" model="ir.ui.menu">
+        <field name="action" eval="False"/>
+    </record>
+
+    <menuitem
+        id="menu_avea_accounting_income_expense"
+        name="Income &amp; expense accounts"
+        parent="menu_avea_accounting"
+        action="action_avea_account_manager"
+        groups="avea_till.group_avea_manager"
+        sequence="5"
+    />
+
+    <menuitem
+        id="menu_avea_accounting_assets"
+        name="Asset accounts"
+        parent="menu_avea_accounting"
+        action="action_avea_asset_account_manager"
+        groups="avea_till.group_avea_manager"
+        sequence="8"
+    />
+
+    <menuitem
+        id="menu_avea_accounting_reports"
+        name="Reports"
+        parent="menu_avea_accounting"
+        action="action_avea_accounting_reports_home"
+        groups="avea_till.group_avea_manager"
+        sequence="20"
+    />
+
+    <menuitem
+        id="menu_avea_accounting_profit_loss"
+        name="Profit and loss"
+        parent="menu_avea_accounting"
+        action="action_avea_accounting_profit_loss"
+        groups="avea_till.group_avea_manager"
+        sequence="21"
+    />
+
+    <menuitem
+        id="menu_avea_accounting_balance_sheet"
+        name="Balance sheet"
+        parent="menu_avea_accounting"
+        action="action_avea_accounting_balance_sheet"
+        groups="avea_till.group_avea_manager"
+        sequence="22"
+    />
+
+    <menuitem
+        id="menu_avea_accounting_trial_balance"
+        name="Trial balance"
+        parent="menu_avea_accounting"
+        action="action_avea_accounting_trial_balance"
+        groups="avea_till.group_avea_manager"
+        sequence="23"
+    />
+
+    <menuitem
+        id="menu_avea_accounting_general_ledger"
+        name="General ledger"
+        parent="menu_avea_accounting"
+        action="action_avea_accounting_general_ledger"
+        groups="avea_till.group_avea_manager"
+        sequence="24"
+    />
+
+</odoo>

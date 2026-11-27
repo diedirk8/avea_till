@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_pricelist_list" model="ir.ui.view">
+        <field name="name">product.pricelist.list.avea</field>
+        <field name="model">product.pricelist</field>
+        <field name="arch" type="xml">
+            <list
+                string="Price lists"
+                class="o_avea_pricelist_table"
+                js_class="avea_pricelist_list"
+            >
+                <field name="name" string="Price list"/>
+                <field name="avea_rule_summary" string="What it does"/>
+                <field name="active" widget="boolean_toggle"/>
+                <field name="avea_pos_available" string="On till"/>
+                <field name="currency_id" string="Currency"/>
+                <field name="avea_item_count" string="Rules"/>
+                <field name="avea_customer_count" string="Customers"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_pricelist_search" model="ir.ui.view">
+        <field name="name">product.pricelist.search.avea</field>
+        <field name="model">product.pricelist</field>
+        <field name="arch" type="xml">
+            <search string="Price lists">
+                <field name="name"/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <filter string="On till" name="pos" domain="[('avea_pos_available', '=', True)]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_pricelist_form" model="ir.ui.view">
+        <field name="name">product.pricelist.form.avea</field>
+        <field name="model">product.pricelist</field>
+        <field name="arch" type="xml">
+            <form string="Price list" class="o_avea_workspace o_avea_workspace--pricelist" js_class="avea_pricelist_form">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="currency_id" invisible="1"/>
+                    <field name="company_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero o_avea_pricelist_hero">
+                        <div class="o_avea_pricelist_hero_top">
+                            <div class="o_avea_workspace_hero_intro">
+                                <span class="o_avea_workspace_eyebrow">Customers</span>
+                                <h1 class="o_avea_workspace_title">
+                                    <field
+                                        name="name"
+                                        nolabel="1"
+                                        placeholder="Price list name"
+                                        class="o_avea_pricelist_name_title"
+                                    />
+                                </h1>
+                                <p class="o_avea_workspace_section_subtitle">
+                                    Edit the rule below. Shelf prices in Stock stay as they are; this list only applies when it is used at the till.
+                                </p>
+                            </div>
+                            <div class="o_avea_workspace_hero_stats" invisible="not id">
+                                <div class="o_avea_workspace_hero_stat o_avea_workspace_hero_stat--primary o_avea_pricelist_hero_stat--summary">
+                                    <span class="o_avea_workspace_hero_stat_label">Current rules</span>
+                                    <field name="avea_rule_summary" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
+                                </div>
+                                <div class="o_avea_workspace_hero_stat">
+                                    <span class="o_avea_workspace_hero_stat_label">Rule count</span>
+                                    <field name="avea_item_count" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
+                                </div>
+                                <div class="o_avea_workspace_hero_stat">
+                                    <span class="o_avea_workspace_hero_stat_label">Customers on this list</span>
+                                    <field name="avea_customer_count" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
+                                </div>
+                                <div class="o_avea_workspace_hero_stat">
+                                    <span class="o_avea_workspace_hero_stat_label">Currency</span>
+                                    <field name="currency_id" nolabel="1" readonly="1" class="o_avea_workspace_hero_stat_value"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="o_avea_pricelist_hero_actions">
+                            <div class="o_avea_pricelist_hero_actions_tools" invisible="not id">
+                                <button
+                                    name="action_avea_view_prices"
+                                    type="object"
+                                    string="View prices"
+                                    class="btn btn-secondary"
+                                />
+                                <button
+                                    name="action_avea_fill_from_shelf"
+                                    type="object"
+                                    string="Fill from retail prices"
+                                    class="btn btn-secondary"
+                                    confirm="Add a fixed price for every saleable product from current shelf prices? Those product lines override formula rules (such as cost + %) for those products. Retail catalogue prices will not change."
+                                />
+                            </div>
+                            <div class="o_avea_pricelist_hero_actions_save">
+                                <button string="Cancel" special="cancel" class="btn btn-secondary" data-hotkey="x"/>
+                                <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_pricelist_workspace">
+                            <div class="o_avea_pricelist_panel o_avea_pricelist_panel--rules">
+                                <h2 class="o_avea_workspace_section_title">Rules</h2>
+                                <p class="o_avea_pricelist_panel_hint">
+                                    <strong>Level 1 is applied first.</strong>
+                                    Keep All products on 10 as the fallback. Add a category or product exception on a lower level (1–3).
+                                </p>
+                                <field
+                                    name="item_ids"
+                                    nolabel="1"
+                                    class="o_avea_pricelist_item_field"
+                                    context="{'default_applied_on': '2_product_category', 'default_compute_price': 'formula', 'default_base': 'standard_price', 'default_avea_priority': 3, 'default_avea_method': 'cost_plus'}"
+                                >
+                                    <list
+                                        editable="bottom"
+                                        class="o_avea_pricelist_lines"
+                                        js_class="avea_pricelist_rules"
+                                        default_order="avea_priority, applied_on, id"
+                                    >
+                                        <control>
+                                            <create string="Add a rule"/>
+                                        </control>
+                                        <field name="avea_priority" string="Level"/>
+                                        <field name="applied_on" string="Applies to"/>
+                                        <field
+                                            name="categ_id"
+                                            string="Category"
+                                            placeholder="Pick category"
+                                            invisible="applied_on != '2_product_category'"
+                                        />
+                                        <field
+                                            name="product_tmpl_id"
+                                            string="Product"
+                                            placeholder="Pick product"
+                                            domain="[('sale_ok', '=', True), ('active', '=', True)]"
+                                            invisible="applied_on != '1_product'"
+                                        />
+                                        <field
+                                            name="product_id"
+                                            string="Variant"
+                                            placeholder="Pick variant"
+                                            column_invisible="True"
+                                        />
+                                        <field name="avea_method" string="How"/>
+                                        <field name="avea_amount" string="Amount"/>
+                                        <field name="avea_result" string="Result" readonly="1"/>
+                                        <field name="currency_id" column_invisible="True"/>
+                                        <field name="compute_price" column_invisible="True"/>
+                                        <field name="base" column_invisible="True"/>
+                                        <field name="percent_price" column_invisible="True"/>
+                                        <field name="price_markup" column_invisible="True"/>
+                                        <field name="price_discount" column_invisible="True"/>
+                                        <field name="fixed_price" column_invisible="True"/>
+                                    </list>
+                                </field>
+                            </div>
+
+                        <div class="o_avea_pricelist_lower">
+                            <div class="o_avea_pricelist_panel">
+                                <h2 class="o_avea_workspace_section_title">Setup</h2>
+                                <div class="o_avea_pricelist_fields">
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Active</span>
+                                        <field name="active" nolabel="1" widget="boolean_toggle"/>
+                                        <span class="o_avea_pricelist_field_hint">Off = archived, ignored at the till.</span>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item">
+                                        <span class="o_avea_workspace_info_label">Available on till</span>
+                                        <field name="avea_pos_available" nolabel="1" widget="boolean_toggle"/>
+                                        <span class="o_avea_pricelist_field_hint">Lets staff pick this list on the till without a named customer.</span>
+                                    </div>
+                                    <div class="o_avea_workspace_info_item o_avea_pricelist_field--wide">
+                                        <span class="o_avea_workspace_info_label">Notes</span>
+                                        <field name="avea_notes" nolabel="1" placeholder="Who uses this list, review dates, etc."/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="o_avea_pricelist_panel o_avea_pricelist_panel--customers">
+                            <h2 class="o_avea_workspace_section_title">Customers on this list</h2>
+                            <p class="o_avea_pricelist_panel_hint">
+                                Add people here so this list is used when they are on a till sale. Removing someone puts them back on the default retail list.
+                            </p>
+                            <field
+                                name="avea_customer_ids"
+                                nolabel="1"
+                                widget="many2many"
+                                domain="[('customer_rank', '&gt;', 0)]"
+                                context="{'default_customer_rank': 1, 'res_partner_search_mode': 'customer'}"
+                                options="{'no_create_edit': True}"
+                            >
+                                <list>
+                                    <field name="name" string="Customer"/>
+                                    <field name="phone"/>
+                                    <field name="email"/>
+                                </list>
+                            </field>
+                            </div>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_avea_pricelist_prices_list" model="ir.ui.view">
+        <field name="name">product.template.list.avea.pricelist.prices</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <list
+                string="Prices"
+                create="false"
+                delete="false"
+                default_order="name"
+                class="o_avea_pricelist_prices_table"
+                js_class="avea_pricelist_prices"
+            >
+                <field name="name" string="Product"/>
+                <field name="categ_id" string="Category"/>
+                <field name="default_code" string="Code" optional="show"/>
+                <field name="barcode" string="Barcode" optional="hide"/>
+                <field name="avea_pricelist_preview_shelf" string="Shelf" widget="monetary"/>
+                <field name="avea_pricelist_preview_cost" string="Cost" widget="monetary"/>
+                <field name="avea_pricelist_preview_price" string="This list" widget="monetary"/>
+                <field name="avea_pricelist_preview_rule" string="Rule"/>
+                <field name="avea_pricelist_preview_currency_id" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_pricelist_prices_search" model="ir.ui.view">
+        <field name="name">product.template.search.avea.pricelist.prices</field>
+        <field name="model">product.template</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <search string="Prices">
+                <field
+                    name="name"
+                    string="Product"
+                    filter_domain="['|', '|', '|', ('name', 'ilike', self), ('default_code', 'ilike', self), ('barcode', 'ilike', self), ('categ_id', 'ilike', self)]"
+                />
+                <field name="default_code" string="Code"/>
+                <field name="barcode"/>
+                <field name="categ_id" string="Category"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_avea_pricelist_manager" model="ir.actions.act_window">
+        <field name="name">Price lists</field>
+        <field name="res_model">product.pricelist</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_pricelist_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_pricelist_form')}),
+        ]"/>
+        <field name="search_view_id" ref="view_avea_pricelist_search"/>
+        <field name="domain">[('avea_sales_platform_id', '=', False)]</field>
+        <field name="context">{'default_active': True}</field>
+    </record>
+
+</odoo>

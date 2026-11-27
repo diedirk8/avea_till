@@ -45,7 +45,14 @@ class TestAveaStockReceiveCharges(TransactionCase):
         if not warehouse:
             raise AssertionError("Warehouse required for Receive Stock tests")
 
-    def _create_receive(self, *, product_qty=1.0, product_cost=100.0, charges=None):
+    def _create_receive(
+        self,
+        *,
+        product_qty=1.0,
+        product_cost=100.0,
+        charges=None,
+        invoice_number="CHG-TEST-001",
+    ):
         charge_cmds = []
         for name, amount in charges or []:
             charge_cmds.append(
@@ -59,7 +66,7 @@ class TestAveaStockReceiveCharges(TransactionCase):
         return self.env["avea.stock.receive"].create(
             {
                 "partner_id": self.partner.id,
-                "invoice_number": "CHG-TEST-001",
+                "invoice_number": invoice_number,
                 "invoice_date": fields.Date.today(),
                 "received_date": fields.Date.today(),
                 "company_id": self.company.id,
@@ -78,6 +85,29 @@ class TestAveaStockReceiveCharges(TransactionCase):
                 "charge_ids": charge_cmds,
             }
         )
+
+    def _add_bill_postage(self, receive, amount=200.0, name="Courier&Postage"):
+        bill = receive.bill_id
+        bill.button_draft()
+        account = receive._avea_additional_charge_account()
+        taxes = self.purchase_tax
+        bill.write(
+            {
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "name": name,
+                            "quantity": 1.0,
+                            "price_unit": amount,
+                            "account_id": account.id,
+                            "tax_ids": [Command.set(taxes.ids)] if taxes else False,
+                            "display_type": "product",
+                        }
+                    )
+                ]
+            }
+        )
+        return bill
 
     def test_totals_include_charges_and_tax(self):
         receive = self._create_receive(
@@ -172,4 +202,64 @@ class TestAveaStockReceiveCharges(TransactionCase):
             self.product.qty_available,
             qty_before + 1.0,
             places=2,
+        )
+
+    def test_postage_added_on_bill_is_included_in_receive_total(self):
+        receive = self._create_receive(invoice_number="CHG-POST-001")
+        receive.action_receive_stock()
+        receive.invalidate_recordset()
+        product_total = receive.amount_total
+        self.assertFalse(receive.charge_ids)
+
+        bill = self._add_bill_postage(receive, amount=200.0)
+        receive.invalidate_recordset()
+        self.assertEqual(
+            float_compare(
+                receive.amount_total,
+                bill.amount_total,
+                precision_rounding=self.currency.rounding,
+            ),
+            0,
+            "Receive total must include postage added on the vendor bill",
+        )
+        self.assertGreater(receive.amount_total, product_total)
+        self.assertAlmostEqual(receive.amount_charges_untaxed, 200.0, places=2)
+
+        bill.action_post()
+        receive.invalidate_recordset()
+        postage = receive.charge_ids.filtered(lambda charge: charge.name == "Courier&Postage")
+        self.assertEqual(len(postage), 1)
+        self.assertAlmostEqual(postage.amount, 200.0, places=2)
+        self.assertEqual(
+            float_compare(
+                receive.amount_total,
+                bill.amount_total,
+                precision_rounding=self.currency.rounding,
+            ),
+            0,
+            "After posting, receive total must still match the paid bill",
+        )
+        extra = receive._avea_bill_extra_charge_lines()
+        self.assertFalse(extra, "Synced postage must not be counted twice")
+        self.assertAlmostEqual(receive.amount_untaxed, bill.amount_untaxed, places=2)
+        self.assertAlmostEqual(receive.amount_tax, bill.amount_tax, places=2)
+
+    def test_synced_postage_does_not_double_count_existing_charges(self):
+        receive = self._create_receive(
+            charges=[("Shipping", 50.0)],
+            invoice_number="CHG-POST-002",
+        )
+        receive.action_receive_stock()
+        bill = receive.bill_id
+        posted_total = bill.amount_total
+        receive._avea_sync_charges_from_bill()
+        receive.invalidate_recordset()
+        self.assertEqual(len(receive.charge_ids), 1)
+        self.assertEqual(
+            float_compare(
+                receive.amount_total,
+                posted_total,
+                precision_rounding=self.currency.rounding,
+            ),
+            0,
         )

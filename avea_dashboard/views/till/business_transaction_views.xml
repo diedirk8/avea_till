@@ -60,7 +60,7 @@
                 <filter string="Expenses" name="avea_tx_expense" domain="[('transaction_type', '=', 'expense')]"/>
                 <filter string="Supplier Payments" name="avea_tx_supplier" domain="[('transaction_type', '=', 'supplier_payment')]"/>
                 <filter string="Customer Payments" name="avea_tx_customer" domain="[('transaction_type', '=', 'customer_payment')]"/>
-                <filter string="Cash Withdrawals" name="avea_tx_withdrawal" domain="[('transaction_type', '=', 'cash_withdrawal')]"/>
+                <filter string="Withdrawals" name="avea_tx_withdrawal" domain="[('transaction_type', '=', 'cash_withdrawal')]"/>
                 <filter string="Cash Transfers" name="avea_tx_transfer" domain="[('transaction_type', '=', 'cash_transfer')]"/>
                 <filter string="Cash Ups" name="avea_tx_cash_up" domain="[('transaction_type', '=', 'cash_up')]"/>
                 <filter string="Store Credit" name="avea_tx_store_credit" domain="[('transaction_type', '=', 'store_credit')]"/>

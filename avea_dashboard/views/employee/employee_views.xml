@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_employee_search" model="ir.ui.view">
+        <field name="name">avea.employee.search</field>
+        <field name="model">res.partner</field>
+        <field name="priority">3</field>
+        <field name="arch" type="xml">
+            <search string="Employees">
+                <field name="name" string="Employee" filter_domain="['|', '|', '|', '|', '|', ('name', 'ilike', self), ('email', 'ilike', self), ('phone', 'ilike', self), ('avea_employee_job_title', 'ilike', self), ('avea_employee_id_number', 'ilike', self), ('avea_employee_number', 'ilike', self)]"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="avea_employee_job_title" string="Job"/>
+                <separator/>
+                <filter string="Already paid" name="avea_employee_has_advance" domain="[('avea_employee_advance_outstanding', '>', 0)]"/>
+                <separator/>
+                <filter string="Active" name="avea_active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="avea_archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter string="Job" name="group_job" context="{'group_by': 'avea_employee_job_title'}"/>
+                    <filter string="Paid" name="group_frequency" context="{'group_by': 'avea_employee_pay_frequency'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_avea_employee_list" model="ir.ui.view">
+        <field name="name">avea.employee.list</field>
+        <field name="model">res.partner</field>
+        <field name="priority">3</field>
+        <field name="arch" type="xml">
+            <list
+                string="Employees"
+                class="o_avea_customer_list o_avea_employee_list"
+                js_class="avea_employee_list"
+                create="1"
+                delete="0"
+                duplicate="0"
+                import="false"
+                default_order="name asc"
+            >
+                <button
+                    name="action_avea_open_employee"
+                    type="object"
+                    string="Open"
+                    icon="fa-external-link"
+                    title="Open employee"
+                    class="btn-link"
+                />
+                <field name="display_name" string="Employee" class="o_avea_customer_wrap_cell"/>
+                <field name="avea_employee_number" string="Staff no." optional="show"/>
+                <field name="avea_employee_job_title" string="Job" optional="show"/>
+                <field name="phone" optional="show"/>
+                <field name="avea_employee_pay_frequency" string="Paid" optional="show"/>
+                <field name="avea_employee_last_paid" string="Last paid" optional="show"/>
+                <field name="avea_employee_currency_id" column_invisible="True"/>
+                <field
+                    name="avea_employee_usual_salary"
+                    string="Usual salary"
+                    widget="monetary"
+                    optional="show"
+                    options="{'currency_field': 'avea_employee_currency_id'}"
+                />
+                <field
+                    name="avea_employee_advance_outstanding"
+                    string="Already paid"
+                    widget="monetary"
+                    options="{'currency_field': 'avea_employee_currency_id'}"
+                />
+                <field
+                    name="avea_employee_cash_due"
+                    string="Cash still due"
+                    widget="monetary"
+                    optional="show"
+                    options="{'currency_field': 'avea_employee_currency_id'}"
+                />
+                <field
+                    name="avea_employee_paid_year"
+                    string="Paid this year"
+                    widget="monetary"
+                    optional="show"
+                    options="{'currency_field': 'avea_employee_currency_id'}"
+                />
+                <field name="active" string="Active" widget="boolean_toggle" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_avea_employee_form" model="ir.ui.view">
+        <field name="name">avea.employee.form</field>
+        <field name="model">res.partner</field>
+        <field name="priority">3</field>
+        <field name="arch" type="xml">
+            <form string="Employee" class="o_avea_workspace o_avea_workspace--customer o_avea_workspace--employee">
+                <sheet class="o_avea_workspace_sheet">
+                    <field name="company_type" invisible="1"/>
+                    <field name="is_company" invisible="1"/>
+                    <field name="avea_is_employee" invisible="1"/>
+                    <field name="avea_employee_currency_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+
+                    <div class="o_avea_workspace_hero">
+                        <div class="o_avea_workspace_hero_intro">
+                            <span class="o_avea_workspace_eyebrow">Employees</span>
+                            <h1 class="o_avea_workspace_title">
+                                <field name="name" nolabel="1" placeholder="Employee name" class="o_avea_customer_name_title"/>
+                            </h1>
+                            <p class="o_avea_workspace_section_subtitle">
+                                Contact, job, bank, and every salary. An advance is salary paid early — it comes off the next salary.
+                            </p>
+                        </div>
+                        <div class="o_avea_customer_hero_actions">
+                            <button
+                                string="Record salary"
+                                name="action_avea_record_employee_salary"
+                                type="object"
+                                class="btn btn-primary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Record advance"
+                                name="action_avea_record_employee_advance"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button
+                                string="Pay history"
+                                name="action_avea_open_employee_pay_history"
+                                type="object"
+                                class="btn btn-secondary"
+                                invisible="not id"
+                            />
+                            <button string="Save" special="save" class="btn btn-primary" data-hotkey="s"/>
+                        </div>
+                    </div>
+
+                    <div class="o_avea_customer_workspace">
+                        <div class="o_avea_customer_main">
+                        <div class="o_avea_stock_product_panel">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-user" title="Contact" aria-hidden="true"/>
+                                Contact
+                            </h2>
+                            <div class="o_avea_stock_product_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Phone</span>
+                                    <field name="phone" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Email</span>
+                                    <field name="email" nolabel="1" widget="email"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">ID number</span>
+                                    <field name="avea_employee_id_number" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Tax number</span>
+                                    <field name="avea_employee_tax_number" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item o_avea_stock_product_fields_span">
+                                    <span class="o_avea_workspace_info_label">Street</span>
+                                    <field name="street" nolabel="1" placeholder="Street address"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Suburb / unit</span>
+                                    <field name="street2" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">City</span>
+                                    <field name="city" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Code</span>
+                                    <field name="zip" nolabel="1"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="o_avea_stock_product_panel">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-briefcase" title="Job" aria-hidden="true"/>
+                                Job and pay
+                            </h2>
+                            <div class="o_avea_stock_product_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Staff number</span>
+                                    <field name="avea_employee_number" nolabel="1" placeholder="e.g. 0004"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Job</span>
+                                    <field name="avea_employee_job_title" nolabel="1" placeholder="e.g. Cashier"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Started</span>
+                                    <field name="avea_employee_start_date" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Paid</span>
+                                    <field name="avea_employee_pay_frequency" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Usual salary</span>
+                                    <field
+                                        name="avea_employee_usual_salary"
+                                        nolabel="1"
+                                        widget="monetary"
+                                        options="{'currency_field': 'avea_employee_currency_id'}"
+                                    />
+                                </div>
+                            </div>
+                            <p class="text-muted mb-0">
+                                Usual salary is what they should get. If you already paid an advance, Cash still due is the rest.
+                            </p>
+                        </div>
+
+                        <div class="o_avea_stock_product_panel">
+                            <h2 class="o_avea_workspace_section_title">
+                                <i class="fa fa-university" title="Bank" aria-hidden="true"/>
+                                Bank for EFT
+                            </h2>
+                            <div class="o_avea_stock_product_fields">
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Account name</span>
+                                    <field name="avea_employee_bank_holder" nolabel="1" placeholder="Name on the account"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Bank</span>
+                                    <field name="avea_employee_bank_name" nolabel="1" placeholder="e.g. FNB"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Branch code</span>
+                                    <field name="avea_employee_bank_branch" nolabel="1"/>
+                                </div>
+                                <div class="o_avea_workspace_info_item">
+                                    <span class="o_avea_workspace_info_label">Account number</span>
+                                    <field name="avea_employee_bank_account" nolabel="1"/>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="o_avea_stock_product_panel" invisible="not id">
+                            <div class="o_avea_customer_panel_heading">
+                                <h2 class="o_avea_workspace_section_title">
+                                    <i class="fa fa-money" title="Pay history" aria-hidden="true"/>
+                                    Pay history
+                                </h2>
+                                <button
+                                    name="action_avea_open_employee_pay_history"
+                                    type="object"
+                                    string="View all"
+                                    class="btn btn-link btn-sm"
+                                />
+                            </div>
+                            <p class="text-muted" groups="avea_till.group_avea_employee_access" invisible="avea_employee_pay_ids">
+                                No salary or advance yet. Record salary when you EFT or withdraw cash.
+                            </p>
+                            <field name="avea_employee_pay_ids" nolabel="1" readonly="1">
+                                <list
+                                    create="false"
+                                    edit="false"
+                                    delete="false"
+                                    default_order="date desc, id desc"
+                                >
+                                    <field name="currency_id" column_invisible="True"/>
+                                    <field name="date" string="Date"/>
+                                    <field name="avea_staff_pay_kind" string="What"/>
+                                    <field
+                                        name="avea_staff_salary_total"
+                                        string="This salary"
+                                        widget="monetary"
+                                        options="{'currency_field': 'currency_id'}"
+                                    />
+                                    <field
+                                        name="avea_staff_advance_deducted"
+                                        string="Already paid"
+                                        widget="monetary"
+                                        options="{'currency_field': 'currency_id'}"
+                                        optional="show"
+                                    />
+                                    <field
+                                        name="avea_paid_amount"
+                                        string="Cash paid"
+                                        widget="monetary"
+                                        options="{'currency_field': 'currency_id'}"
+                                    />
+                                    <field name="journal_id" string="From"/>
+                                    <field name="payment_ref" string="Reference" optional="show"/>
+                                    <field name="avea_staff_pay_note" string="What happened"/>
+                                </list>
+                            </field>
+                        </div>
+                        </div>
+
+                        <aside class="o_avea_customer_summary">
+                            <div class="o_avea_stock_product_summary_card">
+                                <div class="o_avea_stock_product_summary_header">
+                                    <span class="o_avea_stock_product_summary_eyebrow">Pay</span>
+                                    <h2 class="o_avea_stock_product_summary_title">At a glance</h2>
+                                </div>
+                                <div class="o_avea_stock_product_summary_block">
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Usual salary</span>
+                                        <field
+                                            name="avea_employee_usual_salary"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            options="{'currency_field': 'avea_employee_currency_id'}"
+                                        />
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Already paid</span>
+                                        <field
+                                            name="avea_employee_advance_outstanding"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            options="{'currency_field': 'avea_employee_currency_id'}"
+                                        />
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Cash still due</span>
+                                        <field
+                                            name="avea_employee_cash_due"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            options="{'currency_field': 'avea_employee_currency_id'}"
+                                        />
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Last paid</span>
+                                        <field name="avea_employee_last_paid" nolabel="1" readonly="1"/>
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">This month</span>
+                                        <field
+                                            name="avea_employee_paid_month"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            options="{'currency_field': 'avea_employee_currency_id'}"
+                                        />
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">This year</span>
+                                        <field
+                                            name="avea_employee_paid_year"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            options="{'currency_field': 'avea_employee_currency_id'}"
+                                        />
+                                    </div>
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Paid in total</span>
+                                        <field
+                                            name="avea_employee_paid_total"
+                                            nolabel="1"
+                                            widget="monetary"
+                                            readonly="1"
+                                            options="{'currency_field': 'avea_employee_currency_id'}"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="o_avea_stock_product_summary_block">
+                                    <div class="o_avea_stock_product_summary_row">
+                                        <span class="o_avea_stock_product_summary_label">Active</span>
+                                        <field name="active" nolabel="1" widget="boolean_toggle"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </aside>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_avea_employee_centre" model="ir.actions.act_window">
+        <field name="name">Employees</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_avea_employee_search"/>
+        <field name="view_ids" eval="[(5, 0, 0),
+            (0, 0, {'view_mode': 'list', 'view_id': ref('view_avea_employee_list')}),
+            (0, 0, {'view_mode': 'form', 'view_id': ref('view_avea_employee_form')}),
+        ]"/>
+        <field name="target">main</field>
+        <field name="context">{
+            'avea_employee_workspace': True,
+            'avea_staff_payee': True,
+            'clear_breadcrumbs': True,
+            'no_breadcrumbs': True,
+            'default_avea_is_employee': True,
+            'default_is_company': False,
+        }</field>
+        <field name="domain">[('avea_is_employee', '=', True)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Add your first employee
+            </p>
+            <p>
+                Keep each person here with their usual salary and bank details.
+                Salaries and advances are recorded against them. An advance is salary paid early.
+            </p>
+        </field>
+    </record>
+
+</odoo>

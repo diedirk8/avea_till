@@ -23,6 +23,14 @@
                     icon="fa-external-link"
                     title="View transactions"
                 />
+                <button
+                    name="action_open_transfer"
+                    type="object"
+                    string="Transfer"
+                    class="btn-link"
+                    icon="fa-exchange"
+                    title="Transfer from this account"
+                />
             </list>
         </field>
     </record>

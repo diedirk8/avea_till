@@ -136,7 +136,9 @@ class AveaCreditLedgerEntry(models.Model):
         return self.amount
 
     @api.model
-    def create_issued_credit(self, partner, amount, reason, notes=None):
+    def create_issued_credit(
+        self, partner, amount, reason, notes=None, account_move=None
+    ):
         """Create a confirmed store credit statement entry."""
         partner._avea_credit_ensure_customer()
         reason_id = reason.id if hasattr(reason, "id") else reason
@@ -149,7 +151,10 @@ class AveaCreditLedgerEntry(models.Model):
                 "state": "posted",
             }
         )
-        entry._avea_credit_create_issuance_account_move()
+        if account_move:
+            entry.sudo().write({"account_move_id": account_move.id})
+        else:
+            entry._avea_credit_create_issuance_account_move()
         return entry
 
     def _avea_credit_create_issuance_account_move(self):

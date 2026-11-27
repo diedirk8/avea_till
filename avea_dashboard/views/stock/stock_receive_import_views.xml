@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_avea_stock_receive_import_form" model="ir.ui.view">
+        <field name="name">avea.stock.receive.import.form</field>
+        <field name="model">avea.stock.receive.import</field>
+        <field name="arch" type="xml">
+            <form string="Import ordered products" class="o_avea_wizard o_avea_stock_receive_import">
+                <field name="receive_id" invisible="1"/>
+                <div class="o_avea_workspace_section_subtitle">
+                    Download the template, fill one row per product, then upload it here.
+                    SKU is your product SKU or barcode. Supplier Code is this supplier's code.
+                    A 70% or closer product is suggested for you to confirm. Costs are excluding tax.
+                </div>
+                <div class="o_avea_workspace_info_item o_avea_stock_import_download">
+                    <button
+                        name="action_download_template"
+                        type="object"
+                        string="Download Excel template"
+                        class="btn btn-link"
+                        icon="fa-download"
+                    />
+                </div>
+                <div class="o_avea_workspace_info_item">
+                    <span class="o_avea_workspace_info_label">Filled spreadsheet</span>
+                    <field name="spreadsheet" filename="spreadsheet_filename" nolabel="1"/>
+                    <field name="spreadsheet_filename" invisible="1"/>
+                </div>
+                <footer>
+                    <button
+                        string="Cancel"
+                        special="cancel"
+                        class="btn btn-secondary"
+                        data-hotkey="x"
+                    />
+                    <button
+                        name="action_import"
+                        type="object"
+                        string="Import"
+                        class="btn btn-primary"
+                        data-hotkey="q"
+                    />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

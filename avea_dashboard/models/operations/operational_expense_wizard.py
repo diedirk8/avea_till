@@ -1,5 +1,9 @@
 from odoo import Command, _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools.misc import formatLang
+
+from .bank_reconcile_booking_rules import AveaBankReconcileBookingRules
+from .withdraw_cash_wizard import SALARY_WAGES_ACCOUNT_CODE
 
 
 class AveaOperationalExpenseWizard(models.TransientModel):
@@ -8,9 +12,14 @@ class AveaOperationalExpenseWizard(models.TransientModel):
 
     partner_id = fields.Many2one(
         "res.partner",
-        string="Supplier",
+        string="Paid to",
         required=True,
-        domain="[('supplier_rank', '>', 0)]",
+    )
+    what_for = fields.Selection(
+        selection="_selection_what_for",
+        string="What is this?",
+        default="expense",
+        required=True,
     )
     expense_date = fields.Date(
         string="Date",
@@ -23,13 +32,25 @@ class AveaOperationalExpenseWizard(models.TransientModel):
     expense_account_id = fields.Many2one(
         "account.account",
         string="Expense Account",
-        required=True,
-        domain=(
-            "[('active', '=', True), "
-            "('account_type', 'in', "
-            "('expense', 'expense_other', 'expense_direct_cost'))]"
-        ),
-        help="What the business spent the money on.",
+        domain="[('id', 'in', available_expense_account_ids)]",
+        help="What the money was spent on. Owner drawings is listed for personal card spend.",
+    )
+    employee_advance_outstanding = fields.Monetary(
+        string="Advances already paid",
+        compute="_compute_employee_advance_outstanding",
+        currency_field="currency_id",
+    )
+    employee_salary_including_advances = fields.Monetary(
+        string="Salary including advances",
+        compute="_compute_employee_advance_outstanding",
+        currency_field="currency_id",
+    )
+    employee_advance_help = fields.Char(
+        compute="_compute_employee_advance_outstanding",
+    )
+    available_expense_account_ids = fields.Many2many(
+        "account.account",
+        compute="_compute_available_expense_account_ids",
     )
     description = fields.Char(
         string="Description",
@@ -64,6 +85,25 @@ class AveaOperationalExpenseWizard(models.TransientModel):
         required=True,
         default=lambda self: self.env.company,
     )
+    bank_reconcile_line_id = fields.Many2one(
+        "avea.bank.reconcile.line",
+        string="Bank reconcile line",
+        ondelete="set null",
+    )
+    booking_partner_role = fields.Selection(
+        selection=[
+            ("supplier", "Supplier"),
+            ("employee", "Employee"),
+            ("bank", "Bank"),
+            ("merchant", "Merchant"),
+        ],
+        string="Payee type",
+        readonly=True,
+    )
+    partner_hint = fields.Text(
+        string="Payee help",
+        readonly=True,
+    )
 
     @api.depends("company_id")
     def _compute_available_journal_ids(self):
@@ -73,15 +113,25 @@ class AveaOperationalExpenseWizard(models.TransientModel):
                 company._avea_expense_journals() if company else False
             )
 
+    @api.depends("company_id")
+    def _compute_available_expense_account_ids(self):
+        Account = self.env["account.account"]
+        for wizard in self:
+            company = wizard.company_id or self.env.company
+            wizard.available_expense_account_ids = Account.search(
+                AveaBankReconcileBookingRules.expense_account_domain(company)
+            )
+
     @api.model
     def default_get(self, fields_list):
         values = super().default_get(fields_list)
-        if "paid_from_journal_id" in fields_list and not values.get(
-            "paid_from_journal_id"
-        ):
-            journal = self._avea_default_paid_from_journal(self.env.company)
-            if journal:
-                values["paid_from_journal_id"] = journal.id
+        ctx = self.env.context
+        role = ctx.get("avea_booking_partner_role")
+        if role and "booking_partner_role" in fields_list:
+            values["booking_partner_role"] = role
+        hint = ctx.get("default_partner_hint")
+        if hint and "partner_hint" in fields_list:
+            values["partner_hint"] = hint
         return values
 
     @api.constrains("amount")
@@ -90,14 +140,134 @@ class AveaOperationalExpenseWizard(models.TransientModel):
             if wizard.currency_id.compare_amounts(wizard.amount, 0.0) <= 0:
                 raise ValidationError(_("Amount must be greater than zero."))
 
+    @api.constrains("what_for", "expense_account_id")
+    def _check_expense_account(self):
+        for wizard in self:
+            if wizard.what_for == "expense" and not wizard.expense_account_id:
+                raise ValidationError(_("Select what the money was spent on."))
+
+    @api.model
+    def _selection_what_for(self):
+        options = [
+            ("expense", "Shop / operating expense"),
+            ("salary", "Salary / wages"),
+            ("advance", "Salary advance"),
+        ]
+        if not self.env["res.users"]._avea_can_access_employees():
+            return [options[0]]
+        return options
+
+    def _avea_is_staff_pay(self):
+        self.ensure_one()
+        return self.what_for in ("salary", "advance")
+
+    @api.depends("partner_id", "what_for", "amount", "currency_id")
+    def _compute_employee_advance_outstanding(self):
+        for wizard in self:
+            outstanding = 0.0
+            if wizard.partner_id and wizard._avea_is_staff_pay():
+                outstanding = wizard.partner_id.avea_employee_advance_outstanding or 0.0
+            wizard.employee_advance_outstanding = outstanding
+            cash = wizard.amount or 0.0
+            if wizard.what_for == "salary":
+                wizard.employee_salary_including_advances = cash + outstanding
+            else:
+                wizard.employee_salary_including_advances = 0.0
+            wizard.employee_advance_help = wizard._avea_employee_pay_help(
+                wizard.partner_id, outstanding, cash
+            )
+
+    def _avea_employee_pay_help(self, employee, outstanding, cash):
+        self.ensure_one()
+        if not employee or not self.currency_id:
+            return False
+        currency = self.currency_id
+        money = lambda amount: formatLang(self.env, amount, currency_obj=currency)
+        if self.what_for == "advance":
+            return _(
+                "This is salary paid early. It comes off %(name)s's next salary "
+                "so you do not pay it twice.",
+                name=employee.display_name,
+            )
+        if self.what_for != "salary":
+            return False
+        parts = []
+        usual = employee.avea_employee_usual_salary or 0.0
+        if currency.compare_amounts(usual, 0.0) > 0:
+            parts.append(_("Usual salary %(usual)s.", usual=money(usual)))
+        if currency.compare_amounts(outstanding, 0.0) > 0:
+            parts.append(
+                _(
+                    "%(advance)s already paid — that comes off this salary.",
+                    advance=money(outstanding),
+                )
+            )
+            due = employee.avea_employee_cash_due or 0.0
+            if currency.compare_amounts(due, 0.0) > 0:
+                parts.append(
+                    _("Cash still due: %(due)s. Enter the cash you are paying now.", due=money(due))
+                )
+            else:
+                parts.append(
+                    _(
+                        "Enter only extra cash if you are paying more. This salary: %(total)s.",
+                        total=money(cash + outstanding),
+                    )
+                )
+        elif currency.compare_amounts(usual, 0.0) > 0:
+            parts.append(_("Enter the cash you are paying now."))
+        return " ".join(parts) if parts else False
+
+    def _avea_salary_account(self):
+        company = self.company_id or self.env.company
+        return self.env["account.account"].sudo().search(
+            [
+                ("code", "=", SALARY_WAGES_ACCOUNT_CODE),
+                ("company_ids", "in", company.id),
+                ("active", "=", True),
+            ],
+            limit=1,
+        ) or self.env["account.account"].sudo().search(
+            [
+                ("company_ids", "in", company.id),
+                ("active", "=", True),
+                ("name", "ilike", "salary"),
+            ],
+            limit=1,
+        )
+
+    @api.onchange("what_for", "company_id")
+    def _onchange_what_for(self):
+        if self.what_for not in ("salary", "advance"):
+            if self.booking_partner_role == "employee":
+                self.booking_partner_role = "supplier"
+                self.partner_hint = False
+            return
+        self.booking_partner_role = "employee"
+        self.partner_hint = AveaBankReconcileBookingRules.partner_hint_for_role(
+            "employee"
+        )
+        salary_account = self._avea_salary_account()
+        if salary_account:
+            self.expense_account_id = salary_account
+        line = self.bank_reconcile_line_id
+        if line and not self.partner_id:
+            partner = AveaBankReconcileBookingRules.suggest_partner(
+                self.env,
+                company=self.company_id or self.env.company,
+                partner_role="employee",
+                description=line.description,
+                reference=line.reference,
+            )
+            if partner:
+                self.partner_id = partner
+
     @api.onchange("company_id")
     def _onchange_company_id_paid_from(self):
         journal = self.paid_from_journal_id
         allowed = self._avea_paid_from_journals(self.company_id)
         if journal and journal not in allowed:
-            self.paid_from_journal_id = self._avea_default_paid_from_journal(
-                self.company_id
-            )
+            self.paid_from_journal_id = False
 
     @api.model
     def action_open_wizard(self):
@@ -114,9 +284,83 @@ class AveaOperationalExpenseWizard(models.TransientModel):
 
     def action_record_expense(self):
         self.ensure_one()
-        bill = self._avea_create_vendor_bill()
-        self._avea_pay_bill(bill)
+        self._avea_resolve_partner()
+        if self._avea_is_staff_pay():
+            self.env["res.users"]._avea_check_employee_access()
+            statement_line = self._avea_post_staff_pay()
+        else:
+            if not self.expense_account_id:
+                raise UserError(_("Select what the money was spent on."))
+            bill = self._avea_create_vendor_bill()
+            statement_line = self._avea_pay_bill(bill)
+        self._avea_remember_bank_booking()
+        if self.bank_reconcile_line_id:
+            return self.bank_reconcile_line_id._avea_after_booked(statement_line)
         return self._avea_success_close()
+
+    def _avea_remember_bank_booking(self):
+        self.ensure_one()
+        line = self.bank_reconcile_line_id
+        if not line:
+            return
+        account = self.expense_account_id
+        if self._avea_is_staff_pay() and not account:
+            account = self._avea_salary_account()
+        AveaBankReconcileBookingRules.remember(
+            self.env,
+            company=self.company_id,
+            description=line.description,
+            reference=line.reference,
+            partner=self.partner_id,
+            account=account,
+            import_action="expense",
+        )
+
+    def _avea_resolve_partner(self):
+        """Flag the payee as an employee or supplier before posting."""
+        self.ensure_one()
+        partner = self.partner_id
+        if not partner:
+            if self._avea_is_staff_pay():
+                raise UserError(_("Choose the employee this salary or advance is for."))
+            raise UserError(_("Choose a supplier or add a new one from the list."))
+        if self._avea_is_staff_pay():
+            partner._avea_mark_employee()
+            return partner
+        if partner.supplier_rank < 1:
+            partner.sudo().write({"supplier_rank": 1})
+        return partner
+
+    def _avea_staff_pay_kind(self):
+        self.ensure_one()
+        if self.what_for == "advance":
+            return "advance"
+        if self.what_for == "salary":
+            return "salary"
+        return False
+
+    def _avea_post_staff_pay(self):
+        self.ensure_one()
+        journal = self._avea_payment_journal()
+        salary_account = self._avea_salary_account()
+        if salary_account and not self.expense_account_id:
+            self.expense_account_id = salary_account
+        return self.partner_id._avea_post_staff_pay(
+            journal=journal,
+            amount=self.amount,
+            pay_date=self.expense_date,
+            kind=self._avea_staff_pay_kind(),
+            reference=self.document_ref or self.description,
+            narration=_(
+                "Recorded from Avea. Paid from %(journal)s to %(name)s (%(kind)s).",
+                journal=self.paid_from_journal_id.display_name,
+                name=self.partner_id.display_name,
+                kind=dict(
+                    self._fields["what_for"]._description_selection(self.env)
+                ).get(self.what_for)
+                or "",
+            ),
+        )
 
     def _avea_create_vendor_bill(self):
         self.ensure_one()
@@ -316,7 +560,7 @@ class AveaOperationalExpenseWizard(models.TransientModel):
                 "title": _("Expense recorded"),
                 "message": _(
                     "%(description)s for %(supplier)s has been recorded.",
-                    description=self.description,
+                    description=self.description or self._avea_staff_pay_kind() or _("Expense"),
                     supplier=self.partner_id.display_name,
                 ),
                 "type": "success",

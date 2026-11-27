@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>How to reconcile the bank in Avea — Pets Empire</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 18mm 16mm;
+      @bottom-left {
+        content: "Pets Empire  ·  Avea Money";
+        font-family: Inter, "Liberation Sans", sans-serif;
+        font-size: 8.5pt;
+        color: #6b645e;
+      }
+      @bottom-right {
+        content: "Page " counter(page);
+        font-family: Inter, "Liberation Sans", sans-serif;
+        font-size: 8.5pt;
+        color: #6b645e;
+      }
+    }
+    @page :first {
+      margin: 0;
+      @bottom-left { content: none; }
+      @bottom-right { content: none; }
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      color: #1c1917;
+      font-family: Inter, "Liberation Sans", sans-serif;
+      font-size: 10.5pt;
+      line-height: 1.45;
+    }
+    h1, h2, h3 { font-weight: 600; letter-spacing: -0.02em; color: #1c1917; }
+    h1 { font-size: 22pt; line-height: 1.2; margin: 0 0 8pt; }
+    h2 {
+      font-size: 14pt;
+      margin: 18pt 0 8pt;
+      padding-bottom: 4pt;
+      border-bottom: 1.5pt solid #c45c26;
+      page-break-after: avoid;
+    }
+    h3 { font-size: 11.5pt; margin: 14pt 0 6pt; page-break-after: avoid; }
+    p { margin: 0 0 8pt; }
+    strong { font-weight: 600; }
+    ol, ul { margin: 0 0 10pt; padding-left: 18pt; }
+    li { margin: 0 0 4pt; }
+    li > ul, li > ol { margin-top: 4pt; }
+
+    .cover {
+      min-height: 297mm;
+      background: #1c1917;
+      color: #faf7f4;
+      padding: 28mm 18mm 22mm;
+      page-break-after: always;
+    }
+    .cover .eyebrow {
+      color: #c45c26;
+      font-size: 11pt;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-bottom: 28mm;
+    }
+    .cover h1 {
+      color: #faf7f4;
+      font-size: 32pt;
+      line-height: 1.12;
+      max-width: 140mm;
+      margin-bottom: 12pt;
+    }
+    .cover .lede {
+      font-size: 13pt;
+      line-height: 1.4;
+      color: #d6cfc8;
+      max-width: 145mm;
+      margin-bottom: 28mm;
+    }
+    .cover .meta {
+      margin-top: 40mm;
+      font-size: 10pt;
+      color: #a8a09a;
+    }
+    .cover .meta div { margin-bottom: 3pt; }
+    .cover .bar {
+      width: 28mm;
+      height: 4pt;
+      background: #c45c26;
+      margin: 14pt 0 22pt;
+    }
+
+    .section { page-break-inside: auto; }
+    .keep { page-break-inside: avoid; }
+
+    .callout {
+      border-left: 3.5pt solid #c45c26;
+      background: #fbf4ee;
+      padding: 8pt 10pt;
+      margin: 10pt 0 12pt;
+      page-break-inside: avoid;
+    }
+    .callout.warn {
+      border-left-color: #b45309;
+      background: #fff7ed;
+    }
+    .callout.ok {
+      border-left-color: #3f6b4a;
+      background: #f1f6f2;
+    }
+    .callout .label {
+      font-size: 8pt;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #c45c26;
+      margin-bottom: 2pt;
+    }
+    .callout.warn .label { color: #b45309; }
+    .callout.ok .label { color: #3f6b4a; }
+
+    .step {
+      page-break-inside: avoid;
+      margin: 0 0 12pt;
+      padding: 0 0 2pt;
+    }
+    .step-num {
+      display: inline-block;
+      background: #c45c26;
+      color: #fff;
+      font-weight: 600;
+      font-size: 9pt;
+      min-width: 18pt;
+      text-align: center;
+      padding: 1pt 6pt;
+      margin-right: 6pt;
+      vertical-align: middle;
+    }
+    .step h3 { display: inline; font-size: 12pt; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 6pt 0 12pt;
+      font-size: 9.5pt;
+      page-break-inside: avoid;
+    }
+    th {
+      text-align: left;
+      background: #f4eee9;
+      color: #1c1917;
+      font-weight: 600;
+      padding: 5pt 7pt;
+      border-bottom: 1pt solid #d8cfc7;
+    }
+    td {
+      padding: 5pt 7pt;
+      border-bottom: 0.6pt solid #ece6e0;
+      vertical-align: top;
+    }
+    td.num, th.num { text-align: right; white-space: nowrap; }
+    .btn {
+      display: inline-block;
+      background: #c45c26;
+      color: #fff;
+      font-weight: 600;
+      font-size: 9pt;
+      padding: 1pt 7pt;
+      white-space: nowrap;
+    }
+    .btn.ghost {
+      background: #fff;
+      color: #c45c26;
+      border: 0.8pt solid #c45c26;
+    }
+    .btn.dark { background: #1c1917; color: #fff; }
+    .muted { color: #5c564f; }
+    .toc a { color: inherit; text-decoration: none; }
+    .toc td { padding-top: 7pt; padding-bottom: 7pt; }
+    .toc .pg {
+      text-align: right;
+      width: 14mm;
+      color: #6b645e;
+      font-variant-numeric: tabular-nums;
+    }
+    .toc .pg a::after { content: target-counter(attr(href), page); }
+    .grid-2 {
+      display: table;
+      width: 100%;
+      margin: 0 0 10pt;
+    }
+    .grid-2 > div {
+      display: table-cell;
+      width: 50%;
+      vertical-align: top;
+      padding-right: 8pt;
+    }
+    .grid-2 > div + div { padding-right: 0; padding-left: 8pt; }
+    .small { font-size: 9pt; color: #5c564f; }
+    .path { font-weight: 600; }
+    hr.soft { border: 0; border-top: 0.6pt solid #ece6e0; margin: 14pt 0; }
+    #lines, #august, #checklist, #wrong { page-break-before: always; }
+  </style>
+</head>
+<body>
+
+<section class="cover">
+  <div class="eyebrow">Avea · Money</div>
+  <h1>How to reconcile the bank</h1>
+  <div class="bar"></div>
+  <p class="lede">
+    A plain-language, step-by-step guide for Pets Empire. Tick the FNB Gold
+    Business account to the books using the bank statement, the Yoco payouts
+    file, and the Capitec merchant statement.
+  </p>
+  <div class="meta">
+    <div>Account 62920038462 · FNB Gold Business</div>
+    <div>Written for Avea 19.0.3.14.202 and later</div>
+    <div>November 2026</div>
+  </div>
+</section>
+
+<h2>Contents</h2>
+<table class="toc">
+  <tr><td><a href="#meaning">1. What “reconciled” actually means</a></td><td class="pg"><a href="#meaning"></a></td></tr>
+  <tr><td><a href="#files">2. Gather three files every month</a></td><td class="pg"><a href="#files"></a></td></tr>
+  <tr><td><a href="#yoco">3. The Yoco trick everyone misses</a></td><td class="pg"><a href="#yoco"></a></td></tr>
+  <tr><td><a href="#steps">4. Do the recon, step by step</a></td><td class="pg"><a href="#steps"></a></td></tr>
+  <tr><td><a href="#lines">5. What to do with each remaining line</a></td><td class="pg"><a href="#lines"></a></td></tr>
+  <tr><td><a href="#buttons">6. Buttons cheat sheet</a></td><td class="pg"><a href="#buttons"></a></td></tr>
+  <tr><td><a href="#august">7. Worked example — August 2026</a></td><td class="pg"><a href="#august"></a></td></tr>
+  <tr><td><a href="#checklist">8. Monthly checklist</a></td><td class="pg"><a href="#checklist"></a></td></tr>
+  <tr><td><a href="#wrong">9. If something looks wrong</a></td><td class="pg"><a href="#wrong"></a></td></tr>
+</table>
+
+<div class="callout ok">
+  <div class="label">The only goal</div>
+  After you finish, the closing balance on the FNB statement and the balance
+  in Avea (after things that have not hit the bank yet) must be the same.
+  That figure is called <strong>Difference</strong>. It must be <strong>R0.00</strong>.
+</div>
+
+<h2 id="meaning">1. What “reconciled” actually means</h2>
+<p>
+  The FNB statement is the truth of the bank account. Avea is the shop’s
+  books. Reconciliation is the monthly job of proving they tell the same story.
+</p>
+<p>Card sales take a detour, which is why this feels harder than cash:</p>
+<ol>
+  <li>A customer pays on the till with <strong>Card</strong>.</li>
+  <li>Yoco or Capitec takes that sale, keeps a fee (and Yoco often keeps a loan repayment), then pays the rest into FNB a day later.</li>
+  <li>FNB shows a <strong>Magtape Credit Yoco</strong> or <strong>Magtape Credit Capitec</strong> — smaller than the till, and mixed in with salaries, suppliers, and everything else.</li>
+</ol>
+<p>
+  Until you settle those deposits, Avea still thinks the card money is
+  “outstanding receipts” waiting to be banked. That is why the Bank balance
+  in Avea can look nothing like the FNB app.
+</p>
+<div class="callout">
+  <div class="label">You are not balancing the till here</div>
+  Cash-up is a different job. This guide is only the FNB current account.
+  Cash, petty cash, and the safe have their own balances under
+  <span class="path">Money → Account Balances</span>.
+</div>
+
+<h2 id="files">2. Gather three files every month</h2>
+<p>Download all three <strong>for the same calendar month</strong> before you open Avea.</p>
+<table>
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Where to get it</th>
+      <th>What it proves</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>FNB Gold Business statement PDF</strong></td>
+      <td>FNB App or Online Banking → Statements. Digital PDF, not a photo of a printout.</td>
+      <td>Every rand in and out of 62920038462. This is the statement Avea ticks.</td>
+    </tr>
+    <tr>
+      <td><strong>Yoco payouts CSV</strong></td>
+      <td>Yoco portal → Payouts → export CSV for the statement month (include a day either side if the last payout lands on the 1st).</td>
+      <td>How much of each Yoco deposit is sales, fee, and capital.</td>
+    </tr>
+    <tr>
+      <td><strong>Capitec merchant statement PDF</strong></td>
+      <td>Capitec Merchant Portal (<span class="small">merchant.capitecbank.co.za</span>) → statements. Check the <em>statement period</em>, not the issued date.</td>
+      <td>How much of each Capitec deposit is sales versus commission.</td>
+    </tr>
+  </tbody>
+</table>
+<div class="callout warn">
+  <div class="label">Issued date is not the period</div>
+  The Capitec file named <strong>monthly_statement_2026-08-06</strong> was issued on
+  6 August, but the period printed on page 1 was <strong>2 Jul 2026 – 1 Aug 2026</strong>.
+  That is a July statement. It will not match August FNB deposits. Always read
+  “Statement period” on page 1 before you attach the file.
+</div>
+<p class="small">
+  If you attach a Yoco CSV or Capitec merchant PDF as the FNB statement, Avea
+  will stop you and tell you to put it under Card machine files instead.
+</p>
+
+<h2 id="yoco">3. The Yoco trick everyone misses</h2>
+<p>
+  On FNB you only see the amount that landed. On the Yoco CSV that amount is
+  the <strong>Amount</strong> column. It is already after fees and after capital.
+  Do not type that number as “card sales”.
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Yoco column</th>
+      <th>What it is</th>
+      <th class="num">Example (1 Aug 2026)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Amount</td>
+      <td>What FNB received (Magtape Credit Yoco)</td>
+      <td class="num">R 3,062.51</td>
+    </tr>
+    <tr>
+      <td>Fee amount + Fee VAT</td>
+      <td>Yoco’s card fee. Books as Bank Charges.</td>
+      <td class="num">R 112.50</td>
+    </tr>
+    <tr>
+      <td>Capital Repayment</td>
+      <td>Repayment of the Yoco facility. A loan, not a sale and not a fee.</td>
+      <td class="num">R 602.29</td>
+    </tr>
+    <tr>
+      <td>Implied card sales</td>
+      <td>Amount + fee + VAT + capital. This is what the till sold on Yoco that batch.</td>
+      <td class="num">R 3,777.30</td>
+    </tr>
+  </tbody>
+</table>
+<div class="callout">
+  <div class="label">Why this matters</div>
+  If you treat the whole gap as a “card fee”, August 2026 would overstate fees
+  by <strong>R 14,324.87</strong> — that was Yoco capital, not commission.
+  Avea now splits it automatically when the CSV is attached.
+</div>
+<p>
+  Capitec is simpler: the merchant statement has gross machine totals and net
+  payouts. The difference is commission + VAT. Capitec does not take a capital
+  repayment off the payout.
+</p>
+
+<h2 id="steps">4. Do the recon, step by step</h2>
+<p class="muted">Work is saved as you go. You can close the screen and reopen it from <span class="path">Money → Bank reconciliations</span>.</p>
+
+<div class="step">
+  <span class="step-num">1</span>
+  <h3>Open a new reconciliation</h3>
+  <p>
+    In Avea go to <span class="path">Money → New bank reconciliation</span>.
+    You can also open <span class="path">Money → Bank reconciliations</span>
+    and press <span class="btn">New reconciliation</span>.
+  </p>
+  <p>You need the <strong>manager</strong> role. The screen starts in Draft.</p>
+</div>
+
+<div class="step">
+  <span class="step-num">2</span>
+  <h3>Choose the bank account</h3>
+  <p>
+    Set <strong>Bank account</strong> to <strong>Bank</strong> — the FNB Gold
+    Business account. Do not pick Store Credit or a cash journal.
+  </p>
+</div>
+
+<div class="step">
+  <span class="step-num">3</span>
+  <h3>Attach the FNB statement</h3>
+  <p>
+    Under <strong>FNB statement (PDF, CSV, or OFX)</strong> upload the Gold
+    Business PDF for the month. CSV or OFX from FNB also works if you ever
+    export those instead.
+  </p>
+</div>
+
+<div class="step">
+  <span class="step-num">4</span>
+  <h3>Attach the card machine files</h3>
+  <p>
+    Under <strong>Card machine files</strong> click to add a row, then attach:
+  </p>
+  <ul>
+    <li>the Yoco payouts CSV, and</li>
+    <li>the Capitec merchant statement PDF for <em>this</em> month.</li>
+  </ul>
+  <p>
+    You can add both. If you only have Yoco today, attach Yoco and continue —
+    Capitec deposits will stay unmatched until you add the right Capitec file
+    and press <span class="btn ghost">Refresh matches</span>.
+  </p>
+</div>
+
+<div class="step">
+  <span class="step-num">5</span>
+  <h3>Click Load &amp; match</h3>
+  <p>
+    The orange <span class="btn">Load &amp; match</span> button is in the header,
+    top left — not at the bottom of the form. After it runs, the status becomes
+    <strong>In progress</strong>.
+  </p>
+  <p>Avea will:</p>
+  <ul>
+    <li>Read every FNB line (salaries, suppliers, Yoco, Capitec, fees, card spend).</li>
+    <li>Rename Yoco and Capitec magtape lines to “card settlement (sales …)”.</li>
+    <li>Fill opening and closing balances from the PDF.</li>
+    <li>Match machine payouts to those deposits so you do not type batch totals.</li>
+    <li>Suggest a booking on ordinary expenses and income (salary, bank charges, fuel, and so on).</li>
+  </ul>
+</div>
+
+<div class="step">
+  <span class="step-num">6</span>
+  <h3>Read the two scoreboards before you click anything else</h3>
+  <p><strong>Does it balance?</strong> is the bank vs the books:</p>
+  <table>
+    <thead>
+      <tr><th>Field</th><th>Meaning</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Balance in Avea</td><td>What the Bank ledger says at the statement end date.</td></tr>
+      <tr><td>Not on this statement yet</td><td>Things already in Avea that this FNB PDF does not show (they stay outstanding).</td></tr>
+      <tr><td>Avea after those items</td><td>Books adjusted for those outstanding items.</td></tr>
+      <tr><td>Difference</td><td>Statement closing balance minus that adjusted figure. Must end at R0.00.</td></tr>
+    </tbody>
+  </table>
+  <p><strong>Do the card machines balance?</strong> is till vs machines vs bank:</p>
+  <table>
+    <thead>
+      <tr><th>Field</th><th>Meaning</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Till card sales</td><td>Everything taken as Card on the till in this period.</td></tr>
+      <tr><td>Card sales on the machines</td><td>Gross from the attached Yoco and Capitec files.</td></tr>
+      <tr><td>Till vs machines</td><td>If this is large, a machine file is usually the wrong month or missing.</td></tr>
+      <tr><td>Card money in the bank</td><td>Yoco + Capitec deposits on FNB.</td></tr>
+      <tr><td>Card fees / Yoco capital repaid</td><td>Taken off the payouts. Fees go to Bank Charges. Capital goes to Loans.</td></tr>
+    </tbody>
+  </table>
+  <p>
+    If a yellow warning says the Capitec file has no payouts on this statement,
+    stop and attach the correct month. Then <span class="btn ghost">Refresh matches</span>.
+  </p>
+</div>
+
+<div class="step">
+  <span class="step-num">7</span>
+  <h3>Settle the card batches in one click</h3>
+  <p>
+    When machine files matched deposits, the header shows
+    <span class="btn">Settle card batches</span>. Click it once.
+  </p>
+  <p>For every matched Yoco and Capitec deposit Avea posts:</p>
+  <ul>
+    <li>the net amount into Bank (what FNB actually received),</li>
+    <li>the fee (incl. VAT) to <strong>Bank Charges</strong>,</li>
+    <li>Yoco capital to <strong>Loans</strong> (not to fees),</li>
+    <li>the full card sales off <strong>Outstanding Receipts</strong>.</li>
+  </ul>
+  <p>
+    Those lines jump to status <strong>Matched</strong>. You should not type
+    22 or 44 batch totals by hand.
+  </p>
+  <p>
+    If a Capitec deposit is still unmatched, it has no machine payout. Either
+    attach the right Capitec PDF and refresh, or open that one line and use
+    <span class="btn ghost">Settle</span> to type the machine total from the merchant statement.
+  </p>
+</div>
+
+<div class="step">
+  <span class="step-num">8</span>
+  <h3>Work every remaining unmatched line</h3>
+  <p>
+    Open the <strong>Bank statement</strong> tab. Each row is one FNB line.
+    <strong>Spent</strong> left the account. <strong>Received</strong> came in.
+    Status must become <strong>Matched</strong> on every row before you can complete.
+  </p>
+  <p>Use the next section as the decision tree. Typical August lines:</p>
+  <ul>
+    <li>Salaries and Payshap — <span class="btn ghost">Record</span> as salary / wages.</li>
+    <li>Supplier payments (Montego, Minitra, Biofarm, Qualipet, …) — Record as expense, or Match to the bill if you already captured it.</li>
+    <li>FNB App Payment From Cash / ADT Cash Deposit — Match as a <strong>Transfer</strong> from Cash.</li>
+    <li>Payment To Investment Dep / Internet Trf From Dep — Transfer to or from that other account.</li>
+    <li>Blank or tiny debit with no shop name — FNB service fee. Record as bank charge.</li>
+    <li>POS Purchase Netflix, Roblox, Checkers, Amazon, Takealot — personal or mixed spend on the business card. Record as an expense or drawings. Do not leave them hanging.</li>
+  </ul>
+  <p>
+    Where Avea already found the same amount in the books, the status is
+    <strong>Possible match</strong>. Click <span class="btn ghost">Accept</span>
+    on the line, or <span class="btn ghost">Accept possible matches</span> in the header
+    if you have checked they are right.
+  </p>
+</div>
+
+<div class="step">
+  <span class="step-num">9</span>
+  <h3>Check “Missing from bank”</h3>
+  <p>
+    This tab lists payments already in Avea that this statement does not show.
+    They are allowed. They stay outstanding until a later statement clears them
+    (for example a transfer you made on the 31st that only appears on September’s PDF).
+  </p>
+  <p>
+    On your <strong>first</strong> completed recon, older book entries are treated
+    as part of the opening balance unless you turn on
+    <strong>Older entries are still missing from the bank</strong>.
+    Leave that off unless you know a specific old cheque or transfer has still
+    not hit FNB.
+  </p>
+</div>
+
+<div class="step">
+  <span class="step-num">10</span>
+  <h3>Difference must be R0.00</h3>
+  <p>
+    When every statement line is Matched, look at <strong>Difference</strong>
+    again. If it is not zero, you still have a booking wrong, a duplicate,
+    or an opening balance that does not follow from last month.
+  </p>
+  <p>
+    <span class="btn">Complete reconciliation</span> will refuse to finish
+    until Difference is zero and nothing is still Unmatched.
+  </p>
+</div>
+
+<div class="step">
+  <span class="step-num">11</span>
+  <h3>Complete, then stop</h3>
+  <p>
+    Press <span class="btn">Complete reconciliation</span>. The record locks as
+    <strong>Completed</strong>. Next month, start a new one. Do not reopen a
+    completed month to “fix a line” — that is how balances fork. If you started
+    on the wrong files, press <span class="btn dark">Cancel</span> before
+    completing, then start again.
+  </p>
+</div>
+
+<h2 id="lines">5. What to do with each remaining line</h2>
+<p>Read the description, then pick one action. Never skip a line.</p>
+<table>
+  <thead>
+    <tr>
+      <th>If you see…</th>
+      <th>Click</th>
+      <th>Then</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Status <strong>Possible match</strong>, and the linked entry is the right one</td>
+      <td><span class="btn ghost">Accept</span></td>
+      <td>Done. Avea already had this payment.</td>
+    </tr>
+    <tr>
+      <td>Yoco or Capitec card settlement, machine file attached</td>
+      <td><span class="btn">Settle card batches</span> (header)</td>
+      <td>Prefer the header button over settling one by one.</td>
+    </tr>
+    <tr>
+      <td>Yoco or Capitec card settlement, no machine file</td>
+      <td><span class="btn ghost">Settle</span></td>
+      <td>Type card sales before the fee. For Yoco also type capital repaid. Fee is calculated.</td>
+    </tr>
+    <tr>
+      <td>Money out: supplier, salary, SARS, insurance, rent, fuel, shopping</td>
+      <td><span class="btn ghost">Record</span></td>
+      <td>Paid to, account (Avea suggests one), amount (already filled). Record Expense.</td>
+    </tr>
+    <tr>
+      <td>Money in that is not a card batch (customer EFT, cash dumped, refund)</td>
+      <td><span class="btn ghost">Record</span> or <span class="btn ghost">Match</span></td>
+      <td>Record as income, or Match to an open invoice.</td>
+    </tr>
+    <tr>
+      <td>Money moving between Bank and Cash / Safe / another bank</td>
+      <td><span class="btn ghost">Match</span> → Transfer</td>
+      <td>Choose the other account. The other side stays outstanding until you recon that account.</td>
+    </tr>
+    <tr>
+      <td>One payment that is part bill, part something else</td>
+      <td><span class="btn ghost">Match</span> → Split</td>
+      <td>Split across accounts. Amounts must add up to the bank line.</td>
+    </tr>
+    <tr>
+      <td>Personal POS purchase on the business card</td>
+      <td><span class="btn ghost">Record</span></td>
+      <td>Expense or directors’ drawings. Do not pretend it is stock.</td>
+    </tr>
+  </tbody>
+</table>
+<div class="callout warn">
+  <div class="label">Do not import to suspense</div>
+  There is no “just dump it in a holding account and finish”. Skip and
+  suspense import are blocked on purpose. Every line must be a real expense,
+  income, transfer, invoice match, or card settlement.
+</div>
+
+<h2 id="buttons">6. Buttons cheat sheet</h2>
+<table>
+  <thead>
+    <tr><th>Button</th><th>Where</th><th>When to use it</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><span class="btn">Load &amp; match</span></td><td>Header, Draft only</td><td>After the three files are attached.</td></tr>
+    <tr><td><span class="btn ghost">Refresh matches</span></td><td>Header, In progress</td><td>After you add a late Yoco or Capitec file on the Card machines tab.</td></tr>
+    <tr><td><span class="btn">Settle card batches</span></td><td>Header</td><td>When ready card batches &gt; 0. This is the important one.</td></tr>
+    <tr><td><span class="btn ghost">Accept possible matches</span></td><td>Header</td><td>Only after you have glanced at the Possible match rows.</td></tr>
+    <tr><td><span class="btn ghost">Accept</span></td><td>On a line</td><td>One possible match you agree with.</td></tr>
+    <tr><td><span class="btn ghost">Record</span></td><td>On a line</td><td>Create the expense or income for that FNB line.</td></tr>
+    <tr><td><span class="btn ghost">Match</span></td><td>On a line</td><td>Link to an invoice/bill, split, or transfer.</td></tr>
+    <tr><td><span class="btn ghost">Settle</span></td><td>On a card line</td><td>One leftover Yoco/Capitec deposit.</td></tr>
+    <tr><td><span class="btn">Complete reconciliation</span></td><td>Header</td><td>When Difference is R0.00 and every line is Matched.</td></tr>
+    <tr><td><span class="btn dark">Cancel</span></td><td>Header</td><td>Abandon a draft or in-progress recon that you started on the wrong files.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="august">7. Worked example — August 2026</h2>
+<p>
+  These are the real numbers from FNB statement 59, the Yoco CSV
+  (1 Aug–1 Sep 2026), and the till. Use them as a picture of a finished month,
+  not as amounts to type.
+</p>
+<table>
+  <thead>
+    <tr><th>Piece</th><th class="num">Amount</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>FNB opening balance</td><td class="num">R 7,584.04 Cr</td></tr>
+    <tr><td>FNB closing balance</td><td class="num">R 9,873.06 Cr</td></tr>
+    <tr><td>Credits on the statement (57)</td><td class="num">R 153,891.82</td></tr>
+    <tr><td>Debits on the statement (96)</td><td class="num">R 151,602.80</td></tr>
+    <tr><td>Till card sales (POS Card)</td><td class="num">R 147,255.24</td></tr>
+    <tr><td>Yoco machine sales (net + fee + capital)</td><td class="num">R 89,759.90</td></tr>
+    <tr><td>Yoco paid into FNB (22 deposits — matches the CSV Amount column)</td><td class="num">R 73,446.90</td></tr>
+    <tr><td>Yoco fee incl. VAT</td><td class="num">R 1,988.13</td></tr>
+    <tr><td>Yoco capital repaid (loan, not a fee)</td><td class="num">R 14,324.87</td></tr>
+    <tr><td>Capitec paid into FNB (22 deposits)</td><td class="num">R 55,727.10</td></tr>
+    <tr><td>All card money into FNB</td><td class="num">R 129,174.00</td></tr>
+  </tbody>
+</table>
+<div class="callout warn">
+  <div class="label">August Capitec file</div>
+  The merchant PDF issued 6 August was a <strong>July</strong> statement
+  (gross machine sales R 54,189.50, net payouts R 53,442.54). It does not
+  cover the R 55,727.10 Capitec deposits in August. Download the August
+  Capitec merchant statement before you expect those 22 lines to auto-settle.
+</div>
+<p>
+  After Yoco machine sales of R 89,759.90, about R 57,500 of till cards should
+  be Capitec. FNB received R 55,727.10 from Capitec — the gap is Capitec’s fee,
+  which only the August merchant statement can split for you.
+</p>
+<p class="small">
+  The 1 September Yoco payout (R 3,965.99) belongs on September’s recon, even
+  though it sits on the same CSV export.
+</p>
+
+<h2 id="checklist">8. Monthly checklist</h2>
+<p>Print this page and tick it on statement day.</p>
+<table>
+  <thead>
+    <tr><th></th><th>Task</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>☐</td><td>Download the FNB Gold Business PDF for the month (digital, not a scan).</td></tr>
+    <tr><td>☐</td><td>Export Yoco payouts CSV covering the month.</td></tr>
+    <tr><td>☐</td><td>Download Capitec merchant statement and confirm the <em>period</em> is this month.</td></tr>
+    <tr><td>☐</td><td>Money → New bank reconciliation → Bank → attach all three → Load &amp; match.</td></tr>
+    <tr><td>☐</td><td>Read “Do the card machines balance?”. If Till vs machines is huge, fix the files first.</td></tr>
+    <tr><td>☐</td><td>Settle card batches.</td></tr>
+    <tr><td>☐</td><td>Accept possible matches you agree with.</td></tr>
+    <tr><td>☐</td><td>Record or Match every leftover spent and received line (salaries, suppliers, cash, personal card).</td></tr>
+    <tr><td>☐</td><td>Glance at Missing from bank — outstanding items are fine if they really have not hit FNB.</td></tr>
+    <tr><td>☐</td><td>Difference is R0.00. Complete reconciliation.</td></tr>
+    <tr><td>☐</td><td>Put the three source files in the month’s folder so next month you know what you used.</td></tr>
+  </tbody>
+</table>
+
+<h2 id="wrong">9. If something looks wrong</h2>
+<table>
+  <thead>
+    <tr><th>What you see</th><th>What to do</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>“This is a Yoco/Capitec card-machine file, not the FNB bank statement.”</td>
+      <td>You attached the machine file in the statement slot. Put the Gold Business PDF there; machines go under Card machine files.</td>
+    </tr>
+    <tr>
+      <td>Warning that the Capitec/Yoco file has no payouts on this statement</td>
+      <td>Wrong month. Replace the file, then Refresh matches.</td>
+    </tr>
+    <tr>
+      <td>Settle card batches is missing</td>
+      <td>No deposits have a matching machine payout yet. Attach files and Refresh. Check Amounts on the CSV equal the FNB credits.</td>
+    </tr>
+    <tr>
+      <td>Till vs machines is tens of thousands</td>
+      <td>Usually one machine file missing or July-vs-August. The till has one Card button for both machines, so the till total will only agree when <em>both</em> files are for this month.</td>
+    </tr>
+    <tr>
+      <td>Complete says Difference is not zero</td>
+      <td>An unmatched line remains, a line was booked at the wrong amount, or opening balance does not follow the previous completed statement. Do not force it.</td>
+    </tr>
+    <tr>
+      <td>Complete says a line is already cleared on another recon</td>
+      <td>That book entry was used on a previous (or cancelled-then-reposted) recon. Do not link it twice.</td>
+    </tr>
+    <tr>
+      <td>You started July five times and cancelled</td>
+      <td>Cancel leaves the books untouched. Start once with the three files, settle cards, then grind the other lines. Cancelling does not fix Outstanding Receipts — only settling the deposits does.</td>
+    </tr>
+    <tr>
+      <td>Bank in Avea is wildly unlike FNB even after a month is completed</td>
+      <td>Older months were never cleared. Work backwards from the oldest uncompleted statement, or ask your accountant to set the Bank opening balance and Outstanding Receipts before you recon the current month. Going forward, one completed recon per month keeps it honest.</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="callout ok">
+  <div class="label">Rhythm that works</div>
+  Same three downloads, same eleven clicks, once a month, as soon as FNB
+  issues the statement. The card machines are the noisy part — once they are
+  settled, the rest is ordinary spent and received, one line at a time.
+</div>
+
+<p class="small">
+  Pets Empire (Pty) Ltd · FNB Gold Business 62920038462 · Avea Money,
+  Bank reconciliations · Guide version November 2026, for module 19.0.3.14.202.
+</p>
+
+</body>
+</html>
