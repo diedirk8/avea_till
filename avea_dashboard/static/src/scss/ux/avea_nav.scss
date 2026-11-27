@@ -534,8 +534,15 @@ body.o_avea_sidebar_collapsed .o_avea_topbar {
 /* Mobile / tablet */
 
 @media (max-width: 991.98px) {
-    body.o_avea_product_shell .o_action_manager {
-        margin-left: 0;
+    // Sidebar is a slide-over on phones. Keep the action pane full-width —
+    // desktop calc(100% - 15rem) otherwise leaves a left-hand strip of content.
+    body.o_avea_product_shell .o_action_manager,
+    body.o_avea_product_shell.o_avea_sidebar_collapsed .o_action_manager {
+        margin-left: 0 !important;
+        max-width: 100%;
+        min-height: calc(100vh - var(--avea-topbar-height, 3.25rem));
+        min-height: calc(100dvh - var(--avea-topbar-height, 3.25rem));
+        width: 100% !important;
     }
 
     .o_avea_topbar {

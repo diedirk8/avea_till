@@ -118,6 +118,14 @@ body.o_avea_product_shell {
         padding: 0 1.25rem 2.5rem !important;
     }
 
+    // Phone: 100vh sits behind browser chrome, so the last block is clipped
+    // unless the sheet keeps extra room (home indicator + toolbar).
+    @media (max-width: 991.98px) {
+        .o_avea_workspace:not(.o_avea_catalogue_flush) .o_avea_workspace_sheet {
+            padding: 0 1rem calc(4.75rem + env(safe-area-inset-bottom, 0px)) !important;
+        }
+    }
+
     .o_avea_workspace--sales-ledger,
     .o_avea_workspace--overview,
     .o_avea_workspace--accounting-report,
