@@ -1,6 +1,10 @@
 // Business Overview — page-specific extensions.
 
 .o_avea_workspace--overview {
+    // Embedded lists must not use Odoo's negative ListRenderer margin, which
+    // pulls tables past the sheet and flush against the left of the phone.
+    --ListRenderer-margin-x: 0px;
+
     // Hide Odoo's form breadcrumb, duplicate period title, and pager.
     .o_control_panel {
         display: none !important;
@@ -768,6 +772,12 @@
 
         .o_avea_workspace_block--last {
             padding-bottom: 0.25rem;
+        }
+
+        .o_list_renderer {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            max-width: 100%;
         }
     }
 

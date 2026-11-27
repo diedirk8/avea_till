@@ -476,25 +476,42 @@ body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-activ
 }
 
 // Phone/tablet: size the scroller to the visible viewport (100vh sits behind
-// the browser chrome) and do not reserve a desktop scrollbar gutter that
-// shoves the page left.
+// the browser chrome). The desktop page-scroll rule forces a 12px classic
+// scrollbar with !important, which leaves a white strip on the right and
+// makes the page look flush-left against the topbar.
 @media (max-width: 991.98px) {
     body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace):not(:has(.o_avea_catalogue_flush)),
     body.o_avea_product_shell .o_action_manager.o_avea_page_scroll,
     body.o_avea_product_shell .o_action_manager.o_avea_list_pane_action_manager,
     body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-list),
     body.o_avea_product_shell .o_action_manager:has(.o_avea_workspace--account-activity) {
+        box-sizing: border-box !important;
         height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
         height: calc(100dvh - var(--avea-topbar-height, 3.25rem)) !important;
         max-height: calc(100vh - var(--avea-topbar-height, 3.25rem)) !important;
         max-height: calc(100dvh - var(--avea-topbar-height, 3.25rem)) !important;
         overflow-y: auto !important;
-        scrollbar-gutter: auto;
-        scrollbar-width: thin;
+        padding-left: 1.25rem !important;
+        padding-right: 1.25rem !important;
+        scrollbar-gutter: auto !important;
+        scrollbar-width: none !important;
 
         &::-webkit-scrollbar {
-            width: 0;
-            display: none;
+            background: transparent !important;
+            display: none !important;
+            height: 0 !important;
+            width: 0 !important;
         }
+    }
+
+    // Pane padding is the inset; do not add a second left/right gutter on the sheet.
+    body.o_avea_product_shell .o_avea_workspace:not(.o_avea_catalogue_flush) .o_avea_workspace_sheet {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    body.o_avea_product_shell .o_form_view.o_avea_workspace:not(.o_avea_catalogue_flush) .o_form_sheet_bg {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
     }
 }
